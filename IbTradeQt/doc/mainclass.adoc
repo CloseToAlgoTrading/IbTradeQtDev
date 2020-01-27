@@ -1,0 +1,71 @@
+= My Document's Title
+Doc Writer <doc.writer@asciidoctor.org>
+
+My document provides...
+
+[ditaa]
+----
+                   +-------------+
+                   | Asciidoctor |-------+
+                   |  Diagram    |       |
+                   +-------------+       | PNG out
+                       ^                 |
+                       | ditaa in        |
+                       |                 v
+ +--------+   +--------+----+    /----------------\
+ |        | --+ Asciidoctor +--> |                |
+ |  Text  |   +-------------+    |Beautiful output|
+ |Document|   |   !magic!   |    |                |
+ |     {d}|   |             |    |                |
+ +---+----+   +-------------+    \----------------/
+     :                                   ^
+     |          Lots of work             |
+     +-----------------------------------+
+----
+
+
+
+// The plantuml-server-url property must be placed at the top of the asciidoc file
+// You can use a local plant uml server: https://github.com/plantuml/plantuml-server
+
+//:plantuml-server-url: http://www.plantuml.com/plantuml
+
+[plantuml]
+....
+Alice -> Bob: Authentication Request
+Bob --> Alice: Authentication Response
+
+Alice -> Bob: Another authentication Request
+Alice <-- Bob: Another authentication Response
+....
+
+[plantuml]
+....
+alice --> bob : hello 
+....
+
+[plantuml, dot-example, svg]
+----
+digraph g {
+    a -> b
+    b -> c
+    c -> d
+    d -> a
+}
+----
+
+
+[graphviz, dot, svg]
+----
+digraph g {
+    a -> b
+    b -> c
+    c -> d
+    d -> a
+}
+----
+
+
+
+
+

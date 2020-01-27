@@ -1,0 +1,33 @@
+@startuml(id=PortfolioManager)
+
+skinparam componentStyle uml2
+
+[Portfolio Manager] as PortfolioM
+note left of PortfolioM
+  This Component have all information
+  about portfolio.
+end note
+
+interface "RR-PortfIf" as PortfolioMI
+note left of PortfolioMI
+if possiple, it should be inmplemented
+as request/response with the signal?
+  - How mach money we have
+  - How much still free to use
+end note
+
+PortfolioM -down- PortfolioMI
+
+[IB Server] as IbS
+interface ServerDataIf
+IbS -left- ServerDataIf
+
+PortfolioM -( ServerDataIf
+
+
+[Strategy Module] .left.> PortfolioMI : use
+
+[GUI] .up.> PortfolioMI : use
+
+
+@enduml

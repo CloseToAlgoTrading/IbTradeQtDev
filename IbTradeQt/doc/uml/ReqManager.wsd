@@ -1,0 +1,18 @@
+@startuml(id=ReqManager)
+
+class ReqManager{
+    +ReqManager()
+	+~ReqManager()    
+	+void addReqIds(qint32 reqId, tEReqType reqDataId)
+	+void removeReqIds(qint32 reqId, tEReqType reqDataId)
+	+bool isPresent(qint32 reqId, tEReqType reqDataId)
+	+qint32 getActiveRequestSize()
+	+void debugPrintList()
+	+QList<stReqIds> & getlistIDs()    
+
+	#QList<stReqIds> m_listIDs
+	#QMap<tEReqType, QList<tEReqType>> mapReqToResponseIds    
+}
+
+@enduml
+

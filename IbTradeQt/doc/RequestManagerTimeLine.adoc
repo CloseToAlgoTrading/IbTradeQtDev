@@ -1,0 +1,153 @@
+= Request Manager Time Line Diagam
+Denis Vodchyts <contact@vodchyts.info>
+
+== Request Realtime Data
+
+[plantuml]
+----
+
+
+box "CProcessing" #LightBlue
+    participant CProcessing
+    participant CProcessingBase
+end box
+
+box "CBrokerDataProvider" #LightYellow
+    participant m_Client
+end box
+
+box "Observer" #LightGreen 
+    participant CDispatcher
+    participant CSubscriberItem
+end box
+
+box "BrokerAPI" #f7f959
+    participant IBComClientImpl
+    participant EClientSocket
+end box
+
+
+
+
+
+
+CProcessing -> CProcessingBase : reqestRealTimeData 
+activate CProcessing
+
+    activate CProcessingBase
+        CProcessingBase -> CProcessingBase : insert(symbol, RqType) to aciveReqestsMap
+
+        CProcessingBase -> m_Client : reqestRealTimeData(pSubscriber, config)
+
+        activate m_Client
+
+            m_Client -> CDispatcher : getSubscriberItem(pSubscriber->GetSubscriberId())
+            activate CDispatcher
+                m_Client <- CDispatcher : return pSubcrItem - pointer to CSubscriberItem
+            deactivate CDispatcher
+
+
+            alt nullptr != pSubcrItem case 
+                m_Client -> CSubscriberItem : getNextFreeId(lsymbol, reqType)
+                activate CSubscriberItem
+                    m_Client <- CSubscriberItem : return free or existing Id
+                deactivate CSubscriberItem
+            end
+
+
+            m_Client -> CDispatcher : Subscribe(_pSubscriber, symbol, curReq)
+            activate CDispatcher
+                m_Client <- CDispatcher : ret subscriberid
+            deactivate CDispatcher
+
+            m_Client -> IBComClientImpl : reqRealTimeDataAPI(curReq.id, _config)
+            activate IBComClientImpl
+                IBComClientImpl -> EClientSocket : reqMktData
+                
+                activate EClientSocket
+                    IBComClientImpl <- EClientSocket : return void
+                deactivate EClientSocket
+                
+                m_Client <- IBComClientImpl : return void
+            deactivate IBComClientImpl
+
+            CProcessingBase <- m_Client : return void
+        deactivate m_Client
+
+        CProcessing <- CProcessingBase : return void
+    deactivate CProcessingBase
+
+deactivate CProcessing
+----
+
+
+== Cancel Realtime Data
+
+[plantuml]
+----
+
+
+box "CProcessing" #LightBlue
+    participant CProcessing
+    participant CProcessingBase
+end box
+
+box "CBrokerDataProvider" #LightYellow
+    participant m_Client
+end box
+
+box "Observer" #LightGreen 
+    participant CDispatcher
+    participant CSubscriberItem
+end box
+
+box "BrokerAPI" #f7f959
+    participant IBComClientImpl
+    participant EClientSocket
+end box
+
+
+CProcessing -> CProcessingBase : cancelRealTimeData(symbol); 
+activate CProcessing
+    activate CProcessingBase
+        CProcessingBase -> CProcessingBase : remove(symbol, RqType) from aciveReqestsMap
+    
+        CProcessingBase -> m_Client : cancelRealTimeData(pSubscriber, symbol)
+
+        activate m_Client
+            m_Client -> CDispatcher : getSubscriberItem(pSubscriber->GetSubscriberId())
+            activate CDispatcher
+                m_Client <- CDispatcher : return pSubcrItem - pointer to CSubscriberItem
+            deactivate CDispatcher
+
+            m_Client -> CSubscriberItem : getReqData(symbol, reqType, retData)
+            activate CSubscriberItem
+                m_Client <- CSubscriberItem : return free or existing Id
+            deactivate CSubscriberItem
+
+            m_Client -> CDispatcher : Unsubscribe(pSubscriber, retData.id, retData.reqType, symbol)
+            activate CDispatcher
+                m_Client <- CDispatcher : return true or false
+            deactivate CDispatcher        
+
+            m_Client -> IBComClientImpl : cancelRealTimeDataAPI(retData.id)
+            activate IBComClientImpl
+                IBComClientImpl -> EClientSocket : cancelMktData(id)
+                
+                activate EClientSocket
+                    IBComClientImpl <- EClientSocket : return void
+                deactivate EClientSocket
+                
+                m_Client <- IBComClientImpl : return void
+            deactivate IBComClientImpl
+
+            CProcessingBase <- m_Client : return void                
+
+        deactivate m_Client
+
+        CProcessing <- CProcessingBase : return void
+
+    deactivate CProcessingBase
+
+deactivate CProcessing
+----

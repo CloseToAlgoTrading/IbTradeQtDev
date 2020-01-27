@@ -1,0 +1,27 @@
+@startuml
+
+!include ReqManager.wsd!ReqManager
+
+class GlobalReqManager{
+	+GlobalReqManager();
+	+~GlobalReqManager();
+
+	+qint32 getNextFreeId();
+	+qint32 getNextFreeId(QString _symbol, tEReqType _reqType);
+	+bool isIdFree(qint32 _reqId);
+	+void addReqIdsExt(QString _symbol, stReqIds _reqData);
+	+bool removeReqIdsExt(QString _symbol, stReqIds _reqData);
+	+qint32 getIdbySymbol(QString _symbol, tEReqType _reqType);
+	+QString getSymbolById(const qint32 _reqId, const tEReqType _reqType);
+    +qint32 removeReqData(const QString & _symbol, const tEReqType _t);
+	+bool getReqData(QString _symbol, tEReqType _reqType, stReqIds & _ret);
+    +quint32 removeItemFromTickerMap(const QString _symbol, const stReqIds & _reqData);
+    +quint32 getItemsCountInTickerMap(const QString _symbol, const stReqIds & _reqData);   
+
+	-TikerIdMap_t m_tickerMap;
+}
+
+GlobalReqManager -up-|> ReqManager
+
+
+@enduml

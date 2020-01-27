@@ -1,0 +1,14 @@
+= Concept of decentalization
+Denis Vodchyts <contact@vodchyts.info>
+
+Components represent classes or different process? 
+
+
+== Diagram
+
+plantuml::ClockManager.wsd[]
+plantuml::PortfolioManager.wsd[]
+plantuml::PositionManager.wsd[]
+
+plantuml::generalOverviewManager.wsd[]
+

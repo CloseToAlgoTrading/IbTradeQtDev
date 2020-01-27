@@ -1,0 +1,33 @@
+@startuml(id=ClockManager)
+
+skinparam componentStyle uml2
+
+[Clock Manager] as ClockM
+note left of ClockM
+  This Component implements 
+  datatime management.
+end note
+
+interface "RR-CLockIf" as ClockMI
+note left of ClockMI
+if possiple, it should be inmplemented
+as request/response with the signal?
+  - provide Begin/End working hours
+  - restart subscription event on defined time
+  - server current time 
+
+end note
+ClockM -down- ClockMI
+
+[IB Server] as IbS
+interface ServerDataIf
+IbS -left- ServerDataIf
+
+ClockM -( ServerDataIf
+
+
+[Strategy Module] .left.> ClockMI : use
+
+[GUI] .up.> ClockMI : use
+
+@enduml

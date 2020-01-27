@@ -1,0 +1,23 @@
+@startuml(id=OverviewManagers)
+
+class CBaseProcessing
+{
+    Communication_with_Ib_Server()
+}
+note left of CBaseProcessing
+This is the base class for all who wnat to use
+communication to the Ib Server
+end note
+
+Class CPortfolioManager
+Class CPositionManager
+Class CClockManager
+
+Class CStrategyModule
+
+CBaseProcessing <|-- CPortfolioManager
+CBaseProcessing <|-- CPositionManager
+CBaseProcessing <|-- CClockManager
+CBaseProcessing <|-- CStrategyModule
+
+@enduml

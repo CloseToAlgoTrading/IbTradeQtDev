@@ -1,0 +1,21 @@
+= Global Request Manager
+Denis Vodchyts <contact@vodchyts.info>
+
+This document describes Request Manager Class.
+
+== Diagram
+
+plantuml::uml/globalreqmanager.wsd[]
+
+
+link:ReqManager.adoc[ReqManager Class]
+
+== Class Description
+
+:source-highlighter: coderay
+:coderay-css: style
+
+[source,cpp]
+----
+include::../ReqManager/globalreqmanager.h[]
+----

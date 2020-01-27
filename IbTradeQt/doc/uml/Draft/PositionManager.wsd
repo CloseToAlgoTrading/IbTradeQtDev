@@ -1,0 +1,34 @@
+@startuml(id=PositionManager)
+
+skinparam componentStyle uml2
+
+[Position Manager] as PositionM
+note left of PositionM
+  This Component contains all information
+  about open positions.
+  Maybe also PnL and commission.
+end note
+
+interface "RR-PosIf" as PositionMI
+note left of PositionMI
+if possiple, it should be inmplemented
+as request/response with the signal?
+  - get open Position by Ticker Name/PosId
+  - Get PnL by the Ticker Name
+end note
+
+PositionM -down- PositionMI
+
+[IB Server] as IbS
+interface ServerDataIf
+IbS -left- ServerDataIf
+
+PositionM -( ServerDataIf
+
+
+[Strategy Module] .left.> PositionMI : use
+
+[GUI] .up.> PositionMI : use
+
+
+@enduml

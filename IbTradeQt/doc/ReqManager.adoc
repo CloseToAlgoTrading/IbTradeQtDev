@@ -1,0 +1,18 @@
+= Request Manager
+Denis Vodchyts <contact@vodchyts.info>
+
+This document describes Request Manager Class.
+
+== Diagram
+
+plantuml::uml/ReqManager.wsd[]
+
+== Class Description
+
+:source-highlighter: coderay
+:coderay-css: style
+
+[source,cpp]
+----
+include::../ReqManager/ReqManager.h[]
+----

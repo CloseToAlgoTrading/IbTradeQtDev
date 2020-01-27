@@ -1,0 +1,70 @@
+@startuml(id=PMModule)
+
+class PMModule{
+}
+note bottom of PMModule
+  Class implements strategy and 
+  derived from the CSubscriber - so that we can 
+  receive responses from the server
+end note
+
+class CProcessingBase{
+    +void MessageHandler(void* pContext, tEReqType _reqType) override;
+    +void UnsubscribeHandler() override;
+    -CBrokerDataProvider & m_Client;
+}
+
+CProcessingBase <|-- PMModule
+
+class "Observer::CSubscriber" as CSub{
+    +virtual void MessageHandler(void* pContext, tEReqType _reqType) = 0;
+    +virtual void UnsubscribeHandler() = 0;
+}
+
+CSub <|-- CProcessingBase
+
+
+class "Observer::CDispatcher" as CDisp {
+    -CSubscriberListPtr  m_pSubscriberList;
+} 
+note left of CDisp
+    Class contains list of Subscribers;
+    Every time when new subscription called, 
+    Dispatcher checks if subscriber already 
+    exist in the list and updates GlobalRequestManager 
+    in corresponding SubscriberItem.
+end note
+
+class CSubscriberItem{
+    -CSubscriberPtr m_pSubscriber;
+    -GlobalReqManager m_ReqMenager;
+}
+
+CDisp "1" o-- "many" CSubscriberItem : contains
+
+
+class GlobalReqManager{
+
+}
+
+note bottom of GlobalReqManager
+  Global request manager contains 
+  all requests to the server, like subscription.
+  There is no auto release of subscription.
+end note
+
+CSubscriberItem "1" *-- "1" GlobalReqManager : contains
+
+CSubscriberItem "1" *-right- "1" CSub : contains
+
+
+class CBrokerDataProvider{
+
+}
+
+CBrokerDataProvider <|-- CDisp
+
+CProcessingBase "1" o-right- "1" CBrokerDataProvider : contains reference
+
+
+@enduml
