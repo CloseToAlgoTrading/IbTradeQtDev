@@ -21,4 +21,6 @@ private:
 	
 };
 
+
 #endif // BASEIMPL_H
+
