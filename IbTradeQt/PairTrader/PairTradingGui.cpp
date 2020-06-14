@@ -1,5 +1,4 @@
 #include "PairTradingGui.h"
-#include "GraphHelper.h"
 #include <QMessageBox>
 
 

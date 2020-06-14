@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'pairtrading.ui'
 **
-** Created by: Qt User Interface Compiler version 5.12.1
+** Created by: Qt User Interface Compiler version 5.15.0
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
 ********************************************************************************/
@@ -26,7 +26,6 @@
 #include <QtWidgets/QTableView>
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QWidget>
-#include <qcustomplot.h>
 
 QT_BEGIN_NAMESPACE
 
@@ -66,7 +65,6 @@ public:
     QSplitter *splitter_2;
     QGroupBox *groupBoxPrice;
     QHBoxLayout *horizontalLayout_3;
-    QCustomPlot *customPlotPrice;
     QWidget *tab;
     QGridLayout *gridLayout_2;
     QGridLayout *gridLayout;
@@ -110,7 +108,7 @@ public:
         pushButtonRemoveSelected->setGeometry(QRect(264, 50, 111, 23));
         layoutWidget = new QWidget(groupBox_2);
         layoutWidget->setObjectName(QString::fromUtf8("layoutWidget"));
-        layoutWidget->setGeometry(QRect(20, 20, 355, 25));
+        layoutWidget->setGeometry(QRect(20, 20, 355, 27));
         horizontalLayout_2 = new QHBoxLayout(layoutWidget);
         horizontalLayout_2->setSpacing(6);
         horizontalLayout_2->setContentsMargins(11, 11, 11, 11);
@@ -214,12 +212,6 @@ public:
         horizontalLayout_3->setSpacing(6);
         horizontalLayout_3->setContentsMargins(11, 11, 11, 11);
         horizontalLayout_3->setObjectName(QString::fromUtf8("horizontalLayout_3"));
-        customPlotPrice = new QCustomPlot(groupBoxPrice);
-        customPlotPrice->setObjectName(QString::fromUtf8("customPlotPrice"));
-        customPlotPrice->setMinimumSize(QSize(120, 80));
-
-        horizontalLayout_3->addWidget(customPlotPrice);
-
         splitter_2->addWidget(groupBoxPrice);
 
         verticalLayout->addWidget(splitter_2);
@@ -258,21 +250,21 @@ public:
 
     void retranslateUi(QWidget *PairTrading)
     {
-        PairTrading->setWindowTitle(QApplication::translate("PairTrading", "PairTrading", nullptr));
-        groupBox_2->setTitle(QApplication::translate("PairTrading", "Add Pair", nullptr));
-        pushButtonRemoveSelected->setText(QApplication::translate("PairTrading", "Remove Selected", nullptr));
-        pushButtonAddPair->setText(QApplication::translate("PairTrading", "Add", nullptr));
-        groupBox->setTitle(QApplication::translate("PairTrading", "GroupBox", nullptr));
-        tabWidget_2->setTabText(tabWidget_2->indexOf(tab_2), QApplication::translate("PairTrading", "Tab 1", nullptr));
-        pushButtonBuyMkt->setText(QApplication::translate("PairTrading", "Buy", nullptr));
-        lineEditOrderSymbol->setText(QApplication::translate("PairTrading", "SPY", nullptr));
-        radioButtonBuy->setText(QApplication::translate("PairTrading", "Buy", nullptr));
-        radioButtonSell->setText(QApplication::translate("PairTrading", "Sell", nullptr));
-        pushButtonSellMkt->setText(QApplication::translate("PairTrading", "Sell", nullptr));
-        tabWidget_2->setTabText(tabWidget_2->indexOf(tab_3), QApplication::translate("PairTrading", "Tab 2", nullptr));
-        groupBoxPrice->setTitle(QApplication::translate("PairTrading", "Price", nullptr));
-        tabWidget->setTabText(tabWidget->indexOf(tabMain), QApplication::translate("PairTrading", "Tab 1", nullptr));
-        tabWidget->setTabText(tabWidget->indexOf(tab), QApplication::translate("PairTrading", "Page", nullptr));
+        PairTrading->setWindowTitle(QCoreApplication::translate("PairTrading", "PairTrading", nullptr));
+        groupBox_2->setTitle(QCoreApplication::translate("PairTrading", "Add Pair", nullptr));
+        pushButtonRemoveSelected->setText(QCoreApplication::translate("PairTrading", "Remove Selected", nullptr));
+        pushButtonAddPair->setText(QCoreApplication::translate("PairTrading", "Add", nullptr));
+        groupBox->setTitle(QCoreApplication::translate("PairTrading", "GroupBox", nullptr));
+        tabWidget_2->setTabText(tabWidget_2->indexOf(tab_2), QCoreApplication::translate("PairTrading", "Tab 1", nullptr));
+        pushButtonBuyMkt->setText(QCoreApplication::translate("PairTrading", "Buy", nullptr));
+        lineEditOrderSymbol->setText(QCoreApplication::translate("PairTrading", "SPY", nullptr));
+        radioButtonBuy->setText(QCoreApplication::translate("PairTrading", "Buy", nullptr));
+        radioButtonSell->setText(QCoreApplication::translate("PairTrading", "Sell", nullptr));
+        pushButtonSellMkt->setText(QCoreApplication::translate("PairTrading", "Sell", nullptr));
+        tabWidget_2->setTabText(tabWidget_2->indexOf(tab_3), QCoreApplication::translate("PairTrading", "Tab 2", nullptr));
+        groupBoxPrice->setTitle(QCoreApplication::translate("PairTrading", "Price", nullptr));
+        tabWidget->setTabText(tabWidget->indexOf(tabMain), QCoreApplication::translate("PairTrading", "Tab 1", nullptr));
+        tabWidget->setTabText(tabWidget->indexOf(tab), QCoreApplication::translate("PairTrading", "Page", nullptr));
     } // retranslateUi
 
 };

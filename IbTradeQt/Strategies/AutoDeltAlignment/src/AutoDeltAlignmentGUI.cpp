@@ -1,9 +1,10 @@
 #include "AutoDeltAlignmentGUI.h"
-//#include "GraphHelper.h"
 #include <QMessageBox>
 #include "NHelper.h"
 #include <QLCDNumber>
 #include <QTimer>
+#include <QCloseEvent>
+
 
 
 Q_LOGGING_CATEGORY(autoDeltaAligGuiLog, "AutoDeltaAlig.GUI");
