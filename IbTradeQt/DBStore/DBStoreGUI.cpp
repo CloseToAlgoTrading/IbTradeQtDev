@@ -1,8 +1,8 @@
 #include "DBStoreGUI.h"
-#include "GraphHelper.h"
 #include <QMessageBox>
 #include <QSortFilterProxyModel>
 #include <QAbstractItemModel>
+#include <QCloseEvent>
 
 
 Q_LOGGING_CATEGORY(DBStoreGuiLog, "DBStore.GUI");

@@ -76,8 +76,6 @@ SOURCES += \
     PairTrader/pairtraderpm.cpp \
     PairTrader/PairTradingGui.cpp \
     PairTrader/PairTradingPresenter.cpp \
-    QCustomPlot/CustomPlotZoom.cpp \
-    QCustomPlot/qcustomplot.cpp \
     ReqManager/globalreqmanager.cpp \
     ReqManager/ReqManager.cpp \
     src/ContractCondition.cpp \
@@ -160,9 +158,6 @@ HEADERS += \
     PairTrader/pairtraderpm.h \
     PairTrader/PairTradingGui.h \
     PairTrader/PairTradingPresenter.h \
-    QCustomPlot/CustomPlotZoom.h \
-    QCustomPlot/GraphHelper.h \
-    QCustomPlot/qcustomplot.h \
     ReqManager/globalreqmanager.h \
     ReqManager/ReqManager.h \
     Shared/bar.h \

@@ -1,7 +1,6 @@
 ﻿#include "ibtradesystem.h"
 #include <time.h>
 #include <QStandardItemModel>
-#include "GraphHelper.h"
 #include "NHelper.h"
 #include "MyLogger.h"
 #include "GlobalDef.h"

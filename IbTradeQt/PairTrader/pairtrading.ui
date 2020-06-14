@@ -79,7 +79,7 @@
                 <x>20</x>
                 <y>20</y>
                 <width>355</width>
-                <height>25</height>
+                <height>27</height>
                </rect>
               </property>
               <layout class="QHBoxLayout" name="horizontalLayout_2">
@@ -269,18 +269,7 @@
               <property name="title">
                <string>Price</string>
               </property>
-              <layout class="QHBoxLayout" name="horizontalLayout_3">
-               <item>
-                <widget class="QCustomPlot" name="customPlotPrice" native="true">
-                 <property name="minimumSize">
-                  <size>
-                   <width>120</width>
-                   <height>80</height>
-                  </size>
-                 </property>
-                </widget>
-               </item>
-              </layout>
+              <layout class="QHBoxLayout" name="horizontalLayout_3"/>
              </widget>
             </widget>
            </item>
@@ -309,14 +298,6 @@
   </layout>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
- <customwidgets>
-  <customwidget>
-   <class>QCustomPlot</class>
-   <extends>QWidget</extends>
-   <header location="global">qcustomplot.h</header>
-   <container>1</container>
-  </customwidget>
- </customwidgets>
  <resources/>
  <connections/>
  <buttongroups>
