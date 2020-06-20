@@ -6,7 +6,7 @@
 
 - QT 5.x or later
 - QT Creator
-- IB Accaunt (at the moment only IB is supported)
+- IB Account (at the moment only IB is supported)
 
 ## Installation
 
