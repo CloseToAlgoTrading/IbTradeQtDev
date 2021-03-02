@@ -158,7 +158,7 @@ void DBStorePM::recvRealtimeBar(void *pContext, tEReqType _reqType)
     CrealtimeBar rtb = *pRealTimeBar;
     QString retSymbol = getSymbolFromRM(pRealTimeBar->getId(), _reqType);
 
-    signalInsertNewRealTimeBarItem(*pRealTimeBar, retSymbol);
+    emit signalInsertNewRealTimeBarItem(*pRealTimeBar, retSymbol);
     //qDebug() << "D--" << QThread::currentThreadId();
 
 }

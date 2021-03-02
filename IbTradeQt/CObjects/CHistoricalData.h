@@ -40,7 +40,8 @@ namespace IBDataTypes
         CHistoricalData(TickerId reqId, QString date, double open, double high, double low, double close, int volume, int barCount, double WAP, int hasGaps, bool isLast = false);
         ~CHistoricalData(){}
 
-        CHistoricalData(const CHistoricalData& other){
+        CHistoricalData(const CHistoricalData& other) : CrealtimeBar(other)
+        {
             this->setRTBarDataSharedPointer(other.getRTBarDataSharedPointer());
             d = other.d;
         }

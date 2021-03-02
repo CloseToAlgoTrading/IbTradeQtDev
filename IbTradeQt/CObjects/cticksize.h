@@ -18,7 +18,8 @@ namespace IBDataTypes
             , timestamp(0)
         {}
 
-        CTickSizeData(const CTickSizeData &other) : id(other.id)
+        CTickSizeData(const CTickSizeData &other) : QSharedData(other)
+            , id(other.id)
             , tickType(other.tickType)
             , size(other.size)
             , timestamp(other.timestamp)

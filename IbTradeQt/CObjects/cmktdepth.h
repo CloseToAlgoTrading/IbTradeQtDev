@@ -20,7 +20,8 @@ namespace IBDataTypes
             , timestamp(0)
         {}
 
-        CMktDepthData(const CMktDepthData &other) : Id(other.Id)
+        CMktDepthData(const CMktDepthData &other) : QSharedData(other)
+            , Id(other.Id)
             , position(other.position)
             , operation(other.operation)
             , side(other.side)

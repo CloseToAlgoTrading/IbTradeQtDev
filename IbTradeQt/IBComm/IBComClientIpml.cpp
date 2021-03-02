@@ -328,8 +328,7 @@ void IBComClientImpl::tickPrice(TickerId tickerId, TickType field, double price,
     //TODO:Add attrib to the MyTickProce
 	//CTickPrice _tickPrize(tickerId, field, price, canAutoExecute, QDateTime::currentDateTimeUtc().toTime_t());
     IBDataTypes::CMyTickPrice _tickPrize(tickerId, field, price, attrib.canAutoExecute, QDateTime::currentDateTimeUtc().toTime_t());
-
-	qCDebug(IBComClientImplLog(), "tickerId = %d, field = %d, price = %f, canAutoExecute = %d\n", _tickPrize.getId(), _tickPrize.getTickType(), _tickPrize.getPrice(), _tickPrize.getCanAutoExecute());
+    qCDebug(IBComClientImplLog(), "tickerId = %ld, field = %d, price = %f, canAutoExecute = %d\n", _tickPrize.getId(), _tickPrize.getTickType(), _tickPrize.getPrice(), _tickPrize.getCanAutoExecute());
 
     m_DispatcherBrokerData.SendMessageToSubscribers(&_tickPrize, tickerId, RT_TICK_PRICE);
     
@@ -343,7 +342,7 @@ void IBComClientImpl::tickSize(TickerId tickerId, TickType field, int size)
 
 	CTickSize _tickSize(tickerId, field, size, QDateTime::currentDateTimeUtc().toTime_t());
 
-	qCDebug(IBComClientImplLog(), "tickerId = %d, field = %d, size = %d", _tickSize.getId(), _tickSize.getTickType(), _tickSize.getSize());
+    qCDebug(IBComClientImplLog(), "tickerId = %ld, field = %d, size = %d", _tickSize.getId(), _tickSize.getTickType(), _tickSize.getSize());
 
     m_DispatcherBrokerData.SendMessageToSubscribers(&_tickSize, tickerId, RT_TICK_SIZE);
 
@@ -355,7 +354,7 @@ void IBComClientImpl::tickGeneric(TickerId tickerId, TickType tickType, double v
 {
     //qCDebug(IBComClientImplLog(), "[%s] tickerId = %d, tickType = %d, value = %f", __FUNCTION__, tickerId, tickType, value);
 	CTickGeneric _tickGeneric(tickerId, tickType, value, QDateTime::currentDateTimeUtc().toTime_t());
-    qCDebug(IBComClientImplLog(), "tickerId = %d, tickType = %d, value = %f", _tickGeneric.getId(), _tickGeneric.getTickType(), _tickGeneric.getValue());
+    qCDebug(IBComClientImplLog(), "tickerId = %ld, tickType = %d, value = %f", _tickGeneric.getId(), _tickGeneric.getTickType(), _tickGeneric.getValue());
     
     m_DispatcherBrokerData.SendMessageToSubscribers(&_tickGeneric, tickerId, RT_TICK_GENERIC);
 
@@ -368,7 +367,7 @@ void IBComClientImpl::tickString(TickerId tickerId, TickType tickType, const std
     //qCDebug(IBComClientImplLog(), "tickString : tickerId = %d, tickType = %d, value = %s", tickerId, tickType, value.c_str());
 
 	CTickString _tickString(tickerId, tickType, QString::fromLocal8Bit(value.data(), value.size()), QDateTime::currentDateTimeUtc().toTime_t());
-    qCDebug(IBComClientImplLog(), "tickerId = %d, tickType = %d, value = %s", _tickString.getId(), _tickString.getTickType(), _tickString.getValue().toLocal8Bit().data());
+    qCDebug(IBComClientImplLog(), "tickerId = %ld, tickType = %d, value = %s", _tickString.getId(), _tickString.getTickType(), _tickString.getValue().toLocal8Bit().data());
 
     
     m_DispatcherBrokerData.SendMessageToSubscribers(&_tickString, tickerId, RT_TICK_STRING);
@@ -421,7 +420,7 @@ void IBComClientImpl::realtimeBar(TickerId reqId, long time, double open, double
 
     CrealtimeBar _realtimeBar(reqId, static_cast<quint64>(time), open, high, low, close, volume, count, wap);
 
-	qCDebug(IBComClientImplLog(), "tickerId = %d , date = %d, open = %f, high = %f, low =%f, close = %f, volume = %f, barCount = %d, WAP = %f, ", 
+    qCDebug(IBComClientImplLog(), "tickerId = %ld , date = %d, open = %f, high = %f, low =%f, close = %f, volume = %f, barCount = %d, WAP = %f, ",
 		_realtimeBar.getId(), _realtimeBar.getDateTime(), _realtimeBar.getOpen(), _realtimeBar.getHigh(), _realtimeBar.getLow(),
 		_realtimeBar.getClose(), _realtimeBar.getVolume(), _realtimeBar.getCount(), _realtimeBar.getWap());
 
@@ -436,7 +435,7 @@ void IBComClientImpl::updateMktDepth(TickerId id, int position, int operation, i
 {
 	CMktDepth _mkdDepth(id, position, operation, side, price, size, QDateTime::currentDateTimeUtc().toTime_t());
 
-	qCDebug(IBComClientImplLog(), "tickerId = %d , pos = %d, operation = %d, side = , double price, int size ", 
+    qCDebug(IBComClientImplLog(), "tickerId = %ld , pos = %d, operation = %d, side = %d, double price = %f, int size = %d ",
 		_mkdDepth.getId(), _mkdDepth.getPosition(), _mkdDepth.getOperation(), _mkdDepth.getSide(), _mkdDepth.getPrice(), _mkdDepth.getSize());
 
     m_DispatcherBrokerData.SendMessageToSubscribers(&_mkdDepth, id, RT_MKT_DEPTH);
@@ -471,7 +470,7 @@ void IBComClientImpl::tickOptionComputation(TickerId tickerId, TickType tickType
 {
     COptionTickComputation optionTick(tickerId, tickType, impliedVol, delta, optPrice, pvDividend, gamma, vega, theta, undPrice);
 
-	qDebug("tickOptionComputation : tickerId = %d , tickType = %d, impliedVol = %f, delta = %f, optPrice = %f, pvDividend = %f, gamma = %f, vega = %f, theta = %f, undPrice = %f", 
+    qDebug("tickOptionComputation : tickerId = %ld , tickType = %d, impliedVol = %f, delta = %f, optPrice = %f, pvDividend = %f, gamma = %f, vega = %f, theta = %f, undPrice = %f",
 		tickerId, tickType, impliedVol, delta, optPrice, pvDividend, gamma, vega, theta, undPrice);
 
     m_DispatcherBrokerData.SendMessageToSubscribers(&optionTick, tickerId, RT_REQ_OPTION_PRICE);
@@ -484,7 +483,7 @@ void IBComClientImpl::tickOptionComputation(TickerId tickerId, TickType tickType
 void IBComClientImpl::tickEFP(TickerId tickerId, TickType tickType, double basisPoints, const std::string& formattedBasisPoints,
 	double totalDividends, int holdDays, const std::string& futureExpiry, double dividendImpact, double dividendsToExpiry)
 {
-	qDebug("tickEFP : tickerId = %d , tickType = %d, basisPoints = %f, formattedBasisPoints = %s, totalDividends =%f, holdDays = %d, futureExpiry = %s, dividendImpact = %f, dividendsToExpiry = %f",
+    qDebug("tickEFP : tickerId = %ld , tickType = %d, basisPoints = %f, formattedBasisPoints = %s, totalDividends =%f, holdDays = %d, futureExpiry = %s, dividendImpact = %f, dividendsToExpiry = %f",
 		tickerId, tickType, basisPoints, formattedBasisPoints.c_str(), totalDividends, holdDays, futureExpiry.c_str(), dividendImpact, dividendsToExpiry);
 	return;
 };
@@ -493,7 +492,7 @@ void IBComClientImpl::tickEFP(TickerId tickerId, TickType tickType, double basis
 //---------------------------------------------------------------
 void IBComClientImpl::nextValidId(OrderId orderId)
 {
-	qCDebug(IBComClientImplLog(), "nextValidId = %d \n", orderId);
+    qCDebug(IBComClientImplLog(), "nextValidId = %ld \n", orderId);
     m_nexValidId = orderId;
 	
     m_DispatcherBrokerData.SendMessageToSubscribers(&orderId, orderId, RT_NEXT_VALID_ID);
@@ -583,7 +582,7 @@ void IBComClientImpl::orderStatus( OrderId orderId, const std::string& status, d
 //---------------------------------------------------------------
 void IBComClientImpl::openOrder(OrderId orderId, const Contract& _contract, const Order& _order, const OrderState& _orderState)
 {
-    qCDebug(IBComClientImplLog(), "OpenOrder. ID: %d %s @ %s %s: %s, %s %f %s", orderId, _contract.symbol.c_str(), _contract.secType.c_str(), _contract.exchange.c_str(),
+    qCDebug(IBComClientImplLog(), "OpenOrder. ID: %ld %s @ %s %s: %s, %s %f %s", orderId, _contract.symbol.c_str(), _contract.secType.c_str(), _contract.exchange.c_str(),
         _order.action.c_str(), _order.orderType.c_str(), _order.totalQuantity, _orderState.status.c_str());
 }
 
@@ -644,7 +643,7 @@ void IBComClientImpl::historicalTicksLast(int reqId, const std::vector<Historica
     for (HistoricalTickLast tick : ticks) {
         timestamp.setTime_t(static_cast<quint32>(tick.time));
 
-        qCDebug(IBComClientImplLog(), "htlast id[%d] t[%s] p[%f] s[%d] e[%s] sc[%s] unrep[%d] pl[%d] \n",
+        qCDebug(IBComClientImplLog(), "htlast id[%d] t[%s] p[%f] s[%lld] e[%s] sc[%s] unrep[%d] pl[%d] \n",
                 reqId, timestamp.toString(Qt::SystemLocaleShortDate).toLocal8Bit().data(), tick.price, tick.size, tick.exchange.c_str(),
                 tick.specialConditions.c_str(), tick.tickAttribLast.unreported, tick.tickAttribLast.pastLimit);
 
@@ -679,7 +678,7 @@ void IBComClientImpl::tickByTickAllLast(int reqId, int tickType, time_t time, do
 
     timestamp.setTime_t(static_cast<quint32>(_tickbytick.getTimestamp()));
 
-    qCDebug(IBComClientImplLog(),"Tick-By-Tick. ReqId: %d, TickType: %s, Time: %s, Price: %g, Size: %d, PastLimit: %d, Unreported: %d, Exchange: %s, SpecialConditions:%s\n",
+    qCDebug(IBComClientImplLog(),"Tick-By-Tick. ReqId: %lld, TickType: %s, Time: %s, Price: %g, Size: %d, PastLimit: %d, Unreported: %d, Exchange: %s, SpecialConditions:%s\n",
             _tickbytick.getId(), (_tickbytick.getTickType() == 1 ? "Last" : "AllLast"),
             timestamp.toString(Qt::SystemLocaleLongDate).toLocal8Bit().data(),
             _tickbytick.getPrice(), _tickbytick.getSize(),

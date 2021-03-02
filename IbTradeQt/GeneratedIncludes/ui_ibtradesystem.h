@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'ibtradesystem.ui'
 **
-** Created by: Qt User Interface Compiler version 5.12.1
+** Created by: Qt User Interface Compiler version 5.15.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
 ********************************************************************************/
@@ -226,13 +226,13 @@ public:
 
     void retranslateUi(QMainWindow *IBTradeSystemClass)
     {
-        IBTradeSystemClass->setWindowTitle(QApplication::translate("IBTradeSystemClass", "IBTradeSystem V1", nullptr));
-        actionClear_Log->setText(QApplication::translate("IBTradeSystemClass", "Clear Log", nullptr));
-        pushButton->setText(QApplication::translate("IBTradeSystemClass", "Connect", nullptr));
-        pushButtonPairTrader->setText(QApplication::translate("IBTradeSystemClass", "Pair Trader", nullptr));
-        autoDeltaButton->setText(QApplication::translate("IBTradeSystemClass", "Auto Delta", nullptr));
-        pushButtonDBStore->setText(QApplication::translate("IBTradeSystemClass", "DBStore", nullptr));
-        menuclear_log->setTitle(QApplication::translate("IBTradeSystemClass", "options", nullptr));
+        IBTradeSystemClass->setWindowTitle(QCoreApplication::translate("IBTradeSystemClass", "IBTradeSystem V1", nullptr));
+        actionClear_Log->setText(QCoreApplication::translate("IBTradeSystemClass", "Clear Log", nullptr));
+        pushButton->setText(QCoreApplication::translate("IBTradeSystemClass", "Connect", nullptr));
+        pushButtonPairTrader->setText(QCoreApplication::translate("IBTradeSystemClass", "Pair Trader", nullptr));
+        autoDeltaButton->setText(QCoreApplication::translate("IBTradeSystemClass", "Auto Delta", nullptr));
+        pushButtonDBStore->setText(QCoreApplication::translate("IBTradeSystemClass", "DBStore", nullptr));
+        menuclear_log->setTitle(QCoreApplication::translate("IBTradeSystemClass", "options", nullptr));
     } // retranslateUi
 
 };

@@ -42,6 +42,10 @@ UI_DIR = $$PWD/GeneratedIncludes
 
 SOURCES += \
     CObjects/cdeltaobject.cpp \
+    Strategies/AutoDeltAlignment/src/CModelInputData.cpp \
+    Strategies/PairTrader/PairTradingGui.cpp \
+    Strategies/PairTrader/PairTradingPresenter.cpp \
+    Strategies/PairTrader/pairtraderpm.cpp \
     main.cpp \
     AboutDialog/aboutdialog.cpp \
     AboutDialog/AboutDlgPresener.cpp \
@@ -73,9 +77,6 @@ SOURCES += \
     Logger/MyLogger.cpp \
     MainSystem/cpresenter.cpp \
     MainSystem/ibtradesystem.cpp \
-    PairTrader/pairtraderpm.cpp \
-    PairTrader/PairTradingGui.cpp \
-    PairTrader/PairTradingPresenter.cpp \
     ReqManager/globalreqmanager.cpp \
     ReqManager/ReqManager.cpp \
     src/ContractCondition.cpp \
@@ -114,7 +115,11 @@ SOURCES += \
 
 HEADERS += \
     CObjects/cdeltaobject.h \
+    Strategies/AutoDeltAlignment/header/CModelInputData.h \
     Strategies/AutoDeltAlignment/header/autodeltatypes.h \
+    Strategies/PairTrader/PairTradingGui.h \
+    Strategies/PairTrader/PairTradingPresenter.h \
+    Strategies/PairTrader/pairtraderpm.h \
     baseimpl.h \
     AboutDialog/aboutdialog.h \
     AboutDialog/AboutDlgPresener.h \
@@ -155,9 +160,6 @@ HEADERS += \
     Logger/MyLogger.h \
     MainSystem/cpresenter.h \
     MainSystem/ibtradesystem.h \
-    PairTrader/pairtraderpm.h \
-    PairTrader/PairTradingGui.h \
-    PairTrader/PairTradingPresenter.h \
     ReqManager/globalreqmanager.h \
     ReqManager/ReqManager.h \
     Shared/bar.h \
@@ -226,9 +228,10 @@ HEADERS += \
 FORMS += \
     AboutDialog/aboutdialog.ui \
     MainSystem/ibtradesystem.ui \
-    PairTrader/pairtrading.ui \
+    Strategies/PairTrader/pairtrading.ui \
     Strategies/AutoDeltAlignment/autodeltaaligform.ui \
-    DBStore/dbstroreform.ui
+    DBStore/dbstroreform.ui \
+    Strategies/PairTrader/pairtrading.ui
 
 INCLUDEPATH += \
     $$PWD/Shared \
@@ -245,6 +248,7 @@ INCLUDEPATH += \
     $$PWD/AlphaModelGetTime \
     $$PWD/AboutDialog \
     $$PWD/Strategies/AutoDeltAlignment/header\
+    $$PWD/Strategies/PairTrader\
     $$PWD/GeneratedIncludes \
     $$PWD/DBStore
 

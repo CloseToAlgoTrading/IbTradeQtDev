@@ -17,7 +17,8 @@ namespace IBDataTypes
             , m_avgCost(0)
         {}
 
-        CPositionData(const CPositionData &other) : m_account(other.m_account)
+        CPositionData(const CPositionData &other) : QSharedData(other)
+            , m_account(other.m_account)
             , m_contract(other.m_contract)
             , m_pos(other.m_pos)
             , m_avgCost(other.m_avgCost)

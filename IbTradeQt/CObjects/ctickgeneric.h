@@ -17,7 +17,8 @@ namespace IBDataTypes
             , timestamp(0)
         {}
 
-        CTickGenericData(const CTickGenericData &other) : id(other.id)
+        CTickGenericData(const CTickGenericData &other) : QSharedData(other)
+            , id(other.id)
             , tickType(other.tickType)
             , value(other.value)
             , timestamp(other.timestamp)

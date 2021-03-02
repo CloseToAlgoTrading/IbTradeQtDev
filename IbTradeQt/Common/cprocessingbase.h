@@ -160,8 +160,10 @@ signals:
     void signalMessageHandler(void* pContext, tEReqType _reqType);
     void signalRecvOptionTickComputation(const COptionTickComputation & obj);
     void signalEndRecvPosition();
-    void signalRecvOrderCommission(const qreal & obj, const qreal &_rpnl);
+    void signalRecvOrderCommission(const qreal & obj, const qreal & _rpnl);
     void signalRestartSubscription();
+
+//    void signalRecvRealTimeBar(const RealTimeBarMap_t & _realTimeBar, const TickerId & _id);
 
     void signalTest();
 

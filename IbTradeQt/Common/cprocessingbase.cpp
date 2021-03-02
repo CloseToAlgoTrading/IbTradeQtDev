@@ -348,13 +348,15 @@ void CProcessingBase::UnsubscribeHandler()
 //----------------------------------------------------------
 void CProcessingBase::recvHistoricalData(void* pContext, tEReqType _reqType)
 {
+    Q_UNUSED(_reqType)
+
     //QString a = QThread::currentThread()->objectName();
     //qCDebug(processingBaseLog(), "---> %s", a.toLocal8Bit().data());
     CHistoricalData *_pHistoricalData = (CHistoricalData *)pContext;
 
     QString retSymbol = getSymbolFromRM(_pHistoricalData->getId(), RT_HISTORICAL_DATA);
 
-    qCDebug(processingBaseLog(), "[%s] tickerId = %d , date = %d, open = %f, high = %f, low =%f, close = %f, volume = %d, barCount = %d, WAP = %f, hasGaps = %d", retSymbol.toLocal8Bit().data(),
+    qCDebug(processingBaseLog(), "[%s] tickerId = %ld , date = %d, open = %f, high = %f, low =%f, close = %f, volume = %f, barCount = %d, WAP = %f, hasGaps = %d", retSymbol.toLocal8Bit().data(),
         _pHistoricalData->getId(), _pHistoricalData->getDateTime(), _pHistoricalData->getOpen(), _pHistoricalData->getHigh(), _pHistoricalData->getLow(),
         _pHistoricalData->getClose(), _pHistoricalData->getVolume(), _pHistoricalData->getCount(), _pHistoricalData->getWap(), _pHistoricalData->getHasGaps());
 
@@ -378,7 +380,7 @@ void CProcessingBase::recvHistoricalData(void* pContext, tEReqType _reqType)
             // temp
             // signalOnFinishHistoricalData(it->listHistData, retSymbol);
             //calllback_recvHistoricalData(it->listHistData, retSymbol);
-            signalCbkRecvHistoricalData(it->listHistData, retSymbol);
+            emit signalCbkRecvHistoricalData(it->listHistData, retSymbol);
         }
         else
         {
@@ -425,22 +427,26 @@ void CProcessingBase::recvHistoricalData(void* pContext, tEReqType _reqType)
 //----------------------------------------------------------
 void CProcessingBase::recvTickSize(void* pContext, tEReqType _reqType)
 {
+    Q_UNUSED(_reqType)
+
     CTickSize *_pTickSize = (CTickSize *)pContext;
     m_tickSizeMap.insert(_pTickSize->getId(), *_pTickSize);
 
-    qCDebug(processingBaseLog(), "id = %d", _pTickSize->getId());
+    qCDebug(processingBaseLog(), "id = %ld", _pTickSize->getId());
 
 }
 
 //----------------------------------------------------------
 void CProcessingBase::recvTickPrize(void* pContext, tEReqType _reqType)
 {
+    Q_UNUSED(_reqType)
+
     IBDataTypes::CMyTickPrice* _pTickPrice = (IBDataTypes::CMyTickPrice *)pContext;
     m_tickPriceMap.insert(_pTickPrice->getId(), *_pTickPrice);
 
     QString retSymbol = getSymbolFromRM(_pTickPrice->getId());
 
-    qCDebug(processingBaseLog(), "id = %d, price = %f", __FUNCTION__, _pTickPrice->getId(), _pTickPrice->getPrice());
+    qCDebug(processingBaseLog(), "(%s) id = %ld, price = %f", __FUNCTION__, _pTickPrice->getId(), _pTickPrice->getPrice());
 
     IBDataTypes::CMyTickPrice dd(*_pTickPrice);
     
@@ -453,11 +459,15 @@ void CProcessingBase::recvTickPrize(void* pContext, tEReqType _reqType)
 //----------------------------------------------------------
 void CProcessingBase::recvRealtimeBar(void* pContext, tEReqType _reqType)
 {
+    Q_UNUSED(_reqType)
+
     CrealtimeBar *_pRealTimeBar = (CrealtimeBar *)pContext;
     m_realTImeBarMap.insert(_pRealTimeBar->getId(), *_pRealTimeBar);
 
     qCDebug(processingBaseLog(), "executed");
     calculateOneMinBar(m_realTImeBarMap, _pRealTimeBar->getId());
+
+
 }
 
 //----------------------------------------------------------
@@ -473,7 +483,7 @@ void CProcessingBase::recvMktDepth(void* pContext, tEReqType _reqType)
     CMktDepth *_pMKDepth = static_cast<CMktDepth *>(pContext);
     m_mkDepthMap.insert(_pMKDepth->getId(), *_pMKDepth);
 
-    qCDebug(processingBaseLog(), "id = %d", _pMKDepth->getId());
+    qCDebug(processingBaseLog(), "id = %ld", _pMKDepth->getId());
 }
 
 //----------------------------------------------------------

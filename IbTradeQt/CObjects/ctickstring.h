@@ -18,7 +18,8 @@ namespace IBDataTypes
             , timestamp(0)
         {}
 
-        CTickStringData(const CTickStringData &other) : id(other.id)
+        CTickStringData(const CTickStringData &other) : QSharedData(other)
+            , id(other.id)
             , tickType(other.tickType)
             , value(other.value)
             , timestamp(other.timestamp)
@@ -50,7 +51,7 @@ namespace IBDataTypes
 
         ~CTickString(){}
 
-        CTickString(const CTickString& other){
+        CTickString(const CTickString& other) : QObject(this) {
             d = other.d;
         }
 

@@ -7,6 +7,7 @@
 #include <QtConcurrent/QtConcurrentRun>
 #include "contractsdefs.h"
 #include <QTime>
+#include <QNetworkReply>
 
 Q_LOGGING_CATEGORY(autoDeltaAligPMLog, "AutoDeltaAlig.PM");
 
@@ -24,9 +25,16 @@ autoDeltaAligPM::autoDeltaAligPM(QObject *parent, CBrokerDataProvider & _refClie
     , m_IsOrderBusy(false)
     , m_GuiInfo()
 //    , m_pTimer(new QTimer(this))
+    , m_modelInput(3u) //Model needs 3 days, but we will fill with 4, because we need 4 day for correct preprocessing
+    //, m_networkManager()
     , startWorkingTime(START_H,START_M,START_S)
     , endWorkingTime(END_H,END_M,END_S)
+    , m_sem(1)
+    , request(QNetworkRequest(QUrl("http://localhost:49154/predict")))
 {
+
+      this->request.setRawHeader("Content-Type","application/json");
+
       QObject::connect(this, &CProcessingBase::signalRecvOptionTickComputation, this, &autoDeltaAligPM::slotRecvOptionTickComputation, Qt::QueuedConnection);
       QObject::connect(this, &CProcessingBase::signalEndRecvPosition, this, &autoDeltaAligPM::slotEndRecvPosition, Qt::QueuedConnection);
 
@@ -35,6 +43,10 @@ autoDeltaAligPM::autoDeltaAligPM(QObject *parent, CBrokerDataProvider & _refClie
       QObject::connect(this, &CProcessingBase::signalRestartSubscription, this, &autoDeltaAligPM::slotRestartSubscription, Qt::QueuedConnection);
 
 //      QObject::connect(m_pTimer.data(), &QTimer::timeout, this, &autoDeltaAligPM::slotTimerTriggered, Qt::QueuedConnection);
+
+      QObject::connect(&m_networkManager, &QNetworkAccessManager::finished, this, &autoDeltaAligPM::onManagerFinished);
+
+      QObject::connect(this, &autoDeltaAligPM::signalPostRequest, this, &autoDeltaAligPM::slotPostRequest);
 
 }
 
@@ -78,7 +90,7 @@ void autoDeltaAligPM::startStrategy(const tAutoDeltaOptDataType &_opt, const qin
         reqestRealTimeData(optCfg);
 
 
-        //requestRealTimeBars(s1);
+        requestRealTimeBars(m_TicketName);
 
         m_delta.resetDelta();
         requestPosition();
@@ -88,6 +100,18 @@ void autoDeltaAligPM::startStrategy(const tAutoDeltaOptDataType &_opt, const qin
 
         //dbc.connectDB();
 
+        //CModelInputData test_data(3);
+/*
+        this->m_modelInput.addObservation({1.0,0.0}, {110.11,0.12,0.11,0.23,0.444});
+        this->m_modelInput.addObservation({0.0,1.0}, {100.11,1.12,1.11,1.23,1.444});
+
+        QNetworkRequest request = QNetworkRequest(QUrl("http://localhost:49153/predict"));
+        request.setRawHeader("Content-Type","application/json");
+
+        QByteArray ba = this->m_modelInput.toJson();
+        this->m_networkManager.post(request, ba);
+*/
+        this->m_networkManager.post(this->request, this->m_modelInput.toJson());
         reqestOrderStatusSubscription();
     }
     else {
@@ -286,6 +310,25 @@ void autoDeltaAligPM::slotTmpSendOrderSell()
     requestPlaceMarketOrder("NVDA", 10.0, OA_SELL);
 }
 
+void autoDeltaAligPM::onManagerFinished(QNetworkReply *reply)
+{
+    if (reply->error() != QNetworkReply::NoError)
+    {
+        qDebug() << reply->errorString();
+        reply->deleteLater();
+        return;
+    }
+    QByteArray  content = reply->readAll();
+
+    qCDebug(autoDeltaAligPMLog, "-----------------------------------> %s", QString(content).toLocal8Bit().data());
+
+}
+
+void autoDeltaAligPM::slotPostRequest()
+{
+    this->m_networkManager.post(this->request, this->m_modelInput.toJson());
+}
+
 //----------------------------------------------------------
 //void autoDeltaAligPM::slotTimerTriggered()
 //{
@@ -319,6 +362,28 @@ void autoDeltaAligPM::callback_recvPositionEnd()
 
 //    QFuture<void> future = QtConcurrent::run(this, &autoDeltaAligPM::TestFunc);
     TestFunc();
+}
+
+void autoDeltaAligPM::recvRealtimeBar(void *pContext, tEReqType _reqType)
+{
+    Q_UNUSED(_reqType)
+    //m_sem.acquire(1);
+    if((NULL != pContext))
+    {
+        CrealtimeBar *_pRealTimeBar = (CrealtimeBar *)pContext;
+
+        //Open	High	Low	Close	Volume
+        this->m_modelInput.addObservation(
+                    {0.0, 0.0},  // we don't need any previous information about position here
+                    {_pRealTimeBar->getOpen(),
+                     _pRealTimeBar->getHigh(),
+                     _pRealTimeBar->getLow(),
+                     _pRealTimeBar->getClose(),
+                     _pRealTimeBar->getVolume()});
+
+        emit signalPostRequest();
+    }
+    //m_sem.release(1);
 }
 
 void autoDeltaAligPM::TestFunc()

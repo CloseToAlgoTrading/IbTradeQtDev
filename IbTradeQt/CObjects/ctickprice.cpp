@@ -8,7 +8,7 @@ CMyTickPrice::CMyTickPrice()
     
 }
 
-CMyTickPrice::CMyTickPrice(TickerId _id, TickType _tickType, qreal _price, qint32 _canAutoExecute, qint64 _timestamp /*= 0/*, QObject *parent = 0*/)
+CMyTickPrice::CMyTickPrice(TickerId _id, TickType _tickType, qreal _price, qint32 _canAutoExecute, qint64 _timestamp)
     : d(new CTickPriceData)
 {
     setId(_id);

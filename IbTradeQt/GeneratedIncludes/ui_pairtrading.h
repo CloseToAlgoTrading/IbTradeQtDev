@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'pairtrading.ui'
 **
-** Created by: Qt User Interface Compiler version 5.15.0
+** Created by: Qt User Interface Compiler version 5.15.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
 ********************************************************************************/
@@ -105,7 +105,7 @@ public:
         groupBox_2->setMinimumSize(QSize(0, 82));
         pushButtonRemoveSelected = new QPushButton(groupBox_2);
         pushButtonRemoveSelected->setObjectName(QString::fromUtf8("pushButtonRemoveSelected"));
-        pushButtonRemoveSelected->setGeometry(QRect(264, 50, 111, 23));
+        pushButtonRemoveSelected->setGeometry(QRect(244, 50, 131, 23));
         layoutWidget = new QWidget(groupBox_2);
         layoutWidget->setObjectName(QString::fromUtf8("layoutWidget"));
         layoutWidget->setGeometry(QRect(20, 20, 355, 27));

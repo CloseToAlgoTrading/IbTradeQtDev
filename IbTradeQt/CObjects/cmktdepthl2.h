@@ -15,7 +15,8 @@ namespace IBDataTypes
         CMktDepthL2Data() : marketMaker("")
         {}
 
-        CMktDepthL2Data(const CMktDepthL2Data &other) : marketMaker(other.marketMaker)
+        CMktDepthL2Data(const CMktDepthL2Data &other) : QSharedData(other)
+            , marketMaker(other.marketMaker)
         {}
 
         ~CMktDepthL2Data(){}
@@ -34,7 +35,7 @@ namespace IBDataTypes
         CMktDepthL2(TickerId _id, qint32 _position, QString _marketMaker, qint32 _operation, qint32 _side, qreal _price, qint32 _size, qint64 _timestamp = 0);
         ~CMktDepthL2(){};
 
-        CMktDepthL2(const CMktDepthL2& other){
+        CMktDepthL2(const CMktDepthL2& other):CMktDepth(other){
             this->setMktDeptDataSharedPointer(other.getMktDeptDataSharedPointer());
             d = other.d;
         }

@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'autodeltaaligform.ui'
 **
-** Created by: Qt User Interface Compiler version 5.12.2
+** Created by: Qt User Interface Compiler version 5.15.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
 ********************************************************************************/
@@ -163,22 +163,22 @@ public:
 
     void retranslateUi(QWidget *AutoDeltaAligForm)
     {
-        AutoDeltaAligForm->setWindowTitle(QApplication::translate("AutoDeltaAligForm", "AutoDeltaHedge", nullptr));
-        label->setText(QApplication::translate("AutoDeltaAligForm", "Ticker:", nullptr));
-        lineEdit_Ticket->setText(QApplication::translate("AutoDeltaAligForm", "SPY", nullptr));
-        label_delta->setText(QApplication::translate("AutoDeltaAligForm", "Delta:", nullptr));
-        label_2->setText(QApplication::translate("AutoDeltaAligForm", "P/L:", nullptr));
-        label_3->setText(QApplication::translate("AutoDeltaAligForm", "Order:", nullptr));
-        label_4->setText(QApplication::translate("AutoDeltaAligForm", "Com:", nullptr));
-        dateEditExpire->setDisplayFormat(QApplication::translate("AutoDeltaAligForm", "dd.MM.yyyy", nullptr));
-        label_5->setText(QApplication::translate("AutoDeltaAligForm", "Opt. delta:", nullptr));
-        label_6->setText(QApplication::translate("AutoDeltaAligForm", "Basis delta:", nullptr));
-        label_7->setText(QApplication::translate("AutoDeltaAligForm", "Delta sum:", nullptr));
-        checkBox_OptionType->setText(QApplication::translate("AutoDeltaAligForm", "Call", nullptr));
-        checkBox_isBuy->setText(QApplication::translate("AutoDeltaAligForm", "Buy", nullptr));
-        buttonStartStop->setText(QApplication::translate("AutoDeltaAligForm", "Start", nullptr));
-        pushButton_Sell->setText(QApplication::translate("AutoDeltaAligForm", "Sell", nullptr));
-        pushButton_Buy->setText(QApplication::translate("AutoDeltaAligForm", "Buy", nullptr));
+        AutoDeltaAligForm->setWindowTitle(QCoreApplication::translate("AutoDeltaAligForm", "AutoDeltaHedge", nullptr));
+        label->setText(QCoreApplication::translate("AutoDeltaAligForm", "Ticker:", nullptr));
+        lineEdit_Ticket->setText(QCoreApplication::translate("AutoDeltaAligForm", "SPY", nullptr));
+        label_delta->setText(QCoreApplication::translate("AutoDeltaAligForm", "Delta:", nullptr));
+        label_2->setText(QCoreApplication::translate("AutoDeltaAligForm", "P/L:", nullptr));
+        label_3->setText(QCoreApplication::translate("AutoDeltaAligForm", "Order:", nullptr));
+        label_4->setText(QCoreApplication::translate("AutoDeltaAligForm", "Com:", nullptr));
+        dateEditExpire->setDisplayFormat(QCoreApplication::translate("AutoDeltaAligForm", "dd.MM.yyyy", nullptr));
+        label_5->setText(QCoreApplication::translate("AutoDeltaAligForm", "Opt. delta:", nullptr));
+        label_6->setText(QCoreApplication::translate("AutoDeltaAligForm", "Basis delta:", nullptr));
+        label_7->setText(QCoreApplication::translate("AutoDeltaAligForm", "Delta sum:", nullptr));
+        checkBox_OptionType->setText(QCoreApplication::translate("AutoDeltaAligForm", "Call", nullptr));
+        checkBox_isBuy->setText(QCoreApplication::translate("AutoDeltaAligForm", "Buy", nullptr));
+        buttonStartStop->setText(QCoreApplication::translate("AutoDeltaAligForm", "Start", nullptr));
+        pushButton_Sell->setText(QCoreApplication::translate("AutoDeltaAligForm", "Sell", nullptr));
+        pushButton_Buy->setText(QCoreApplication::translate("AutoDeltaAligForm", "Buy", nullptr));
     } // retranslateUi
 
 };

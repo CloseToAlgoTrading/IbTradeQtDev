@@ -6,6 +6,10 @@
 #include "autodeltatypes.h"
 #include <QTimer>
 #include <QSharedPointer>
+#include "CModelInputData.h"
+#include <QNetworkAccessManager>
+#include <QSemaphore>
+#include <QNetworkRequest>
 
 Q_DECLARE_LOGGING_CATEGORY(autoDeltaAligPMLog);
 
@@ -33,8 +37,14 @@ private:
     tAutoDeltaOptDataType m_GuiInfo;
     //QSharedPointer<QTimer> m_pTimer;
 
+    CModelInputData m_modelInput;
+    QNetworkAccessManager m_networkManager;
+
     const QTime startWorkingTime;
     const QTime endWorkingTime;
+
+    QSemaphore m_sem;
+    QNetworkRequest request;
 
 private:
     void startStrategy(const tAutoDeltaOptDataType & _opt, const qint32 &_delta);
@@ -55,9 +65,11 @@ public slots:
     void slotTmpSendOrderBuy();
     void slotTmpSendOrderSell();
 
+    void onManagerFinished(QNetworkReply *reply);
+
     //void slotTimerTriggered();
 
-
+    void slotPostRequest();
 
 signals:
     void signalOnRealTimeTickData(const IBDataTypes::CMyTickPrice & _pT, const QString _s2);
@@ -68,11 +80,15 @@ signals:
     void signalUpdateCommissionGUI(const qreal _val);
     void signalUpdateRPNLGUI(double _val);
 
+    void signalPostRequest();
+
 
 public:
     void callback_recvTickPrize(const IBDataTypes::CMyTickPrice _tickPrize, const QString& _symbol) override;
     void calllback_recvHistoricalData(const QList<IBDataTypes::CHistoricalData> & _histMap, const QString& _symbol) override;
     void callback_recvPositionEnd() override;
+
+    void recvRealtimeBar(void* pContext, tEReqType _reqType) override;
 
     void TestFunc();
 

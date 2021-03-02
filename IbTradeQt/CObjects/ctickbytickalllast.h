@@ -22,7 +22,8 @@ namespace IBDataTypes
           , specialConditions()
         {}
 
-        CTickByTickAllLastData(const CTickByTickAllLastData &other) : reqId(other.reqId)
+        CTickByTickAllLastData(const CTickByTickAllLastData &other) : QSharedData(other)
+            , reqId(other.reqId)
             , tickType(other.tickType)
             , time(other.time)
             , price(other.price)

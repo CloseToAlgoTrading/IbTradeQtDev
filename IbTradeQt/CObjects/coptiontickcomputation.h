@@ -27,7 +27,8 @@ namespace IBDataTypes
           , undPrice(0)
         {}
 
-        COptionTickComputationData(const COptionTickComputationData &other) : tickerId(other.tickerId)
+        COptionTickComputationData(const COptionTickComputationData &other) : QSharedData(other)
+          , tickerId(other.tickerId)
           , field(other.field)
           , impliedVolatility(other.impliedVolatility)
           , delta(other.delta)

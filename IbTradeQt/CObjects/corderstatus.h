@@ -23,7 +23,8 @@ namespace IBDataTypes
             , m_whyHeld("")
         {}
 
-        COrderStatusData(const COrderStatusData &other) : m_id(other.m_id)
+        COrderStatusData(const COrderStatusData &other) : QSharedData(other)
+            , m_id(other.m_id)
             , m_status(other.m_status)
             , m_filled(other.m_filled)
             , m_remaining(other.m_remaining)

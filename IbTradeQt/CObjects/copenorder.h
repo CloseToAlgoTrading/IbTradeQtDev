@@ -23,7 +23,8 @@ namespace IBDataTypes
             , m_orderState()
         {}
 
-        COpenOrderData(const COpenOrderData &other) : m_orderID(other.m_orderID)
+        COpenOrderData(const COpenOrderData &other) : QSharedData(other)
+            , m_orderID(other.m_orderID)
             , m_contract(other.m_contract)
             , m_order(other.m_order)
             , m_orderState(other.m_orderState)

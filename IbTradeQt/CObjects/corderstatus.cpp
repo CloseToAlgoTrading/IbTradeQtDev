@@ -20,7 +20,7 @@ COrderStatus::COrderStatus(qint32 _id, QString _status, qint32 _filled, qreal _r
     setParentId(_parentId);
     setLastFilledPrice(_lastFilledPrice);
     setClientId(_clientId);
-    setWhyHeld("");
+    setWhyHeld(_whyHeld);
 }
 
 COrderStatus & COrderStatus::operator=(const COrderStatus &other)

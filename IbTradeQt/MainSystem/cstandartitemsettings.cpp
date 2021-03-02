@@ -104,7 +104,7 @@ QStandardItem *CStandartItemSettings::createCheckableDataItem(const Qt::CheckSta
 {
     QStandardItem *_Item = new QStandardItem();
     _Item->setBackground(_brush);
-    _Item->setFlags(_Item->flags() & (~Qt::ItemFlag::ItemIsEditable) | (Qt::ItemFlag::ItemIsUserCheckable));
+    _Item->setFlags(_Item->flags() & ((~Qt::ItemFlag::ItemIsEditable) | (Qt::ItemFlag::ItemIsUserCheckable)));
     _Item->setCheckable(true);
     _Item->setCheckState(_isChecked);
     return _Item;

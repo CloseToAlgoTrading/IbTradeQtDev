@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'aboutdialog.ui'
 **
-** Created by: Qt User Interface Compiler version 5.12.1
+** Created by: Qt User Interface Compiler version 5.15.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
 ********************************************************************************/
@@ -37,8 +37,8 @@ public:
 
     void retranslateUi(QWidget *AboutDialog)
     {
-        AboutDialog->setWindowTitle(QApplication::translate("AboutDialog", "AboutDialog", nullptr));
-        closeButton->setText(QApplication::translate("AboutDialog", "Close", nullptr));
+        AboutDialog->setWindowTitle(QCoreApplication::translate("AboutDialog", "AboutDialog", nullptr));
+        closeButton->setText(QCoreApplication::translate("AboutDialog", "Close", nullptr));
     } // retranslateUi
 
 };

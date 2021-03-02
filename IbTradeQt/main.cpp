@@ -12,6 +12,12 @@
 #define QT_LOGGING_DEBUG 1
 int main(int argc, char *argv[])
 {
+    QFont font("Courier New", 8);
+    font.setStyleHint(QFont::Monospace);
+    QApplication::setFont(font);
+
+   // QLocale::setDefault(QLocale(QLocale::English, QLocale::RussianFederation));
+
 	QApplication a(argc, argv);
 
     QString ss = QCoreApplication::applicationDirPath();
