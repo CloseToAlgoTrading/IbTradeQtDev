@@ -22,7 +22,7 @@
 Q_DECLARE_LOGGING_CATEGORY(cQChartLog);
 
 using namespace IBDataTypes;
-using namespace QtCharts;
+//using namespace QtCharts;
 class CLineQChart : public QWidget
 {
     Q_OBJECT
