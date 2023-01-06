@@ -36,7 +36,7 @@ DEFINES += GIT_VERSION=\\\"$$GIT_VERSION\\\"
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
-CONFIG += c++14
+CONFIG += c++11
 
 UI_DIR = $$PWD/GeneratedIncludes
 
@@ -99,6 +99,7 @@ SOURCES += \
     src/StdAfx.cpp \
     src/TimeCondition.cpp \
     src/VolumeCondition.cpp \
+    src/EOrderDecoder.cpp \
     Strategies/AutoDeltAlignment/src/AutoDeltAlignmentGUI.cpp \
     Strategies/AutoDeltAlignment/src/AutoDeltAlignmentPresenter.cpp \
     Strategies/AutoDeltAlignment/src/AutoDeltAlignmentProcessing.cpp \
@@ -200,9 +201,7 @@ HEADERS += \
     Shared/PercentChangeCondition.h \
     Shared/PriceCondition.h \
     Shared/PriceIncrement.h \
-    Shared/Resource.h \
     Shared/ScannerSubscription.h \
-    Shared/shared_ptr.h \
     Shared/SoftDollarTier.h \
     Shared/StdAfx.h \
     Shared/TagValue.h \
@@ -212,6 +211,13 @@ HEADERS += \
     Shared/TimeCondition.h \
     Shared/TwsSocketClientErrors.h \
     Shared/VolumeCondition.h \
+    Shared/Decimal.h \
+    Shared/EClientException.h \
+    Shared/EOrderDecoder.h \
+    Shared/HistoricalSession.h \
+    Shared/platformspecific.h \
+    Shared/resource.h \
+    Shared/WshEventData.h \
     Strategies/AutoDeltAlignment/header/AutoDeltAlignmentGUI.h \
     Strategies/AutoDeltAlignment/header/AutoDeltAlignmentPresenter.h \
     Strategies/AutoDeltAlignment/header/AutoDeltAlignmentProcessing.h \
@@ -269,6 +275,8 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
       QMAKE_CXXFLAGS += -MP
   }
 
+QMAKE-CXXFLAGS += -pthread -Wall -Wno-switch -Wno-unused-function -std=c++11 -shared -fPIC
+
 SUBDIRS += \
     ibtrading.pro
 
@@ -277,3 +285,12 @@ RESOURCES += \
 
 DISTFILES += \
     doc/mainClass.wsd
+
+
+unix:!macx|win32: LIBS += -L$$PWD/Libs/ -lbid
+
+INCLUDEPATH += $$PWD/Libs
+DEPENDPATH += $$PWD/Libs
+
+win32:!win32-g++: PRE_TARGETDEPS += $$PWD/Libs/bid.lib
+else:unix:!macx|win32-g++: PRE_TARGETDEPS += $$PWD/Libs/libbid.a

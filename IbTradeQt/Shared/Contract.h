@@ -1,4 +1,4 @@
-/* Copyright (C) 2018 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+﻿/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 #pragma once
@@ -6,6 +6,7 @@
 #define TWS_API_CLIENT_CONTRACT_H
 
 #include "TagValue.h"
+#include "Decimal.h"
 
 /*
 	SAME_POS    = open/close leg value is same as combo
@@ -92,6 +93,8 @@ struct Contract
 	bool		includeExpired;
 	std::string	secIdType;		// CUSIP;SEDOL;ISIN;RIC
 	std::string	secId;
+	std::string description;
+	std::string issuerId;
 
 	// COMBOS
 	std::string comboLegsDescrip; // received in open order 14 and up for all combos
@@ -118,6 +121,9 @@ struct ContractDetails
 		, priceMagnifier(0)
 		, underConId(0)
 		, evMultiplier(0)
+		, minSize(UNSET_DECIMAL)
+		, sizeIncrement(UNSET_DECIMAL)
+		, suggestedSizeIncrement(UNSET_DECIMAL)
 		, callable(false)
 		, putable(false)
 		, coupon(0)
@@ -143,13 +149,16 @@ struct ContractDetails
 	std::string	liquidHours;
 	std::string	evRule;
 	double		evMultiplier;
-	int			mdSizeMultiplier;
 	int			aggGroup;
 	std::string	underSymbol;
 	std::string	underSecType;
 	std::string marketRuleIds;
 	std::string realExpirationDate;
 	std::string lastTradeTime;
+	std::string stockType;
+	Decimal		minSize;
+	Decimal		sizeIncrement;
+	Decimal		suggestedSizeIncrement;
 
 	TagValueListSPtr secIdList;
 

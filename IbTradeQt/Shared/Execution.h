@@ -1,4 +1,4 @@
-﻿/* Copyright (C) 2018 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+﻿/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 #pragma once
@@ -6,6 +6,7 @@
 #define TWS_API_CLIENT_EXECUTION_H
 
 #include <string>
+#include "Decimal.h"
 
 struct Execution
 {
@@ -27,13 +28,13 @@ struct Execution
 	std::string	acctNumber;
 	std::string	exchange;
 	std::string	side;
-	double		shares;
+	Decimal 	shares;
 	double		price;
 	int			permId;
 	long		clientId;
 	long		orderId;
 	int			liquidation;
-	double			cumQty;
+	Decimal		cumQty;
 	double		avgPrice;
 	std::string	orderRef;
 	std::string	evRule;

@@ -1,4 +1,4 @@
-﻿/* Copyright (C) 2018 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 #pragma once
@@ -8,12 +8,16 @@
 #include "TagValue.h"
 #include "OrderCondition.h"
 #include "SoftDollarTier.h"
-
+#include "Decimal.h"
 #include <float.h>
 #include <limits.h>
 
+#include <cmath>
+
 #define UNSET_DOUBLE DBL_MAX
 #define UNSET_INTEGER INT_MAX
+#define UNSET_LONG LLONG_MAX
+#define COMPETE_AGAINST_BEST_OFFSET_UP_TO_MID INFINITY
 
 enum Origin { CUSTOMER,
               FIRM,
@@ -23,6 +27,10 @@ enum AuctionStrategy { AUCTION_UNSET = 0,
                        AUCTION_MATCH = 1,
                        AUCTION_IMPROVEMENT = 2,
                        AUCTION_TRANSPARENT = 3 };
+
+enum UsePriceMmgtAlgo { DONT_USE = 0,
+                        USE,
+                        DEFAULT = UNSET_INTEGER };
 
 struct OrderComboLeg
 {
@@ -43,162 +51,42 @@ typedef std::shared_ptr<OrderComboLeg> OrderComboLegSPtr;
 
 struct Order
 {
-	Order() :
-		softDollarTier("", "", "")
-	{
-		// order identifier
-		orderId  = 0;
-		clientId = 0;
-		permId   = 0;
-
-		// main order fields
-		totalQuantity = 0;
-		lmtPrice      = UNSET_DOUBLE;
-		auxPrice      = UNSET_DOUBLE;
-
-		// extended order fields
-		activeStartTime = "";
-		activeStopTime = "";
-		ocaType        = 0;
-		transmit       = true;
-		parentId       = 0;
-		blockOrder     = false;
-		sweepToFill    = false;
-		displaySize    = 0;
-		triggerMethod  = 0;
-		outsideRth     = false;
-		hidden         = false;
-		allOrNone      = false;
-		minQty         = UNSET_INTEGER;
-		percentOffset  = UNSET_DOUBLE;
-		overridePercentageConstraints = false;
-		trailStopPrice = UNSET_DOUBLE;
-		trailingPercent = UNSET_DOUBLE;
-
-		// institutional (ie non-cleared) only
-		openClose     = "O";
-		origin        = CUSTOMER;
-		shortSaleSlot = 0;
-		exemptCode    = -1;
-
-		// SMART routing only
-		discretionaryAmt = 0;
-		eTradeOnly       = true;
-		firmQuoteOnly    = true;
-		nbboPriceCap     = UNSET_DOUBLE;
-		optOutSmartRouting = false;
-
-		// BOX exchange orders only
-		auctionStrategy = AUCTION_UNSET;
-		startingPrice   = UNSET_DOUBLE;
-		stockRefPrice   = UNSET_DOUBLE;
-		delta           = UNSET_DOUBLE;
-
-		// pegged to stock and VOL orders only
-		stockRangeLower = UNSET_DOUBLE;
-		stockRangeUpper = UNSET_DOUBLE;
-
-        randomizePrice = false;
-        randomizeSize = false;
-
-		// VOLATILITY ORDERS ONLY
-		volatility            = UNSET_DOUBLE;
-		volatilityType        = UNSET_INTEGER;     // 1=daily, 2=annual
-		deltaNeutralOrderType = "";
-		deltaNeutralAuxPrice  = UNSET_DOUBLE;
-		deltaNeutralConId     = 0;
-		deltaNeutralSettlingFirm = "";
-		deltaNeutralClearingAccount = "";
-		deltaNeutralClearingIntent = "";
-		deltaNeutralOpenClose = "";
-		deltaNeutralShortSale = false;
-		deltaNeutralShortSaleSlot = 0;
-		deltaNeutralDesignatedLocation = "";
-		continuousUpdate      = false;
-		referencePriceType    = UNSET_INTEGER; // 1=Average, 2 = BidOrAsk
-
-		// COMBO ORDERS ONLY
-		basisPoints     = UNSET_DOUBLE;  // EFP orders only
-		basisPointsType = UNSET_INTEGER; // EFP orders only
-
-		// SCALE ORDERS ONLY
-		scaleInitLevelSize  = UNSET_INTEGER;
-		scaleSubsLevelSize  = UNSET_INTEGER;
-		scalePriceIncrement = UNSET_DOUBLE;
-		scalePriceAdjustValue = UNSET_DOUBLE;
-		scalePriceAdjustInterval = UNSET_INTEGER;
-		scaleProfitOffset = UNSET_DOUBLE;
-		scaleAutoReset = false;
-		scaleInitPosition = UNSET_INTEGER;
-		scaleInitFillQty = UNSET_INTEGER;
-		scaleRandomPercent = false;
-		scaleTable = "";
-
-		// What-if
-		whatIf = false;
-
-		// Not Held
-		notHeld = false;
-		solicited = false;
-
-		triggerPrice = UNSET_DOUBLE;
-		adjustedStopPrice = UNSET_DOUBLE;
-		adjustedStopLimitPrice = UNSET_DOUBLE;
-		adjustedTrailingAmount = UNSET_DOUBLE;
-		lmtPriceOffset = UNSET_DOUBLE;
-		extOperator = "";
-
-		// native cash quantity
-		cashQty = UNSET_DOUBLE;
-
-        mifid2DecisionMaker = "";
-        mifid2DecisionAlgo = "";
-        mifid2ExecutionTrader = "";
-        mifid2ExecutionAlgo = "";
-
-		// don't use auto price for hedge
-		dontUseAutoPriceForHedge = false;
-
-        isOmsContainer = false;
-        discretionaryUpToLimitPrice = false;
-	}
-
 	// order identifier
-	long     orderId;
-	long     clientId;
-	int      permId;
+	long     orderId = 0;
+	long     clientId = 0;
+	int      permId = 0;
 
 	// main order fields
 	std::string action;
-	double     totalQuantity;
+	Decimal  totalQuantity = UNSET_DECIMAL;
 	std::string orderType;
-	double   lmtPrice;
-	double   auxPrice;
+	double   lmtPrice = UNSET_DOUBLE;
+	double   auxPrice = UNSET_DOUBLE;
 
 	// extended order fields
 	std::string tif;           // "Time in Force" - DAY, GTC, etc.
-	std::string activeStartTime;	// for GTC orders
-	std::string activeStopTime;	// for GTC orders
+	std::string activeStartTime = "";	// for GTC orders
+	std::string activeStopTime = "";	// for GTC orders
 	std::string ocaGroup;      // one cancels all group name
-	int      ocaType;       // 1 = CANCEL_WITH_BLOCK, 2 = REDUCE_WITH_BLOCK, 3 = REDUCE_NON_BLOCK
+	int      ocaType = 0;       // 1 = CANCEL_WITH_BLOCK, 2 = REDUCE_WITH_BLOCK, 3 = REDUCE_NON_BLOCK
 	std::string orderRef;      // order reference
-	bool     transmit;      // if false, order will be created but not transmited
-	long     parentId;      // Parent order Id, to associate Auto STP or TRAIL orders with the original order.
-	bool     blockOrder;
-	bool     sweepToFill;
-	int      displaySize;
-	int      triggerMethod; // 0=Default, 1=Double_Bid_Ask, 2=Last, 3=Double_Last, 4=Bid_Ask, 7=Last_or_Bid_Ask, 8=Mid-point
-	bool     outsideRth;
-	bool     hidden;
+	bool     transmit = true;      // if false, order will be created but not transmited
+	long     parentId = 0;      // Parent order Id, to associate Auto STP or TRAIL orders with the original order.
+	bool     blockOrder = false;
+	bool     sweepToFill = false;
+	int      displaySize = 0;
+	int      triggerMethod = 0; // 0=Default, 1=Double_Bid_Ask, 2=Last, 3=Double_Last, 4=Bid_Ask, 7=Last_or_Bid_Ask, 8=Mid-point
+	bool     outsideRth = false;
+	bool     hidden = false;
 	std::string goodAfterTime;    // Format: 20060505 08:00:00 {time zone}
 	std::string goodTillDate;     // Format: 20060505 08:00:00 {time zone}
 	std::string rule80A; // Individual = 'I', Agency = 'A', AgentOtherMember = 'W', IndividualPTIA = 'J', AgencyPTIA = 'U', AgentOtherMemberPTIA = 'M', IndividualPT = 'K', AgencyPT = 'Y', AgentOtherMemberPT = 'N'
-	bool     allOrNone;
-	int      minQty;
-	double   percentOffset; // REL orders only
-	bool     overridePercentageConstraints;
-	double   trailStopPrice; // TRAILLIMIT orders only
-	double   trailingPercent;
+	bool     allOrNone = false;
+	int      minQty = UNSET_INTEGER;
+	double   percentOffset = UNSET_DOUBLE; // REL orders only
+	bool     overridePercentageConstraints = false;
+	double   trailStopPrice = UNSET_DOUBLE; // TRAILLIMIT orders only
+	double   trailingPercent = UNSET_DOUBLE;
 
 	// financial advisors only
 	std::string faGroup;
@@ -207,64 +95,61 @@ struct Order
 	std::string faPercentage;
 
 	// institutional (ie non-cleared) only
-	std::string openClose; // O=Open, C=Close
-	Origin   origin;    // 0=Customer, 1=Firm
-	int      shortSaleSlot; // 1 if you hold the shares, 2 if they will be delivered from elsewhere.  Only for Action="SSHORT
+	std::string openClose = ""; // O=Open, C=Close
+	Origin   origin = CUSTOMER;    // 0=Customer, 1=Firm
+	int      shortSaleSlot = 0; // 1 if you hold the shares, 2 if they will be delivered from elsewhere.  Only for Action="SSHORT
 	std::string designatedLocation; // set when slot=2 only.
-	int      exemptCode;
+	int      exemptCode = -1;
 
 	// SMART routing only
-	double   discretionaryAmt;
-	bool     eTradeOnly;
-	bool     firmQuoteOnly;
-	double   nbboPriceCap;
-	bool     optOutSmartRouting;
+	double   discretionaryAmt = 0;
+	bool     optOutSmartRouting = false;
 
 	// BOX exchange orders only
-	int      auctionStrategy; // AUCTION_MATCH, AUCTION_IMPROVEMENT, AUCTION_TRANSPARENT
-	double   startingPrice;
-	double   stockRefPrice;
-	double   delta;
+	int      auctionStrategy = AUCTION_UNSET; // AUCTION_MATCH, AUCTION_IMPROVEMENT, AUCTION_TRANSPARENT
+	double   startingPrice = UNSET_DOUBLE;
+	double   stockRefPrice = UNSET_DOUBLE;
+	double   delta = UNSET_DOUBLE;
 
 	// pegged to stock and VOL orders only
-	double   stockRangeLower;
-	double   stockRangeUpper;
+	double   stockRangeLower = UNSET_DOUBLE;
+	double   stockRangeUpper = UNSET_DOUBLE;
 
-    bool randomizeSize;
-    bool randomizePrice;
+	bool     randomizeSize = false;
+	bool     randomizePrice = false;
 
 	// VOLATILITY ORDERS ONLY
-	double   volatility;
-	int      volatilityType;     // 1=daily, 2=annual
-	std::string deltaNeutralOrderType;
-	double   deltaNeutralAuxPrice;
-	long     deltaNeutralConId;
-	std::string deltaNeutralSettlingFirm;
-	std::string deltaNeutralClearingAccount;
-	std::string deltaNeutralClearingIntent;
-	std::string deltaNeutralOpenClose;
-	bool     deltaNeutralShortSale;
-	int      deltaNeutralShortSaleSlot;
-	std::string deltaNeutralDesignatedLocation;
-	bool     continuousUpdate;
-	int      referencePriceType; // 1=Average, 2 = BidOrAsk
+	double   volatility = UNSET_DOUBLE;
+	int      volatilityType = UNSET_INTEGER;     // 1=daily, 2=annual
+	std::string deltaNeutralOrderType = "";
+	double   deltaNeutralAuxPrice = UNSET_DOUBLE;
+	long     deltaNeutralConId = 0;
+	std::string deltaNeutralSettlingFirm = "";
+	std::string deltaNeutralClearingAccount = "";
+	std::string deltaNeutralClearingIntent = "";
+	std::string deltaNeutralOpenClose = "";
+	bool     deltaNeutralShortSale = false;
+	int      deltaNeutralShortSaleSlot = 0;
+	std::string deltaNeutralDesignatedLocation = "";
+	bool     continuousUpdate = false;
+	int      referencePriceType = UNSET_INTEGER; // 1=Average, 2 = BidOrAsk
 
 	// COMBO ORDERS ONLY
-	double   basisPoints;      // EFP orders only
-	int      basisPointsType;  // EFP orders only
+	double   basisPoints = UNSET_DOUBLE;      // EFP orders only
+	int      basisPointsType = UNSET_INTEGER;  // EFP orders only
 
 	// SCALE ORDERS ONLY
-	int      scaleInitLevelSize;
-	int      scaleSubsLevelSize;
-	double   scalePriceIncrement;
-	double   scalePriceAdjustValue;
-	int      scalePriceAdjustInterval;
-	double   scaleProfitOffset;
-	bool     scaleAutoReset;
-	int      scaleInitPosition;
-	int      scaleInitFillQty;
-	bool     scaleRandomPercent;
-	std::string scaleTable;
+	int      scaleInitLevelSize = UNSET_INTEGER;
+	int      scaleSubsLevelSize = UNSET_INTEGER;
+	double   scalePriceIncrement = UNSET_DOUBLE;
+	double   scalePriceAdjustValue = UNSET_DOUBLE;
+	int      scalePriceAdjustInterval = UNSET_INTEGER;
+	double   scaleProfitOffset = UNSET_DOUBLE;
+	bool     scaleAutoReset = false;
+	int      scaleInitPosition = UNSET_INTEGER;
+	int      scaleInitFillQty = UNSET_INTEGER;
+	bool     scaleRandomPercent = false;
+	std::string scaleTable = "";
 
 	// HEDGE ORDERS
 	std::string hedgeType;  // 'D' - delta, 'B' - beta, 'F' - FX, 'P' - pair
@@ -285,11 +170,11 @@ struct Order
 	std::string algoId;
 
 	// What-if
-	bool     whatIf;
+	bool     whatIf = false;
 
 	// Not Held
-	bool     notHeld;
-	bool     solicited;
+	bool     notHeld = false;
+	bool     solicited = false;
 
 	// models
 	std::string modelCode;
@@ -303,42 +188,62 @@ struct Order
 	TagValueListSPtr orderMiscOptions;
 
 	//VER PEG2BENCH fields:
-	int referenceContractId;
-	double peggedChangeAmount;
-	bool isPeggedChangeAmountDecrease;
-	double referenceChangeAmount;
+	int referenceContractId = UNSET_INTEGER;
+	double peggedChangeAmount = UNSET_DOUBLE;
+	bool isPeggedChangeAmountDecrease = false;
+	double referenceChangeAmount = UNSET_DOUBLE;
 	std::string referenceExchangeId;
 	std::string adjustedOrderType;
-	double triggerPrice;
-	double adjustedStopPrice;
-	double adjustedStopLimitPrice;
-	double adjustedTrailingAmount;
-	int adjustableTrailingUnit;
-	double lmtPriceOffset;
+	double triggerPrice = UNSET_DOUBLE;
+	double adjustedStopPrice = UNSET_DOUBLE;
+	double adjustedStopLimitPrice = UNSET_DOUBLE;
+	double adjustedTrailingAmount = UNSET_DOUBLE;
+	int adjustableTrailingUnit = UNSET_INTEGER;
+	double lmtPriceOffset = UNSET_DOUBLE;
 
 	std::vector<std::shared_ptr<OrderCondition>> conditions;
-	bool conditionsCancelOrder;
-	bool conditionsIgnoreRth;
+	bool conditionsCancelOrder = false;
+	bool conditionsIgnoreRth = false;
 
 	// ext operator
-	std::string extOperator;
+	std::string extOperator = "";
 
-	SoftDollarTier softDollarTier;
+	SoftDollarTier softDollarTier = SoftDollarTier("", "", "");
 
 	// native cash quantity
-	double cashQty;
+	double cashQty = UNSET_DOUBLE;
 
-    std::string mifid2DecisionMaker;
-    std::string mifid2DecisionAlgo;
-    std::string mifid2ExecutionTrader;
-    std::string mifid2ExecutionAlgo;
+	std::string mifid2DecisionMaker = "";
+	std::string mifid2DecisionAlgo = "";
+	std::string mifid2ExecutionTrader = "";
+	std::string mifid2ExecutionAlgo = "";
 
 	// don't use auto price for hedge
-	bool dontUseAutoPriceForHedge;
+	bool dontUseAutoPriceForHedge = false;
 
-    bool isOmsContainer;
+	bool isOmsContainer = false;
 
-    bool discretionaryUpToLimitPrice;
+	bool discretionaryUpToLimitPrice = false;
+
+	std::string autoCancelDate = "";
+	Decimal filledQuantity = UNSET_DECIMAL;
+	int refFuturesConId = UNSET_INTEGER;
+	bool autoCancelParent = false;
+	std::string shareholder = "";
+	bool imbalanceOnly = false;
+	bool routeMarketableToBbo = false;
+	long long parentPermId = UNSET_LONG;
+
+	UsePriceMmgtAlgo usePriceMgmtAlgo = UsePriceMmgtAlgo::DEFAULT;
+	int duration = UNSET_INTEGER;
+	int postToAts = UNSET_INTEGER;
+	std::string advancedErrorOverride = "";
+	std::string manualOrderTime = "";
+	int minTradeQty = UNSET_INTEGER;
+	int minCompeteSize = UNSET_INTEGER;
+	double competeAgainstBestOffset = UNSET_DOUBLE;
+	double midOffsetAtWhole = UNSET_DOUBLE;
+	double midOffsetAtHalf = UNSET_DOUBLE;
 
 public:
 

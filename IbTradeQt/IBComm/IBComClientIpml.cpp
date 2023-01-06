@@ -232,7 +232,8 @@ qint32 IBComClientImpl::reqPlaceOrderAPI(const QString& _symbol, const qint32 _q
 //---------------------------------------------------------------
 void IBComClientImpl::cancelOrderAPI(const qint32 _id)
 {
-    m_pClient->cancelOrder(_id);
+    const std::string manualOrderCancelTime = "100";
+    m_pClient->cancelOrder(_id, manualOrderCancelTime);
 }
 
 //---------------------------------------------------------------
@@ -336,7 +337,7 @@ void IBComClientImpl::tickPrice(TickerId tickerId, TickType field, double price,
 };
 
 //---------------------------------------------------------------
-void IBComClientImpl::tickSize(TickerId tickerId, TickType field, int size)
+void IBComClientImpl::tickSize(TickerId tickerId, TickType field, Decimal size)
 {
 	//qDebug("tickSize : tickerId = %d, field = %d, size = %d", tickerId, field, size);
 
@@ -415,7 +416,7 @@ void IBComClientImpl::historicalData(TickerId reqId, const Bar& bar)
 
 //---------------------------------------------------------------
 void IBComClientImpl::realtimeBar(TickerId reqId, long time, double open, double high, double low, double close,
-    long volume, double wap, int count)
+    Decimal volume, Decimal wap, int count)
 {
 
     CrealtimeBar _realtimeBar(reqId, static_cast<quint64>(time), open, high, low, close, volume, count, wap);
@@ -431,7 +432,7 @@ void IBComClientImpl::realtimeBar(TickerId reqId, long time, double open, double
 
 //---------------------------------------------------------------
 void IBComClientImpl::updateMktDepth(TickerId id, int position, int operation, int side,
-	double price, int size)
+    double price, Decimal size)
 {
     CMktDepth _mkdDepth(id, position, operation, side, price, size, QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
 
@@ -448,7 +449,7 @@ void IBComClientImpl::updateMktDepth(TickerId id, int position, int operation, i
 //void IBComClientImpl::updateMktDepthL2(TickerId id, int position, std::string marketMaker, int operation,
 //	int side, double price, int size)
 void IBComClientImpl::updateMktDepthL2(TickerId id, int position, const std::string& marketMaker, int operation,
-    int side, double price, int size, bool isSmartDepth)
+    int side, double price, Decimal size, bool isSmartDepth)
 
 {
     CMktDepthL2 _mkdDepthL2(id, position, QString::fromLocal8Bit(marketMaker.data(), marketMaker.size()), operation, side, price, size, QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
@@ -465,8 +466,8 @@ void IBComClientImpl::updateMktDepthL2(TickerId id, int position, const std::str
 
 
 //---------------------------------------------------------------
-void IBComClientImpl::tickOptionComputation(TickerId tickerId, TickType tickType, double impliedVol, double delta,
-	double optPrice, double pvDividend, double gamma, double vega, double theta, double undPrice)
+void IBComClientImpl::tickOptionComputation(TickerId tickerId, TickType tickType, int tickAttrib, double impliedVol, double delta,
+                                            double optPrice, double pvDividend, double gamma, double vega, double theta, double undPrice)
 {
     COptionTickComputation optionTick(tickerId, tickType, impliedVol, delta, optPrice, pvDividend, gamma, vega, theta, undPrice);
 
@@ -510,7 +511,7 @@ void IBComClientImpl::currentTime(long time)
 
 //---------------------------------------------------------------
 //void IBComClientImpl::error(const int id, const int errorCode, const std::string errorString)
-void IBComClientImpl::error(int id, int errorCode, const std::string& errorString)
+void IBComClientImpl::error(int id, int errorCode, const std::string& errorString, const std::string& advancedOrderRejectJson)
 {
     qCCritical(IBComClientImplLog(),  "Error id=%d, errorCode=%d, msg=%s\n", id, errorCode, errorString.c_str());
 
@@ -547,8 +548,8 @@ void IBComClientImpl::winError(const std::string& str, int lastError)
 //void IBComClientImpl::orderStatus(OrderId orderId, const std::string& status, double filled,
 //	double remaining, double avgFillPrice, int permId, int parentId,
 //	double lastFillPrice, int clientId, const std::string& whyHeld)
-void IBComClientImpl::orderStatus( OrderId orderId, const std::string& status, double filled,
-        double remaining, double avgFillPrice, int permId, int parentId,
+void IBComClientImpl::orderStatus( OrderId orderId, const std::string& status, Decimal filled,
+        Decimal remaining, double avgFillPrice, int permId, int parentId,
         double lastFillPrice, int clientId, const std::string& whyHeld, double mktCapPrice)
 {
 
@@ -615,7 +616,7 @@ void IBComClientImpl::commissionReport(const CommissionReport& commissionReport)
 }
 
 //---------------------------------------------------------------
-void IBComClientImpl::position(const std::string &account, const Contract &contract, double position, double avgCost)
+void IBComClientImpl::position(const std::string &account, const Contract &contract, Decimal position, double avgCost)
 {
     CPosition positionObj(QString::fromLocal8Bit(account.data(), static_cast<qint32>(account.size())), contract, position, avgCost);
 
@@ -663,7 +664,7 @@ void IBComClientImpl::historicalTicksLast(int reqId, const std::vector<Historica
     }
 }
 
-void IBComClientImpl::tickByTickAllLast(int reqId, int tickType, time_t time, double price, int size, const TickAttribLast &tickAttribLast, const std::string &exchange, const std::string &specialConditions)
+void IBComClientImpl::tickByTickAllLast(int reqId, int tickType, time_t time, double price, Decimal size, const TickAttribLast &tickAttribLast, const std::string &exchange, const std::string &specialConditions)
 {
     QDateTime timestamp;
 

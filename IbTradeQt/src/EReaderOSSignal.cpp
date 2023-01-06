@@ -1,9 +1,9 @@
-/* Copyright (C) 2018 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+﻿/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
-#include "StdAfx.h"
-#include "standartincludes.h"
+//#include "StdAfx.h"
 #include "EReaderOSSignal.h"
+
 #if defined(IB_POSIX)
 #if defined(IBAPI_MONOTONIC_TIME)
 #include <time.h>
@@ -11,6 +11,7 @@
 #include <sys/time.h>
 #endif
 #endif
+
 
 EReaderOSSignal::EReaderOSSignal(unsigned long waitTimeout)
 {

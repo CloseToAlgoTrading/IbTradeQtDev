@@ -1,11 +1,10 @@
-﻿/* Copyright (C) 2018 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+﻿/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 #pragma once
 #ifndef TWS_API_CLIENT_ECLIENTSOCKET_H
 #define TWS_API_CLIENT_ECLIENTSOCKET_H
 
-#include "standartincludes.h"
 #include <atomic>
 #include "EClient.h"
 #include "EClientMsgSink.h"
@@ -28,6 +27,7 @@ public:
 
 	bool eConnect( const char *host, int port, int clientId = 0, bool extraAuth = false);
 	// override virtual funcs from EClient
+	bool eConnect(const char *host, unsigned int port, int clientId = 0);
 	void eDisconnect(bool resetState = true);
 
 	bool isSocketOK() const;

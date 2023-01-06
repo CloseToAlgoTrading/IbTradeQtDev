@@ -1,7 +1,7 @@
 #ifndef COPENORDER_H
 #define COPENORDER_H
 
-//#include "StdAfx.h" // need for Order.h and OrderState.h
+////#include "StdAfx.h" // need for Order.h and OrderState.h
 #include "Contract.h"
 #include "Order.h"
 #include "OrderState.h"

@@ -1,4 +1,4 @@
-﻿/* Copyright (C) 2018 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+﻿/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 #pragma once
@@ -6,19 +6,20 @@
 #define TWS_API_CLIENT_EPOSIXCLIENTSOCKETPLATFORM_H
 
 #ifdef _WIN32
-
 	// Windows
 	// includes
 	#include <WinSock2.h>
 	#include <time.h>
 
 	// defines
-	#if _MSC_VER < 1700
-	#define EISCONN WSAEISCONN
-	#define EWOULDBLOCK WSAEWOULDBLOCK
-	#define ECONNREFUSED WSAECONNREFUSED
-	#else
-	#pragma comment(lib, "ws2_32.lib")
+	#if defined(_MSC_VER)
+		#if _MSC_VER < 1700
+			#define EISCONN WSAEISCONN
+			#define EWOULDBLOCK WSAEWOULDBLOCK
+			#define ECONNREFUSED WSAECONNREFUSED
+		#else
+			#pragma comment(lib, "ws2_32.lib")
+		#endif
 	#endif
 
 	// helpers

@@ -1,34 +1,36 @@
-﻿/* Copyright (C) 2018 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+﻿/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
+#pragma once
 #ifdef _MSC_VER
+#ifndef TWS_API_CLIENT_STDAFX_H
+#define TWS_API_CLIENT_STDAFX_H
 
-#ifdef TWSAPIDLL
-#ifndef TWSAPIDLLEXP
-#define TWSAPIDLLEXP __declspec(dllexport)
+#include "platformspecific.h"
+
+#include <string>
+#include <deque>
+#include <vector>
+#include <algorithm>
+#include <limits.h>
+#include <sstream>
+#include <iomanip>
+#include <stdio.h>
+#include <assert.h>
+#include <memory>
+#include <ostream>
+#include <string.h>
+#include <assert.h>
+#include <atomic>
+#include <bitset>
+#include <cstdlib>
+#include <sstream>
+#include <stdexcept>
+#include <set>
+#include <map>
+#include <tuple>
+#include <ios>
+#include <float.h>
+
 #endif
 #endif
-
-//#define assert ASSERT
-#if _MSC_VER<=1800
-#define snprintf _snprintf
-#endif
-#include <WinSock2.h>
-#include <Windows.h>
-#else
-
-#include <unistd.h> // defines _POSIX_THREADS, @see http://bit.ly/1pWJ8KQ#tag_13_80_03_02
-
-#if defined(_POSIX_THREADS) && (_POSIX_THREADS > 0)
-    #include <pthread.h>
-    #define IB_POSIX
-    #if __cplusplus >= 201103L // strict C++11 standard std::mutex is available
-        #define IBAPI_STD_MUTEX
-    #endif 
-#else
-    #error "Not supported on this platform"
-#endif
-
-#endif // #ifdef _MSC_VER
-
-
