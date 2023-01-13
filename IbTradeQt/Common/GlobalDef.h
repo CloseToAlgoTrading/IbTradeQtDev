@@ -3,7 +3,7 @@
 
 //#define DEBUG_ACTIVE
 
-//#include "StdAfx.h" // need for Order.h and OrderState.h
+//TODO: REMOVE #include "StdAfx.h" // need for Order.h and OrderState.h
 #include "EWrapper.h"
 #include "Contract.h"
 #include "Order.h"

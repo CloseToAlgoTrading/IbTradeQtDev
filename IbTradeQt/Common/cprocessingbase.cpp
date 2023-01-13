@@ -551,7 +551,7 @@ bool CProcessingBase::calculateOneMinBar(RealTimeBarMap_t & _realTimeBar, Ticker
     }
 
     //--it;
-    QDateTime mtime = QDateTime::fromTime_t(it->getDateTime());
+    QDateTime mtime = QDateTime::fromMSecsSinceEpoch(it->getDateTime());
     qCDebug(processingBaseLog(), "time = %s", mtime.toString("yyyy/MM/dd hh:mm:ss").toLocal8Bit().data());
 
     static QDateTime oldtime;

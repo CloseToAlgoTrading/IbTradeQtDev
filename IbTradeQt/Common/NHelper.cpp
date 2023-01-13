@@ -19,7 +19,7 @@ quint64 NHelper::convertTimeStringToTimestamp(QString date, bool isFormat)
 
     if (l_dt.isValid())
     {
-        retVal = l_dt.toTime_t();
+        retVal = l_dt.toMSecsSinceEpoch();
     }
     else
     {
@@ -34,7 +34,7 @@ quint64 NHelper::convertTimeStringToTimestamp(QString date, bool isFormat)
 
         if (l_dt.isValid())
         {
-            retVal = l_dt.toTime_t();
+            retVal = l_dt.toMSecsSinceEpoch();
         }
 
     }

@@ -38,7 +38,7 @@ void AlphaModGetTime::MessageHandler(void* pContext, tEReqType _reqType)
         long _time = (*static_cast<long*>(pContext));
         emit signalTimeReceived(_time);
 
-        QTime current = QTime(QDateTime().fromTime_t(static_cast<quint32>(_time)).time());
+        QTime current = QTime(QDateTime().fromMSecsSinceEpoch(static_cast<quint32>(_time)).time());
         if(resetTime == current)
         {
             emit signalPlanResetSubscribtion();

@@ -78,7 +78,7 @@ QVariant SettingsModel::data(const QModelIndex &index, int role) const
 
     case Qt::TextAlignmentRole:
         if (row == 1 && col == 1) //change text alignment only for cell(1,1)
-            return Qt::AlignRight + Qt::AlignVCenter;
+            return QVariant::fromValue(Qt::AlignRight | Qt::AlignVCenter);
         break;
 
     case Qt::CheckStateRole:

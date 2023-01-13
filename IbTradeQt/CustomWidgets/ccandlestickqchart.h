@@ -24,7 +24,7 @@
 Q_DECLARE_LOGGING_CATEGORY(cCandleStickQChartLog);
 
 using namespace IBDataTypes;
-using namespace QtCharts;
+////using namespace QtCharts;
 
 
 class chartWorker : public QObject

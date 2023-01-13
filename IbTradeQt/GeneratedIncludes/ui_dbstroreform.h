@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'dbstroreform.ui'
 **
-** Created by: Qt User Interface Compiler version 5.15.2
+** Created by: Qt User Interface Compiler version 6.4.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
 ********************************************************************************/
@@ -31,22 +31,22 @@ public:
     void setupUi(QWidget *DBStoreForm)
     {
         if (DBStoreForm->objectName().isEmpty())
-            DBStoreForm->setObjectName(QString::fromUtf8("DBStoreForm"));
+            DBStoreForm->setObjectName("DBStoreForm");
         DBStoreForm->resize(475, 382);
         pushButtonStart = new QPushButton(DBStoreForm);
-        pushButtonStart->setObjectName(QString::fromUtf8("pushButtonStart"));
+        pushButtonStart->setObjectName("pushButtonStart");
         pushButtonStart->setGeometry(QRect(380, 350, 80, 21));
         tableViewTickers = new QTableView(DBStoreForm);
-        tableViewTickers->setObjectName(QString::fromUtf8("tableViewTickers"));
+        tableViewTickers->setObjectName("tableViewTickers");
         tableViewTickers->setGeometry(QRect(40, 90, 411, 241));
         pushButtonAdd = new QPushButton(DBStoreForm);
-        pushButtonAdd->setObjectName(QString::fromUtf8("pushButtonAdd"));
+        pushButtonAdd->setObjectName("pushButtonAdd");
         pushButtonAdd->setGeometry(QRect(370, 20, 80, 21));
         pushButtonRemove = new QPushButton(DBStoreForm);
-        pushButtonRemove->setObjectName(QString::fromUtf8("pushButtonRemove"));
+        pushButtonRemove->setObjectName("pushButtonRemove");
         pushButtonRemove->setGeometry(QRect(370, 50, 80, 21));
         lineEditSymbol = new QLineEdit(DBStoreForm);
-        lineEditSymbol->setObjectName(QString::fromUtf8("lineEditSymbol"));
+        lineEditSymbol->setObjectName("lineEditSymbol");
         lineEditSymbol->setGeometry(QRect(40, 20, 113, 21));
 
         retranslateUi(DBStoreForm);

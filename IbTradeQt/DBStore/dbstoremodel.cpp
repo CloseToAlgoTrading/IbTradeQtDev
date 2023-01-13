@@ -50,7 +50,7 @@ QVariant DbStoreModel::data(const QModelIndex &index, int role) const
 
     case Qt::TextAlignmentRole:
         if (col == 0) //change text alignment only for cell(1,1)
-            return Qt::AlignLeft + Qt::AlignVCenter;
+            return QVariant::fromValue(Qt::AlignLeft | Qt::AlignVCenter);
         break;
 
     case Qt::CheckStateRole:

@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'aboutdialog.ui'
 **
-** Created by: Qt User Interface Compiler version 5.15.2
+** Created by: Qt User Interface Compiler version 6.4.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
 ********************************************************************************/
@@ -24,10 +24,10 @@ public:
     void setupUi(QWidget *AboutDialog)
     {
         if (AboutDialog->objectName().isEmpty())
-            AboutDialog->setObjectName(QString::fromUtf8("AboutDialog"));
+            AboutDialog->setObjectName("AboutDialog");
         AboutDialog->resize(400, 300);
         closeButton = new QPushButton(AboutDialog);
-        closeButton->setObjectName(QString::fromUtf8("closeButton"));
+        closeButton->setObjectName("closeButton");
         closeButton->setGeometry(QRect(310, 260, 75, 23));
 
         retranslateUi(AboutDialog);

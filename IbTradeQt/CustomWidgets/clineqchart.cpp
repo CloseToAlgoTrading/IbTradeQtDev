@@ -111,7 +111,7 @@ void CLineQChart::AddSeries(const QList<CHistoricalData>& Lst)
         ++periodCounter;
 
         QDateTime timestamp;
-        timestamp.setTime_t(Lst[i].getDateTime());
+        timestamp.setMSecsSinceEpoch(Lst[i].getDateTime());
         QDateTime x = timestamp;
         qreal y = Lst[i].getClose();
 

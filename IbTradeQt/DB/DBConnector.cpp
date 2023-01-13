@@ -128,7 +128,7 @@ bool DBConnector::connectDB()
 
     //db.close();
 //    QDateTime tm =  QDateTime(QDate(2012, 7, 6), QTime(9, 30, 0));
-//    CrealtimeBar rb = CrealtimeBar(10, tm.toTime_t(), 1,2,3,4,5,6,7);
+//    CrealtimeBar rb = CrealtimeBar(10, tm.toMSecsSinceEpoch(), 1,2,3,4,5,6,7);
 
 //    this->insertNewRealTimeBarItem(rb, "SS1P");
 
@@ -157,7 +157,7 @@ void DBConnector::slotInsertTickByTickLastItem(const CTickByTickAllLast &_item, 
                  unreported, exchange, specialConditions) \
                 VALUES (:index, :ticker, :tickType, :price, :size, :pastLimit, \
                         :unreported, :exchange, :specialConditions)");
-    query.bindValue(":index", QDateTime::fromTime_t(_item.getTimestamp()));
+    query.bindValue(":index", QDateTime::fromMSecsSinceEpoch(_item.getTimestamp()));
     query.bindValue(":ticker", _symbol);
     query.bindValue(":tickType", _item.getTickType());
     query.bindValue(":price", _item.getPrice());
@@ -185,7 +185,7 @@ bool DBConnector::insertNewRealTimeBarItem(const CrealtimeBar* _item, const QStr
 
         query.prepare("INSERT INTO tb_real_time_bar(index, ticker, open, close, high, low, volume, wap, count) \
                     VALUES (:index, :ticker, :open, :close, :high, :low, :volume, :wap, :count)");
-        query.bindValue(":index", QDateTime::fromTime_t(_item->getDateTime()));
+        query.bindValue(":index", QDateTime::fromMSecsSinceEpoch(_item->getDateTime()));
         query.bindValue(":ticker", _symbol);
         query.bindValue(":close", _item->getClose());
         query.bindValue(":high", _item->getHigh());

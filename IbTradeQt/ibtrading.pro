@@ -36,7 +36,7 @@ DEFINES += GIT_VERSION=\\\"$$GIT_VERSION\\\"
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
-CONFIG += c++14
+CONFIG += c++11
 
 UI_DIR = $$PWD/GeneratedIncludes
 
@@ -79,26 +79,27 @@ SOURCES += \
     MainSystem/ibtradesystem.cpp \
     ReqManager/globalreqmanager.cpp \
     ReqManager/ReqManager.cpp \
-    src/ContractCondition.cpp \
-    src/DefaultEWrapper.cpp \
-    src/EClient.cpp \
-    src/EClientSocket.cpp \
-    src/EDecoder.cpp \
-    src/EMessage.cpp \
-    src/EMutex.cpp \
-    src/EReader.cpp \
-    src/EReaderOSSignal.cpp \
-    src/ESocket.cpp \
-    src/executioncondition.cpp \
-    src/MarginCondition.cpp \
-    src/OperatorCondition.cpp \
-    src/OrderCondition.cpp \
-    src/PercentChangeCondition.cpp \
-    src/PriceCondition.cpp \
-    src/SoftDollarTier.cpp \
-    src/StdAfx.cpp \
-    src/TimeCondition.cpp \
-    src/VolumeCondition.cpp \
+    Brokers/IB/src/ContractCondition.cpp \
+    Brokers/IB/src/DefaultEWrapper.cpp \
+    Brokers/IB/src/EClient.cpp \
+    Brokers/IB/src/EClientSocket.cpp \
+    Brokers/IB/src/EDecoder.cpp \
+    Brokers/IB/src/EMessage.cpp \
+    Brokers/IB/src/EMutex.cpp \
+    Brokers/IB/src/EReader.cpp \
+    Brokers/IB/src/EReaderOSSignal.cpp \
+    Brokers/IB/src/ESocket.cpp \
+    Brokers/IB/src/executioncondition.cpp \
+    Brokers/IB/src/MarginCondition.cpp \
+    Brokers/IB/src/OperatorCondition.cpp \
+    Brokers/IB/src/OrderCondition.cpp \
+    Brokers/IB/src/PercentChangeCondition.cpp \
+    Brokers/IB/src/PriceCondition.cpp \
+    Brokers/IB/src/SoftDollarTier.cpp \
+    #Brokers/IB/src/StdAfx.cpp \
+    Brokers/IB/src/TimeCondition.cpp \
+    Brokers/IB/src/VolumeCondition.cpp \
+    Brokers/IB/src/EOrderDecoder.cpp \
     Strategies/AutoDeltAlignment/src/AutoDeltAlignmentGUI.cpp \
     Strategies/AutoDeltAlignment/src/AutoDeltAlignmentPresenter.cpp \
     Strategies/AutoDeltAlignment/src/AutoDeltAlignmentProcessing.cpp \
@@ -140,7 +141,6 @@ HEADERS += \
     Common/GlobalDef.h \
     Common/NHelper.h \
     Common/Singleton.h \
-    Common/standartincludes.h \
     CustomWidgets/ccandlestickqchart.h \
     CustomWidgets/clineqchart.h \
     DB/DBConnector.h \
@@ -162,56 +162,62 @@ HEADERS += \
     MainSystem/ibtradesystem.h \
     ReqManager/globalreqmanager.h \
     ReqManager/ReqManager.h \
-    Shared/bar.h \
-    Shared/CommissionReport.h \
-    Shared/CommonDefs.h \
-    Shared/Contract.h \
-    Shared/ContractCondition.h \
-    Shared/DefaultEWrapper.h \
-    Shared/DepthMktDataDescription.h \
-    Shared/EClient.h \
-    Shared/EClientMsgSink.h \
-    Shared/EClientSocket.h \
-    Shared/EDecoder.h \
-    Shared/EMessage.h \
-    Shared/EMutex.h \
-    Shared/EPosixClientSocketPlatform.h \
-    Shared/EReader.h \
-    Shared/EReaderOSSignal.h \
-    Shared/EReaderSignal.h \
-    Shared/ESocket.h \
-    Shared/ETransport.h \
-    Shared/EWrapper.h \
-    Shared/EWrapper_prototypes.h \
-    Shared/Execution.h \
-    Shared/executioncondition.h \
-    Shared/FamilyCode.h \
-    Shared/HistogramEntry.h \
-    Shared/HistoricalTick.h \
-    Shared/HistoricalTickBidAsk.h \
-    Shared/HistoricalTickLast.h \
-    Shared/IExternalizable.h \
-    Shared/MarginCondition.h \
-    Shared/NewsProvider.h \
-    Shared/OperatorCondition.h \
-    Shared/Order.h \
-    Shared/OrderCondition.h \
-    Shared/OrderState.h \
-    Shared/PercentChangeCondition.h \
-    Shared/PriceCondition.h \
-    Shared/PriceIncrement.h \
-    Shared/Resource.h \
-    Shared/ScannerSubscription.h \
-    Shared/shared_ptr.h \
-    Shared/SoftDollarTier.h \
-    Shared/StdAfx.h \
-    Shared/TagValue.h \
-    Shared/TickAttrib.h \
-    Shared/TickAttribBidAsk.h \
-    Shared/TickAttribLast.h \
-    Shared/TimeCondition.h \
-    Shared/TwsSocketClientErrors.h \
-    Shared/VolumeCondition.h \
+    Brokers/IB/Shared/standardincludes.h \
+    Brokers/IB/Shared/bar.h \
+    Brokers/IB/Shared/CommissionReport.h \
+    Brokers/IB/Shared/CommonDefs.h \
+    Brokers/IB/Shared/Contract.h \
+    Brokers/IB/Shared/ContractCondition.h \
+    Brokers/IB/Shared/DefaultEWrapper.h \
+    Brokers/IB/Shared/DepthMktDataDescription.h \
+    Brokers/IB/Shared/EClient.h \
+    Brokers/IB/Shared/EClientMsgSink.h \
+    Brokers/IB/Shared/EClientSocket.h \
+    Brokers/IB/Shared/EDecoder.h \
+    Brokers/IB/Shared/EMessage.h \
+    Brokers/IB/Shared/EMutex.h \
+    Brokers/IB/Shared/EPosixClientSocketPlatform.h \
+    Brokers/IB/Shared/EReader.h \
+    Brokers/IB/Shared/EReaderOSSignal.h \
+    Brokers/IB/Shared/EReaderSignal.h \
+    Brokers/IB/Shared/ESocket.h \
+    Brokers/IB/Shared/ETransport.h \
+    Brokers/IB/Shared/EWrapper.h \
+    Brokers/IB/Shared/EWrapper_prototypes.h \
+    Brokers/IB/Shared/Execution.h \
+    Brokers/IB/Shared/executioncondition.h \
+    Brokers/IB/Shared/FamilyCode.h \
+    Brokers/IB/Shared/HistogramEntry.h \
+    Brokers/IB/Shared/HistoricalTick.h \
+    Brokers/IB/Shared/HistoricalTickBidAsk.h \
+    Brokers/IB/Shared/HistoricalTickLast.h \
+    Brokers/IB/Shared/IExternalizable.h \
+    Brokers/IB/Shared/MarginCondition.h \
+    Brokers/IB/Shared/NewsProvider.h \
+    Brokers/IB/Shared/OperatorCondition.h \
+    Brokers/IB/Shared/Order.h \
+    Brokers/IB/Shared/OrderCondition.h \
+    Brokers/IB/Shared/OrderState.h \
+    Brokers/IB/Shared/PercentChangeCondition.h \
+    Brokers/IB/Shared/PriceCondition.h \
+    Brokers/IB/Shared/PriceIncrement.h \
+    Brokers/IB/Shared/ScannerSubscription.h \
+    Brokers/IB/Shared/SoftDollarTier.h \
+    #Brokers/IB/Shared/StdAfx.h \
+    Brokers/IB/Shared/TagValue.h \
+    Brokers/IB/Shared/TickAttrib.h \
+    Brokers/IB/Shared/TickAttribBidAsk.h \
+    Brokers/IB/Shared/TickAttribLast.h \
+    Brokers/IB/Shared/TimeCondition.h \
+    Brokers/IB/Shared/TwsSocketClientErrors.h \
+    Brokers/IB/Shared/VolumeCondition.h \
+    Brokers/IB/Shared/Decimal.h \
+    Brokers/IB/Shared/EClientException.h \
+    Brokers/IB/Shared/EOrderDecoder.h \
+    Brokers/IB/Shared/HistoricalSession.h \
+    Brokers/IB/Shared/platformspecific.h \
+    Brokers/IB/Shared/resource.h \
+    Brokers/IB/Shared/WshEventData.h \
     Strategies/AutoDeltAlignment/header/AutoDeltAlignmentGUI.h \
     Strategies/AutoDeltAlignment/header/AutoDeltAlignmentPresenter.h \
     Strategies/AutoDeltAlignment/header/AutoDeltAlignmentProcessing.h \
@@ -234,7 +240,7 @@ FORMS += \
     Strategies/PairTrader/pairtrading.ui
 
 INCLUDEPATH += \
-    $$PWD/Shared \
+    $$PWD/Brokers/IB/Shared \
     $$PWD/ReqManager \
     $$PWD/QCustomPlot \
     $$PWD/PairTrader \
@@ -254,8 +260,8 @@ INCLUDEPATH += \
 
 
 
-win32:INCLUDEPATH += "c:/Program Files/PostgreSQL/11/include/"
-unix:INCLUDEPATH += /usr/include/postgresql
+#win32:INCLUDEPATH += "c:/Program Files/PostgreSQL/11/include/"
+#unix:INCLUDEPATH += /usr/include/postgresql
 
 #win32:LIBS += "c:/Program Files/PostgreSQL/11/libpq.lib"
 #unix:LIBS += -L/usr/lib -lpq
@@ -266,8 +272,10 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 *msvc* { # visual studio spec filter
-      QMAKE_CXXFLAGS += -MP
+      QMAKE_CXXFLAGS += /MP /MDd
   }
+
+#QMAKE_CXXFLAGS += -pthread -fPIC
 
 SUBDIRS += \
     ibtrading.pro
@@ -277,3 +285,36 @@ RESOURCES += \
 
 DISTFILES += \
     doc/mainClass.wsd
+
+
+unix {
+
+    INCLUDEPATH += $$PWD/Libs
+    INCLUDEPATH += /usr/include/postgresql
+
+    LIBS += -L$$PWD/Libs/ -lbid
+
+    DEPENDPATH += $$PWD/Libs
+    PRE_TARGETDEPS += $$PWD/Libs/libbid.a
+}
+
+win32 {
+    LIBS += -L$$PWD/Libs/win/ -llibbid
+
+    INCLUDEPATH += $$PWD/Libs/win
+    INCLUDEPATH += "c:/Program Files/PostgreSQL/11/include/"
+
+    DEPENDPATH += $$PWD/Libs/win
+    PRE_TARGETDEPS += $$PWD/Libs/win/libbid.lib
+}
+#unix: LIBS += -L$$PWD/Libs/ -lbid
+#unix:INCLUDEPATH += $$PWD/Libs
+#unix:DEPENDPATH += $$PWD/Libs
+#unix: PRE_TARGETDEPS += $$PWD/Libs/libbid.a
+
+
+#win32: LIBS += -L$$PWD/Libs/win/ -llibbid
+#win32: INCLUDEPATH += $$PWD/Libs/win
+#win32: DEPENDPATH += $$PWD/Libs/win
+#win32:!win32-g++: PRE_TARGETDEPS += $$PWD/Libs/win/libbid.lib
+#else:win32-g++: PRE_TARGETDEPS += $$PWD/Libs/win/liblibbid.a
