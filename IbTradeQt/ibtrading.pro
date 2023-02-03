@@ -42,6 +42,8 @@ UI_DIR = $$PWD/GeneratedIncludes
 
 SOURCES += \
     CObjects/cdeltaobject.cpp \
+    MainSystem/csettinsmodeldata.cpp \
+    MainSystem/portfolioconfigmodel.cpp \
     Strategies/AutoDeltAlignment/src/CModelInputData.cpp \
     Strategies/PairTrader/PairTradingGui.cpp \
     Strategies/PairTrader/PairTradingPresenter.cpp \
@@ -96,7 +98,6 @@ SOURCES += \
     Brokers/IB/src/PercentChangeCondition.cpp \
     Brokers/IB/src/PriceCondition.cpp \
     Brokers/IB/src/SoftDollarTier.cpp \
-    #Brokers/IB/src/StdAfx.cpp \
     Brokers/IB/src/TimeCondition.cpp \
     Brokers/IB/src/VolumeCondition.cpp \
     Brokers/IB/src/EOrderDecoder.cpp \
@@ -111,11 +112,14 @@ SOURCES += \
     DBStore/dbstoremodel.cpp \
     Common/contractsdefs.cpp \
     Common/OrderSamples.cpp \
-    MainSystem/cstandartitemsettings.cpp
+    MainSystem/cstandartitemsettings.cpp \
+    MainSystem/treeitem.cpp
 
 
 HEADERS += \
     CObjects/cdeltaobject.h \
+    MainSystem/PortfolioConfigModel.h \
+    MainSystem/csettinsmodeldata.h \
     Strategies/AutoDeltAlignment/header/CModelInputData.h \
     Strategies/AutoDeltAlignment/header/autodeltatypes.h \
     Strategies/PairTrader/PairTradingGui.h \
@@ -228,7 +232,8 @@ HEADERS += \
     DBStore/dbstoremodel.h \
     Common/contractsdefs.h \
     Common/OrderSamples.h \
-    MainSystem/cstandartitemsettings.h
+    MainSystem/cstandartitemsettings.h \
+    MainSystem/treeitem.cpp
 
 
 FORMS += \

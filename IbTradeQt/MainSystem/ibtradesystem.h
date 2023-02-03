@@ -5,8 +5,9 @@
 #include <QtConcurrent/QtConcurrentRun>
 #include "ui_ibtradesystem.h"
 #include <QLabel>
-//#include "settingsmodel.h"
+#include "settingsmodel.h"
 #include "cstandartitemsettings.h"
+#include "PortfolioConfigModel.h"
 
 class IBTradeSystem : public QMainWindow
 {
@@ -35,8 +36,10 @@ private:
 private:
 	Ui::IBTradeSystemClass ui;
 	QLabel * m_pTimeLabel;
-    //SettingsModel myModel;
+    SettingsModel myModel;
     CStandartItemSettings m_settModel;
+    PortfolioConfigModel m_portfolioConfigModel;
+
 
 private slots:
 	void slotOnTimeReceived(long time);
@@ -44,6 +47,8 @@ private slots:
 	void slotRecvConnectButtonState(bool isConnect);
     void slotEditSettingLogSettingsComlited();
     void slotClearLog();
+    void slotShowLog();
+    void slotshowSettings();
 
 };
 

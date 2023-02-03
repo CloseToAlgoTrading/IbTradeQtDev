@@ -1,12 +1,13 @@
 #ifndef CSTANDARTITEMSETTINGS_H
 #define CSTANDARTITEMSETTINGS_H
 
+#include "treeitem.h"
 #include <QStandardItemModel>
 #include <QVector>
 #include <QObject>
 
 enum S_ROW_INDEX{
-    INDEX_LOG_LEVEL_ALL = 1,
+    INDEX_LOG_LEVEL_ALL = 0,
     INDEX_LOG_LEVEL_FATAL,
     INDEX_LOG_LEVEL_ERROR,
     INDEX_LOG_LEVEL_WARNING,
@@ -23,7 +24,7 @@ class CStandartItemSettings: public QObject
 {
     Q_OBJECT
 public:
-    CStandartItemSettings(QObject *parent);
+    explicit CStandartItemSettings(QObject *parent);
 
     QStandardItemModel *getModel();
 
@@ -52,6 +53,7 @@ public:
 
 private:
     void generateModel();
+    void generateModel2(TreeItem *parent, const TreeItem *rootItem);
     QStandardItem *createSubCategoryTextItem(const QString & _text);
     QStandardItem *createDecriptionTextItem(const QString & _text, const QBrush & _brush);
     QStandardItem *createLogDescriptionTextItem(const QString & _text, const bool isLight = false);

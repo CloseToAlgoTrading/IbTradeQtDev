@@ -5,7 +5,8 @@
 
 CStandartItemSettings::CStandartItemSettings(QObject *parent)
     : QObject(parent)
-    , m_pModel(new QStandardItemModel(CROW,CCOL))
+    //, m_pModel(new QStandardItemModel(CROW,CCOL))
+    , m_pModel(new QStandardItemModel(parent))
     , m_LogItems()
     , m_pServerAddressItem(nullptr)
     , m_pServerPortItem(nullptr)
@@ -20,43 +21,95 @@ void CStandartItemSettings::generateModel()
 {
     QStandardItem *infoItem = new QStandardItem("Description");
     QStandardItem *valueItem = new QStandardItem("Value");
+
+    auto *rootNode = m_pModel->invisibleRootItem();
+
     m_pModel->setHorizontalHeaderItem( 0, infoItem );
     m_pModel->setHorizontalHeaderItem( 1, valueItem );
 
-    m_pModel->setItem(0,0,createSubCategoryTextItem("Log Settings"));
-    m_pModel->setItem(0,1,createSubCategoryTextItem(""));
 
-    m_pModel->setItem(INDEX_LOG_LEVEL_ALL    ,0,createLogDescriptionTextItem("All", true));
-    m_pModel->setItem(INDEX_LOG_LEVEL_FATAL  ,0,createLogDescriptionTextItem("Fatal"));
-    m_pModel->setItem(INDEX_LOG_LEVEL_ERROR  ,0,createLogDescriptionTextItem("Error", true));
-    m_pModel->setItem(INDEX_LOG_LEVEL_WARNING,0,createLogDescriptionTextItem("Warning"));
-    m_pModel->setItem(INDEX_LOG_LEVEL_INFO   ,0,createLogDescriptionTextItem("Info", true));
-    m_pModel->setItem(INDEX_LOG_LEVEL_DEBUG  ,0,createLogDescriptionTextItem("Debug"));
+   // m_pModel->setItem(0,0,createSubCategoryTextItem("Log Settings"));
+  //  m_pModel->setItem(0,1,createSubCategoryTextItem(""));
 
-    m_pModel->setItem(7,0,createSubCategoryTextItem("Server Settings"));
-    m_pModel->setItem(7,1,createSubCategoryTextItem(""));
+    auto settingItem = createSubCategoryTextItem("Log Settings");
+    rootNode->appendRow({settingItem, createSubCategoryTextItem("")});
 
-    m_pModel->setItem(INDEX_SEVER_ADDRESS,0,createServerDescriptionTextItem("Address", true));
-    m_pModel->setItem(INDEX_SEVER_PORT,0,createServerDescriptionTextItem("Port"));
 
-    //------ create data item ---------
+//    rootNode->appendRow({settintItem, settintItem1});
+//    settintItem->appendRow({createSubCategoryTextItem("LSettingsItem"), settintItem2});
     m_LogItems.push_back(createLogDataItem(Qt::Unchecked, true));
     m_LogItems.push_back(createLogDataItem(Qt::Unchecked));
     m_LogItems.push_back(createLogDataItem(Qt::Unchecked, true));
     m_LogItems.push_back(createLogDataItem(Qt::Unchecked));
     m_LogItems.push_back(createLogDataItem(Qt::Unchecked, true));
     m_LogItems.push_back(createLogDataItem(Qt::Unchecked));
+    quint8 tmp_cnt = 0u;
+    settingItem->appendRow({createLogDescriptionTextItem("All", true)   , m_LogItems[tmp_cnt++]});
+    settingItem->appendRow({createLogDescriptionTextItem("Fatal")       , m_LogItems[tmp_cnt++]});
+    settingItem->appendRow({createLogDescriptionTextItem("Error", true) , m_LogItems[tmp_cnt++]});
+    settingItem->appendRow({createLogDescriptionTextItem("Warning")     , m_LogItems[tmp_cnt++]});
+    settingItem->appendRow({createLogDescriptionTextItem("Info", true)  , m_LogItems[tmp_cnt++]});
+    settingItem->appendRow({createLogDescriptionTextItem("Debug")       , m_LogItems[tmp_cnt++]});
 
-    for (int var = 1; var < 7; ++var) {
-        m_pModel->setItem(var,1,m_LogItems[var-1]);
-    }
+
+//    m_pModel->setItem(INDEX_LOG_LEVEL_ALL    ,0,createLogDescriptionTextItem("All", true);
+//    m_pModel->setItem(INDEX_LOG_LEVEL_FATAL  ,0,createLogDescriptionTextItem("Fatal");
+//    m_pModel->setItem(INDEX_LOG_LEVEL_ERROR  ,0,createLogDescriptionTextItem("Error", true);
+//    m_pModel->setItem(INDEX_LOG_LEVEL_WARNING,0,createLogDescriptionTextItem("Warning");
+//    m_pModel->setItem(INDEX_LOG_LEVEL_INFO   ,0,createLogDescriptionTextItem("Info", true);
+//    m_pModel->setItem(INDEX_LOG_LEVEL_DEBUG  ,0,createLogDescriptionTextItem("Debug");
+
+//    m_pModel->setItem(7,0,createSubCategoryTextItem("Server Settings"));
+//    m_pModel->setItem(7,1,createSubCategoryTextItem(""));
+    auto serverSettings = createSubCategoryTextItem("Server Settings");
+    rootNode->appendRow({serverSettings, createSubCategoryTextItem("")});
 
     m_pServerAddressItem = createTextDataItem("localhost", QBrush(QColor(C_COLOR_L_SERVER)));
     m_pServerPortItem = createNumberDataItem(4002, QBrush(QColor(C_COLOR_N_SERVER)));
+    serverSettings->appendRow({createServerDescriptionTextItem("Address", true), m_pServerAddressItem});
+    serverSettings->appendRow({createServerDescriptionTextItem("Port"), m_pServerPortItem});
 
-    m_pModel->setItem(8, 1, m_pServerAddressItem);
-    m_pModel->setItem(9, 1, m_pServerPortItem);
+//    m_pModel->setItem(INDEX_SEVER_ADDRESS,0,createServerDescriptionTextItem("Address", true));
+//    m_pModel->setItem(INDEX_SEVER_PORT,0,createServerDescriptionTextItem("Port"));
+
+//    //------ create data item ---------
+//    m_LogItems.push_back(createLogDataItem(Qt::Unchecked, true));
+//    m_LogItems.push_back(createLogDataItem(Qt::Unchecked));
+//    m_LogItems.push_back(createLogDataItem(Qt::Unchecked, true));
+//    m_LogItems.push_back(createLogDataItem(Qt::Unchecked));
+//    m_LogItems.push_back(createLogDataItem(Qt::Unchecked, true));
+//    m_LogItems.push_back(createLogDataItem(Qt::Unchecked));
+
+//    for (int var = 1; var < 7; ++var) {
+//        m_pModel->setItem(var,1,m_LogItems[var-1]);
+//    }
+
+//    m_pServerAddressItem = createTextDataItem("localhost", QBrush(QColor(C_COLOR_L_SERVER)));
+//    m_pServerPortItem = createNumberDataItem(4002, QBrush(QColor(C_COLOR_N_SERVER)));
+
+//    m_pModel->setItem(8, 1, m_pServerAddressItem);
+    //    m_pModel->setItem(9, 1, m_pServerPortItem);
 }
+
+void CStandartItemSettings::generateModel2(TreeItem *parent, const TreeItem *rootItem)
+{
+    QList<TreeItem *> parents;
+    parents << parent;
+
+    QList<QVariant> columnData;
+    columnData.reserve(2u);
+    QVariant a;
+    a.setValue(createSubCategoryTextItem("Log Settings"));
+    columnData.append(a);
+    columnData.append("Value");
+
+    TreeItem *_parent = parents.last();
+
+    _parent->insertChildren(_parent->childCount(), 1, rootItem->columnCount());
+    _parent->child(_parent->childCount() - 1)->setData(0, columnData[0]);
+    _parent->child(_parent->childCount() - 1)->setData(1, columnData[1]);
+}
+
 
 QStandardItem *CStandartItemSettings::createSubCategoryTextItem(const QString &_text)
 {

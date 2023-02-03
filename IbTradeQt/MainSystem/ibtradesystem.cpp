@@ -5,10 +5,13 @@
 #include "MyLogger.h"
 #include "GlobalDef.h"
 #include <QTime>
+#include <QSharedPointer>
 
 IBTradeSystem::IBTradeSystem(QWidget *parent)
 	: QMainWindow(parent)
+    , myModel(parent)
     , m_settModel(parent)
+    , m_portfolioConfigModel(parent)
 {
 	ui.setupUi(this);
 	
@@ -17,11 +20,14 @@ IBTradeSystem::IBTradeSystem(QWidget *parent)
     this->setWindowTitle(QString("IB Trade v. ") + QString(APP_VERSION));
 
 
+
 	m_pTimeLabel = new QLabel(this);
 	ui.statusBar->addWidget(m_pTimeLabel);
 
     QObject::connect(&m_settModel, &CStandartItemSettings::signalEditLogSettingsCompleted, this, &IBTradeSystem::slotEditSettingLogSettingsComlited, Qt::QueuedConnection);
     QObject::connect(ui.actionClear_Log, &QAction::triggered, this, &IBTradeSystem::slotClearLog);
+    QObject::connect(ui.actionShow_Log, &QAction::triggered, this, &IBTradeSystem::slotShowLog);
+    QObject::connect(ui.actionSetting, &QAction::triggered, this, &IBTradeSystem::slotshowSettings);
 
     QObject::connect(&m_settModel, &CStandartItemSettings::signalEditServerPortCompleted, NHelper::writeServerPort);
     QObject::connect(&m_settModel, &CStandartItemSettings::signalEditServerAddresCompleted, NHelper::writeServerAddress);
@@ -31,6 +37,8 @@ IBTradeSystem::IBTradeSystem(QWidget *parent)
     createSettingsView();
 
     MyLogger::setDebugLevelMask(NHelper::getLoggerMask());
+
+    //ui.test_treeView->setModel(&m_portfolioConfigModel);
 
 }
 
@@ -45,15 +53,21 @@ void IBTradeSystem::createSettingsView()
     quint8 _mask = NHelper::getLoggerMask();
     QVector<bool> levelArr(LOG_LEVEL_COUNT);
     CStandartItemSettings::updateLoggerSettingsArray(_mask, levelArr);
-    m_settModel.setLoggerSettings(levelArr);
+//    m_settModel.setLoggerSettings(levelArr);
 
 
-    m_settModel.setServerSettings(NHelper::getServerAddress(), NHelper::getServerPort());
+//    m_settModel.setServerSettings(NHelper::getServerAddress(), NHelper::getServerPort());
 
-    ui.tableViewSettings->setModel(m_settModel.getModel());
-    QObject::connect(ui.tableViewSettings->model(), &QStandardItemModel::dataChanged,
+    ui.settingsTreeView->setModel(&myModel);
+
+    QObject::connect(ui.settingsTreeView->model(), &QStandardItemModel::dataChanged,
                      &m_settModel, &CStandartItemSettings::dataChangeCallback, Qt::AutoConnection);
+    ui.settingsTreeView->expandAll();
 
+//    ui.test_treeView->setModel(&myModel);
+//    ui.test_treeView->expandAll();
+//    QObject::connect(ui.test_treeView->model(), &QStandardItemModel::dataChanged,
+//                     &m_settModel, &CStandartItemSettings::dataChangeCallback, Qt::AutoConnection);
 }
 
 
@@ -96,5 +110,15 @@ void IBTradeSystem::slotEditSettingLogSettingsComlited()
 void IBTradeSystem::slotClearLog()
 {
     ui.textEdit->clear();
+}
+
+void IBTradeSystem::slotShowLog()
+{
+    ui.dockWidget_Logging->show();
+}
+
+void IBTradeSystem::slotshowSettings()
+{
+    ui.dockWidget_Settings->show();
 }
 

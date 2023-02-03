@@ -12,6 +12,7 @@
 #include <QtCore/QVariant>
 #include <QtGui/QAction>
 #include <QtWidgets/QApplication>
+#include <QtWidgets/QDockWidget>
 #include <QtWidgets/QFrame>
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QHBoxLayout>
@@ -22,9 +23,9 @@
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QSplitter>
 #include <QtWidgets/QStatusBar>
-#include <QtWidgets/QTableView>
 #include <QtWidgets/QTextEdit>
 #include <QtWidgets/QToolBar>
+#include <QtWidgets/QTreeView>
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QWidget>
 
@@ -34,6 +35,8 @@ class Ui_IBTradeSystemClass
 {
 public:
     QAction *actionClear_Log;
+    QAction *actionShow_Log;
+    QAction *actionSetting;
     QWidget *centralWidget;
     QVBoxLayout *verticalLayout_2;
     QSplitter *splitter_2;
@@ -51,15 +54,22 @@ public:
     QFrame *frame_4;
     QVBoxLayout *verticalLayout_3;
     QHBoxLayout *horizontalLayout_2;
-    QTableView *tableView;
-    QTableView *tableViewSettings;
-    QFrame *frameTextLog;
-    QGridLayout *gridLayout;
-    QTextEdit *textEdit;
+    QTreeView *test_treeView;
     QMenuBar *menuBar;
     QMenu *menuclear_log;
+    QMenu *menuView;
     QToolBar *mainToolBar;
     QStatusBar *statusBar;
+    QDockWidget *dockWidget_Logging;
+    QWidget *dockWidgetContents_2;
+    QGridLayout *gridLayout;
+    QHBoxLayout *horizontalLayout_3;
+    QTextEdit *textEdit;
+    QDockWidget *dockWidget_Settings;
+    QWidget *dockWidgetContents_3;
+    QGridLayout *gridLayout_3;
+    QHBoxLayout *horizontalLayout_4;
+    QTreeView *settingsTreeView;
 
     void setupUi(QMainWindow *IBTradeSystemClass)
     {
@@ -70,6 +80,14 @@ public:
         actionClear_Log->setObjectName("actionClear_Log");
         actionClear_Log->setCheckable(false);
         actionClear_Log->setChecked(false);
+        actionShow_Log = new QAction(IBTradeSystemClass);
+        actionShow_Log->setObjectName("actionShow_Log");
+        actionShow_Log->setCheckable(false);
+        actionShow_Log->setChecked(false);
+        actionSetting = new QAction(IBTradeSystemClass);
+        actionSetting->setObjectName("actionSetting");
+        actionSetting->setCheckable(false);
+        actionSetting->setChecked(false);
         centralWidget = new QWidget(IBTradeSystemClass);
         centralWidget->setObjectName("centralWidget");
         verticalLayout_2 = new QVBoxLayout(centralWidget);
@@ -156,20 +174,10 @@ public:
         horizontalLayout_2 = new QHBoxLayout();
         horizontalLayout_2->setSpacing(6);
         horizontalLayout_2->setObjectName("horizontalLayout_2");
-        tableView = new QTableView(frame_4);
-        tableView->setObjectName("tableView");
+        test_treeView = new QTreeView(frame_4);
+        test_treeView->setObjectName("test_treeView");
 
-        horizontalLayout_2->addWidget(tableView);
-
-        tableViewSettings = new QTableView(frame_4);
-        tableViewSettings->setObjectName("tableViewSettings");
-        tableViewSettings->setMinimumSize(QSize(0, 0));
-        tableViewSettings->setMaximumSize(QSize(350, 16777215));
-        tableViewSettings->setSelectionMode(QAbstractItemView::SingleSelection);
-        tableViewSettings->setSelectionBehavior(QAbstractItemView::SelectRows);
-        tableViewSettings->verticalHeader()->setVisible(false);
-
-        horizontalLayout_2->addWidget(tableViewSettings);
+        horizontalLayout_2->addWidget(test_treeView);
 
 
         verticalLayout_3->addLayout(horizontalLayout_2);
@@ -179,35 +187,17 @@ public:
         horizontalLayout->addWidget(splitter);
 
         splitter_2->addWidget(frameControlPanel);
-        frameTextLog = new QFrame(splitter_2);
-        frameTextLog->setObjectName("frameTextLog");
-        frameTextLog->setMinimumSize(QSize(10, 20));
-        frameTextLog->setBaseSize(QSize(0, 100));
-        frameTextLog->setLayoutDirection(Qt::LeftToRight);
-        frameTextLog->setFrameShape(QFrame::StyledPanel);
-        frameTextLog->setFrameShadow(QFrame::Raised);
-        gridLayout = new QGridLayout(frameTextLog);
-        gridLayout->setSpacing(6);
-        gridLayout->setContentsMargins(11, 11, 11, 11);
-        gridLayout->setObjectName("gridLayout");
-        gridLayout->setSizeConstraint(QLayout::SetDefaultConstraint);
-        gridLayout->setContentsMargins(2, 0, 2, 2);
-        textEdit = new QTextEdit(frameTextLog);
-        textEdit->setObjectName("textEdit");
-        textEdit->setFrameShape(QFrame::Box);
-
-        gridLayout->addWidget(textEdit, 1, 0, 1, 1);
-
-        splitter_2->addWidget(frameTextLog);
 
         verticalLayout_2->addWidget(splitter_2);
 
         IBTradeSystemClass->setCentralWidget(centralWidget);
         menuBar = new QMenuBar(IBTradeSystemClass);
         menuBar->setObjectName("menuBar");
-        menuBar->setGeometry(QRect(0, 0, 895, 17));
+        menuBar->setGeometry(QRect(0, 0, 895, 20));
         menuclear_log = new QMenu(menuBar);
         menuclear_log->setObjectName("menuclear_log");
+        menuView = new QMenu(menuBar);
+        menuView->setObjectName("menuView");
         IBTradeSystemClass->setMenuBar(menuBar);
         mainToolBar = new QToolBar(IBTradeSystemClass);
         mainToolBar->setObjectName("mainToolBar");
@@ -215,9 +205,69 @@ public:
         statusBar = new QStatusBar(IBTradeSystemClass);
         statusBar->setObjectName("statusBar");
         IBTradeSystemClass->setStatusBar(statusBar);
+        dockWidget_Logging = new QDockWidget(IBTradeSystemClass);
+        dockWidget_Logging->setObjectName("dockWidget_Logging");
+        dockWidget_Logging->setMinimumSize(QSize(289, 208));
+        dockWidget_Logging->setLayoutDirection(Qt::LeftToRight);
+        dockWidget_Logging->setFeatures(QDockWidget::DockWidgetClosable|QDockWidget::DockWidgetVerticalTitleBar);
+        dockWidget_Logging->setAllowedAreas(Qt::BottomDockWidgetArea);
+        dockWidgetContents_2 = new QWidget();
+        dockWidgetContents_2->setObjectName("dockWidgetContents_2");
+        gridLayout = new QGridLayout(dockWidgetContents_2);
+        gridLayout->setSpacing(6);
+        gridLayout->setContentsMargins(11, 11, 11, 11);
+        gridLayout->setObjectName("gridLayout");
+        horizontalLayout_3 = new QHBoxLayout();
+        horizontalLayout_3->setSpacing(6);
+        horizontalLayout_3->setObjectName("horizontalLayout_3");
+        textEdit = new QTextEdit(dockWidgetContents_2);
+        textEdit->setObjectName("textEdit");
+        QSizePolicy sizePolicy1(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
+        sizePolicy1.setHorizontalStretch(0);
+        sizePolicy1.setVerticalStretch(0);
+        sizePolicy1.setHeightForWidth(textEdit->sizePolicy().hasHeightForWidth());
+        textEdit->setSizePolicy(sizePolicy1);
+        textEdit->setFrameShape(QFrame::NoFrame);
+        textEdit->setSizeAdjustPolicy(QAbstractScrollArea::AdjustIgnored);
+
+        horizontalLayout_3->addWidget(textEdit);
+
+
+        gridLayout->addLayout(horizontalLayout_3, 0, 0, 1, 1);
+
+        dockWidget_Logging->setWidget(dockWidgetContents_2);
+        IBTradeSystemClass->addDockWidget(Qt::BottomDockWidgetArea, dockWidget_Logging);
+        dockWidget_Settings = new QDockWidget(IBTradeSystemClass);
+        dockWidget_Settings->setObjectName("dockWidget_Settings");
+        dockWidget_Settings->setMaximumSize(QSize(350, 524287));
+        dockWidget_Settings->setFeatures(QDockWidget::DockWidgetClosable|QDockWidget::DockWidgetMovable);
+        dockWidget_Settings->setAllowedAreas(Qt::LeftDockWidgetArea|Qt::RightDockWidgetArea);
+        dockWidgetContents_3 = new QWidget();
+        dockWidgetContents_3->setObjectName("dockWidgetContents_3");
+        dockWidgetContents_3->setEnabled(true);
+        gridLayout_3 = new QGridLayout(dockWidgetContents_3);
+        gridLayout_3->setSpacing(6);
+        gridLayout_3->setContentsMargins(11, 11, 11, 11);
+        gridLayout_3->setObjectName("gridLayout_3");
+        horizontalLayout_4 = new QHBoxLayout();
+        horizontalLayout_4->setSpacing(6);
+        horizontalLayout_4->setObjectName("horizontalLayout_4");
+        settingsTreeView = new QTreeView(dockWidgetContents_3);
+        settingsTreeView->setObjectName("settingsTreeView");
+
+        horizontalLayout_4->addWidget(settingsTreeView);
+
+
+        gridLayout_3->addLayout(horizontalLayout_4, 0, 0, 1, 1);
+
+        dockWidget_Settings->setWidget(dockWidgetContents_3);
+        IBTradeSystemClass->addDockWidget(Qt::RightDockWidgetArea, dockWidget_Settings);
 
         menuBar->addAction(menuclear_log->menuAction());
+        menuBar->addAction(menuView->menuAction());
         menuclear_log->addAction(actionClear_Log);
+        menuView->addAction(actionShow_Log);
+        menuView->addAction(actionSetting);
 
         retranslateUi(IBTradeSystemClass);
 
@@ -228,11 +278,16 @@ public:
     {
         IBTradeSystemClass->setWindowTitle(QCoreApplication::translate("IBTradeSystemClass", "IBTradeSystem V1", nullptr));
         actionClear_Log->setText(QCoreApplication::translate("IBTradeSystemClass", "Clear Log", nullptr));
+        actionShow_Log->setText(QCoreApplication::translate("IBTradeSystemClass", "Log", nullptr));
+        actionSetting->setText(QCoreApplication::translate("IBTradeSystemClass", "Setting", nullptr));
         pushButton->setText(QCoreApplication::translate("IBTradeSystemClass", "Connect", nullptr));
         pushButtonPairTrader->setText(QCoreApplication::translate("IBTradeSystemClass", "Pair Trader", nullptr));
         autoDeltaButton->setText(QCoreApplication::translate("IBTradeSystemClass", "Auto Delta", nullptr));
         pushButtonDBStore->setText(QCoreApplication::translate("IBTradeSystemClass", "DBStore", nullptr));
         menuclear_log->setTitle(QCoreApplication::translate("IBTradeSystemClass", "options", nullptr));
+        menuView->setTitle(QCoreApplication::translate("IBTradeSystemClass", "View", nullptr));
+        dockWidget_Logging->setWindowTitle(QCoreApplication::translate("IBTradeSystemClass", "Logs", nullptr));
+        dockWidget_Settings->setWindowTitle(QCoreApplication::translate("IBTradeSystemClass", "Settings", nullptr));
     } // retranslateUi
 
 };

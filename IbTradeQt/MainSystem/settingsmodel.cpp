@@ -9,166 +9,330 @@
 #define ROW_INDEX_SERVER_ADDRESS S_INDEX_SERVER_ADDRESS+1
 #define ROW_INDEX_SERVER_PORT S_INDEX_SERVER_PORT+1
 
-SettingsModel::SettingsModel(QObject *parent) : QAbstractTableModel(parent)
+SettingsModel::SettingsModel(QObject *parent) : QAbstractItemModel(parent)
 {
-    m_settngsName[0] = "Trace Level";
-    m_settngsName[S_INDEX_LOG_LEVEL_ALL+1] = "ALL";
-    m_settngsName[S_INDEX_LOG_LEVEL_DEBUG+1] = "Debug";
-    m_settngsName[S_INDEX_LOG_LEVEL_INFO+1] = "Info";
-    m_settngsName[S_INDEX_LOG_LEVEL_WARNING+1] = "Warning";
-    m_settngsName[S_INDEX_LOG_LEVEL_FATAL+1] = "Fatal";
-    m_settngsName[S_INDEX_LOG_LEVEL_ERROR+1] = "Error";
-    m_settngsName[ROW_INDEX_SERVER_TEXT] = "Broker Server";
-    m_settngsName[ROW_INDEX_SERVER_ADDRESS] = "Address";
-    m_settngsName[ROW_INDEX_SERVER_PORT] = "Port";
 
+    QList<ptrTextDataType> rootData;
+    rootData << ptrTextDataType(new stItemData("Parameter", EVT_TEXT)) << ptrTextDataType(new stItemData("Value", EVT_TEXT));
+
+    rootItem = new TreeItem(rootData);
+    m_data.setupModelData(rootItem);
+
+   // setupModelData(rootItem);
+
+
+
+//    m_settngsName[0] = "Trace Level";
+//    m_settngsName[S_INDEX_LOG_LEVEL_ALL+1] = "ALL";
+//    m_settngsName[S_INDEX_LOG_LEVEL_DEBUG+1] = "Debug";
+//    m_settngsName[S_INDEX_LOG_LEVEL_INFO+1] = "Info";
+//    m_settngsName[S_INDEX_LOG_LEVEL_WARNING+1] = "Warning";
+//    m_settngsName[S_INDEX_LOG_LEVEL_FATAL+1] = "Fatal";
+//    m_settngsName[S_INDEX_LOG_LEVEL_ERROR+1] = "Error";
+//    m_settngsName[ROW_INDEX_SERVER_TEXT] = "Broker Server";
+//    m_settngsName[ROW_INDEX_SERVER_ADDRESS] = "Address";
+//    m_settngsName[ROW_INDEX_SERVER_PORT] = "Port";
+
+}
+
+SettingsModel::~SettingsModel()
+{
+    delete rootItem;
 }
 
 int SettingsModel::rowCount(const QModelIndex &parent) const
 {
-    Q_UNUSED(parent);
-    return ROWS;
+    if (parent.isValid() && parent.column() > 0)
+        return 0;
+
+    const TreeItem *parentItem = getItem(parent);
+
+    return parentItem ? parentItem->childCount() : 0;
 }
 
 int SettingsModel::columnCount(const QModelIndex &parent) const
 {
     Q_UNUSED(parent);
-    return COLS;
+    return rootItem->columnCount();
 }
 
 QVariant SettingsModel::data(const QModelIndex &index, int role) const
 {
-    int row = index.row();
-    int col = index.column();
+
+    if (!index.isValid())
+        return QVariant();
+
+    TreeItem *item = getItem(index);
+    const auto itemData = item->data(index.column());
+
+    if (role != Qt::DisplayRole && role != Qt::EditRole && role != Qt::CheckStateRole)
+        return QVariant();
 
     switch (role) {
     case Qt::DisplayRole:
-        if(0 == col)
-        {
-            return m_settngsName[row];
-        }
-        else if((1 == col)
-                && (ROW_INDEX_SERVER_PORT == row))
-        {
-            return m_serverPort;
-        }
-        else if((1 == col)
-                && (ROW_INDEX_SERVER_ADDRESS == row))
-        {
-            //return m_serverAddress;
-            return m_severAddress2.toString();
-        }
+        if((itemData.vType & EVT_TEXT) == EVT_TEXT)
+            return itemData.value;
         break;
-
-    case Qt::FontRole:
-        if ((0 == row && 0 == col)
-            || (ROW_INDEX_SERVER_TEXT == row && 0 == col))
-        {
-            QFont boldFont;
-            boldFont.setBold(true);
-            return boldFont;
-        }
-        break;
-
-    case Qt::BackgroundRole:
-        if ((0 == row) || (ROW_INDEX_SERVER_TEXT == row))
-            return QBrush(QColor(177, 180, 181));
-
-        break;
-
-    case Qt::TextAlignmentRole:
-        if (row == 1 && col == 1) //change text alignment only for cell(1,1)
-            return QVariant::fromValue(Qt::AlignRight | Qt::AlignVCenter);
-        break;
-
     case Qt::CheckStateRole:
-        if ((col == 1) && (row >= 1) && (row <= ROW_INDEX_LAST_LOG))
-        {
-            return m_logLevel[row-1] ? Qt::Checked : Qt::Unchecked;
-
-        }
+        if(itemData.vType == EVT_CECK_BOX)
+            return itemData.value;
+        break;
+    default:
         break;
     }
+
     return QVariant();
+
+//    int row = index.row();
+//    int col = index.column();
+
+//    switch (role) {
+//    case Qt::DisplayRole:
+//        if(0 == col)
+//        {
+//            return m_settngsName[row];
+//        }
+//        else if((1 == col)
+//                && (ROW_INDEX_SERVER_PORT == row))
+//        {
+//            return m_serverPort;
+//        }
+//        else if((1 == col)
+//                && (ROW_INDEX_SERVER_ADDRESS == row))
+//        {
+//            //return m_serverAddress;
+//            return m_severAddress2.toString();
+//        }
+//        break;
+
+//    case Qt::FontRole:
+//        if ((0 == row && 0 == col)
+//            || (ROW_INDEX_SERVER_TEXT == row && 0 == col))
+//        {
+//            QFont boldFont;
+//            boldFont.setBold(true);
+//            return boldFont;
+//        }
+//        break;
+
+//    case Qt::BackgroundRole:
+//        if ((0 == row) || (ROW_INDEX_SERVER_TEXT == row))
+//            return QBrush(QColor(177, 180, 181));
+
+//        break;
+
+//    case Qt::TextAlignmentRole:
+//        if (row == 1 && col == 1) //change text alignment only for cell(1,1)
+//            return QVariant::fromValue(Qt::AlignRight | Qt::AlignVCenter);
+//        break;
+
+//    case Qt::CheckStateRole:
+//        if ((col == 1) && (row >= 1) && (row <= ROW_INDEX_LAST_LOG))
+//        {
+//            return m_logLevel[row-1] ? Qt::Checked : Qt::Unchecked;
+
+//        }
+//        break;
+//    }
+//    return QVariant();
 }
 
 QVariant SettingsModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
-    if (role == Qt::DisplayRole && orientation == Qt::Horizontal) {
-        switch (section) {
-        case 0:
-            return QString("Porperty");
-        case 1:
-            return QString("Value");
-        }
-    }
+    if (orientation == Qt::Horizontal && role == Qt::DisplayRole)
+        return rootItem->data(section).value;
+
     return QVariant();
+
+//    if (role == Qt::DisplayRole && orientation == Qt::Horizontal) {
+//        switch (section) {
+//        case 0:
+//            return QString("Porperty");
+//        case 1:
+//            return QString("Value");
+//        }
+//    }
+//    return QVariant();
 }
 
 bool SettingsModel::setData(const QModelIndex &index, const QVariant &value, int role)
 {
-    bool ret = false;
-    if (!index.isValid() /*|| role != Qt::EditRole*/)
+    if ((role != Qt::EditRole) && (role != Qt::CheckStateRole))
         return false;
 
-    if (role == Qt::EditRole) {
-        if(ROW_INDEX_SERVER_ADDRESS == index.row())
-        {
-            QHostAddress address(value.toString());
-            if (QAbstractSocket::IPv4Protocol == address.protocol())
-            {
-               m_severAddress2.setAddress(value.toString());
-            }
-
-        }
-        else if(ROW_INDEX_SERVER_PORT == index.row())
-        {
-            m_serverPort = value.toUInt();
-        }
-        ret = true;
-    }
-
-    if (role == Qt::CheckStateRole)
+    TreeItem *item = getItem(index);
+    const auto itemData = item->data(index.column());
+    bool result = false;
+    if(0u == (itemData.vType & EVT_READ_ONLY))
     {
-        m_logLevel[index.row()-1] = value.toBool();
-        emit signalEditCompleted();
-        ret = true;
-    }
+       result = item->setData(index.column(), value);
+       if(result){
+           switch (itemData.vType & EVT_VALUE_MASK) {
+           case EVT_TEXT:
+               emit dataChanged(index, index, {Qt::DisplayRole, Qt::EditRole});
+               break;
+           case EVT_CECK_BOX:
+               emit dataChanged(index, index, {Qt::DisplayRole, Qt::CheckStateRole});
+               break;
+           default:
+               break;
+           }
 
-    return ret;
+       }
+    }
+    return result;
+
+//    bool ret = false;
+//    if (!index.isValid() /*|| role != Qt::EditRole*/)
+//        return false;
+
+//    if (role == Qt::EditRole) {
+//        if(ROW_INDEX_SERVER_ADDRESS == index.row())
+//        {
+//            QHostAddress address(value.toString());
+//            if (QAbstractSocket::IPv4Protocol == address.protocol())
+//            {
+//               m_severAddress2.setAddress(value.toString());
+//            }
+
+//        }
+//        else if(ROW_INDEX_SERVER_PORT == index.row())
+//        {
+//            m_serverPort = value.toUInt();
+//        }
+//        ret = true;
+//    }
+
+//    if (role == Qt::CheckStateRole)
+//    {
+//        m_logLevel[index.row()-1] = value.toBool();
+//        emit signalEditCompleted();
+//        ret = true;
+//    }
+
+//    return ret;
 }
 
 Qt::ItemFlags SettingsModel::flags(const QModelIndex &index) const
 {
-    if(index.column() == 0)
-    {
-       return QAbstractTableModel::flags(index);
-    }
-    else if((index.column() == 1) && (index.row() >= 1) && (index.row() <= ROW_INDEX_LAST_LOG))
-    {
-       return Qt::ItemIsUserCheckable | QAbstractTableModel::flags(index);
-    }
-    else if((index.column() == 1) && (index.row() > ROW_INDEX_SERVER_TEXT))
-    {
-       return Qt::ItemIsEditable | QAbstractTableModel::flags(index);
-    }
+    if (!index.isValid())
+        return Qt::NoItemFlags;
 
-    return QAbstractTableModel::flags(index);
+    TreeItem *item = getItem(index);
+    const auto itemData = item->data(index.column());
+    if(EVT_READ_ONLY == (itemData.vType & EVT_READ_ONLY))
+        return QAbstractItemModel::flags(index);
+
+    return Qt::ItemIsEditable | Qt::ItemIsUserCheckable | QAbstractItemModel::flags(index);
+
+//    if(index.column() == 0)
+//    {
+//       return QStandardItemModel::flags(index);
+//    }
+//    else if((index.column() == 1) && (index.row() >= 1) && (index.row() <= ROW_INDEX_LAST_LOG))
+//    {
+//       return Qt::ItemIsUserCheckable | QStandardItemModel::flags(index);
+//    }
+//    else if((index.column() == 1) && (index.row() > ROW_INDEX_SERVER_TEXT))
+//    {
+//       return Qt::ItemIsEditable | QStandardItemModel::flags(index);
+//    }
+
+    //    return QStandardItemModel::flags(index);
 }
 
-void SettingsModel::setLoggerSettings(const bool _levels[])
+QModelIndex SettingsModel::index(int row, int column, const QModelIndex &parent) const
 {
-    memcpy(m_logLevel, _levels, S_LOG_LEVEL_COUNT);
+    if (parent.isValid() && parent.column() != 0)
+        return QModelIndex();
+
+    TreeItem *parentItem = getItem(parent);
+    if (!parentItem)
+        return QModelIndex();
+
+    TreeItem *childItem = parentItem->child(row);
+    if (childItem)
+        return createIndex(row, column, childItem);
+    return QModelIndex();
 }
 
-const bool *SettingsModel::getLoggerSettings()
+QModelIndex SettingsModel::parent(const QModelIndex &index) const
 {
-    return m_logLevel;
+    if (!index.isValid())
+        return QModelIndex();
+
+    TreeItem *childItem = getItem(index);
+    TreeItem *parentItem = childItem ? childItem->parent() : nullptr;
+
+    if (parentItem == rootItem || !parentItem)
+        return QModelIndex();
+
+    return createIndex(parentItem->childNumber(), 0, parentItem);
 }
 
-void SettingsModel::setServerSettings(const QString &_addr, const quint16 &_port)
+void SettingsModel::setupModelData(TreeItem *parent)
 {
-    m_serverAddress = _addr;
-    m_severAddress2.setAddress(_addr);
-    m_serverPort = _port;
+    QList<TreeItem *> parents;
+    parents << parent;
+
+//    QStandardItem *logTextItem = new QStandardItem("_text");
+//    logTextItem->setBackground(QBrush(QColor(177, 180, 181)));
+//    QFont _font = logTextItem->font();
+//    _font.setBold(true);
+//    _font.setItalic(true);
+//    logTextItem->setFont(_font);
+//    logTextItem->setFlags(logTextItem->flags() & (~Qt::ItemFlag::ItemIsEditable));
+//    QVariant tmp;
+//    tmp.setValue(logTextItem);
+
+    QList<ptrTextDataType> _columnData;
+    _columnData.reserve(2u);
+    _columnData.append(ptrTextDataType(new stItemData("Test", EVT_TEXT)));
+    _columnData.append(ptrTextDataType(new stItemData(QVariant(), EVT_TEXT)));
+
+
+    TreeItem *_parent = parents.last();
+    _parent->insertChildren(_parent->childCount(), 1, rootItem->columnCount());
+    for (int column = 0; column < _columnData.size(); ++column)
+        _parent->child(_parent->childCount() - 1)->addData(column, _columnData[column]);
+
+    QList<ptrTextDataType> columnData;
+    columnData.reserve(2u);
+    columnData.append(ptrTextDataType( new stItemData("Test", EVT_TEXT)));
+    columnData.append(ptrTextDataType(new stItemData(Qt::Checked, EVT_CECK_BOX)));
+
+    TreeItem *_parent1 = _parent->child(_parent->childCount() - 1);
+    _parent1->insertChildren(_parent1->childCount(), 1, rootItem->columnCount());
+    for (int column = 0; column < columnData.size(); ++column)
+        _parent1->child(_parent1->childCount() - 1)->addData(column, columnData[column]);
+    _parent1->insertChildren(_parent1->childCount(), 1, rootItem->columnCount());
+    for (int column = 0; column < columnData.size(); ++column)
+        _parent1->child(_parent1->childCount() - 1)->addData(column, columnData[column]);
+}
+
+//void SettingsModel::setLoggerSettings(const bool _levels[])
+//{
+//    memcpy(m_logLevel, _levels, S_LOG_LEVEL_COUNT);
+//}
+
+//const bool *SettingsModel::getLoggerSettings()
+//{
+//    return m_logLevel;
+//}
+
+//void SettingsModel::setServerSettings(const QString &_addr, const quint16 &_port)
+//{
+//    m_serverAddress = _addr;
+//    m_severAddress2.setAddress(_addr);
+//    m_serverPort = _port;
+//}
+
+TreeItem *SettingsModel::getItem(const QModelIndex &index) const
+{
+    if (index.isValid()) {
+        TreeItem *item = static_cast<TreeItem*>(index.internalPointer());
+        if (item)
+            return item;
+    }
+    return rootItem;
 }

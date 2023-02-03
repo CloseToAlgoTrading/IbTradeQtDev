@@ -9,7 +9,7 @@
 
 struct CommissionReport
 {
-	CommissionReport()
+    CommissionReport()
 	{
 		commission = 0;
 		realizedPNL = 0;
