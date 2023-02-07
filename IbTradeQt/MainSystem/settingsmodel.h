@@ -52,10 +52,8 @@ public:
                       const QModelIndex &parent = QModelIndex()) const override;
     QModelIndex parent(const QModelIndex &index) const override;
 
-//    void setLoggerSettings(const bool _levels[]);
-//    const bool *getLoggerSettings();
+    CSettinsModelData* getDataObject();
 
-//    void setServerSettings(const QString & _addr, const quint16 &_port);
 private:
     void setupModelData(TreeItem *parent);
     TreeItem *getItem(const QModelIndex &index) const;
@@ -72,6 +70,7 @@ private:
     TreeItem *rootItem;
 signals:
     void signalEditCompleted();
+    void siganlSataChangeCallback(const ptrTextDataType pDataItem);
 
 public slots:
 };

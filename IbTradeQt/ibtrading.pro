@@ -112,7 +112,7 @@ SOURCES += \
     DBStore/dbstoremodel.cpp \
     Common/contractsdefs.cpp \
     Common/OrderSamples.cpp \
-    MainSystem/cstandartitemsettings.cpp \
+    #MainSystem/cstandartitemsettings.cpp \
     MainSystem/treeitem.cpp
 
 
@@ -232,7 +232,7 @@ HEADERS += \
     DBStore/dbstoremodel.h \
     Common/contractsdefs.h \
     Common/OrderSamples.h \
-    MainSystem/cstandartitemsettings.h \
+    #MainSystem/cstandartitemsettings.h \
     MainSystem/treeitem.cpp
 
 

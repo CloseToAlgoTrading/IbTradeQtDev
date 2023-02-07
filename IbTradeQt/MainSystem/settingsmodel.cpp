@@ -9,14 +9,20 @@
 #define ROW_INDEX_SERVER_ADDRESS S_INDEX_SERVER_ADDRESS+1
 #define ROW_INDEX_SERVER_PORT S_INDEX_SERVER_PORT+1
 
-SettingsModel::SettingsModel(QObject *parent) : QAbstractItemModel(parent)
+SettingsModel::SettingsModel(QObject *parent)
+    : QAbstractItemModel(parent)
+    , m_data(parent)
 {
 
     QList<ptrTextDataType> rootData;
-    rootData << ptrTextDataType(new stItemData("Parameter", EVT_TEXT)) << ptrTextDataType(new stItemData("Value", EVT_TEXT));
+    rootData << ptrTextDataType(new stItemData("Parameter", EVT_TEXT, S_DATA_ID_UNSET)) << ptrTextDataType(new stItemData("Value", EVT_TEXT, S_DATA_ID_UNSET));
 
     rootItem = new TreeItem(rootData);
     m_data.setupModelData(rootItem);
+
+
+    QObject::connect(this, &SettingsModel::dataChanged,
+                     &m_data, &CSettinsModelData::dataChangeCallback, Qt::AutoConnection);
 
    // setupModelData(rootItem);
 
@@ -270,6 +276,11 @@ QModelIndex SettingsModel::parent(const QModelIndex &index) const
     return createIndex(parentItem->childNumber(), 0, parentItem);
 }
 
+CSettinsModelData *SettingsModel::getDataObject()
+{
+    return &(this->m_data);
+}
+
 void SettingsModel::setupModelData(TreeItem *parent)
 {
     QList<TreeItem *> parents;
@@ -285,29 +296,29 @@ void SettingsModel::setupModelData(TreeItem *parent)
 //    QVariant tmp;
 //    tmp.setValue(logTextItem);
 
-    QList<ptrTextDataType> _columnData;
-    _columnData.reserve(2u);
-    _columnData.append(ptrTextDataType(new stItemData("Test", EVT_TEXT)));
-    _columnData.append(ptrTextDataType(new stItemData(QVariant(), EVT_TEXT)));
+//    QList<ptrTextDataType> _columnData;
+//    _columnData.reserve(2u);
+//    _columnData.append(ptrTextDataType(new stItemData("Test", EVT_TEXT)));
+//    _columnData.append(ptrTextDataType(new stItemData(QVariant(), EVT_TEXT)));
 
 
-    TreeItem *_parent = parents.last();
-    _parent->insertChildren(_parent->childCount(), 1, rootItem->columnCount());
-    for (int column = 0; column < _columnData.size(); ++column)
-        _parent->child(_parent->childCount() - 1)->addData(column, _columnData[column]);
+//    TreeItem *_parent = parents.last();
+//    _parent->insertChildren(_parent->childCount(), 1, rootItem->columnCount());
+//    for (int column = 0; column < _columnData.size(); ++column)
+//        _parent->child(_parent->childCount() - 1)->addData(column, _columnData[column]);
 
-    QList<ptrTextDataType> columnData;
-    columnData.reserve(2u);
-    columnData.append(ptrTextDataType( new stItemData("Test", EVT_TEXT)));
-    columnData.append(ptrTextDataType(new stItemData(Qt::Checked, EVT_CECK_BOX)));
+//    QList<ptrTextDataType> columnData;
+//    columnData.reserve(2u);
+//    columnData.append(ptrTextDataType( new stItemData("Test", EVT_TEXT)));
+//    columnData.append(ptrTextDataType(new stItemData(Qt::Checked, EVT_CECK_BOX)));
 
-    TreeItem *_parent1 = _parent->child(_parent->childCount() - 1);
-    _parent1->insertChildren(_parent1->childCount(), 1, rootItem->columnCount());
-    for (int column = 0; column < columnData.size(); ++column)
-        _parent1->child(_parent1->childCount() - 1)->addData(column, columnData[column]);
-    _parent1->insertChildren(_parent1->childCount(), 1, rootItem->columnCount());
-    for (int column = 0; column < columnData.size(); ++column)
-        _parent1->child(_parent1->childCount() - 1)->addData(column, columnData[column]);
+//    TreeItem *_parent1 = _parent->child(_parent->childCount() - 1);
+//    _parent1->insertChildren(_parent1->childCount(), 1, rootItem->columnCount());
+//    for (int column = 0; column < columnData.size(); ++column)
+//        _parent1->child(_parent1->childCount() - 1)->addData(column, columnData[column]);
+//    _parent1->insertChildren(_parent1->childCount(), 1, rootItem->columnCount());
+//    for (int column = 0; column < columnData.size(); ++column)
+//        _parent1->child(_parent1->childCount() - 1)->addData(column, columnData[column]);
 }
 
 //void SettingsModel::setLoggerSettings(const bool _levels[])
