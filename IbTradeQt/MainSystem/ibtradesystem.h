@@ -5,8 +5,7 @@
 #include <QtConcurrent/QtConcurrentRun>
 #include "ui_ibtradesystem.h"
 #include <QLabel>
-#include "settingsmodel.h"
-#include "PortfolioConfigModel.h"
+#include "CTreeViewCustomModel.h"
 
 class IBTradeSystem : public QMainWindow
 {
@@ -28,8 +27,8 @@ private:
 private:
 	Ui::IBTradeSystemClass ui;
 	QLabel * m_pTimeLabel;
-    SettingsModel m_SettingsModel;
-    PortfolioConfigModel m_portfolioConfigModel;
+    CTreeViewCustomModel m_SettingsModel;
+    CTreeViewCustomModel m_portfolioConfigModel;
 
 
 private slots:

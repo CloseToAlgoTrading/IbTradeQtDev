@@ -1,52 +1,33 @@
-#include "settingsmodel.h"
+#include "ctreeviewcustommodel.h"
 #include <QFont>
 #include <QDebug>
 #include <QBrush>
 
-#define ROW_INDEX_LOG_TEXT 0
-#define ROW_INDEX_LAST_LOG S_LOG_LEVEL_COUNT
-#define ROW_INDEX_SERVER_TEXT S_INDEX_SERVER_TEXT+1
-#define ROW_INDEX_SERVER_ADDRESS S_INDEX_SERVER_ADDRESS+1
-#define ROW_INDEX_SERVER_PORT S_INDEX_SERVER_PORT+1
+//#define ROW_INDEX_LOG_TEXT 0
+//#define ROW_INDEX_LAST_LOG S_LOG_LEVEL_COUNT
+//#define ROW_INDEX_SERVER_TEXT S_INDEX_SERVER_TEXT+1
+//#define ROW_INDEX_SERVER_ADDRESS S_INDEX_SERVER_ADDRESS+1
+//#define ROW_INDEX_SERVER_PORT S_INDEX_SERVER_PORT+1
 
-SettingsModel::SettingsModel(QObject *parent)
+CTreeViewCustomModel::CTreeViewCustomModel(QObject *parent, CTreeViewDataModel* _dataModel)
     : QAbstractItemModel(parent)
-    , m_data(parent)
+    , m_data(_dataModel)
 {
-
-    QList<ptrTextDataType> rootData;
-    rootData << ptrTextDataType(new stItemData("Parameter", EVT_TEXT, S_DATA_ID_UNSET)) << ptrTextDataType(new stItemData("Value", EVT_TEXT, S_DATA_ID_UNSET));
-
-    rootItem = new TreeItem(rootData);
-    m_data.setupModelData(rootItem);
-
-
-    QObject::connect(this, &SettingsModel::dataChanged,
-                     &m_data, &CSettinsModelData::dataChangeCallback, Qt::AutoConnection);
-
-   // setupModelData(rootItem);
-
-
-
-//    m_settngsName[0] = "Trace Level";
-//    m_settngsName[S_INDEX_LOG_LEVEL_ALL+1] = "ALL";
-//    m_settngsName[S_INDEX_LOG_LEVEL_DEBUG+1] = "Debug";
-//    m_settngsName[S_INDEX_LOG_LEVEL_INFO+1] = "Info";
-//    m_settngsName[S_INDEX_LOG_LEVEL_WARNING+1] = "Warning";
-//    m_settngsName[S_INDEX_LOG_LEVEL_FATAL+1] = "Fatal";
-//    m_settngsName[S_INDEX_LOG_LEVEL_ERROR+1] = "Error";
-//    m_settngsName[ROW_INDEX_SERVER_TEXT] = "Broker Server";
-//    m_settngsName[ROW_INDEX_SERVER_ADDRESS] = "Address";
-//    m_settngsName[ROW_INDEX_SERVER_PORT] = "Port";
-
+    if(NULL != m_data)
+    {
+        rootItem = new TreeItem(QList<pItemDataType>());
+        m_data->setupModelData(rootItem);
+        QObject::connect(this, &CTreeViewCustomModel::dataChanged,
+                         m_data, &CTreeViewDataModel::dataChangeCallback, Qt::AutoConnection);
+    }
 }
 
-SettingsModel::~SettingsModel()
+CTreeViewCustomModel::~CTreeViewCustomModel()
 {
     delete rootItem;
 }
 
-int SettingsModel::rowCount(const QModelIndex &parent) const
+int CTreeViewCustomModel::rowCount(const QModelIndex &parent) const
 {
     if (parent.isValid() && parent.column() > 0)
         return 0;
@@ -56,13 +37,13 @@ int SettingsModel::rowCount(const QModelIndex &parent) const
     return parentItem ? parentItem->childCount() : 0;
 }
 
-int SettingsModel::columnCount(const QModelIndex &parent) const
+int CTreeViewCustomModel::columnCount(const QModelIndex &parent) const
 {
     Q_UNUSED(parent);
     return rootItem->columnCount();
 }
 
-QVariant SettingsModel::data(const QModelIndex &index, int role) const
+QVariant CTreeViewCustomModel::data(const QModelIndex &index, int role) const
 {
 
     if (!index.isValid())
@@ -143,7 +124,7 @@ QVariant SettingsModel::data(const QModelIndex &index, int role) const
 //    return QVariant();
 }
 
-QVariant SettingsModel::headerData(int section, Qt::Orientation orientation, int role) const
+QVariant CTreeViewCustomModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
     if (orientation == Qt::Horizontal && role == Qt::DisplayRole)
         return rootItem->data(section).value;
@@ -161,7 +142,7 @@ QVariant SettingsModel::headerData(int section, Qt::Orientation orientation, int
 //    return QVariant();
 }
 
-bool SettingsModel::setData(const QModelIndex &index, const QVariant &value, int role)
+bool CTreeViewCustomModel::setData(const QModelIndex &index, const QVariant &value, int role)
 {
     if ((role != Qt::EditRole) && (role != Qt::CheckStateRole))
         return false;
@@ -219,7 +200,7 @@ bool SettingsModel::setData(const QModelIndex &index, const QVariant &value, int
 //    return ret;
 }
 
-Qt::ItemFlags SettingsModel::flags(const QModelIndex &index) const
+Qt::ItemFlags CTreeViewCustomModel::flags(const QModelIndex &index) const
 {
     if (!index.isValid())
         return Qt::NoItemFlags;
@@ -247,7 +228,7 @@ Qt::ItemFlags SettingsModel::flags(const QModelIndex &index) const
     //    return QStandardItemModel::flags(index);
 }
 
-QModelIndex SettingsModel::index(int row, int column, const QModelIndex &parent) const
+QModelIndex CTreeViewCustomModel::index(int row, int column, const QModelIndex &parent) const
 {
     if (parent.isValid() && parent.column() != 0)
         return QModelIndex();
@@ -262,7 +243,7 @@ QModelIndex SettingsModel::index(int row, int column, const QModelIndex &parent)
     return QModelIndex();
 }
 
-QModelIndex SettingsModel::parent(const QModelIndex &index) const
+QModelIndex CTreeViewCustomModel::parent(const QModelIndex &index) const
 {
     if (!index.isValid())
         return QModelIndex();
@@ -276,12 +257,12 @@ QModelIndex SettingsModel::parent(const QModelIndex &index) const
     return createIndex(parentItem->childNumber(), 0, parentItem);
 }
 
-CSettinsModelData *SettingsModel::getDataObject()
+CTreeViewDataModel *CTreeViewCustomModel::getDataObject()
 {
-    return &(this->m_data);
+    return this->m_data;
 }
 
-void SettingsModel::setupModelData(TreeItem *parent)
+void CTreeViewCustomModel::setupModelData(TreeItem *parent)
 {
     QList<TreeItem *> parents;
     parents << parent;
@@ -338,7 +319,7 @@ void SettingsModel::setupModelData(TreeItem *parent)
 //    m_serverPort = _port;
 //}
 
-TreeItem *SettingsModel::getItem(const QModelIndex &index) const
+TreeItem *CTreeViewCustomModel::getItem(const QModelIndex &index) const
 {
     if (index.isValid()) {
         TreeItem *item = static_cast<TreeItem*>(index.internalPointer());

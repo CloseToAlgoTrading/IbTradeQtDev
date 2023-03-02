@@ -2,8 +2,7 @@
 #include "MyLogger.h"
 
 CSettinsModelData::CSettinsModelData(QObject *parent)
-    : QObject(parent),
-    m_pServerAddress(),
+    : m_pServerAddress(),
     m_pServerPort(),
     m_plogLevel()
 {
@@ -12,55 +11,61 @@ CSettinsModelData::CSettinsModelData(QObject *parent)
 
 void CSettinsModelData::setupModelData(TreeItem *rootItem)
 {
+
+    rootItem->insertColumns(0,2);
+    rootItem->addData(0, pItemDataType(new stItemData("Parameter", EVT_TEXT, S_DATA_ID_UNSET)));
+    rootItem->addData(1, pItemDataType(new stItemData("Value", EVT_TEXT, S_DATA_ID_UNSET)));
+
     QList<TreeItem *> parents;
     parents << rootItem;
 
     TreeItem *parent = parents.last();
+
     parent->insertChildren(parent->childCount(), 1, rootItem->columnCount());
-    parent->child(parent->childCount() - 1)->addData(0, ptrTextDataType(new stItemData("Servers", EVET_RO_TEXT, S_DATA_ID_UNSET)));
-    parent->child(parent->childCount() - 1)->addData(1, ptrTextDataType(new stItemData(QVariant(), EVT_READ_ONLY, S_DATA_ID_UNSET)));
+    parent->child(parent->childCount() - 1)->addData(0, pItemDataType(new stItemData("Servers", EVET_RO_TEXT, S_DATA_ID_UNSET)));
+    parent->child(parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(QVariant(), EVT_READ_ONLY, S_DATA_ID_UNSET)));
 
     TreeItem *_parent = parent->child(parent->childCount() - 1);
     _parent->insertChildren(_parent->childCount(), 1, rootItem->columnCount());
-    m_pServerAddress = ptrTextDataType(new stItemData("127.0.0.1", EVT_TEXT, S_DATA_ID_SERVER_ADDRESS));
-    _parent->child(_parent->childCount() - 1)->addData(0, ptrTextDataType(new stItemData("Address", EVET_RO_TEXT, S_DATA_ID_UNSET)));
-    m_pServerPort = ptrTextDataType(new stItemData("4448", EVT_TEXT, S_DATA_ID_SERVER_PORT));
+    m_pServerAddress = pItemDataType(new stItemData("127.0.0.1", EVT_TEXT, S_DATA_ID_SERVER_ADDRESS));
+    _parent->child(_parent->childCount() - 1)->addData(0, pItemDataType(new stItemData("Address", EVET_RO_TEXT, S_DATA_ID_UNSET)));
+    m_pServerPort = pItemDataType(new stItemData("4448", EVT_TEXT, S_DATA_ID_SERVER_PORT));
     _parent->child(_parent->childCount() - 1)->addData(1, m_pServerAddress);
     _parent->insertChildren(_parent->childCount(), 1, rootItem->columnCount());
-    _parent->child(_parent->childCount() - 1)->addData(0, ptrTextDataType(new stItemData("Port", EVET_RO_TEXT, S_DATA_ID_UNSET)));
+    _parent->child(_parent->childCount() - 1)->addData(0, pItemDataType(new stItemData("Port", EVET_RO_TEXT, S_DATA_ID_UNSET)));
     _parent->child(_parent->childCount() - 1)->addData(1, m_pServerPort);
 
     parent->insertChildren(parent->childCount(), 1, rootItem->columnCount());
-    parent->child(parent->childCount() - 1)->addData(0, ptrTextDataType(new stItemData("Log Setting", EVET_RO_TEXT, S_DATA_ID_UNSET)));
-    parent->child(parent->childCount() - 1)->addData(1, ptrTextDataType(new stItemData(QVariant(), EVT_READ_ONLY, S_DATA_ID_UNSET)));
+    parent->child(parent->childCount() - 1)->addData(0, pItemDataType(new stItemData("Log Setting", EVET_RO_TEXT, S_DATA_ID_UNSET)));
+    parent->child(parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(QVariant(), EVT_READ_ONLY, S_DATA_ID_UNSET)));
 
     m_plogLevel.reserve(S_LOG_LEVEL_COUNT);
-    m_plogLevel.append(ptrTextDataType(new stItemData(Qt::Checked, EVT_CECK_BOX, S_DATA_ID_LOG_LEVEL_ALL)));
-    m_plogLevel.append(ptrTextDataType(new stItemData(Qt::Unchecked, EVT_CECK_BOX, S_DATA_ID_LOG_LEVEL_FATAL)));
-    m_plogLevel.append(ptrTextDataType(new stItemData(Qt::Unchecked, EVT_CECK_BOX, S_DATA_ID_LOG_LEVEL_ERROR)));
-    m_plogLevel.append(ptrTextDataType(new stItemData(Qt::Unchecked, EVT_CECK_BOX, S_DATA_ID_LOG_LEVEL_WARNING)));
-    m_plogLevel.append(ptrTextDataType(new stItemData(Qt::Unchecked, EVT_CECK_BOX, S_DATA_ID_LOG_LEVEL_INFO)));
-    m_plogLevel.append(ptrTextDataType(new stItemData(Qt::Unchecked, EVT_CECK_BOX, S_DATA_ID_LOG_LEVEL_DEBUG)));
+    m_plogLevel.append(pItemDataType(new stItemData(Qt::Checked, EVT_CECK_BOX, S_DATA_ID_LOG_LEVEL_ALL)));
+    m_plogLevel.append(pItemDataType(new stItemData(Qt::Unchecked, EVT_CECK_BOX, S_DATA_ID_LOG_LEVEL_FATAL)));
+    m_plogLevel.append(pItemDataType(new stItemData(Qt::Unchecked, EVT_CECK_BOX, S_DATA_ID_LOG_LEVEL_ERROR)));
+    m_plogLevel.append(pItemDataType(new stItemData(Qt::Unchecked, EVT_CECK_BOX, S_DATA_ID_LOG_LEVEL_WARNING)));
+    m_plogLevel.append(pItemDataType(new stItemData(Qt::Unchecked, EVT_CECK_BOX, S_DATA_ID_LOG_LEVEL_INFO)));
+    m_plogLevel.append(pItemDataType(new stItemData(Qt::Unchecked, EVT_CECK_BOX, S_DATA_ID_LOG_LEVEL_DEBUG)));
 
 
     _parent = parent->child(parent->childCount() - 1);
     _parent->insertChildren(_parent->childCount(), 1, rootItem->columnCount());
-    _parent->child(_parent->childCount() - 1)->addData(0, ptrTextDataType(new stItemData("ALL", EVET_RO_TEXT, S_DATA_ID_UNSET)));
+    _parent->child(_parent->childCount() - 1)->addData(0, pItemDataType(new stItemData("ALL", EVET_RO_TEXT, S_DATA_ID_UNSET)));
     _parent->child(_parent->childCount() - 1)->addData(1, m_plogLevel.at(S_INDEX_LOG_LEVEL_ALL));
     _parent->insertChildren(_parent->childCount(), 1, rootItem->columnCount());
-    _parent->child(_parent->childCount() - 1)->addData(0, ptrTextDataType(new stItemData("Fatal", EVET_RO_TEXT, S_DATA_ID_UNSET)));
+    _parent->child(_parent->childCount() - 1)->addData(0, pItemDataType(new stItemData("Fatal", EVET_RO_TEXT, S_DATA_ID_UNSET)));
     _parent->child(_parent->childCount() - 1)->addData(1, m_plogLevel.at(S_INDEX_LOG_LEVEL_FATAL));
     _parent->insertChildren(_parent->childCount(), 1, rootItem->columnCount());
-    _parent->child(_parent->childCount() - 1)->addData(0, ptrTextDataType(new stItemData("Error", EVET_RO_TEXT, S_DATA_ID_UNSET)));
+    _parent->child(_parent->childCount() - 1)->addData(0, pItemDataType(new stItemData("Error", EVET_RO_TEXT, S_DATA_ID_UNSET)));
     _parent->child(_parent->childCount() - 1)->addData(1, m_plogLevel.at(S_INDEX_LOG_LEVEL_ERROR));
     _parent->insertChildren(_parent->childCount(), 1, rootItem->columnCount());
-    _parent->child(_parent->childCount() - 1)->addData(0, ptrTextDataType(new stItemData("Warning", EVET_RO_TEXT, S_DATA_ID_UNSET)));
+    _parent->child(_parent->childCount() - 1)->addData(0, pItemDataType(new stItemData("Warning", EVET_RO_TEXT, S_DATA_ID_UNSET)));
     _parent->child(_parent->childCount() - 1)->addData(1, m_plogLevel.at(S_INDEX_LOG_LEVEL_WARNING));
     _parent->insertChildren(_parent->childCount(), 1, rootItem->columnCount());
-    _parent->child(_parent->childCount() - 1)->addData(0, ptrTextDataType(new stItemData("Info", EVET_RO_TEXT, S_DATA_ID_UNSET)));
+    _parent->child(_parent->childCount() - 1)->addData(0, pItemDataType(new stItemData("Info", EVET_RO_TEXT, S_DATA_ID_UNSET)));
     _parent->child(_parent->childCount() - 1)->addData(1, m_plogLevel.at(S_INDEX_LOG_LEVEL_INFO));
     _parent->insertChildren(_parent->childCount(), 1, rootItem->columnCount());
-    _parent->child(_parent->childCount() - 1)->addData(0, ptrTextDataType(new stItemData("Debug", EVET_RO_TEXT, S_DATA_ID_UNSET)));
+    _parent->child(_parent->childCount() - 1)->addData(0, pItemDataType(new stItemData("Debug", EVET_RO_TEXT, S_DATA_ID_UNSET)));
     _parent->child(_parent->childCount() - 1)->addData(1, m_plogLevel.at(S_INDEX_LOG_LEVEL_DEBUG));
 }
 

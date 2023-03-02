@@ -6,15 +6,15 @@
 #include "GlobalDef.h"
 #include <QTime>
 #include <QSharedPointer>
+#include "csettinsmodeldata.h"
+#include "PortfolioConfigModel.h"
 
 IBTradeSystem::IBTradeSystem(QWidget *parent)
 	: QMainWindow(parent)
-    , m_SettingsModel(parent)
-    , m_portfolioConfigModel(parent)
+    , m_SettingsModel(parent, new CSettinsModelData(parent))
+    , m_portfolioConfigModel(parent, new PortfolioConfigModel(parent))
 {
 	ui.setupUi(this);
-	
-
 
     this->setWindowTitle(QString("IB Trade v. ") + QString(APP_VERSION));
 
@@ -28,9 +28,9 @@ IBTradeSystem::IBTradeSystem(QWidget *parent)
     QObject::connect(ui.actionShow_Log, &QAction::triggered, this, &IBTradeSystem::slotShowLog);
     QObject::connect(ui.actionSetting, &QAction::triggered, this, &IBTradeSystem::slotshowSettings);
 
-    QObject::connect(m_SettingsModel.getDataObject(), &CSettinsModelData::signalEditLogSettingsCompleted, this, &IBTradeSystem::slotEditSettingLogSettingsComlited, Qt::QueuedConnection);
-    QObject::connect(m_SettingsModel.getDataObject(), &CSettinsModelData::signalEditServerPortCompleted, NHelper::writeServerPort);
-    QObject::connect(m_SettingsModel.getDataObject(), &CSettinsModelData::signalEditServerAddresCompleted, NHelper::writeServerAddress);
+    QObject::connect(static_cast<CSettinsModelData*>(m_SettingsModel.getDataObject()), &CSettinsModelData::signalEditLogSettingsCompleted, this, &IBTradeSystem::slotEditSettingLogSettingsComlited, Qt::QueuedConnection);
+    QObject::connect(static_cast<CSettinsModelData*>(m_SettingsModel.getDataObject()), &CSettinsModelData::signalEditServerPortCompleted, NHelper::writeServerPort);
+    QObject::connect(static_cast<CSettinsModelData*>(m_SettingsModel.getDataObject()), &CSettinsModelData::signalEditServerAddresCompleted, NHelper::writeServerAddress);
 
     NHelper::initSettings();
 
@@ -38,7 +38,7 @@ IBTradeSystem::IBTradeSystem(QWidget *parent)
 
     MyLogger::setDebugLevelMask(NHelper::getLoggerMask());
 
-    //ui.test_treeView->setModel(&m_portfolioConfigModel);
+    ui.test_treeView->setModel(&m_portfolioConfigModel);
 
 }
 
@@ -54,7 +54,7 @@ void IBTradeSystem::createSettingsView()
     QVector<bool> levelArr(S_LOG_LEVEL_COUNT);
 
     CSettinsModelData::updateLoggerSettingsArray(_mask, levelArr);
-    CSettinsModelData* pData = m_SettingsModel.getDataObject();
+    CSettinsModelData* pData = static_cast<CSettinsModelData*>(m_SettingsModel.getDataObject());
     pData->setLoggerSettings(levelArr);
     pData->setServerSettings(NHelper::getServerAddress(), NHelper::getServerPort());
 
@@ -94,7 +94,7 @@ void IBTradeSystem::slotRecvConnectButtonState(bool isConnect)
 
 void IBTradeSystem::slotEditSettingLogSettingsComlited()
 {
-    quint8 mask = CSettinsModelData::getMaskFromLoggerSettings(m_SettingsModel.getDataObject()->getLoggerSettings());
+    quint8 mask = CSettinsModelData::getMaskFromLoggerSettings(static_cast<CSettinsModelData*>(m_SettingsModel.getDataObject())->getLoggerSettings());
     NHelper::writeLoggerMask(mask);
     MyLogger::setDebugLevelMask(mask);
 }

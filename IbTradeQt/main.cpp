@@ -46,10 +46,22 @@ int main(int argc, char *argv[])
 
 	IBTradeSystem w;
 	CPresenter prst(nullptr);
+
+
+
+
 	prst.addView(&w);
 	prst.MapSignals();
 	w.show();
 
-	return a.exec();
+//    QFile file("Combinear.qss");
+//    file.open(QFile::ReadOnly | QFile::Text);
+//    QTextStream stream(&file);
+//    QString styleSheet = stream.readAll();
 
+//    a.setStyleSheet(styleSheet);
+
+//    file.close();
+
+	return a.exec();
 }

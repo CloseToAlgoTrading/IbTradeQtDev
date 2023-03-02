@@ -2,6 +2,7 @@
 #define CSETTINSMODELDATA_H
 
 #include "treeitem.h"
+#include "ctreeviewdatamodel.h"
 #include <QSharedPointer>
 #include <QObject>
 #include <QModelIndex>
@@ -29,13 +30,14 @@ enum S_DATA_IDS{
     S_DATA_ID_COUNT
 };
 
-class CSettinsModelData: public QObject
+class CSettinsModelData: public CTreeViewDataModel
 {
     Q_OBJECT
 public:
     CSettinsModelData(QObject *parent);
 
-    void setupModelData(TreeItem *rootItem);
+    void setupModelData(TreeItem *rootItem) final;
+
     void setLoggerSettings(const QVector<bool> _levels);
     const QVector<bool> getLoggerSettings();
     void setServerSettings(const QString &_addr, const quint16 &_port);
@@ -44,7 +46,7 @@ public:
     static void updateLoggerSettingsArray(quint8 _mask, QVector<bool> & _levels);
 
 public slots:
-    void dataChangeCallback(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QList<int> & param);
+    void dataChangeCallback(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QList<int> & param) final;
 
 signals:
     void signalEditLogSettingsCompleted();
@@ -53,9 +55,9 @@ signals:
 
 
 private:
-    ptrTextDataType m_pServerAddress;
-    ptrTextDataType m_pServerPort;
-    QVector<ptrTextDataType> m_plogLevel;
+    pItemDataType m_pServerAddress;
+    pItemDataType m_pServerPort;
+    QVector<pItemDataType> m_plogLevel;
 };
 
 #endif // CSETTINSMODELDATA_H

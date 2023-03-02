@@ -10,7 +10,7 @@
 #include "treeitem.h"
 
 //! [0]
-TreeItem::TreeItem(const QList<ptrTextDataType> &data, TreeItem *parent)
+TreeItem::TreeItem(const QList<pItemDataType> &data, TreeItem *parent)
     : itemData(data), parentItem(parent)
 {}
 //! [0]
@@ -70,7 +70,7 @@ bool TreeItem::insertChildren(int position, int count, int columns)
         return false;
 
     for (int row = 0; row < count; ++row) {
-        QList<ptrTextDataType> data(columns);
+        QList<pItemDataType> data(columns);
         TreeItem *item = new TreeItem(data, this);
         childItems.insert(position, item);
     }
@@ -82,14 +82,14 @@ bool TreeItem::insertChildren(int position, int count, int columns)
 //! [8]
 bool TreeItem::insertColumns(int position, int columns)
 {
-//    if (position < 0 || position > itemData.size())
-//        return false;
+    if (position < 0 || position > itemData.size())
+        return false;
 
-//    for (int column = 0; column < columns; ++column)
-//        itemData.insert(position, stItemData());
+    for (int column = 0; column < columns; ++column)
+        itemData.insert(position, pItemDataType(new stItemData(QVariant(), 0, 0)));
 
-//    for (TreeItem *child : std::as_const(childItems))
-//        child->insertColumns(position, columns);
+    for (TreeItem *child : std::as_const(childItems))
+        child->insertColumns(position, columns);
 
     return true;
 }
@@ -139,7 +139,7 @@ bool TreeItem::setData(int column, const QVariant &value)
     return true;
 }
 
-bool TreeItem::addData(int column, const ptrTextDataType &value)
+bool TreeItem::addData(int column, const pItemDataType &value)
 {
     if (column < 0 || column >= itemData.size())
         return false;

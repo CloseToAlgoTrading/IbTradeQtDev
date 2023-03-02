@@ -1,32 +1,22 @@
 #ifndef PORTFOLIOCONFIGMODEL_H
 #define PORTFOLIOCONFIGMODEL_H
 
-#include <QAbstractTableModel>
-#include <QTimer>
+#include "ctreeviewdatamodel.h"
 
-#define COLS (3)
-#define ROWS (2)
-
-class PortfolioConfigModel : public QAbstractTableModel
+class PortfolioConfigModel : public CTreeViewDataModel
 {
     Q_OBJECT
 public:
-    explicit PortfolioConfigModel(QObject *parent = nullptr);
+    PortfolioConfigModel(QObject *parent);
 
-    int rowCount(const QModelIndex &parent = QModelIndex()) const override;
-    int columnCount(const QModelIndex &parent = QModelIndex()) const override;
-    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
-    QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
-    bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
-    Qt::ItemFlags flags(const QModelIndex &index) const override;
-private:
-    QString m_gridData[ROWS][COLS];  //holds text entered into QTableView
-signals:
-    void editCompleted(const QString &);
+    void setupModelData(TreeItem *rootItem) final;
+
 public slots:
-    void timerHit();
+    void dataChangeCallback(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QList<int> & param) final;
+
 private:
-    QTimer m_timer;
+    pItemDataType m_Item1;
+    pItemDataType m_Item2;
 };
 
 #endif // PORTFOLIOCONFIGMODEL_H

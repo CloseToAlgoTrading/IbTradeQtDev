@@ -43,6 +43,7 @@ UI_DIR = $$PWD/GeneratedIncludes
 SOURCES += \
     CObjects/cdeltaobject.cpp \
     MainSystem/csettinsmodeldata.cpp \
+    MainSystem/ctreeviewcustommodel.cpp \
     MainSystem/portfolioconfigmodel.cpp \
     Strategies/AutoDeltAlignment/src/CModelInputData.cpp \
     Strategies/PairTrader/PairTradingGui.cpp \
@@ -108,7 +109,6 @@ SOURCES += \
     Common/globalsettings.cpp \
     CObjects/ctickbytickalllast.cpp \
     CObjects/chistoricalticks.cpp \
-    MainSystem/settingsmodel.cpp \
     DBStore/dbstoremodel.cpp \
     Common/contractsdefs.cpp \
     Common/OrderSamples.cpp \
@@ -119,7 +119,10 @@ SOURCES += \
 HEADERS += \
     CObjects/cdeltaobject.h \
     MainSystem/PortfolioConfigModel.h \
+    MainSystem/TreeItemDataTypesDef.h \
     MainSystem/csettinsmodeldata.h \
+    MainSystem/ctreeviewcustommodel.h \
+    MainSystem/ctreeviewdatamodel.h \
     Strategies/AutoDeltAlignment/header/CModelInputData.h \
     Strategies/AutoDeltAlignment/header/autodeltatypes.h \
     Strategies/PairTrader/PairTradingGui.h \
@@ -228,7 +231,6 @@ HEADERS += \
     Common/globalsettings.h \
     CObjects/ctickbytickalllast.h \
     CObjects/chistoricalticks.h \
-    MainSystem/settingsmodel.h \
     DBStore/dbstoremodel.h \
     Common/contractsdefs.h \
     Common/OrderSamples.h \
