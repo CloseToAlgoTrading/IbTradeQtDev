@@ -38,6 +38,7 @@ void addParameters(TreeItem *parent, const QVariantMap params, int columnCount)
 void PortfolioConfigModel::setupModelData(TreeItem *rootItem)
 {
     CAccount myMap;
+    auto EmptyRoItem = pItemDataType(new stItemData(QVariant(), EVET_RO_TEXT, TVM_UNUSED_ID));
 
     rootItem->insertColumns(0,2);
     rootItem->addData(0, pItemDataType(new stItemData("Parameter", EVT_TEXT, TVM_UNUSED_ID)));
@@ -49,14 +50,14 @@ void PortfolioConfigModel::setupModelData(TreeItem *rootItem)
     //-----> Account
     //Create an Account
     TreeItem *parent = addRootNode(parents.last(),
-                                   pItemDataType(new stItemData("Account", EVET_RO_TEXT, TVM_UNUSED_ID)),
-                                   pItemDataType(new stItemData("IB", EVET_RO_TEXT, TVM_UNUSED_ID)),
+                                   pItemDataType(new stItemData("IB", EVET_RO_TEXT, 0xF000)),
+                                   EmptyRoItem,
                                    rootItem->columnCount());
 
     //Create account paramters
     TreeItem *parentAccount = addRootNode(parent->child(parent->childCount() - 1),
                                    pItemDataType(new stItemData("Parameters", EVET_RO_TEXT, TVM_UNUSED_ID)),
-                                   pItemDataType(new stItemData(QVariant(), EVET_RO_TEXT, TVM_UNUSED_ID)),
+                                   EmptyRoItem,
                                    rootItem->columnCount());
 
     //add Parameters
@@ -66,12 +67,12 @@ void PortfolioConfigModel::setupModelData(TreeItem *rootItem)
     //Create Portfolios Node
     TreeItem *parentPortfolios = addRootNode(parent->child(parent->childCount() - 1),
                                    pItemDataType(new stItemData("Portfolios", EVET_RO_TEXT, TVM_UNUSED_ID)),
-                                   pItemDataType(new stItemData(QVariant(), EVET_RO_TEXT, TVM_UNUSED_ID)),
+                                   EmptyRoItem,
                                    rootItem->columnCount());
     //Create Portfolios parameters Mone
     TreeItem *parentPortfoliosParameters = addRootNode(parentPortfolios->child(parentPortfolios->childCount() - 1),
                                    pItemDataType(new stItemData("Parameters", EVET_RO_TEXT, TVM_UNUSED_ID)),
-                                   pItemDataType(new stItemData(QVariant(), EVET_RO_TEXT, TVM_UNUSED_ID)),
+                                   EmptyRoItem,
                                    rootItem->columnCount());
     //Add Portfolio Parameters
     addParameters(parentPortfoliosParameters->child(parentPortfoliosParameters->childCount() - 1), myMap.parametersMap(), rootItem->columnCount());
@@ -86,7 +87,7 @@ void PortfolioConfigModel::setupModelData(TreeItem *rootItem)
     //Create Portfolios parameters Mone
     TreeItem *parentPortfolioParameters = addRootNode(parentPortfolio->child(parentPortfolio->childCount() - 1),
                                    pItemDataType(new stItemData("Parameters", EVET_RO_TEXT, TVM_UNUSED_ID)),
-                                   pItemDataType(new stItemData(QVariant(), EVET_RO_TEXT, TVM_UNUSED_ID)),
+                                   EmptyRoItem,
                                    rootItem->columnCount());
 
     //Add Portfolio Parameters
@@ -96,12 +97,12 @@ void PortfolioConfigModel::setupModelData(TreeItem *rootItem)
     //-----> Strategies
     TreeItem *parentStrategies = addRootNode(parentPortfolio->child(parentPortfolio->childCount() - 1),
                                    pItemDataType(new stItemData("Strategies", EVET_RO_TEXT, TVM_UNUSED_ID)),
-                                   pItemDataType(new stItemData(QVariant(), EVET_RO_TEXT, TVM_UNUSED_ID)),
+                                   EmptyRoItem,
                                    rootItem->columnCount());
     //Create Portfolios parameters Mone
     TreeItem *parentStrategiesParameters = addRootNode(parentStrategies->child(parentStrategies->childCount() - 1),
                                    pItemDataType(new stItemData("Parameters", EVET_RO_TEXT, TVM_UNUSED_ID)),
-                                   pItemDataType(new stItemData(QVariant(), EVET_RO_TEXT, TVM_UNUSED_ID)),
+                                   EmptyRoItem,
                                    rootItem->columnCount());
     //Add Portfolio Parameters
     addParameters(parentStrategiesParameters->child(parentStrategiesParameters->childCount() - 1), myMap.parametersMap(), rootItem->columnCount());
@@ -115,7 +116,7 @@ void PortfolioConfigModel::setupModelData(TreeItem *rootItem)
     //Create Portfolios parameters Mone
     TreeItem *parentStrategy1Parameters = addRootNode(parentStrategy1->child(parentStrategy1->childCount() - 1),
                                    pItemDataType(new stItemData("Parameters", EVET_RO_TEXT, TVM_UNUSED_ID)),
-                                   pItemDataType(new stItemData(QVariant(), EVET_RO_TEXT, TVM_UNUSED_ID)),
+                                   EmptyRoItem,
                                    rootItem->columnCount());
     //Add Portfolio Parameters
     addParameters(parentStrategy1Parameters->child(parentStrategy1Parameters->childCount() - 1), myMap.parametersMap(), rootItem->columnCount());
@@ -128,7 +129,7 @@ void PortfolioConfigModel::setupModelData(TreeItem *rootItem)
     //Create Portfolios parameters Mone
     TreeItem *parentStrategy2Parameters = addRootNode(parentStrategy2->child(parentStrategy2->childCount() - 1),
                                    pItemDataType(new stItemData("Parameters", EVET_RO_TEXT, TVM_UNUSED_ID)),
-                                   pItemDataType(new stItemData(QVariant(), EVET_RO_TEXT, TVM_UNUSED_ID)),
+                                   EmptyRoItem,
                                    rootItem->columnCount());
     //Add Portfolio Parameters
     addParameters(parentStrategy2Parameters->child(parentStrategy2Parameters->childCount() - 1), myMap.parametersMap(), rootItem->columnCount());
@@ -143,7 +144,7 @@ void PortfolioConfigModel::setupModelData(TreeItem *rootItem)
     //Create Portfolios parameters Mone
     TreeItem *parentPortfolioParameters2 = addRootNode(parentPortfolio2->child(parentPortfolio2->childCount() - 1),
                                    pItemDataType(new stItemData("Parameters", EVET_RO_TEXT, TVM_UNUSED_ID)),
-                                   pItemDataType(new stItemData(QVariant(), EVET_RO_TEXT, TVM_UNUSED_ID)),
+                                   EmptyRoItem,
                                    rootItem->columnCount());
 
     //Add Portfolio Parameters
@@ -151,8 +152,8 @@ void PortfolioConfigModel::setupModelData(TreeItem *rootItem)
 
 
     parent->insertChildren(parent->childCount(), 1, rootItem->columnCount());
-    parent->child(parent->childCount() - 1)->addData(0, pItemDataType(new stItemData("Account", EVET_RO_TEXT, TVM_UNUSED_ID)));
-    parent->child(parent->childCount() - 1)->addData(1, pItemDataType(new stItemData("IB2", EVET_RO_TEXT, TVM_UNUSED_ID)));
+    parent->child(parent->childCount() - 1)->addData(0, pItemDataType(new stItemData("IB 2", EVET_RO_TEXT, 0xF000)));
+    parent->child(parent->childCount() - 1)->addData(1, EmptyRoItem);
 
 }
 

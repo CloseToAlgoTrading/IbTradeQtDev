@@ -2,5 +2,6 @@
     <qresource prefix="/IBTradeSystem">
         <file>x_resources/account.png</file>
         <file>x_resources/app.png</file>
+        <file>x_resources/Account_1.png</file>
     </qresource>
 </RCC>

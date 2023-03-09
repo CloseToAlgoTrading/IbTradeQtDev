@@ -64,8 +64,9 @@ QVariant CTreeViewCustomModel::data(const QModelIndex &index, int role) const
         if(itemData.vType == EVT_CECK_BOX)
             return itemData.value;
         break;
-//    case Qt::DecorationRole:
-//        return QIcon(":/IBTradeSystem/x_resources/account.png");
+    case Qt::DecorationRole:
+        if (0u != (0xF000 & itemData.id))
+            return QIcon(":/IBTradeSystem/x_resources/Account_1.png");
     default:
         break;
     }
