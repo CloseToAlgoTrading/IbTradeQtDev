@@ -52,7 +52,7 @@ QVariant CTreeViewCustomModel::data(const QModelIndex &index, int role) const
     TreeItem *item = getItem(index);
     const auto itemData = item->data(index.column());
 
-    if (role != Qt::DisplayRole && role != Qt::EditRole && role != Qt::CheckStateRole)
+    if (role != Qt::DisplayRole && role != Qt::EditRole && role != Qt::CheckStateRole && !Qt::DecorationRole)
         return QVariant();
 
     switch (role) {
@@ -64,6 +64,8 @@ QVariant CTreeViewCustomModel::data(const QModelIndex &index, int role) const
         if(itemData.vType == EVT_CECK_BOX)
             return itemData.value;
         break;
+//    case Qt::DecorationRole:
+//        return QIcon(":/IBTradeSystem/x_resources/account.png");
     default:
         break;
     }

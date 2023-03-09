@@ -23,7 +23,6 @@ IBTradeSystem::IBTradeSystem(QWidget *parent)
 	m_pTimeLabel = new QLabel(this);
 	ui.statusBar->addWidget(m_pTimeLabel);
 
-
     QObject::connect(ui.actionClear_Log, &QAction::triggered, this, &IBTradeSystem::slotClearLog);
     QObject::connect(ui.actionShow_Log, &QAction::triggered, this, &IBTradeSystem::slotShowLog);
     QObject::connect(ui.actionSetting, &QAction::triggered, this, &IBTradeSystem::slotshowSettings);
@@ -39,6 +38,9 @@ IBTradeSystem::IBTradeSystem(QWidget *parent)
     MyLogger::setDebugLevelMask(NHelper::getLoggerMask());
 
     ui.test_treeView->setModel(&m_portfolioConfigModel);
+
+
+
 
 }
 

@@ -36,12 +36,13 @@ DEFINES += GIT_VERSION=\\\"$$GIT_VERSION\\\"
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
-CONFIG += c++11
+CONFIG += c++17
 
 UI_DIR = $$PWD/GeneratedIncludes
 
 SOURCES += \
     CObjects/cdeltaobject.cpp \
+    MainSystem/caccount.cpp \
     MainSystem/csettinsmodeldata.cpp \
     MainSystem/ctreeviewcustommodel.cpp \
     MainSystem/portfolioconfigmodel.cpp \
@@ -120,6 +121,7 @@ HEADERS += \
     CObjects/cdeltaobject.h \
     MainSystem/PortfolioConfigModel.h \
     MainSystem/TreeItemDataTypesDef.h \
+    MainSystem/caccount.h \
     MainSystem/csettinsmodeldata.h \
     MainSystem/ctreeviewcustommodel.h \
     MainSystem/ctreeviewdatamodel.h \
