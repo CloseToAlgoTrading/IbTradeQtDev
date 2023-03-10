@@ -47,6 +47,12 @@ SOURCES += \
     MainSystem/ctreeviewcustommodel.cpp \
     MainSystem/portfolioconfigmodel.cpp \
     Strategies/AutoDeltAlignment/src/CModelInputData.cpp \
+    Strategies/Generic/cbasicaccount.cpp \
+    Strategies/Generic/cbasicportfolio.cpp \
+    Strategies/Generic/cbasicroot.cpp \
+    Strategies/Generic/cbasicstrategy.cpp \
+    Strategies/Generic/cgenericmodelApi.cpp \
+    Strategies/Generic/cteststrategy.cpp \
     Strategies/PairTrader/PairTradingGui.cpp \
     Strategies/PairTrader/PairTradingPresenter.cpp \
     Strategies/PairTrader/pairtraderpm.cpp \
@@ -127,6 +133,12 @@ HEADERS += \
     MainSystem/ctreeviewdatamodel.h \
     Strategies/AutoDeltAlignment/header/CModelInputData.h \
     Strategies/AutoDeltAlignment/header/autodeltatypes.h \
+    Strategies/Generic/cbasicaccount.h \
+    Strategies/Generic/cbasicportfolio.h \
+    Strategies/Generic/cbasicroot.h \
+    Strategies/Generic/cbasicstrategy.h \
+    Strategies/Generic/cgenericmodelApi.h \
+    Strategies/Generic/cteststrategy.h \
     Strategies/PairTrader/PairTradingGui.h \
     Strategies/PairTrader/PairTradingPresenter.h \
     Strategies/PairTrader/pairtraderpm.h \
@@ -264,6 +276,7 @@ INCLUDEPATH += \
     $$PWD/AboutDialog \
     $$PWD/Strategies/AutoDeltAlignment/header\
     $$PWD/Strategies/PairTrader\
+    $$PWD/Strategies/Generic\
     $$PWD/GeneratedIncludes \
     $$PWD/DBStore
 

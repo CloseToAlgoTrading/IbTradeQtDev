@@ -2,6 +2,7 @@
 #define PORTFOLIOCONFIGMODEL_H
 
 #include "ctreeviewdatamodel.h"
+#include "cbasicroot.h"
 
 class PortfolioConfigModel : public CTreeViewDataModel
 {
@@ -17,6 +18,10 @@ public slots:
 private:
     pItemDataType m_Item1;
     pItemDataType m_Item2;
+
+    CBasicRoot m_Root;
+
+
 };
 
 #endif // PORTFOLIOCONFIGMODEL_H

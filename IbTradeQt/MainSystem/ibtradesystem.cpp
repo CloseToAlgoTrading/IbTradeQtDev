@@ -37,8 +37,8 @@ IBTradeSystem::IBTradeSystem(QWidget *parent)
 
     MyLogger::setDebugLevelMask(NHelper::getLoggerMask());
 
-    ui.test_treeView->setHeaderHidden(true);
-    //ui.test_treeView->setModel(&m_portfolioConfigModel);
+    //ui.test_treeView->setHeaderHidden(true);
+    ui.test_treeView->setModel(&m_portfolioConfigModel);
 
 
 
