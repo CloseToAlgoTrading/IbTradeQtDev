@@ -126,6 +126,7 @@ SOURCES += \
 HEADERS += \
     CObjects/cdeltaobject.h \
     MainSystem/PortfolioConfigModel.h \
+    MainSystem/PortfolioModelDefines.h \
     MainSystem/TreeItemDataTypesDef.h \
     MainSystem/caccount.h \
     MainSystem/csettinsmodeldata.h \

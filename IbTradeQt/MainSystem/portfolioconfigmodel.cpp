@@ -1,5 +1,6 @@
 #include "PortfolioConfigModel.h"
 #include "TreeItemDataTypesDef.h"
+#include "PortfolioModelDefines.h"
 
 #include "caccount.h"
 #include <QVariantMap>
@@ -13,6 +14,7 @@ PortfolioConfigModel::PortfolioConfigModel(QObject *parent)
     , m_Item2()
     , m_Root()
 {
+    Q_UNUSED(parent);
     CTestStrategy *pS1 = new CTestStrategy();
     pS1->setName("S1");
     CTestStrategy *pS2 = new CTestStrategy();
@@ -20,13 +22,13 @@ PortfolioConfigModel::PortfolioConfigModel(QObject *parent)
     CTestStrategy *pS3 = new CTestStrategy();
     pS3->setName("S3");
     CBasicPortfolio *pP1 = new CBasicPortfolio();
-    pS1->setName("P1");
+    pP1->setName("P1");
     CBasicPortfolio *pP2 = new CBasicPortfolio();
-    pS1->setName("P2");
+    pP2->setName("P2");
     CBasicAccount *pA1 = new CBasicAccount();
-    pS1->setName("A1");
+    pA1->setName("A1");
     CBasicAccount *pA2 = new CBasicAccount();
-    pS1->setName("A2");
+    pA2->setName("A2");
 
     pP1->addModel(static_cast<ptrGenericModelType>(pS1));
     pP1->addModel(static_cast<ptrGenericModelType>(pS2));
@@ -57,7 +59,7 @@ void addParameters(TreeItem *parent, const QVariantMap params, int columnCount)
     {
         //Create account paramters
         TreeItem *parentParameters = addRootNode(parent->child(parent->childCount() - 1),
-                                       pItemDataType(new stItemData("Parameters", EVET_RO_TEXT, TVM_UNUSED_ID)),
+                                       pItemDataType(new stItemData("Parameters", EVET_RO_TEXT, PM_ITEM_PARAMETERS)),
                                        EmptyRoItem,
                                        columnCount);
 
@@ -65,7 +67,7 @@ void addParameters(TreeItem *parent, const QVariantMap params, int columnCount)
         for (auto i = params.begin(); i != params.end(); ++i)
         {
             _parent->insertChildren(_parent->childCount(), 1, columnCount);
-            _parent->child(_parent->childCount() - 1)->addData(0, pItemDataType(new stItemData(i.key().toStdString().c_str(), EVET_RO_TEXT, TVM_UNUSED_ID)));
+            _parent->child(_parent->childCount() - 1)->addData(0, pItemDataType(new stItemData(i.key(), EVET_RO_TEXT, PM_ITEM_PARAMETER)));
             _parent->child(_parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(i.value().toInt(), EVET_RO_TEXT, TVM_UNUSED_ID)));
         }
     }
@@ -85,14 +87,14 @@ void PortfolioConfigModel::setupModelData(TreeItem *rootItem)
 
     //Create an Accounts
     TreeItem *parent = addRootNode(parents.last(),
-                                   pItemDataType(new stItemData("Accounts", EVET_RO_TEXT, TVM_UNUSED_ID)),
+                                   pItemDataType(new stItemData("Accounts", EVET_RO_TEXT, PM_ITEM_ACCOUNTS)),
                                    EmptyRoItem,
                                    rootItem->columnCount());
 
     //*+++++++++++++++++++++++++
     for (auto&& account : this->m_Root.getModels()) {
         TreeItem *parentAccount = addRootNode(parent->child(parent->childCount() - 1),
-                                       pItemDataType(new stItemData(account->getName().toStdString().c_str(), EVET_RO_TEXT, 0xF000)),
+                                       pItemDataType(new stItemData(account->getName(), EVET_RO_TEXT, PM_ITEM_ACCOUNT)),
                                        EmptyRoItem,
                                        rootItem->columnCount());
 
@@ -100,7 +102,7 @@ void PortfolioConfigModel::setupModelData(TreeItem *rootItem)
 
         for (auto&& portfolio : account->getModels()) {
             TreeItem *parentPortfolio = addRootNode(parentAccount->child(parentAccount->childCount() - 1),
-                                           pItemDataType(new stItemData("Porfolio", EVET_RO_TEXT, TVM_UNUSED_ID)),
+                                           pItemDataType(new stItemData(portfolio->getName(), EVET_RO_TEXT, PM_ITEM_PORTFOLIO)),
                                            EmptyRoItem,
                                            rootItem->columnCount());
 
@@ -108,7 +110,7 @@ void PortfolioConfigModel::setupModelData(TreeItem *rootItem)
 
             for (auto&& strategy : portfolio->getModels()) {
                 TreeItem *parentStrategy = addRootNode(parentPortfolio->child(parentPortfolio->childCount() - 1),
-                                               pItemDataType(new stItemData("Strategy", EVET_RO_TEXT, TVM_UNUSED_ID)),
+                                               pItemDataType(new stItemData(strategy->getName(), EVET_RO_TEXT, PM_ITEM_STRATEGY)),
                                                EmptyRoItem,
                                                rootItem->columnCount());
 

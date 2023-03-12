@@ -30,7 +30,7 @@ QString CBasicStrategy::getName()
     return this->m_Name;
 }
 
-void CBasicStrategy::setName(const QString name)
+void CBasicStrategy::setName(const QString& name)
 {
     this->m_Name = name;
 }

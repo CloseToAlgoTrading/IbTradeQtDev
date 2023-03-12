@@ -2,6 +2,7 @@
 #include <QFont>
 #include <QDebug>
 #include <QBrush>
+#include "PortfolioModelDefines.h"
 
 //#define ROW_INDEX_LOG_TEXT 0
 //#define ROW_INDEX_LAST_LOG S_LOG_LEVEL_COUNT
@@ -65,8 +66,28 @@ QVariant CTreeViewCustomModel::data(const QModelIndex &index, int role) const
             return itemData.value;
         break;
     case Qt::DecorationRole:
-        if (0u != (0xF000 & itemData.id))
-            return QIcon(":/IBTradeSystem/x_resources/Account_1.png");
+        switch ((PM_ITEM_ID_MASK & itemData.id)) {
+        case PM_ITEM_ACCOUNTS:
+            return QIcon(":/IBTradeSystem/x_resources/Accounts_1.png");
+            break;
+        case PM_ITEM_ACCOUNT:
+            return QIcon(":/IBTradeSystem/x_resources/Account.png");
+            break;
+        case PM_ITEM_PARAMETER:
+            return QIcon(":/IBTradeSystem/x_resources/Parameter.png");
+            break;
+        case PM_ITEM_PARAMETERS:
+            return QIcon(":/IBTradeSystem/x_resources/Parameters.png");
+            break;
+        case PM_ITEM_PORTFOLIO:
+            return QIcon(":/IBTradeSystem/x_resources/Portfolio.png");
+            break;
+        case PM_ITEM_STRATEGY:
+            return QIcon(":/IBTradeSystem/x_resources/Strategy.png");
+            break;
+        default:
+            break;
+        }
     default:
         break;
     }

@@ -1,7 +1,13 @@
 <RCC>
     <qresource prefix="/IBTradeSystem">
-        <file>x_resources/account.png</file>
         <file>x_resources/app.png</file>
-        <file>x_resources/Account_1.png</file>
+        <file>x_resources/Account.png</file>
+        <file>x_resources/Parameter.png</file>
+        <file>x_resources/Parameters.png</file>
+        <file>x_resources/Portfolio.png</file>
+        <file>x_resources/Portfolio_1.png</file>
+        <file>x_resources/Strategy.png</file>
+        <file>x_resources/Accounts.png</file>
+        <file>x_resources/Accounts_1.png</file>
     </qresource>
 </RCC>

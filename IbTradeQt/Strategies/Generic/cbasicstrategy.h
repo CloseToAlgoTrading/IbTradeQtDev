@@ -16,7 +16,7 @@ public:
     virtual bool removeModel(ptrGenericModelType pModel) override;
     virtual QList<ptrGenericModelType>& getModels() override;
     virtual QString getName() override;
-    virtual void setName(const QString name) override;
+    virtual void setName(const QString& name) override;
     virtual bool start() override;
     virtual bool stop() override;
 
