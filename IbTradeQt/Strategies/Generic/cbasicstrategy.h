@@ -26,6 +26,7 @@ public:
 protected:
     QList<ptrGenericModelType> m_Models;
     QVariantMap m_ParametersMap;
+    QVariantMap m_InfoMap;
     QString m_Name;
 };
 

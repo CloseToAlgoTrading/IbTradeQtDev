@@ -58,9 +58,11 @@ QVariant CTreeViewCustomModel::data(const QModelIndex &index, int role) const
 
     switch (role) {
     case Qt::DisplayRole:
-        if((itemData.vType & EVT_TEXT) == EVT_TEXT)
+    case Qt::EditRole:
+        if(0u != (itemData.vType & EVT_TEXT ))
             return itemData.value;
         break;
+
     case Qt::CheckStateRole:
         if(itemData.vType == EVT_CECK_BOX)
             return itemData.value;
@@ -154,16 +156,6 @@ QVariant CTreeViewCustomModel::headerData(int section, Qt::Orientation orientati
         return rootItem->data(section).value;
 
     return QVariant();
-
-//    if (role == Qt::DisplayRole && orientation == Qt::Horizontal) {
-//        switch (section) {
-//        case 0:
-//            return QString("Porperty");
-//        case 1:
-//            return QString("Value");
-//        }
-//    }
-//    return QVariant();
 }
 
 bool CTreeViewCustomModel::setData(const QModelIndex &index, const QVariant &value, int role)
@@ -176,8 +168,8 @@ bool CTreeViewCustomModel::setData(const QModelIndex &index, const QVariant &val
     bool result = false;
     if(0u == (itemData.vType & EVT_READ_ONLY))
     {
-       result = item->setData(index.column(), value);
-       if(result){
+        result = item->setData(index.column(), value);
+        if(result){
            switch (itemData.vType & EVT_VALUE_MASK) {
            case EVT_TEXT:
                emit dataChanged(index, index, {Qt::DisplayRole, Qt::EditRole});

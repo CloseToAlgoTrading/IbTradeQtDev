@@ -31,6 +31,10 @@ IBTradeSystem::IBTradeSystem(QWidget *parent)
     QObject::connect(static_cast<CSettinsModelData*>(m_SettingsModel.getDataObject()), &CSettinsModelData::signalEditServerPortCompleted, NHelper::writeServerPort);
     QObject::connect(static_cast<CSettinsModelData*>(m_SettingsModel.getDataObject()), &CSettinsModelData::signalEditServerAddresCompleted, NHelper::writeServerAddress);
 
+    QObject::connect(ui.test_treeView, &QTreeView::expanded,  [=](const QModelIndex& index) { ui.test_treeView->resizeColumnToContents(index.column()); });
+    QObject::connect(ui.test_treeView, &QTreeView::collapsed, [=](const QModelIndex& index) { ui.test_treeView->resizeColumnToContents(index.column()); });
+
+
     NHelper::initSettings();
 
     createSettingsView();
@@ -39,9 +43,6 @@ IBTradeSystem::IBTradeSystem(QWidget *parent)
 
     //ui.test_treeView->setHeaderHidden(true);
     ui.test_treeView->setModel(&m_portfolioConfigModel);
-
-
-
 
 
 }

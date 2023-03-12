@@ -68,7 +68,21 @@ void addParameters(TreeItem *parent, const QVariantMap params, int columnCount)
         {
             _parent->insertChildren(_parent->childCount(), 1, columnCount);
             _parent->child(_parent->childCount() - 1)->addData(0, pItemDataType(new stItemData(i.key(), EVET_RO_TEXT, PM_ITEM_PARAMETER)));
-            _parent->child(_parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(i.value().toInt(), EVET_RO_TEXT, TVM_UNUSED_ID)));
+            switch (i.value().typeId()) {
+            case QMetaType::Double:
+                _parent->child(_parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(i.value().toDouble(), EVT_TEXT, TVM_UNUSED_ID)));
+                break;
+            case QMetaType::Int:
+                _parent->child(_parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(i.value().toInt(), EVT_TEXT, TVM_UNUSED_ID)));
+                break;
+            case QMetaType::QString:
+                _parent->child(_parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(i.value().toString(), EVT_TEXT, TVM_UNUSED_ID)));
+                break;
+            default:
+                _parent->child(_parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(i.value().toString(), EVT_TEXT, TVM_UNUSED_ID)));
+                break;
+            }
+
         }
     }
 }

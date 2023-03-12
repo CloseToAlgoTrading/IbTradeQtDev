@@ -3,9 +3,9 @@
 CBasicStrategy::CBasicStrategy():
     m_Models()
   , m_ParametersMap()
+  , m_InfoMap()
   , m_Name()
 {
-
 }
 
 bool CBasicStrategy::addModel(ptrGenericModelType pModel)
@@ -27,12 +27,12 @@ QList<ptrGenericModelType>& CBasicStrategy::getModels()
 
 QString CBasicStrategy::getName()
 {
-    return this->m_Name;
+    return this->m_InfoMap["name"].toString();
 }
 
 void CBasicStrategy::setName(const QString& name)
 {
-    this->m_Name = name;
+    this->m_InfoMap["name"] = name;
 }
 
 bool CBasicStrategy::start()
