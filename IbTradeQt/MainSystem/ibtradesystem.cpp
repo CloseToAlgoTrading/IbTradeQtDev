@@ -70,13 +70,9 @@ void IBTradeSystem::createSettingsView()
 
 void IBTradeSystem::slotOnTimeReceived(long time)
 {
-    
-    time_t t = (time_t)(time);
-    struct tm * timeinfo = localtime(&t);
-
-    QString s(asctime(timeinfo));
-	s.remove(s.length() - 1, 1);
-	m_pTimeLabel->setText(s);
+    QDateTime dateTime = QDateTime::fromSecsSinceEpoch((time_t)(time));
+    QString dateTimeString = dateTime.toString("dd-MM-yyyy hh:mm:ss");
+    m_pTimeLabel->setText(dateTimeString);
 }
 
 
