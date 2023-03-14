@@ -155,7 +155,7 @@ void PortfolioConfigModel::dataChangeCallback(const QModelIndex &topLeft, const 
 }
 
 
-void PortfolioConfigModel::onClickAddNodeButton()
+void PortfolioConfigModel::slotOnClickAddAccount()
 {
     static quint8 i = 0;
     //CTestStrategy *pS1 = new CTestStrategy();
@@ -201,25 +201,70 @@ void PortfolioConfigModel::onClickAddNodeButton()
 
 }
 
-void PortfolioConfigModel::onClickRemoveNodeButton()
+void PortfolioConfigModel::slotOnClickAddPortfolio()
 {
+    static quint16 i = 0;
     QModelIndexList indexes = m_treeView->selectionModel()->selectedIndexes();
     QItemSelectionModel *selectionModel = m_treeView->selectionModel();
-
-
 
     if (selectionModel->hasSelection()) {
         QModelIndexList indexes = selectionModel->selectedIndexes();
         QModelIndex index = indexes.at(0); // Assumes single selection mode
 
+        QList<quint16> Ids{PM_ITEM_ACCOUNT};
+        index = findWorkingNode(index, Ids);
         TreeItem * tmpItem = getItem(index);
+
+        quint8 nr = tmpItem->childNumber();
+        QList<ptrGenericModelType> accounts = m_Root.getModels();
+        if(accounts.length() > nr)
+        {
+            ptrGenericModelType pAcc = accounts.at(nr);
+            CBasicPortfolio *pP1 = new CBasicPortfolio();
+            pP1->setName("P"+QString::number(i++));
+
+            pAcc->addModel(static_cast<ptrGenericModelType>(pP1));
+        }
+    }
+
+}
+
+QModelIndex PortfolioConfigModel::findWorkingNode(QModelIndex index, const QList<quint16> & Ids)
+{
+    TreeItem * tmpItem = getItem(index);
+    const quint16 id = tmpItem->data(0).id;
+    if(PM_ITEM_ACCOUNTS != id)
+    {
+        if(Ids.contains(id))
+        {
+            return index;
+        }
+        else
+        {
+          return findWorkingNode(index.parent(), Ids);
+        }
+    }
+    return QModelIndex();
+}
+
+void PortfolioConfigModel::onClickRemoveNodeButton()
+{
+    QModelIndexList indexes = m_treeView->selectionModel()->selectedIndexes();
+    QItemSelectionModel *selectionModel = m_treeView->selectionModel();
+
+    if (selectionModel->hasSelection()) {
+        QModelIndexList indexes = selectionModel->selectedIndexes();
+        QModelIndex index = indexes.at(0); // Assumes single selection mode
+
+        QList<quint16> Ids{PM_ITEM_STRATEGY, PM_ITEM_STRATEGIES, PM_ITEM_PORTFOLIO, PM_ITEM_ACCOUNT};
+        index = findWorkingNode(index, Ids);
+
+        TreeItem * tmpItem = getItem(index);
+        if(tmpItem->data(0).id)
         beginRemoveRows(index.parent(), index.row(), index.row() );
 
-        //tmpItem->removeChildren(0, tmpItem->childCount());
         TreeItem * tmpParemt = tmpItem->parent();
         tmpParemt->removeChildren(tmpItem->childNumber(), 1);
-
-
         endRemoveRows();
         emit signalUpdateData(createIndex(0,0,rootItem));
     }

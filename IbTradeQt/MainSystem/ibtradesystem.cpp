@@ -20,6 +20,18 @@ IBTradeSystem::IBTradeSystem(QWidget *parent)
     m_portfolioConfigModel.setTreeView(ui.test_treeView);
 
 
+    /*** Beggin Create Context Menu **************/
+    ui.test_treeView->setContextMenuPolicy(Qt::ActionsContextMenu);
+    ui.test_treeView->addAction(QIcon(":/IBTradeSystem/x_resources/Account.png"), "Add New Account", &m_portfolioConfigModel, &PortfolioConfigModel::slotOnClickAddAccount, Qt::QueuedConnection);
+    ui.test_treeView->addAction(QIcon(":/IBTradeSystem/x_resources/Portfolio.png"), "Add New Portfolio", &m_portfolioConfigModel, &PortfolioConfigModel::slotOnClickAddPortfolio, Qt::QueuedConnection);
+    ui.test_treeView->addAction(QIcon(":/IBTradeSystem/x_resources/Strategy.png"), "Add New Strategy");
+    QAction *act = new QAction(this);
+    act->setSeparator(true);
+    ui.test_treeView->addAction(act);
+    ui.test_treeView->addAction("Remove Selected Node", &m_portfolioConfigModel, &PortfolioConfigModel::onClickRemoveNodeButton, Qt::QueuedConnection);
+    /*** End Create Context Menu **************/
+
+
     this->setWindowTitle(QString("IB Trade v. ") + QString(APP_VERSION));
 
 
@@ -31,10 +43,6 @@ IBTradeSystem::IBTradeSystem(QWidget *parent)
     QObject::connect(ui.actionShow_Log, &QAction::triggered, this, &IBTradeSystem::slotShowLog);
     QObject::connect(ui.actionSetting, &QAction::triggered, this, &IBTradeSystem::slotshowSettings);
 
-//    QObject::connect(static_cast<CSettinsModelData*>(m_SettingsModel.getDataObject()), &CSettinsModelData::signalEditLogSettingsCompleted, this, &IBTradeSystem::slotEditSettingLogSettingsComlited, Qt::QueuedConnection);
-//    QObject::connect(static_cast<CSettinsModelData*>(m_SettingsModel.getDataObject()), &CSettinsModelData::signalEditServerPortCompleted, NHelper::writeServerPort);
-//    QObject::connect(static_cast<CSettinsModelData*>(m_SettingsModel.getDataObject()), &CSettinsModelData::signalEditServerAddresCompleted, NHelper::writeServerAddress);
-
     QObject::connect(&m_SettingsModel, &CSettinsModelData::signalEditLogSettingsCompleted, this, &IBTradeSystem::slotEditSettingLogSettingsComlited, Qt::QueuedConnection);
     QObject::connect(&m_SettingsModel, &CSettinsModelData::signalEditServerPortCompleted, NHelper::writeServerPort);
     QObject::connect(&m_SettingsModel, &CSettinsModelData::signalEditServerAddresCompleted, NHelper::writeServerAddress);
@@ -43,10 +51,6 @@ IBTradeSystem::IBTradeSystem(QWidget *parent)
     QObject::connect(ui.test_treeView, &QTreeView::collapsed, [=](const QModelIndex& index) { ui.test_treeView->resizeColumnToContents(index.column()); });
 
 
-//    QObject::connect(ui.pushButton_AddNode, &QPushButton::clicked, static_cast<PortfolioConfigModel*>(m_portfolioConfigModel.getDataObject()), &PortfolioConfigModel::onClickAddNodeButton);
-//    QObject::connect(ui.pushButton_RemoveNode, SIGNAL(clicked()), static_cast<PortfolioConfigModel*>(m_portfolioConfigModel.getDataObject()), SLOT(onClickRemoveNodeButton()));
-    QObject::connect(ui.pushButton_AddNode, &QPushButton::clicked, &m_portfolioConfigModel, &PortfolioConfigModel::onClickAddNodeButton);
-    QObject::connect(ui.pushButton_RemoveNode, SIGNAL(clicked()), &m_portfolioConfigModel, SLOT(onClickRemoveNodeButton()));
 
     NHelper::initSettings();
 
@@ -58,7 +62,6 @@ IBTradeSystem::IBTradeSystem(QWidget *parent)
     ui.test_treeView->setModel(&m_portfolioConfigModel);
 
 
-    //QObject::connect(static_cast<PortfolioConfigModel*>(m_portfolioConfigModel.getDataObject()), SIGNAL(signalUpdateData(QModelIndex)), this, SLOT(slotUpdateTreeView(QModelIndex)));
     QObject::connect(&m_portfolioConfigModel, SIGNAL(signalUpdateData(QModelIndex)), this, SLOT(slotUpdateTreeView(QModelIndex)));
 
 

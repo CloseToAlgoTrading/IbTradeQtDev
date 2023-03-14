@@ -53,8 +53,6 @@ public:
     QPushButton *pushButtonPairTrader;
     QPushButton *autoDeltaButton;
     QPushButton *pushButtonDBStore;
-    QPushButton *pushButton_RemoveNode;
-    QPushButton *pushButton_AddNode;
     QFrame *frame_4;
     QVBoxLayout *verticalLayout_3;
     QHBoxLayout *horizontalLayout_2;
@@ -169,16 +167,6 @@ public:
 
 
         gridLayout_2->addWidget(frame_3, 0, 0, 1, 1, Qt::AlignTop);
-
-        pushButton_RemoveNode = new QPushButton(frame_5);
-        pushButton_RemoveNode->setObjectName("pushButton_RemoveNode");
-
-        gridLayout_2->addWidget(pushButton_RemoveNode, 2, 0, 1, 1);
-
-        pushButton_AddNode = new QPushButton(frame_5);
-        pushButton_AddNode->setObjectName("pushButton_AddNode");
-
-        gridLayout_2->addWidget(pushButton_AddNode, 1, 0, 1, 1);
 
         splitter->addWidget(frame_5);
         frame_4 = new QFrame(splitter);
@@ -310,8 +298,6 @@ public:
         pushButtonPairTrader->setText(QCoreApplication::translate("IBTradeSystemClass", "Pair Trader", nullptr));
         autoDeltaButton->setText(QCoreApplication::translate("IBTradeSystemClass", "Auto Delta", nullptr));
         pushButtonDBStore->setText(QCoreApplication::translate("IBTradeSystemClass", "DBStore", nullptr));
-        pushButton_RemoveNode->setText(QCoreApplication::translate("IBTradeSystemClass", "Remove Node", nullptr));
-        pushButton_AddNode->setText(QCoreApplication::translate("IBTradeSystemClass", "Add Node", nullptr));
         menuclear_log->setTitle(QCoreApplication::translate("IBTradeSystemClass", "options", nullptr));
         menuView->setTitle(QCoreApplication::translate("IBTradeSystemClass", "View", nullptr));
         menuOperations->setTitle(QCoreApplication::translate("IBTradeSystemClass", "Operations", nullptr));

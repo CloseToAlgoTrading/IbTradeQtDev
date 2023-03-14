@@ -3,6 +3,7 @@
 
 #include "ctreeviewcustommodel.h"
 #include "cbasicroot.h"
+#include <QList>
 
 class PortfolioConfigModel : public CTreeViewCustomModel
 {
@@ -11,6 +12,7 @@ public:
     PortfolioConfigModel(QTreeView *treeView, QObject *parent);
 
     void setupModelData(TreeItem * rootItem);
+    QModelIndex findWorkingNode(QModelIndex index, const QList<quint16> & Ids);
 
 public slots:
     virtual void dataChangeCallback(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QList<int> & param) final;
@@ -19,7 +21,8 @@ private:
     CBasicRoot m_Root;
 
 public slots:
-    void onClickAddNodeButton();
+    void slotOnClickAddAccount();
+    void slotOnClickAddPortfolio();
     void onClickRemoveNodeButton();
 
 signals:
