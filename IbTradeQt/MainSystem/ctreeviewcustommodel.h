@@ -10,7 +10,7 @@
 #include <QHostAddress>
 //#include "csettinsmodeldata.h"
 #include "ctreeviewdatamodel.h"
-
+#include <QTreeView>
 
 
 class CTreeViewCustomModel : public QAbstractItemModel
@@ -18,8 +18,8 @@ class CTreeViewCustomModel : public QAbstractItemModel
     Q_OBJECT
 public:
 
-    //SettingsModel(QObject *parent = nullptr);
-    CTreeViewCustomModel(QObject *parent, CTreeViewDataModel* _dataModel);
+    //CTreeViewCustomModel(QObject *parent, CTreeViewDataModel* _dataModel);
+    CTreeViewCustomModel(QTreeView *treeView, QObject *parent);
     ~CTreeViewCustomModel();
 
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
@@ -32,20 +32,25 @@ public:
                       const QModelIndex &parent = QModelIndex()) const override;
     QModelIndex parent(const QModelIndex &index) const override;
 
-    CTreeViewDataModel* getDataObject();
+    //CTreeViewDataModel* getDataObject();
 
-private:
-    void setupModelData(TreeItem *parent);
-    TreeItem *getItem(const QModelIndex &index) const;
+    void setTreeView(QTreeView *newTreeView);
 
-private:
-    CTreeViewDataModel* m_data;
-    TreeItem *rootItem;
+protected:
+    void setupModelData(TreeItem * parent);
+    TreeItem * getItem(const QModelIndex &index) const;
+
+protected:
+    //CTreeViewDataModel* m_data;
+    TreeItem * rootItem;
+    QTreeView *m_treeView;
 signals:
     void signalEditCompleted();
     void siganlSataChangeCallback(const pItemDataType pDataItem);
 
 public slots:
+    void slotDataUpdated();
+    virtual void dataChangeCallback(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QList<int> & param) = 0;
 };
 
 #endif // CTREEVIEWCUSTOMMODEL_H

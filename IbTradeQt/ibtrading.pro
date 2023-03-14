@@ -250,7 +250,7 @@ HEADERS += \
     Common/contractsdefs.h \
     Common/OrderSamples.h \
     #MainSystem/cstandartitemsettings.h \
-    MainSystem/treeitem.cpp
+    MainSystem/treeitem.h
 
 
 FORMS += \

@@ -1,15 +1,19 @@
 #include "csettinsmodeldata.h"
 #include "MyLogger.h"
 
-CSettinsModelData::CSettinsModelData(QObject *parent)
-    : m_pServerAddress(),
+CSettinsModelData::CSettinsModelData(QTreeView *treeView, QObject *parent)
+    : CTreeViewCustomModel(treeView, parent),
+    m_pServerAddress(),
     m_pServerPort(),
     m_plogLevel()
 {
+    Q_UNUSED(parent);
+    setupModelData(rootItem);
+
 
 }
 
-void CSettinsModelData::setupModelData(TreeItem *rootItem)
+void CSettinsModelData::setupModelData(TreeItem * rootItem)
 {
 
     rootItem->insertColumns(0,2);
@@ -19,13 +23,13 @@ void CSettinsModelData::setupModelData(TreeItem *rootItem)
     QList<TreeItem *> parents;
     parents << rootItem;
 
-    TreeItem *parent = parents.last();
+    TreeItem * parent = parents.last();
 
     parent->insertChildren(parent->childCount(), 1, rootItem->columnCount());
     parent->child(parent->childCount() - 1)->addData(0, pItemDataType(new stItemData("Servers", EVET_RO_TEXT, S_DATA_ID_UNSET)));
     parent->child(parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(QVariant(), EVT_READ_ONLY, S_DATA_ID_UNSET)));
 
-    TreeItem *_parent = parent->child(parent->childCount() - 1);
+    TreeItem * _parent = parent->child(parent->childCount() - 1);
     _parent->insertChildren(_parent->childCount(), 1, rootItem->columnCount());
     m_pServerAddress = pItemDataType(new stItemData("127.0.0.1", EVT_TEXT, S_DATA_ID_SERVER_ADDRESS));
     _parent->child(_parent->childCount() - 1)->addData(0, pItemDataType(new stItemData("Address", EVET_RO_TEXT, S_DATA_ID_UNSET)));
@@ -75,7 +79,7 @@ void CSettinsModelData::dataChangeCallback(const QModelIndex &topLeft, const QMo
     Q_UNUSED(param);
 
     if (topLeft.isValid()) {
-        TreeItem *item = static_cast<TreeItem*>(topLeft.internalPointer());
+        TreeItem* item = static_cast<TreeItem*>(topLeft.internalPointer());
         if(item)
         {
             const auto itemData = item->data(topLeft.column());

@@ -35,23 +35,19 @@ void CBasicStrategy::setName(const QString& name)
     this->m_InfoMap["name"] = name;
 }
 
-bool CBasicStrategy::start()
-{
-    return true;
-}
-
-bool CBasicStrategy::stop()
-{
-    return true;
-}
-
 void CBasicStrategy::setParameters(const QVariantMap &parametersMap)
 {
     this->m_ParametersMap = parametersMap;
+    //emit onUpdateParametersSignal(this->m_ParametersMap);
 }
 
 const QVariantMap &CBasicStrategy::getParameters()
 {
     return this->m_ParametersMap;
+}
+
+void CBasicStrategy::onUpdateParametersSlot(const QVariantMap& parameters)
+{
+    this->m_ParametersMap = parameters;
 }
 

@@ -3,13 +3,12 @@
 
 //#define DEBUG_ACTIVE
 
-//TODO: REMOVE #include "StdAfx.h" // need for Order.h and OrderState.h
 #include "EWrapper.h"
 #include "Contract.h"
 #include "Order.h"
 #include <QString>
 
-#define APP_VERSION "0.1.6"
+#define APP_VERSION "0.2.0"
 
 
 #define CONNECTIONS_SERVER_IP "127.0.0.1"

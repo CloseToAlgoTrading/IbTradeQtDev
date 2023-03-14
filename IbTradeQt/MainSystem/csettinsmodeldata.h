@@ -6,6 +6,8 @@
 #include <QSharedPointer>
 #include <QObject>
 #include <QModelIndex>
+#include <QTreeView>
+#include "CTreeViewCustomModel.h"
 
 enum S_LOG_LEVEL{
     S_INDEX_LOG_LEVEL_ALL = 0,
@@ -30,13 +32,13 @@ enum S_DATA_IDS{
     S_DATA_ID_COUNT
 };
 
-class CSettinsModelData: public CTreeViewDataModel
+class CSettinsModelData: public CTreeViewCustomModel
 {
     Q_OBJECT
 public:
-    CSettinsModelData(QObject *parent);
+    CSettinsModelData(QTreeView *treeView, QObject *parent);
 
-    void setupModelData(TreeItem *rootItem) final;
+    void setupModelData(TreeItem * rootItem);
 
     void setLoggerSettings(const QVector<bool> _levels);
     const QVector<bool> getLoggerSettings();
@@ -46,7 +48,7 @@ public:
     static void updateLoggerSettingsArray(quint8 _mask, QVector<bool> & _levels);
 
 public slots:
-    void dataChangeCallback(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QList<int> & param) final;
+    virtual void dataChangeCallback(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QList<int> & param) final;
 
 signals:
     void signalEditLogSettingsCompleted();
@@ -58,6 +60,8 @@ private:
     pItemDataType m_pServerAddress;
     pItemDataType m_pServerPort;
     QVector<pItemDataType> m_plogLevel;
+
+
 };
 
 #endif // CSETTINSMODELDATA_H

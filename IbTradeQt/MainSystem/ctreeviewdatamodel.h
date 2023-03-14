@@ -11,7 +11,7 @@ class CTreeViewDataModel : public QObject
 {
     Q_OBJECT
 public:
-    virtual void setupModelData(TreeItem *rootItem) = 0;
+    virtual void setupModelData(TreeItem * rootItem) = 0;
 public slots:
     virtual void dataChangeCallback(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QList<int> & param) = 0;
 };

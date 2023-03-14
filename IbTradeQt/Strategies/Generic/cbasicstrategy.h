@@ -17,8 +17,6 @@ public:
     virtual QList<ptrGenericModelType>& getModels() override;
     virtual QString getName() override;
     virtual void setName(const QString& name) override;
-    virtual bool start() override;
-    virtual bool stop() override;
 
     virtual void setParameters(const QVariantMap& parametersMap) override;
     virtual const QVariantMap& getParameters() override;
@@ -28,6 +26,12 @@ protected:
     QVariantMap m_ParametersMap;
     QVariantMap m_InfoMap;
     QString m_Name;
+
+public slots:
+    void onUpdateParametersSlot(const QVariantMap& parameters);
+//public: signals:
+//    void onUpdateParametersSignal(const QVariantMap& parameters);
+
 };
 
 #endif // CBASICSTRATEGY_H

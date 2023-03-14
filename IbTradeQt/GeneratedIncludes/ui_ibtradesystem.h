@@ -37,6 +37,8 @@ public:
     QAction *actionClear_Log;
     QAction *actionShow_Log;
     QAction *actionSetting;
+    QAction *actionAdd_Model;
+    QAction *actionRemove_Model;
     QWidget *centralWidget;
     QVBoxLayout *verticalLayout_2;
     QSplitter *splitter_2;
@@ -51,6 +53,8 @@ public:
     QPushButton *pushButtonPairTrader;
     QPushButton *autoDeltaButton;
     QPushButton *pushButtonDBStore;
+    QPushButton *pushButton_RemoveNode;
+    QPushButton *pushButton_AddNode;
     QFrame *frame_4;
     QVBoxLayout *verticalLayout_3;
     QHBoxLayout *horizontalLayout_2;
@@ -58,6 +62,7 @@ public:
     QMenuBar *menuBar;
     QMenu *menuclear_log;
     QMenu *menuView;
+    QMenu *menuOperations;
     QToolBar *mainToolBar;
     QStatusBar *statusBar;
     QDockWidget *dockWidget_Logging;
@@ -88,6 +93,10 @@ public:
         actionSetting->setObjectName("actionSetting");
         actionSetting->setCheckable(false);
         actionSetting->setChecked(false);
+        actionAdd_Model = new QAction(IBTradeSystemClass);
+        actionAdd_Model->setObjectName("actionAdd_Model");
+        actionRemove_Model = new QAction(IBTradeSystemClass);
+        actionRemove_Model->setObjectName("actionRemove_Model");
         centralWidget = new QWidget(IBTradeSystemClass);
         centralWidget->setObjectName("centralWidget");
         verticalLayout_2 = new QVBoxLayout(centralWidget);
@@ -161,6 +170,16 @@ public:
 
         gridLayout_2->addWidget(frame_3, 0, 0, 1, 1, Qt::AlignTop);
 
+        pushButton_RemoveNode = new QPushButton(frame_5);
+        pushButton_RemoveNode->setObjectName("pushButton_RemoveNode");
+
+        gridLayout_2->addWidget(pushButton_RemoveNode, 2, 0, 1, 1);
+
+        pushButton_AddNode = new QPushButton(frame_5);
+        pushButton_AddNode->setObjectName("pushButton_AddNode");
+
+        gridLayout_2->addWidget(pushButton_AddNode, 1, 0, 1, 1);
+
         splitter->addWidget(frame_5);
         frame_4 = new QFrame(splitter);
         frame_4->setObjectName("frame_4");
@@ -193,11 +212,13 @@ public:
         IBTradeSystemClass->setCentralWidget(centralWidget);
         menuBar = new QMenuBar(IBTradeSystemClass);
         menuBar->setObjectName("menuBar");
-        menuBar->setGeometry(QRect(0, 0, 895, 20));
+        menuBar->setGeometry(QRect(0, 0, 895, 21));
         menuclear_log = new QMenu(menuBar);
         menuclear_log->setObjectName("menuclear_log");
         menuView = new QMenu(menuBar);
         menuView->setObjectName("menuView");
+        menuOperations = new QMenu(menuBar);
+        menuOperations->setObjectName("menuOperations");
         IBTradeSystemClass->setMenuBar(menuBar);
         mainToolBar = new QToolBar(IBTradeSystemClass);
         mainToolBar->setObjectName("mainToolBar");
@@ -207,7 +228,7 @@ public:
         IBTradeSystemClass->setStatusBar(statusBar);
         dockWidget_Logging = new QDockWidget(IBTradeSystemClass);
         dockWidget_Logging->setObjectName("dockWidget_Logging");
-        dockWidget_Logging->setMinimumSize(QSize(289, 208));
+        dockWidget_Logging->setMinimumSize(QSize(295, 212));
         dockWidget_Logging->setLayoutDirection(Qt::LeftToRight);
         dockWidget_Logging->setFeatures(QDockWidget::DockWidgetClosable|QDockWidget::DockWidgetVerticalTitleBar);
         dockWidget_Logging->setAllowedAreas(Qt::BottomDockWidgetArea);
@@ -265,9 +286,12 @@ public:
 
         menuBar->addAction(menuclear_log->menuAction());
         menuBar->addAction(menuView->menuAction());
+        menuBar->addAction(menuOperations->menuAction());
         menuclear_log->addAction(actionClear_Log);
         menuView->addAction(actionShow_Log);
         menuView->addAction(actionSetting);
+        menuOperations->addAction(actionAdd_Model);
+        menuOperations->addAction(actionRemove_Model);
 
         retranslateUi(IBTradeSystemClass);
 
@@ -280,12 +304,17 @@ public:
         actionClear_Log->setText(QCoreApplication::translate("IBTradeSystemClass", "Clear Log", nullptr));
         actionShow_Log->setText(QCoreApplication::translate("IBTradeSystemClass", "Log", nullptr));
         actionSetting->setText(QCoreApplication::translate("IBTradeSystemClass", "Setting", nullptr));
+        actionAdd_Model->setText(QCoreApplication::translate("IBTradeSystemClass", "Add Model", nullptr));
+        actionRemove_Model->setText(QCoreApplication::translate("IBTradeSystemClass", "Remove Model", nullptr));
         pushButton->setText(QCoreApplication::translate("IBTradeSystemClass", "Connect", nullptr));
         pushButtonPairTrader->setText(QCoreApplication::translate("IBTradeSystemClass", "Pair Trader", nullptr));
         autoDeltaButton->setText(QCoreApplication::translate("IBTradeSystemClass", "Auto Delta", nullptr));
         pushButtonDBStore->setText(QCoreApplication::translate("IBTradeSystemClass", "DBStore", nullptr));
+        pushButton_RemoveNode->setText(QCoreApplication::translate("IBTradeSystemClass", "Remove Node", nullptr));
+        pushButton_AddNode->setText(QCoreApplication::translate("IBTradeSystemClass", "Add Node", nullptr));
         menuclear_log->setTitle(QCoreApplication::translate("IBTradeSystemClass", "options", nullptr));
         menuView->setTitle(QCoreApplication::translate("IBTradeSystemClass", "View", nullptr));
+        menuOperations->setTitle(QCoreApplication::translate("IBTradeSystemClass", "Operations", nullptr));
         dockWidget_Logging->setWindowTitle(QCoreApplication::translate("IBTradeSystemClass", "Logs", nullptr));
         dockWidget_Settings->setWindowTitle(QCoreApplication::translate("IBTradeSystemClass", "Settings", nullptr));
     } // retranslateUi

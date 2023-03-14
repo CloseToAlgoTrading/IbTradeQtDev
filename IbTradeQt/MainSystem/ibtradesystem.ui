@@ -91,7 +91,7 @@
            <property name="frameShadow">
             <enum>QFrame::Raised</enum>
            </property>
-           <layout class="QGridLayout" name="gridLayout_2" rowstretch="0">
+           <layout class="QGridLayout" name="gridLayout_2" rowstretch="0,0,0,0,0,0,0">
             <property name="sizeConstraint">
              <enum>QLayout::SetDefaultConstraint</enum>
             </property>
@@ -162,6 +162,20 @@
               </layout>
              </widget>
             </item>
+            <item row="2" column="0">
+             <widget class="QPushButton" name="pushButton_RemoveNode">
+              <property name="text">
+               <string>Remove Node</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QPushButton" name="pushButton_AddNode">
+              <property name="text">
+               <string>Add Node</string>
+              </property>
+             </widget>
+            </item>
            </layout>
           </widget>
           <widget class="QFrame" name="frame_4">
@@ -207,7 +221,7 @@
      <x>0</x>
      <y>0</y>
      <width>895</width>
-     <height>20</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuclear_log">
@@ -223,8 +237,16 @@
     <addaction name="actionShow_Log"/>
     <addaction name="actionSetting"/>
    </widget>
+   <widget class="QMenu" name="menuOperations">
+    <property name="title">
+     <string>Operations</string>
+    </property>
+    <addaction name="actionAdd_Model"/>
+    <addaction name="actionRemove_Model"/>
+   </widget>
    <addaction name="menuclear_log"/>
    <addaction name="menuView"/>
+   <addaction name="menuOperations"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
    <attribute name="toolBarArea">
@@ -238,8 +260,8 @@
   <widget class="QDockWidget" name="dockWidget_Logging">
    <property name="minimumSize">
     <size>
-     <width>289</width>
-     <height>208</height>
+     <width>295</width>
+     <height>212</height>
     </size>
    </property>
    <property name="layoutDirection">
@@ -347,6 +369,16 @@
    </property>
    <property name="text">
     <string>Setting</string>
+   </property>
+  </action>
+  <action name="actionAdd_Model">
+   <property name="text">
+    <string>Add Model</string>
+   </property>
+  </action>
+  <action name="actionRemove_Model">
+   <property name="text">
+    <string>Remove Model</string>
    </property>
   </action>
  </widget>
