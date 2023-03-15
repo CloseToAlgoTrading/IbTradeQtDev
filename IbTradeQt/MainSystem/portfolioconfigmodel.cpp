@@ -184,22 +184,26 @@ void PortfolioConfigModel::slotOnClickAddAccount()
     m_Root.addModel(static_cast<ptrGenericModelType>(pA1));
     //    m_Root.addModel(static_cast<ptrGenericModelType>(pA2));
 
-    beginInsertRows(QModelIndex(),rootItem->childCount(),rootItem->childCount());
+    addWorkingNode(createIndex(0,0,rootItem), static_cast<ptrGenericModelType>(pA1), PM_ITEM_ACCOUNT);
 
-    TreeItem * parentAccount = addRootNode(rootItem->child(rootItem->childCount() - 1),
-                                   pItemDataType(new stItemData(pA1->getName(), EVET_RO_TEXT, PM_ITEM_ACCOUNT)),
-                                   pItemDataType(new stItemData(QVariant(), EVET_RO_TEXT, TVM_UNUSED_ID)),
-                                   rootItem->columnCount());
+//    beginInsertRows(QModelIndex(),rootItem->childCount(),rootItem->childCount());
 
-    addParameters(parentAccount, pA1->getParameters(), rootItem->columnCount());
+//    TreeItem * parentAccount = addRootNode(rootItem->child(rootItem->childCount() - 1),
+//                                   pItemDataType(new stItemData(pA1->getName(), EVET_RO_TEXT, PM_ITEM_ACCOUNT)),
+//                                   pItemDataType(new stItemData(QVariant(), EVET_RO_TEXT, TVM_UNUSED_ID)),
+//                                   rootItem->columnCount());
 
-    endInsertRows();
+//    addParameters(parentAccount, pA1->getParameters(), rootItem->columnCount());
+
+//    endInsertRows();
 
 
-    QModelIndex index = createIndex(0,0,parentAccount);
-    emit signalUpdateData(index);
+//    QModelIndex index = createIndex(0,0,parentAccount);
+//    emit signalUpdateData(index);
 
 }
+
+
 
 void PortfolioConfigModel::slotOnClickAddPortfolio()
 {
@@ -211,9 +215,13 @@ void PortfolioConfigModel::slotOnClickAddPortfolio()
         QModelIndexList indexes = selectionModel->selectedIndexes();
         QModelIndex index = indexes.at(0); // Assumes single selection mode
 
-        QList<quint16> Ids{PM_ITEM_ACCOUNT};
-        index = findWorkingNode(index, Ids);
+//        if(getItem(index)->data(0).id != PM_ITEM_ACCOUNT)
+//        {
+            QList<quint16> Ids{PM_ITEM_ACCOUNT};
+            index = findWorkingNode(index, Ids);
+//        }
         TreeItem * tmpItem = getItem(index);
+        stItemData xx = tmpItem->data(0);
 
         quint8 nr = tmpItem->childNumber();
         QList<ptrGenericModelType> accounts = m_Root.getModels();
@@ -222,8 +230,9 @@ void PortfolioConfigModel::slotOnClickAddPortfolio()
             ptrGenericModelType pAcc = accounts.at(nr);
             CBasicPortfolio *pP1 = new CBasicPortfolio();
             pP1->setName("P"+QString::number(i++));
-
             pAcc->addModel(static_cast<ptrGenericModelType>(pP1));
+
+            addWorkingNode(index, static_cast<ptrGenericModelType>(pP1), PM_ITEM_PORTFOLIO);
         }
     }
 
@@ -233,8 +242,8 @@ QModelIndex PortfolioConfigModel::findWorkingNode(QModelIndex index, const QList
 {
     TreeItem * tmpItem = getItem(index);
     const quint16 id = tmpItem->data(0).id;
-    if(PM_ITEM_ACCOUNTS != id)
-    {
+//    if(PM_ITEM_ACCOUNTS != id)
+//    {
         if(Ids.contains(id))
         {
             return index;
@@ -243,8 +252,27 @@ QModelIndex PortfolioConfigModel::findWorkingNode(QModelIndex index, const QList
         {
           return findWorkingNode(index.parent(), Ids);
         }
-    }
+//    }
     return QModelIndex();
+}
+
+void PortfolioConfigModel::addWorkingNode(QModelIndex index, const ptrGenericModelType pModel, const quint16 id)
+{
+    TreeItem * item = getItem(index);
+    quint8 nn = item->childCount();
+    beginInsertRows(index,item->childCount(),item->childCount());
+
+    TreeItem * parentAccount = addRootNode(item,
+                                   pItemDataType(new stItemData(pModel->getName(), EVET_RO_TEXT, id)),
+                                   pItemDataType(new stItemData(QVariant(), EVET_RO_TEXT, TVM_UNUSED_ID)),
+                                   item->columnCount());
+
+    addParameters(parentAccount, pModel->getParameters(), item->columnCount());
+
+    endInsertRows();
+
+    QModelIndex newIndex = createIndex(index.row(), 0, parentAccount);
+    emit signalUpdateData(newIndex);
 }
 
 void PortfolioConfigModel::onClickRemoveNodeButton()
@@ -255,17 +283,18 @@ void PortfolioConfigModel::onClickRemoveNodeButton()
     if (selectionModel->hasSelection()) {
         QModelIndexList indexes = selectionModel->selectedIndexes();
         QModelIndex index = indexes.at(0); // Assumes single selection mode
+        if(PM_ITEM_ACCOUNTS != getItem(index)->data(0).id)
+        {
+            QList<quint16> Ids{PM_ITEM_STRATEGY, PM_ITEM_STRATEGIES, PM_ITEM_PORTFOLIO, PM_ITEM_ACCOUNT};
+            index = findWorkingNode(index, Ids);
+            TreeItem * tmpItem = getItem(index);
+            if(tmpItem->data(0).id)
+            beginRemoveRows(index.parent(), index.row(), index.row() );
 
-        QList<quint16> Ids{PM_ITEM_STRATEGY, PM_ITEM_STRATEGIES, PM_ITEM_PORTFOLIO, PM_ITEM_ACCOUNT};
-        index = findWorkingNode(index, Ids);
-
-        TreeItem * tmpItem = getItem(index);
-        if(tmpItem->data(0).id)
-        beginRemoveRows(index.parent(), index.row(), index.row() );
-
-        TreeItem * tmpParemt = tmpItem->parent();
-        tmpParemt->removeChildren(tmpItem->childNumber(), 1);
-        endRemoveRows();
-        emit signalUpdateData(createIndex(0,0,rootItem));
+            TreeItem * tmpParemt = tmpItem->parent();
+            tmpParemt->removeChildren(tmpItem->childNumber(), 1);
+            endRemoveRows();
+            emit signalUpdateData(createIndex(0,0,rootItem));
+        }
     }
 }
