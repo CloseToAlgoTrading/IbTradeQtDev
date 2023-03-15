@@ -184,8 +184,8 @@ void PortfolioConfigModel::slotOnClickAddAccount()
     m_Root.addModel(static_cast<ptrGenericModelType>(pA1));
     //    m_Root.addModel(static_cast<ptrGenericModelType>(pA2));
 
-    addWorkingNode(createIndex(0,0,rootItem), static_cast<ptrGenericModelType>(pA1), PM_ITEM_ACCOUNT);
-
+    //addWorkingNode_v2(rootItem->child(rootItem->childCount() - 1), static_cast<ptrGenericModelType>(pA1), PM_ITEM_ACCOUNT);
+    addWorkingNode(createIndex(0,0,rootItem->child(rootItem->childCount() - 1)), static_cast<ptrGenericModelType>(pA1), PM_ITEM_ACCOUNT);
 //    beginInsertRows(QModelIndex(),rootItem->childCount(),rootItem->childCount());
 
 //    TreeItem * parentAccount = addRootNode(rootItem->child(rootItem->childCount() - 1),
@@ -259,7 +259,6 @@ QModelIndex PortfolioConfigModel::findWorkingNode(QModelIndex index, const QList
 void PortfolioConfigModel::addWorkingNode(QModelIndex index, const ptrGenericModelType pModel, const quint16 id)
 {
     TreeItem * item = getItem(index);
-    quint8 nn = item->childCount();
     beginInsertRows(index,item->childCount(),item->childCount());
 
     TreeItem * parentAccount = addRootNode(item,
@@ -277,7 +276,6 @@ void PortfolioConfigModel::addWorkingNode(QModelIndex index, const ptrGenericMod
 
 void PortfolioConfigModel::onClickRemoveNodeButton()
 {
-    QModelIndexList indexes = m_treeView->selectionModel()->selectedIndexes();
     QItemSelectionModel *selectionModel = m_treeView->selectionModel();
 
     if (selectionModel->hasSelection()) {
@@ -288,9 +286,8 @@ void PortfolioConfigModel::onClickRemoveNodeButton()
             QList<quint16> Ids{PM_ITEM_STRATEGY, PM_ITEM_STRATEGIES, PM_ITEM_PORTFOLIO, PM_ITEM_ACCOUNT};
             index = findWorkingNode(index, Ids);
             TreeItem * tmpItem = getItem(index);
-            if(tmpItem->data(0).id)
-            beginRemoveRows(index.parent(), index.row(), index.row() );
 
+            beginRemoveRows(index.parent(), index.row(), index.row() );
             TreeItem * tmpParemt = tmpItem->parent();
             tmpParemt->removeChildren(tmpItem->childNumber(), 1);
             endRemoveRows();
