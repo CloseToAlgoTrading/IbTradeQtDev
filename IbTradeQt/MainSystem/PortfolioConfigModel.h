@@ -24,6 +24,7 @@ private:
 public slots:
     void slotOnClickAddAccount();
     void slotOnClickAddPortfolio();
+    void slotOnClickAddStrategy();
     void onClickRemoveNodeButton();
 
 

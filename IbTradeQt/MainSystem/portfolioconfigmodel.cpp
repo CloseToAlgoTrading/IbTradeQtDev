@@ -168,7 +168,7 @@ void PortfolioConfigModel::slotOnClickAddAccount()
     //    pP1->setName("P1");
     //    CBasicPortfolio *pP2 = new CBasicPortfolio();
     //    pP2->setName("P2");
-    CBasicAccount *pA1 = new CBasicAccount();
+    QSharedPointer<CBasicAccount> pA1 = QSharedPointer<CBasicAccount>(new CBasicAccount());
     pA1->setName("A"+QString::number(i++));
     //    CBasicAccount *pA2 = new CBasicAccount();
     //    pA2->setName("A2");
@@ -181,25 +181,12 @@ void PortfolioConfigModel::slotOnClickAddAccount()
     //    pA1->addModel(static_cast<ptrGenericModelType>(pP1));
     //    pA1->addModel(static_cast<ptrGenericModelType>(pP2));
 
-    m_Root.addModel(static_cast<ptrGenericModelType>(pA1));
+    m_Root.addModel(pA1);
+
     //    m_Root.addModel(static_cast<ptrGenericModelType>(pA2));
 
     //addWorkingNode_v2(rootItem->child(rootItem->childCount() - 1), static_cast<ptrGenericModelType>(pA1), PM_ITEM_ACCOUNT);
     addWorkingNode(createIndex(0,0,rootItem->child(rootItem->childCount() - 1)), static_cast<ptrGenericModelType>(pA1), PM_ITEM_ACCOUNT);
-//    beginInsertRows(QModelIndex(),rootItem->childCount(),rootItem->childCount());
-
-//    TreeItem * parentAccount = addRootNode(rootItem->child(rootItem->childCount() - 1),
-//                                   pItemDataType(new stItemData(pA1->getName(), EVET_RO_TEXT, PM_ITEM_ACCOUNT)),
-//                                   pItemDataType(new stItemData(QVariant(), EVET_RO_TEXT, TVM_UNUSED_ID)),
-//                                   rootItem->columnCount());
-
-//    addParameters(parentAccount, pA1->getParameters(), rootItem->columnCount());
-
-//    endInsertRows();
-
-
-//    QModelIndex index = createIndex(0,0,parentAccount);
-//    emit signalUpdateData(index);
 
 }
 
@@ -211,48 +198,62 @@ void PortfolioConfigModel::slotOnClickAddPortfolio()
     QModelIndexList indexes = m_treeView->selectionModel()->selectedIndexes();
     QItemSelectionModel *selectionModel = m_treeView->selectionModel();
 
-    if (selectionModel->hasSelection()) {
-        QModelIndexList indexes = selectionModel->selectedIndexes();
-        QModelIndex index = indexes.at(0); // Assumes single selection mode
+    if (selectionModel->hasSelection() && !indexes.isEmpty()) {
+        QModelIndex index = indexes.first(); // Assumes single selection mode
 
-//        if(getItem(index)->data(0).id != PM_ITEM_ACCOUNT)
-//        {
-            QList<quint16> Ids{PM_ITEM_ACCOUNT};
-            index = findWorkingNode(index, Ids);
-//        }
-        TreeItem * tmpItem = getItem(index);
-        stItemData xx = tmpItem->data(0);
+        QList<quint16> Ids{PM_ITEM_ACCOUNT};
+        index = findWorkingNode(index, Ids);
 
-        quint8 nr = tmpItem->childNumber();
-        QList<ptrGenericModelType> accounts = m_Root.getModels();
-        if(accounts.length() > nr)
-        {
-            ptrGenericModelType pAcc = accounts.at(nr);
-            CBasicPortfolio *pP1 = new CBasicPortfolio();
-            pP1->setName("P"+QString::number(i++));
-            pAcc->addModel(static_cast<ptrGenericModelType>(pP1));
+        const auto nr = index.row();
+        const auto& accounts = m_Root.getModels();
+        if (accounts.length() > nr) {
+            auto pAcc = accounts.at(nr);
+            auto pP1 = QSharedPointer<CBasicPortfolio>::create();
+            pP1->setName("P" + QString::number(i++));
+            pAcc->addModel(pP1);
 
-            addWorkingNode(index, static_cast<ptrGenericModelType>(pP1), PM_ITEM_PORTFOLIO);
+            addWorkingNode(index, pP1, PM_ITEM_PORTFOLIO);
         }
     }
+}
 
+void PortfolioConfigModel::slotOnClickAddStrategy()
+{
+//    static quint16 i = 0;
+//    QModelIndexList indexes = m_treeView->selectionModel()->selectedIndexes();
+//    QItemSelectionModel *selectionModel = m_treeView->selectionModel();
+
+//    if (selectionModel->hasSelection() && !indexes.isEmpty()) {
+//        QModelIndex index = indexes.first(); // Assumes single selection mode
+
+//        QList<quint16> Ids{PM_ITEM_PORTFOLIO};
+//        index = findWorkingNode(index, Ids);
+
+//        const auto nr = index.row();
+//        const auto& accounts = m_Root.getModels();
+//        if (accounts.length() > nr) {
+//            auto pAcc = accounts.at(nr);
+//            auto pP1 = QSharedPointer<CBasicPortfolio>::create();
+//            pP1->setName("P" + QString::number(i++));
+//            pAcc->addModel(pP1);
+
+//            addWorkingNode(index, pP1, PM_ITEM_PORTFOLIO);
+//        }
+//    }
 }
 
 QModelIndex PortfolioConfigModel::findWorkingNode(QModelIndex index, const QList<quint16> & Ids)
 {
     TreeItem * tmpItem = getItem(index);
     const quint16 id = tmpItem->data(0).id;
-//    if(PM_ITEM_ACCOUNTS != id)
-//    {
-        if(Ids.contains(id))
-        {
-            return index;
-        }
-        else
-        {
-          return findWorkingNode(index.parent(), Ids);
-        }
-//    }
+    if(Ids.contains(id))
+    {
+        return index;
+    }
+    else
+    {
+      return findWorkingNode(index.parent(), Ids);
+    }
     return QModelIndex();
 }
 
@@ -274,24 +275,205 @@ void PortfolioConfigModel::addWorkingNode(QModelIndex index, const ptrGenericMod
     emit signalUpdateData(newIndex);
 }
 
+//void PortfolioConfigModel::onClickRemoveNodeButton()
+//{
+//    QItemSelectionModel *selectionModel = m_treeView->selectionModel();
+
+//    if (selectionModel->hasSelection()) {
+//        QModelIndexList indexes = selectionModel->selectedIndexes();
+//        QModelIndex index = indexes.at(0); // Assumes single selection mode
+//        if(PM_ITEM_ACCOUNTS != getItem(index)->data(0).id)
+//        {
+//            QList<quint16> Ids{PM_ITEM_STRATEGY, PM_ITEM_STRATEGIES, PM_ITEM_PORTFOLIO, PM_ITEM_ACCOUNT};
+//            index = findWorkingNode(index, Ids);
+//            TreeItem * tmpItem = getItem(index);
+
+//            switch (tmpItem->data(0).id) {
+//            case PM_ITEM_ACCOUNT:
+//            {
+//                const auto nr = index.row();
+//                auto& accounts = m_Root.getModels();
+//                if (accounts.length() > nr) {
+//                    accounts.removeAt(nr);
+//                }
+
+//                break;
+//            }
+//            case PM_ITEM_PORTFOLIO:
+//            {
+//                auto& accounts = m_Root.getModels();
+//                const auto accNr = index.parent().row();
+//                if (accounts.length() > accNr) {
+//                    auto& portfolios = accounts.at(accNr)->getModels();
+//                    const auto portfolioNr = index.row()-1;
+//                    if (portfolios.length() > portfolioNr) {
+//                        portfolios.removeAt(portfolioNr);
+//                    }
+//                }
+
+//                break;
+//            }
+//            case PM_ITEM_STRATEGY:
+//            {
+
+//            //TODO Check
+////                auto& accounts = m_Root.getModels();
+////                                const auto accNr = index.parent().parent().row();
+////                                if (accounts.length() > accNr) {
+////                                    auto& portfolios = accounts.at(accNr)->getModels();
+////                                    const auto portfolioNr = index.parent().row()-1;
+////                                    if (portfolios.length() > portfolioNr) {
+////                                        auto& strategies = portfolios.at(portfolioNr)->getModels();
+////                                        const auto strategyNr = index.row()-1;
+////                                        if (strategies.length() > strategyNr) {
+////                                            strategies.removeAt(strategyNr);
+////                                        }
+////                                    }
+////                                }
+
+////                                break;
+////            }
+//             default:
+//                break;
+//            }
+
+//            beginRemoveRows(index.parent(), index.row(), index.row() );
+//            TreeItem * tmpParemt = tmpItem->parent();
+//            tmpParemt->removeChildren(tmpItem->childNumber(), 1);
+//            endRemoveRows();
+//            emit signalUpdateData(createIndex(0,0,rootItem));
+//        }
+//    }
+//}
+
+//void PortfolioConfigModel::onClickRemoveNodeButton()
+//{
+//    QItemSelectionModel *selectionModel = m_treeView->selectionModel();
+
+//    if (selectionModel->hasSelection()) {
+//        QModelIndexList indexes = selectionModel->selectedIndexes();
+//        QModelIndex index = indexes.at(0); // Assumes single selection mode
+//        if(PM_ITEM_ACCOUNTS != getItem(index)->data(0).id)
+//        {
+//            QList<quint16> Ids{PM_ITEM_STRATEGY, PM_ITEM_STRATEGIES, PM_ITEM_PORTFOLIO, PM_ITEM_ACCOUNT};
+//            index = findWorkingNode(index, Ids);
+//            TreeItem * tmpItem = getItem(index);
+
+//            auto getAccount = [&]() {
+//                const auto accNr = index.parent().row();
+//                return m_Root.getModels().value(accNr, nullptr);
+//            };
+
+//            auto getPortfolio = [&](auto account) {
+//                const auto portfolioNr = index.parent().row() - 1;
+//                return account ? account->getModels().value(portfolioNr, nullptr) : nullptr;
+//            };
+
+//            switch (tmpItem->data(0).id) {
+//            case PM_ITEM_ACCOUNT:
+//                {
+//                    const auto nr = index.row();
+//                    auto& accounts = m_Root.getModels();
+//                    if (accounts.length() > nr) {
+//                        accounts.removeAt(nr);
+//                    }
+//                }
+//                break;
+//            case PM_ITEM_PORTFOLIO:
+//                {
+//                    auto account = getAccount();
+//                    auto portfolio = getPortfolio(account);
+//                    if (portfolio) {
+//                        account->getModels().removeOne(portfolio);
+//                    }
+//                }
+//                break;
+//            case PM_ITEM_STRATEGY:
+//                {
+//                    auto account = getAccount();
+//                    auto portfolio = getPortfolio(account);
+//                    if (portfolio) {
+//                        const auto strategyNr = index.row() - 1;
+//                        auto& strategies = portfolio->getModels();
+//                        if (strategies.length() > strategyNr) {
+//                            strategies.removeAt(strategyNr);
+//                        }
+//                    }
+//                }
+//                break;
+//            default:
+//                break;
+//            }
+
+//            beginRemoveRows(index.parent(), index.row(), index.row() );
+//            TreeItem * tmpParemt = tmpItem->parent();
+//            tmpParemt->removeChildren(tmpItem->childNumber(), 1);
+//            endRemoveRows();
+//            emit signalUpdateData(createIndex(0,0,rootItem));
+//        }
+//    }
+//}
+
 void PortfolioConfigModel::onClickRemoveNodeButton()
 {
     QItemSelectionModel *selectionModel = m_treeView->selectionModel();
 
     if (selectionModel->hasSelection()) {
-        QModelIndexList indexes = selectionModel->selectedIndexes();
-        QModelIndex index = indexes.at(0); // Assumes single selection mode
+        QModelIndex index = selectionModel->currentIndex(); // Assumes single selection mode
         if(PM_ITEM_ACCOUNTS != getItem(index)->data(0).id)
         {
             QList<quint16> Ids{PM_ITEM_STRATEGY, PM_ITEM_STRATEGIES, PM_ITEM_PORTFOLIO, PM_ITEM_ACCOUNT};
             index = findWorkingNode(index, Ids);
             TreeItem * tmpItem = getItem(index);
 
-            beginRemoveRows(index.parent(), index.row(), index.row() );
-            TreeItem * tmpParemt = tmpItem->parent();
-            tmpParemt->removeChildren(tmpItem->childNumber(), 1);
+            auto getAccount = [&]() -> ptrGenericModelType {
+                return m_Root.getModels().value(index.parent().row(), nullptr);
+            };
+
+            auto getPortfolio = [&](ptrGenericModelType account) -> ptrGenericModelType {
+                return account ? account->getModels().value(index.parent().row() - 1, nullptr) : nullptr;
+            };
+
+            switch (tmpItem->data(0).id) {
+            case PM_ITEM_ACCOUNT:
+                {
+                    auto accountToRemove = m_Root.getModels().value(index.row(), nullptr);
+                    if (accountToRemove) {
+                        m_Root.getModels().removeOne(accountToRemove);
+                    }
+                }
+                break;
+            case PM_ITEM_PORTFOLIO:
+                {
+                    auto account = getAccount();
+                    if (account) {
+                        auto portfolioToRemove = account->getModels().value(index.row() - 1, nullptr);
+                        if (portfolioToRemove) {
+                            account->getModels().removeOne(portfolioToRemove);
+                        }
+                    }
+                }
+                break;
+            case PM_ITEM_STRATEGY:
+                {
+                    auto account = getAccount();
+                    auto portfolio = getPortfolio(account);
+                    if (portfolio) {
+                        auto strategyToRemove = portfolio->getModels().value(index.row() - 1, nullptr);
+                        if (strategyToRemove) {
+                            portfolio->getModels().removeOne(strategyToRemove);
+                        }
+                    }
+                }
+                break;
+            default:
+                break;
+            }
+
+            beginRemoveRows(index.parent(), index.row(), index.row());
+            tmpItem->parent()->removeChildren(tmpItem->childNumber(), 1);
             endRemoveRows();
-            emit signalUpdateData(createIndex(0,0,rootItem));
+            emit signalUpdateData(createIndex(0, 0, rootItem));
         }
     }
 }
