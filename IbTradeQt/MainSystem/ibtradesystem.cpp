@@ -24,7 +24,7 @@ IBTradeSystem::IBTradeSystem(QWidget *parent)
     ui.test_treeView->setContextMenuPolicy(Qt::ActionsContextMenu);
     ui.test_treeView->addAction(QIcon(":/IBTradeSystem/x_resources/Account.png"), "Add New Account", &m_portfolioConfigModel, &PortfolioConfigModel::slotOnClickAddAccount, Qt::QueuedConnection);
     ui.test_treeView->addAction(QIcon(":/IBTradeSystem/x_resources/Portfolio.png"), "Add New Portfolio", &m_portfolioConfigModel, &PortfolioConfigModel::slotOnClickAddPortfolio, Qt::QueuedConnection);
-    ui.test_treeView->addAction(QIcon(":/IBTradeSystem/x_resources/Strategy.png"), "Add New Strategy");
+    ui.test_treeView->addAction(QIcon(":/IBTradeSystem/x_resources/Strategy.png"), "Add New Strategy", &m_portfolioConfigModel, &PortfolioConfigModel::slotOnClickAddStrategy, Qt::QueuedConnection);
     QAction *act = new QAction(this);
     act->setSeparator(true);
     ui.test_treeView->addAction(act);
