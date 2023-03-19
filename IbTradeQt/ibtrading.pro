@@ -43,6 +43,7 @@ UI_DIR = $$PWD/GeneratedIncludes
 SOURCES += \
     CObjects/cdeltaobject.cpp \
     MainSystem/caccount.cpp \
+    MainSystem/capplicationcontroller.cpp \
     MainSystem/csettinsmodeldata.cpp \
     MainSystem/ctreeviewcustommodel.cpp \
     MainSystem/portfolioconfigmodel.cpp \
@@ -129,6 +130,7 @@ HEADERS += \
     MainSystem/PortfolioModelDefines.h \
     MainSystem/TreeItemDataTypesDef.h \
     MainSystem/caccount.h \
+    MainSystem/capplicationcontroller.h \
     MainSystem/csettinsmodeldata.h \
     MainSystem/ctreeviewcustommodel.h \
     MainSystem/ctreeviewdatamodel.h \

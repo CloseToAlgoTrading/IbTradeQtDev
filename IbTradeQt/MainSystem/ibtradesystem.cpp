@@ -84,9 +84,6 @@ void IBTradeSystem::createSettingsView()
     QVector<bool> levelArr(S_LOG_LEVEL_COUNT);
 
     CSettinsModelData::updateLoggerSettingsArray(_mask, levelArr);
-    //CSettinsModelData* pData = static_cast<CSettinsModelData*>(m_SettingsModel.getDataObject());
-//    pData->setLoggerSettings(levelArr);
-//    pData->setServerSettings(NHelper::getServerAddress(), NHelper::getServerPort());
 
     m_SettingsModel.setLoggerSettings(levelArr);
     m_SettingsModel.setServerSettings(NHelper::getServerAddress(), NHelper::getServerPort());
@@ -95,6 +92,15 @@ void IBTradeSystem::createSettingsView()
     ui.settingsTreeView->expandAll();
 }
 
+PortfolioConfigModel *IBTradeSystem::pPortfolioConfigModel() const
+{
+    return m_pPortfolioConfigModel;
+}
+
+void IBTradeSystem::setPPortfolioConfigModel(PortfolioConfigModel *newPPortfolioConfigModel)
+{
+    m_pPortfolioConfigModel = newPPortfolioConfigModel;
+}
 
 void IBTradeSystem::slotOnTimeReceived(long time)
 {

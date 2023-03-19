@@ -103,6 +103,7 @@ void CPresenter::UnsubscribeHandler()
 void CPresenter::addView(IBTradeSystem * mw)
 {
 	this->pIbtsView = mw;
+
 }
 
 

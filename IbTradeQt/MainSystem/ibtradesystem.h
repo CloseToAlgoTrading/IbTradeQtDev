@@ -19,6 +19,8 @@ public:
 
     Ui::IBTradeSystemClass getUi();
 
+    PortfolioConfigModel *pPortfolioConfigModel() const;
+    void setPPortfolioConfigModel(PortfolioConfigModel *newPPortfolioConfigModel);
 
 private:
     void createSettingsView();
@@ -31,6 +33,7 @@ private:
 	QLabel * m_pTimeLabel;
     CSettinsModelData m_SettingsModel;
     PortfolioConfigModel m_portfolioConfigModel;
+    PortfolioConfigModel* m_pPortfolioConfigModel;
 
 
 private slots:
