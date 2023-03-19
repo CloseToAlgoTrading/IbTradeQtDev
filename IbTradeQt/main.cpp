@@ -9,6 +9,8 @@
 #include "ibtradesystem.h"
 #include "MyLogger.h"
 
+#include<QIcon>
+
 #define QT_LOGGING_DEBUG 1
 int main(int argc, char *argv[])
 {
@@ -46,10 +48,25 @@ int main(int argc, char *argv[])
 
 	IBTradeSystem w;
 	CPresenter prst(nullptr);
+
+
+
+
 	prst.addView(&w);
 	prst.MapSignals();
 	w.show();
 
-	return a.exec();
+    auto icon = QIcon(":/IBTradeSystem/x_resources/app.png");
+    a.setWindowIcon(icon);
 
+//    QFile file("Combinear.qss");
+//    file.open(QFile::ReadOnly | QFile::Text);
+//    QTextStream stream(&file);
+//    QString styleSheet = stream.readAll();
+
+//    a.setStyleSheet(styleSheet);
+
+//    file.close();
+
+	return a.exec();
 }

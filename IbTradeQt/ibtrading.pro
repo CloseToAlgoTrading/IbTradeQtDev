@@ -36,13 +36,23 @@ DEFINES += GIT_VERSION=\\\"$$GIT_VERSION\\\"
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
-CONFIG += c++11
+CONFIG += c++17
 
 UI_DIR = $$PWD/GeneratedIncludes
 
 SOURCES += \
     CObjects/cdeltaobject.cpp \
+    MainSystem/caccount.cpp \
+    MainSystem/csettinsmodeldata.cpp \
+    MainSystem/ctreeviewcustommodel.cpp \
+    MainSystem/portfolioconfigmodel.cpp \
     Strategies/AutoDeltAlignment/src/CModelInputData.cpp \
+    Strategies/Generic/cbasicaccount.cpp \
+    Strategies/Generic/cbasicportfolio.cpp \
+    Strategies/Generic/cbasicroot.cpp \
+    Strategies/Generic/cbasicstrategy.cpp \
+    Strategies/Generic/cgenericmodelApi.cpp \
+    Strategies/Generic/cteststrategy.cpp \
     Strategies/PairTrader/PairTradingGui.cpp \
     Strategies/PairTrader/PairTradingPresenter.cpp \
     Strategies/PairTrader/pairtraderpm.cpp \
@@ -96,7 +106,6 @@ SOURCES += \
     Brokers/IB/src/PercentChangeCondition.cpp \
     Brokers/IB/src/PriceCondition.cpp \
     Brokers/IB/src/SoftDollarTier.cpp \
-    #Brokers/IB/src/StdAfx.cpp \
     Brokers/IB/src/TimeCondition.cpp \
     Brokers/IB/src/VolumeCondition.cpp \
     Brokers/IB/src/EOrderDecoder.cpp \
@@ -107,17 +116,30 @@ SOURCES += \
     Common/globalsettings.cpp \
     CObjects/ctickbytickalllast.cpp \
     CObjects/chistoricalticks.cpp \
-    MainSystem/settingsmodel.cpp \
     DBStore/dbstoremodel.cpp \
     Common/contractsdefs.cpp \
     Common/OrderSamples.cpp \
-    MainSystem/cstandartitemsettings.cpp
+    #MainSystem/cstandartitemsettings.cpp \
+    MainSystem/treeitem.cpp
 
 
 HEADERS += \
     CObjects/cdeltaobject.h \
+    MainSystem/PortfolioConfigModel.h \
+    MainSystem/PortfolioModelDefines.h \
+    MainSystem/TreeItemDataTypesDef.h \
+    MainSystem/caccount.h \
+    MainSystem/csettinsmodeldata.h \
+    MainSystem/ctreeviewcustommodel.h \
+    MainSystem/ctreeviewdatamodel.h \
     Strategies/AutoDeltAlignment/header/CModelInputData.h \
     Strategies/AutoDeltAlignment/header/autodeltatypes.h \
+    Strategies/Generic/cbasicaccount.h \
+    Strategies/Generic/cbasicportfolio.h \
+    Strategies/Generic/cbasicroot.h \
+    Strategies/Generic/cbasicstrategy.h \
+    Strategies/Generic/cgenericmodelApi.h \
+    Strategies/Generic/cteststrategy.h \
     Strategies/PairTrader/PairTradingGui.h \
     Strategies/PairTrader/PairTradingPresenter.h \
     Strategies/PairTrader/pairtraderpm.h \
@@ -224,11 +246,11 @@ HEADERS += \
     Common/globalsettings.h \
     CObjects/ctickbytickalllast.h \
     CObjects/chistoricalticks.h \
-    MainSystem/settingsmodel.h \
     DBStore/dbstoremodel.h \
     Common/contractsdefs.h \
     Common/OrderSamples.h \
-    MainSystem/cstandartitemsettings.h
+    #MainSystem/cstandartitemsettings.h \
+    MainSystem/treeitem.h
 
 
 FORMS += \
@@ -255,6 +277,7 @@ INCLUDEPATH += \
     $$PWD/AboutDialog \
     $$PWD/Strategies/AutoDeltAlignment/header\
     $$PWD/Strategies/PairTrader\
+    $$PWD/Strategies/Generic\
     $$PWD/GeneratedIncludes \
     $$PWD/DBStore
 
