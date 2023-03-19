@@ -4,7 +4,7 @@
 
 ## Requirements
 
-- QT 5.x or later
+- QT 6.x or later
 - QT Creator
 - IB Account (at the moment only IB is supported)
 
