@@ -8,16 +8,16 @@ CBasicStrategy::CBasicStrategy():
 {
 }
 
-bool CBasicStrategy::addModel(ptrGenericModelType pModel)
+void CBasicStrategy::addModel(ptrGenericModelType pModel)
 {
     this->m_Models.append(pModel);
-    return true;
 }
 
-bool CBasicStrategy::removeModel(ptrGenericModelType pModel)
+void CBasicStrategy::removeModel(ptrGenericModelType pModel)
 {
-    this->m_Models.removeOne(pModel);
-    return true;
+    if (pModel) {
+        this->m_Models.removeOne(pModel);
+    }
 }
 
 QList<ptrGenericModelType>& CBasicStrategy::getModels()

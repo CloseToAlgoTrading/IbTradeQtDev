@@ -16,6 +16,7 @@ using namespace IBDataTypes;
 //----------------------------------------------------------
 autoDeltaAligPM::autoDeltaAligPM(QObject *parent, CBrokerDataProvider & _refClient)
     : CProcessingBase(parent, _refClient)
+    , CBasicStrategy()
     , Ticker_id(0)
     , m_delta()
     , m_TicketName()
@@ -23,6 +24,7 @@ autoDeltaAligPM::autoDeltaAligPM(QObject *parent, CBrokerDataProvider & _refClie
     , m_rpnlSum(0)
     , m_deltaThresold(0)
     , m_IsOrderBusy(false)
+    , m_DataProvider()
     , m_GuiInfo()
 //    , m_pTimer(new QTimer(this))
     , m_modelInput(3u) //Model needs 3 days, but we will fill with 4, because we need 4 day for correct preprocessing
@@ -48,7 +50,36 @@ autoDeltaAligPM::autoDeltaAligPM(QObject *parent, CBrokerDataProvider & _refClie
 
       QObject::connect(this, &autoDeltaAligPM::signalPostRequest, this, &autoDeltaAligPM::slotPostRequest);
 
+
+
 }
+
+autoDeltaAligPM::autoDeltaAligPM(QObject *parent):
+      CProcessingBase(parent, m_DataProvider)
+    , CBasicStrategy()
+    , Ticker_id(0)
+    , m_delta()
+    , m_TicketName()
+    , m_commSum(0)
+    , m_rpnlSum(0)
+    , m_deltaThresold(0)
+    , m_IsOrderBusy(false)
+    , m_DataProvider()
+    , m_GuiInfo()
+//    , m_pTimer(new QTimer(this))
+    , m_modelInput(3u) //Model needs 3 days, but we will fill with 4, because we need 4 day for correct preprocessing
+    //, m_networkManager()
+    , startWorkingTime(START_H,START_M,START_S)
+    , endWorkingTime(END_H,END_M,END_S)
+    , m_sem(1)
+    , request(QNetworkRequest(QUrl("http://localhost:49154/predict")))
+{
+    this->m_InfoMap["name"] = "autoDeltaAligPM";
+    this->m_ParametersMap["Rebalance delta"] = 10;
+    this->m_ParametersMap["StopLoss"] = 15;
+
+}
+
 
 //----------------------------------------------------------
 autoDeltaAligPM::~autoDeltaAligPM() = default;

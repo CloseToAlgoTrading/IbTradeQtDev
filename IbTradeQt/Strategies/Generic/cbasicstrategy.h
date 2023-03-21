@@ -12,8 +12,8 @@ public:
 
     // CGenericModelApi interface
 public:
-    virtual bool addModel(ptrGenericModelType pModel) override;
-    virtual bool removeModel(ptrGenericModelType pModel) override;
+    virtual void addModel(ptrGenericModelType pModel) override;
+    virtual void removeModel(ptrGenericModelType pModel) override;
     virtual QList<ptrGenericModelType>& getModels() override;
     virtual QString getName() override;
     virtual void setName(const QString& name) override;

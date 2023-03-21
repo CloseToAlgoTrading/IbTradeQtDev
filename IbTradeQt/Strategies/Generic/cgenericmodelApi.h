@@ -13,8 +13,8 @@ class CGenericModelApi
 {
 public:
 
-    virtual bool addModel(ptrGenericModelType pModel) = 0;
-    virtual bool removeModel(ptrGenericModelType pModel) = 0;
+    virtual void addModel(ptrGenericModelType pModel) = 0;
+    virtual void removeModel(ptrGenericModelType pModel) = 0;
     virtual QList<ptrGenericModelType>& getModels() = 0;
     virtual QString getName() = 0;
     virtual void setName(const QString& name) = 0;

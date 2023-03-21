@@ -9,6 +9,8 @@
 #include "cbasicportfolio.h"
 #include "cbasicaccount.h"
 
+#include "cstrategyfactory.h"
+
 CPortfolioConfigModel::CPortfolioConfigModel(QTreeView *treeView, CBasicRoot *pRoot, QObject *parent)
     : CTreeViewCustomModel(treeView, parent)
     , m_pRoot(pRoot)
@@ -247,7 +249,8 @@ void CPortfolioConfigModel::slotOnClickAddStrategy()
 
     if (selectionModel->hasSelection()) {
         QModelIndex index = selectionModel->currentIndex();
-        auto pS1 = QSharedPointer<CTestStrategy>::create();
+        //auto pS1 = QSharedPointer<CTestStrategy>::create();
+        auto pS1 = CStrategyFactory::createNewStrategy(STRATEGY_AUTO_DELTA);
         pS1->setName("S" + QString::number(i++));
         addModel(index, {PM_ITEM_PORTFOLIO}, pS1, PM_ITEM_STRATEGY);
     }
@@ -308,24 +311,26 @@ void CPortfolioConfigModel::removeModel(QModelIndex index)
 {
     TreeItem *tmpItem = getItem(index);
 
-    auto removeModelFromList = [&](ptrGenericModelType modelToRemove, QList<ptrGenericModelType>& modelsList) {
-        if (modelToRemove) {
-            modelsList.removeOne(modelToRemove);
-        }
-    };
+//    auto removeModelFromList = [&](ptrGenericModelType modelToRemove, QList<ptrGenericModelType>& modelsList) {
+//        if (modelToRemove) {
+//            modelsList.removeOne(modelToRemove);
+//        }
+//    };
 
     switch (tmpItem->data(0).id) {
     case PM_ITEM_ACCOUNT:
         {
             auto accountToRemove = m_pRoot->getModels().value(index.row(), nullptr);
-            removeModelFromList(accountToRemove, m_pRoot->getModels());
+            m_pRoot->removeModel(accountToRemove);
+            //removeModelFromList(accountToRemove, m_pRoot->getModels());
         }
         break;
     case PM_ITEM_PORTFOLIO:
         {
             auto account = m_pRoot->getModels().value(index.parent().row(), nullptr);
             auto portfolioToRemove = account ? account->getModels().value(index.row() - 1, nullptr) : nullptr;
-            removeModelFromList(portfolioToRemove, account->getModels());
+            account->removeModel(portfolioToRemove);
+            //removeModelFromList(portfolioToRemove, account->getModels());
         }
         break;
     case PM_ITEM_STRATEGY:
@@ -333,7 +338,8 @@ void CPortfolioConfigModel::removeModel(QModelIndex index)
             auto account = m_pRoot->getModels().value(index.parent().parent().row(), nullptr);
             auto portfolio = account ? account->getModels().value(index.parent().row() - 1, nullptr) : nullptr;
             auto strategyToRemove = portfolio ? portfolio->getModels().value(index.row() - 1, nullptr) : nullptr;
-            removeModelFromList(strategyToRemove, portfolio->getModels());
+            portfolio->removeModel(strategyToRemove);
+            //removeModelFromList(strategyToRemove, portfolio->getModels());
         }
         break;
     default:

@@ -55,6 +55,7 @@ SOURCES += \
     Strategies/Generic/cbasicroot.cpp \
     Strategies/Generic/cbasicstrategy.cpp \
     Strategies/Generic/cgenericmodelApi.cpp \
+    Strategies/Generic/cstrategyfactory.cpp \
     Strategies/Generic/cteststrategy.cpp \
     Strategies/PairTrader/PairTradingGui.cpp \
     Strategies/PairTrader/PairTradingPresenter.cpp \
@@ -144,6 +145,7 @@ HEADERS += \
     Strategies/Generic/cbasicroot.h \
     Strategies/Generic/cbasicstrategy.h \
     Strategies/Generic/cgenericmodelApi.h \
+    Strategies/Generic/cstrategyfactory.h \
     Strategies/Generic/cteststrategy.h \
     Strategies/PairTrader/PairTradingGui.h \
     Strategies/PairTrader/PairTradingPresenter.h \
