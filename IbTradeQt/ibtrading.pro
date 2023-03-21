@@ -44,8 +44,10 @@ SOURCES += \
     CObjects/cdeltaobject.cpp \
     MainSystem/caccount.cpp \
     MainSystem/capplicationcontroller.cpp \
+    MainSystem/cmainmodel.cpp \
     MainSystem/csettinsmodeldata.cpp \
     MainSystem/ctreeviewcustommodel.cpp \
+    MainSystem/ibtradesystemview.cpp \
     MainSystem/portfolioconfigmodel.cpp \
     Strategies/AutoDeltAlignment/src/CModelInputData.cpp \
     Strategies/Generic/cbasicaccount.cpp \
@@ -87,7 +89,6 @@ SOURCES += \
     IBComm/IBworker.cpp \
     Logger/MyLogger.cpp \
     MainSystem/cpresenter.cpp \
-    MainSystem/ibtradesystem.cpp \
     ReqManager/globalreqmanager.cpp \
     ReqManager/ReqManager.cpp \
     Brokers/IB/src/ContractCondition.cpp \
@@ -126,14 +127,16 @@ SOURCES += \
 
 HEADERS += \
     CObjects/cdeltaobject.h \
-    MainSystem/PortfolioConfigModel.h \
+    MainSystem/CPortfolioConfigModel.h \
     MainSystem/PortfolioModelDefines.h \
     MainSystem/TreeItemDataTypesDef.h \
     MainSystem/caccount.h \
     MainSystem/capplicationcontroller.h \
+    MainSystem/cmainmodel.h \
     MainSystem/csettinsmodeldata.h \
     MainSystem/ctreeviewcustommodel.h \
     MainSystem/ctreeviewdatamodel.h \
+    MainSystem/ibtradesystemview.h \
     Strategies/AutoDeltAlignment/header/CModelInputData.h \
     Strategies/AutoDeltAlignment/header/autodeltatypes.h \
     Strategies/Generic/cbasicaccount.h \
@@ -183,7 +186,6 @@ HEADERS += \
     IBComm/IBworker.h \
     Logger/MyLogger.h \
     MainSystem/cpresenter.h \
-    MainSystem/ibtradesystem.h \
     ReqManager/globalreqmanager.h \
     ReqManager/ReqManager.h \
     Brokers/IB/Shared/standardincludes.h \
@@ -257,7 +259,7 @@ HEADERS += \
 
 FORMS += \
     AboutDialog/aboutdialog.ui \
-    MainSystem/ibtradesystem.ui \
+    MainSystem/ibtradesystemview.ui \
     Strategies/PairTrader/pairtrading.ui \
     Strategies/AutoDeltAlignment/autodeltaaligform.ui \
     DBStore/dbstroreform.ui \

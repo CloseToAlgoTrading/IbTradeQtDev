@@ -1,13 +1,13 @@
 /********************************************************************************
-** Form generated from reading UI file 'ibtradesystem.ui'
+** Form generated from reading UI file 'ibtradesystemview.ui'
 **
 ** Created by: Qt User Interface Compiler version 6.4.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
 ********************************************************************************/
 
-#ifndef UI_IBTRADESYSTEM_H
-#define UI_IBTRADESYSTEM_H
+#ifndef UI_IBTRADESYSTEMVIEW_H
+#define UI_IBTRADESYSTEMVIEW_H
 
 #include <QtCore/QVariant>
 #include <QtGui/QAction>
@@ -313,4 +313,4 @@ namespace Ui {
 
 QT_END_NAMESPACE
 
-#endif // UI_IBTRADESYSTEM_H
+#endif // UI_IBTRADESYSTEMVIEW_H

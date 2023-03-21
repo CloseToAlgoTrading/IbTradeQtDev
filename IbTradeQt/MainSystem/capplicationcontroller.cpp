@@ -7,19 +7,31 @@
 #include <QStandardPaths>
 #include<QIcon>
 
-CApplicationController::CApplicationController(): w(nullptr)
-  , prst(nullptr)
+CApplicationController::CApplicationController():
+    pMainPresenter(new CPresenter(nullptr))
+  , pMainView(new CIBTradeSystemView)
 {
+    this->pMainPresenter->addView(this->pMainView);
+
+    pMainModel =new CMainModel(pMainPresenter, nullptr);
+
+    this->pMainPresenter->setPGuiModel(this->pMainModel);
+
+    this->pMainPresenter->MapSignals();
 
 }
 
-int CApplicationController::run(int argc, char *argv[])
+CApplicationController::~CApplicationController()
+{
+    delete this->pMainView;
+    delete this->pMainPresenter;
+}
+
+void CApplicationController::setUpApplication(QApplication &app)
 {
     QFont font("Courier New", 8);
     font.setStyleHint(QFont::Monospace);
     QApplication::setFont(font);
-
-    QApplication a(argc, argv);
 
     QString ss = QCoreApplication::applicationDirPath();
     qInstallMessageHandler(MyLogger::myMessageOutput);
@@ -45,18 +57,12 @@ int CApplicationController::run(int argc, char *argv[])
     //MyLogger::setDebugLevelMask(MyLogger::LL_ALL);
     MyLogger::setDebugLevelMask(MyLogger::LL_INFO|MyLogger::LL_DEBUG);
 
-    w = new IBTradeSystem;
-    prst = new CPresenter(nullptr);
-
-
-
-
-    prst->addView(w);
-    prst->MapSignals();
-    w->show();
+//    this->pMainPresenter->addView(this->pMainView);
+//    this->pMainPresenter->MapSignals();
+    this->pMainView->show();
 
     auto icon = QIcon(":/IBTradeSystem/x_resources/app.png");
-    a.setWindowIcon(icon);
+    app.setWindowIcon(icon);
 
 //    QFile file("Combinear.qss");
 //    file.open(QFile::ReadOnly | QFile::Text);
@@ -67,10 +73,9 @@ int CApplicationController::run(int argc, char *argv[])
 
 //    file.close();
 
-    int result = a.exec();
+}
 
-    delete w;
-    delete prst;
-
-    return result;
+void CApplicationController::setPMainModel(CMainModel *newPMainModel)
+{
+    pMainModel = newPMainModel;
 }

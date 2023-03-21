@@ -1,5 +1,6 @@
 #include "csettinsmodeldata.h"
 #include "MyLogger.h"
+#include "NHelper.h"
 
 CSettinsModelData::CSettinsModelData(QTreeView *treeView, QObject *parent)
     : CTreeViewCustomModel(treeView, parent),
@@ -10,6 +11,15 @@ CSettinsModelData::CSettinsModelData(QTreeView *treeView, QObject *parent)
     Q_UNUSED(parent);
     setupModelData(rootItem);
 
+    QObject::connect(this, &CSettinsModelData::signalEditLogSettingsCompleted, this, &CSettinsModelData::slotEditSettingLogSettingsComlited, Qt::QueuedConnection);
+    QObject::connect(this, &CSettinsModelData::signalEditServerPortCompleted, NHelper::writeServerPort);
+    QObject::connect(this, &CSettinsModelData::signalEditServerAddresCompleted, NHelper::writeServerAddress);
+
+    NHelper::initSettings();
+
+    createSettingsView();
+
+    MyLogger::setDebugLevelMask(NHelper::getLoggerMask());
 
 }
 
@@ -100,6 +110,13 @@ void CSettinsModelData::dataChangeCallback(const QModelIndex &topLeft, const QMo
     }
 }
 
+void CSettinsModelData::slotEditSettingLogSettingsComlited()
+{
+    quint8 mask = CSettinsModelData::getMaskFromLoggerSettings(this->getLoggerSettings());//CSettinsModelData::getMaskFromLoggerSettings(m_SettingsModel.getLoggerSettings());
+    NHelper::writeLoggerMask(mask);
+    MyLogger::setDebugLevelMask(mask);
+}
+
 void CSettinsModelData::setLoggerSettings(const QVector<bool> _levels)
 {
     if(S_LOG_LEVEL_COUNT == _levels.length())
@@ -187,4 +204,15 @@ void CSettinsModelData::updateLoggerSettingsArray(quint8 _mask, QVector<bool> & 
     {
         _levels[S_INDEX_LOG_LEVEL_FATAL] = true;
     }
+}
+
+void CSettinsModelData::createSettingsView()
+{
+    quint8 _mask = NHelper::getLoggerMask();
+    QVector<bool> levelArr(S_LOG_LEVEL_COUNT);
+
+    CSettinsModelData::updateLoggerSettingsArray(_mask, levelArr);
+
+    setLoggerSettings(levelArr);
+    setServerSettings(NHelper::getServerAddress(), NHelper::getServerPort());
 }

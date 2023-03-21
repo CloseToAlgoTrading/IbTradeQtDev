@@ -47,8 +47,12 @@ public:
     static quint8 getMaskFromLoggerSettings(const QVector<bool> &_levels);
     static void updateLoggerSettingsArray(quint8 _mask, QVector<bool> & _levels);
 
+    void createSettingsView();
+
+
 public slots:
     virtual void dataChangeCallback(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QList<int> & param) final;
+    void slotEditSettingLogSettingsComlited();
 
 signals:
     void signalEditLogSettingsCompleted();

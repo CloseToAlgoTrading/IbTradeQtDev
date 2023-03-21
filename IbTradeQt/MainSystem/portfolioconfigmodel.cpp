@@ -1,4 +1,4 @@
-#include "PortfolioConfigModel.h"
+#include "CPortfolioConfigModel.h"
 #include "TreeItemDataTypesDef.h"
 #include "PortfolioModelDefines.h"
 
@@ -9,13 +9,14 @@
 #include "cbasicportfolio.h"
 #include "cbasicaccount.h"
 
-PortfolioConfigModel::PortfolioConfigModel(QTreeView *treeView, QObject *parent)
+CPortfolioConfigModel::CPortfolioConfigModel(QTreeView *treeView, QObject *parent)
     : CTreeViewCustomModel(treeView, parent)
     , m_Root()
 {
     Q_UNUSED(parent);
 
     setupModelData(rootItem);
+
 }
 
 TreeItem * addRootNode(TreeItem * parent, pItemDataType name, pItemDataType value, int columnCount)
@@ -63,7 +64,7 @@ void addParameters(TreeItem * parent, const QVariantMap params, int columnCount)
     }
 }
 
-void PortfolioConfigModel::setupModelData(TreeItem * rootItem)
+void CPortfolioConfigModel::setupModelData(TreeItem * rootItem)
 {
     CAccount myMap;
 
@@ -114,7 +115,7 @@ void PortfolioConfigModel::setupModelData(TreeItem * rootItem)
 
 }
 
-void PortfolioConfigModel::dataChangeCallback(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QList<int> &param)
+void CPortfolioConfigModel::dataChangeCallback(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QList<int> &param)
 {
     Q_UNUSED(bottomRight);
     Q_UNUSED(param);
@@ -184,7 +185,7 @@ void PortfolioConfigModel::dataChangeCallback(const QModelIndex &topLeft, const 
     }
 }
 
-void PortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint16>& ids, ptrGenericModelType model, quint16 itemType)
+void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint16>& ids, ptrGenericModelType model, quint16 itemType)
 {
     QModelIndex workingIndex = findWorkingNode(index, ids);
     TreeItem* item = getItem(workingIndex);
@@ -217,7 +218,7 @@ void PortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint1
     }
 }
 
-void PortfolioConfigModel::slotOnClickAddAccount()
+void CPortfolioConfigModel::slotOnClickAddAccount()
 {
     static quint8 i = 0;
     auto pA1 = QSharedPointer<CBasicAccount>::create();
@@ -226,7 +227,7 @@ void PortfolioConfigModel::slotOnClickAddAccount()
     addModel(rootIndex, {PM_ITEM_ACCOUNTS}, pA1, PM_ITEM_ACCOUNT);
 }
 
-void PortfolioConfigModel::slotOnClickAddPortfolio()
+void CPortfolioConfigModel::slotOnClickAddPortfolio()
 {
     static quint16 i = 0;
     QItemSelectionModel *selectionModel = m_treeView->selectionModel();
@@ -239,7 +240,7 @@ void PortfolioConfigModel::slotOnClickAddPortfolio()
     }
 }
 
-void PortfolioConfigModel::slotOnClickAddStrategy()
+void CPortfolioConfigModel::slotOnClickAddStrategy()
 {
     static quint16 i = 0;
     QItemSelectionModel *selectionModel = m_treeView->selectionModel();
@@ -251,7 +252,7 @@ void PortfolioConfigModel::slotOnClickAddStrategy()
         addModel(index, {PM_ITEM_PORTFOLIO}, pS1, PM_ITEM_STRATEGY);
     }
 }
-QModelIndex PortfolioConfigModel::findWorkingNode(QModelIndex index, const QList<quint16> & Ids)
+QModelIndex CPortfolioConfigModel::findWorkingNode(QModelIndex index, const QList<quint16> & Ids)
 {
     TreeItem * tmpItem = getItem(index);
     const quint16 id = tmpItem->data(0).id;
@@ -267,7 +268,7 @@ QModelIndex PortfolioConfigModel::findWorkingNode(QModelIndex index, const QList
     return QModelIndex();
 }
 
-void PortfolioConfigModel::addWorkingNode(QModelIndex index, const ptrGenericModelType pModel, const quint16 id)
+void CPortfolioConfigModel::addWorkingNode(QModelIndex index, const ptrGenericModelType pModel, const quint16 id)
 {
     TreeItem * item = getItem(index);
     beginInsertRows(index,item->childCount(),item->childCount());
@@ -286,7 +287,7 @@ void PortfolioConfigModel::addWorkingNode(QModelIndex index, const ptrGenericMod
 }
 
 
-void PortfolioConfigModel::onClickRemoveNodeButton()
+void CPortfolioConfigModel::onClickRemoveNodeButton()
 {
     QItemSelectionModel *selectionModel = m_treeView->selectionModel();
 
@@ -303,7 +304,7 @@ void PortfolioConfigModel::onClickRemoveNodeButton()
 }
 
 
-void PortfolioConfigModel::removeModel(QModelIndex index)
+void CPortfolioConfigModel::removeModel(QModelIndex index)
 {
     TreeItem *tmpItem = getItem(index);
 

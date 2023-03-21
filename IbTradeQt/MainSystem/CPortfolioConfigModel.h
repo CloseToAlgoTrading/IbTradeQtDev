@@ -1,15 +1,15 @@
-#ifndef PORTFOLIOCONFIGMODEL_H
-#define PORTFOLIOCONFIGMODEL_H
+#ifndef CPORTFOLIOCONFIGMODEL_H
+#define CPORTFOLIOCONFIGMODEL_H
 
 #include "ctreeviewcustommodel.h"
 #include "cbasicroot.h"
 #include <QList>
 
-class PortfolioConfigModel : public CTreeViewCustomModel
+class CPortfolioConfigModel : public CTreeViewCustomModel
 {
     Q_OBJECT
 public:
-    PortfolioConfigModel(QTreeView *treeView, QObject *parent);
+    CPortfolioConfigModel(QTreeView *treeView, QObject *parent);
 
     void setupModelData(TreeItem * rootItem);
     QModelIndex findWorkingNode(QModelIndex index, const QList<quint16> & Ids);
@@ -35,4 +35,4 @@ signals:
     void signalUpdateData(const QModelIndex& index);
 };
 
-#endif // PORTFOLIOCONFIGMODEL_H
+#endif // CPORTFOLIOCONFIGMODEL_H

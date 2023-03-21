@@ -2,18 +2,30 @@
 #define CAPPLICATIONCONTROLLER_H
 
 #include "cpresenter.h"
-#include "ibtradesystem.h"
+#include "ibtradesystemview.h"
+#include "cmainmodel.h"
+#include <QSharedPointer>
+#include <QApplication>
 
 class CApplicationController
 {
 public:
     CApplicationController();
+    ~CApplicationController();
 
-    int run(int argc, char *argv[]);
+    void setUpApplication(QApplication &app);
+
+
+
+    void setPMainModel(CMainModel *newPMainModel);
 
 private:
-    IBTradeSystem *w;
-    CPresenter *prst;
+
+    CPresenter *pMainPresenter;
+    CIBTradeSystemView *pMainView;
+    CMainModel *pMainModel;
+
+
 };
 
 #endif // CAPPLICATIONCONTROLLER_H
