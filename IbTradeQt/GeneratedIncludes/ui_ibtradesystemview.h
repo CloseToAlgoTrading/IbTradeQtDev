@@ -60,7 +60,6 @@ public:
     QMenuBar *menuBar;
     QMenu *menuclear_log;
     QMenu *menuView;
-    QMenu *menuOperations;
     QToolBar *mainToolBar;
     QStatusBar *statusBar;
     QDockWidget *dockWidget_Logging;
@@ -205,8 +204,6 @@ public:
         menuclear_log->setObjectName("menuclear_log");
         menuView = new QMenu(menuBar);
         menuView->setObjectName("menuView");
-        menuOperations = new QMenu(menuBar);
-        menuOperations->setObjectName("menuOperations");
         IBTradeSystemClass->setMenuBar(menuBar);
         mainToolBar = new QToolBar(IBTradeSystemClass);
         mainToolBar->setObjectName("mainToolBar");
@@ -274,12 +271,9 @@ public:
 
         menuBar->addAction(menuclear_log->menuAction());
         menuBar->addAction(menuView->menuAction());
-        menuBar->addAction(menuOperations->menuAction());
         menuclear_log->addAction(actionClear_Log);
         menuView->addAction(actionShow_Log);
         menuView->addAction(actionSetting);
-        menuOperations->addAction(actionAdd_Model);
-        menuOperations->addAction(actionRemove_Model);
 
         retranslateUi(IBTradeSystemClass);
 
@@ -300,7 +294,6 @@ public:
         pushButtonDBStore->setText(QCoreApplication::translate("IBTradeSystemClass", "DBStore", nullptr));
         menuclear_log->setTitle(QCoreApplication::translate("IBTradeSystemClass", "options", nullptr));
         menuView->setTitle(QCoreApplication::translate("IBTradeSystemClass", "View", nullptr));
-        menuOperations->setTitle(QCoreApplication::translate("IBTradeSystemClass", "Operations", nullptr));
         dockWidget_Logging->setWindowTitle(QCoreApplication::translate("IBTradeSystemClass", "Logs", nullptr));
         dockWidget_Settings->setWindowTitle(QCoreApplication::translate("IBTradeSystemClass", "Settings", nullptr));
     } // retranslateUi

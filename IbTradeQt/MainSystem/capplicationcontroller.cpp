@@ -10,14 +10,17 @@
 CApplicationController::CApplicationController():
     pMainPresenter(new CPresenter(nullptr))
   , pMainView(new CIBTradeSystemView)
+  , m_pDataRoot(new CBasicRoot)
 {
     this->pMainPresenter->addView(this->pMainView);
 
-    pMainModel =new CMainModel(pMainPresenter, nullptr);
+    pMainModel =new CMainModel(pMainPresenter, m_pDataRoot, nullptr);
 
     this->pMainPresenter->setPGuiModel(this->pMainModel);
 
     this->pMainPresenter->MapSignals();
+
+
 
 }
 

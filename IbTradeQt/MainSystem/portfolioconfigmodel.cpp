@@ -9,9 +9,9 @@
 #include "cbasicportfolio.h"
 #include "cbasicaccount.h"
 
-CPortfolioConfigModel::CPortfolioConfigModel(QTreeView *treeView, QObject *parent)
+CPortfolioConfigModel::CPortfolioConfigModel(QTreeView *treeView, CBasicRoot *pRoot, QObject *parent)
     : CTreeViewCustomModel(treeView, parent)
-    , m_Root()
+    , m_pRoot(pRoot)
 {
     Q_UNUSED(parent);
 
@@ -84,7 +84,7 @@ void CPortfolioConfigModel::setupModelData(TreeItem * rootItem)
                                    rootItem->columnCount());
 
     //*+++++++++++++++++++++++++
-    for (auto&& account : this->m_Root.getModels()) {
+    for (auto&& account : this->m_pRoot->getModels()) {
         TreeItem * parentAccount = addRootNode(parent->child(parent->childCount() - 1),
                                        pItemDataType(new stItemData(account->getName(), EVET_RO_TEXT, PM_ITEM_ACCOUNT)),
                                        EmptyRoItem,
@@ -133,7 +133,7 @@ void CPortfolioConfigModel::dataChangeCallback(const QModelIndex &topLeft, const
         switch (tmpItem->data(0).id) {
         case PM_ITEM_ACCOUNT:
             {
-                auto accountToUpdate = m_Root.getModels().value(index.row(), nullptr);
+                auto accountToUpdate = m_pRoot->getModels().value(index.row(), nullptr);
                 if (accountToUpdate) {
                     //update parameters
                     auto paramMap = accountToUpdate->getParameters();
@@ -148,7 +148,7 @@ void CPortfolioConfigModel::dataChangeCallback(const QModelIndex &topLeft, const
             break;
         case PM_ITEM_PORTFOLIO:
             {
-                auto account = m_Root.getModels().value(index.parent().row(), nullptr);
+                auto account = m_pRoot->getModels().value(index.parent().row(), nullptr);
                 auto portfolioToUpdate = account ? account->getModels().value(index.row() - 1, nullptr) : nullptr;
                 if (portfolioToUpdate) {
                     //update parameters
@@ -164,7 +164,7 @@ void CPortfolioConfigModel::dataChangeCallback(const QModelIndex &topLeft, const
             break;
         case PM_ITEM_STRATEGY:
             {
-                auto account = m_Root.getModels().value(index.parent().parent().row(), nullptr);
+                auto account = m_pRoot->getModels().value(index.parent().parent().row(), nullptr);
                 auto portfolio = account ? account->getModels().value(index.parent().row() - 1, nullptr) : nullptr;
                 auto strategyToUpdate = portfolio ? portfolio->getModels().value(index.row() - 1, nullptr) : nullptr;
                 if (strategyToUpdate) {
@@ -194,18 +194,18 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
         switch (itemType) {
         case PM_ITEM_ACCOUNT:
             {
-                m_Root.addModel(model);
+                m_pRoot->addModel(model);
             }
             break;
         case PM_ITEM_PORTFOLIO:
             {
-                auto account = m_Root.getModels().value(index.row(), nullptr);
+                auto account = m_pRoot->getModels().value(index.row(), nullptr);
                 account->addModel(model);
             }
             break;
         case PM_ITEM_STRATEGY:
             {
-                auto account = m_Root.getModels().value(index.parent().row(), nullptr);
+                auto account = m_pRoot->getModels().value(index.parent().row(), nullptr);
                 auto portfolio = account ? account->getModels().value(index.row() - 1, nullptr) : nullptr;
                 portfolio->addModel(model);
             }
@@ -317,20 +317,20 @@ void CPortfolioConfigModel::removeModel(QModelIndex index)
     switch (tmpItem->data(0).id) {
     case PM_ITEM_ACCOUNT:
         {
-            auto accountToRemove = m_Root.getModels().value(index.row(), nullptr);
-            removeModelFromList(accountToRemove, m_Root.getModels());
+            auto accountToRemove = m_pRoot->getModels().value(index.row(), nullptr);
+            removeModelFromList(accountToRemove, m_pRoot->getModels());
         }
         break;
     case PM_ITEM_PORTFOLIO:
         {
-            auto account = m_Root.getModels().value(index.parent().row(), nullptr);
+            auto account = m_pRoot->getModels().value(index.parent().row(), nullptr);
             auto portfolioToRemove = account ? account->getModels().value(index.row() - 1, nullptr) : nullptr;
             removeModelFromList(portfolioToRemove, account->getModels());
         }
         break;
     case PM_ITEM_STRATEGY:
         {
-            auto account = m_Root.getModels().value(index.parent().parent().row(), nullptr);
+            auto account = m_pRoot->getModels().value(index.parent().parent().row(), nullptr);
             auto portfolio = account ? account->getModels().value(index.parent().row() - 1, nullptr) : nullptr;
             auto strategyToRemove = portfolio ? portfolio->getModels().value(index.row() - 1, nullptr) : nullptr;
             removeModelFromList(strategyToRemove, portfolio->getModels());

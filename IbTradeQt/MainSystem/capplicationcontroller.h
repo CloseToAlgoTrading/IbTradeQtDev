@@ -6,6 +6,7 @@
 #include "cmainmodel.h"
 #include <QSharedPointer>
 #include <QApplication>
+#include "cbasicroot.h"
 
 class CApplicationController
 {
@@ -24,6 +25,8 @@ private:
     CPresenter *pMainPresenter;
     CIBTradeSystemView *pMainView;
     CMainModel *pMainModel;
+
+    CBasicRoot *m_pDataRoot;
 
 
 };

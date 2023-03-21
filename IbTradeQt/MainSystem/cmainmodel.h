@@ -12,7 +12,7 @@ class CMainModel : public QObject
 {
     Q_OBJECT
 public:
-    CMainModel(CPresenter *presenter, QObject *parent);
+    CMainModel(CPresenter *presenter, CBasicRoot *dataRoot, QObject *parent);
 
     CSettinsModelData *pSettingsModel();
     CPortfolioConfigModel *pPortfolioConfigModel() const;

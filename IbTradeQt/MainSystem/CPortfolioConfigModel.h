@@ -9,7 +9,7 @@ class CPortfolioConfigModel : public CTreeViewCustomModel
 {
     Q_OBJECT
 public:
-    CPortfolioConfigModel(QTreeView *treeView, QObject *parent);
+    CPortfolioConfigModel(QTreeView *treeView, CBasicRoot *pRoot, QObject *parent);
 
     void setupModelData(TreeItem * rootItem);
     QModelIndex findWorkingNode(QModelIndex index, const QList<quint16> & Ids);
@@ -22,7 +22,7 @@ public slots:
     virtual void dataChangeCallback(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QList<int> & param) final;
 
 private:
-    CBasicRoot m_Root;
+    CBasicRoot *m_pRoot;
 
 public slots:
     void slotOnClickAddAccount();
