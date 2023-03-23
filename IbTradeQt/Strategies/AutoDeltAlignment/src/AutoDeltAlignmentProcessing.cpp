@@ -24,7 +24,6 @@ autoDeltaAligPM::autoDeltaAligPM(QObject *parent, CBrokerDataProvider & _refClie
     , m_rpnlSum(0)
     , m_deltaThresold(0)
     , m_IsOrderBusy(false)
-    , m_DataProvider()
     , m_GuiInfo()
 //    , m_pTimer(new QTimer(this))
     , m_modelInput(3u) //Model needs 3 days, but we will fill with 4, because we need 4 day for correct preprocessing
@@ -64,7 +63,6 @@ autoDeltaAligPM::autoDeltaAligPM(QObject *parent):
     , m_rpnlSum(0)
     , m_deltaThresold(0)
     , m_IsOrderBusy(false)
-    , m_DataProvider()
     , m_GuiInfo()
 //    , m_pTimer(new QTimer(this))
     , m_modelInput(3u) //Model needs 3 days, but we will fill with 4, because we need 4 day for correct preprocessing

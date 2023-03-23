@@ -5,6 +5,7 @@ CBasicStrategy::CBasicStrategy():
   , m_ParametersMap()
   , m_InfoMap()
   , m_Name()
+  , m_DataProvider()
 {
 }
 
@@ -44,6 +45,11 @@ void CBasicStrategy::setParameters(const QVariantMap &parametersMap)
 const QVariantMap &CBasicStrategy::getParameters()
 {
     return this->m_ParametersMap;
+}
+
+void CBasicStrategy::setBrokerInterface(QSharedPointer<IBrokerAPI> interface)
+{
+    this->m_DataProvider.setClien(interface);
 }
 
 void CBasicStrategy::onUpdateParametersSlot(const QVariantMap& parameters)

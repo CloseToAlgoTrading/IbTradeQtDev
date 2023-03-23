@@ -33,12 +33,12 @@ TreeItem * addRootNode(TreeItem * parent, pItemDataType name, pItemDataType valu
 
 void addParameters(TreeItem * parent, const QVariantMap params, int columnCount)
 {
-    auto EmptyRoItem = pItemDataType(new stItemData(QVariant(), EVET_RO_TEXT, TVM_UNUSED_ID));
+    auto EmptyRoItem = pItemDataType(new stItemData(QVariant(), EVT_RO_TEXT, TVM_UNUSED_ID));
     if(!params.empty())
     {
         //Create account paramters
         TreeItem * parentParameters = addRootNode(parent->child(parent->childCount() - 1),
-                                       pItemDataType(new stItemData("Parameters", EVET_RO_TEXT, PM_ITEM_PARAMETERS)),
+                                       pItemDataType(new stItemData("Parameters", EVT_RO_TEXT, PM_ITEM_PARAMETERS)),
                                        EmptyRoItem,
                                        columnCount);
 
@@ -46,7 +46,7 @@ void addParameters(TreeItem * parent, const QVariantMap params, int columnCount)
         for (auto i = params.begin(); i != params.end(); ++i)
         {
             _parent->insertChildren(_parent->childCount(), 1, columnCount);
-            _parent->child(_parent->childCount() - 1)->addData(0, pItemDataType(new stItemData(i.key(), EVET_RO_TEXT, PM_ITEM_PARAMETER)));
+            _parent->child(_parent->childCount() - 1)->addData(0, pItemDataType(new stItemData(i.key(), EVT_RO_TEXT, PM_ITEM_PARAMETER)));
             switch (i.value().typeId()) {
             case QMetaType::Double:
                 _parent->child(_parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(i.value().toDouble(), EVT_TEXT, TVM_UNUSED_ID)));
@@ -70,7 +70,7 @@ void CPortfolioConfigModel::setupModelData(TreeItem * rootItem)
 {
     CAccount myMap;
 
-    auto EmptyRoItem = pItemDataType(new stItemData(QVariant(), EVET_RO_TEXT, TVM_UNUSED_ID));
+    auto EmptyRoItem = pItemDataType(new stItemData(QVariant(), EVT_RO_TEXT, TVM_UNUSED_ID));
 
     rootItem->insertColumns(0,2);
     rootItem->addData(0, pItemDataType(new stItemData("Parameter", EVT_TEXT, TVM_UNUSED_ID)));
@@ -81,14 +81,14 @@ void CPortfolioConfigModel::setupModelData(TreeItem * rootItem)
 
     //Create an Accounts
     TreeItem * parent = addRootNode(parents.last(),
-                                   pItemDataType(new stItemData("Accounts", EVET_RO_TEXT, PM_ITEM_ACCOUNTS)),
+                                   pItemDataType(new stItemData("Accounts", EVT_RO_TEXT, PM_ITEM_ACCOUNTS)),
                                    EmptyRoItem,
                                    rootItem->columnCount());
 
     //*+++++++++++++++++++++++++
     for (auto&& account : this->m_pRoot->getModels()) {
         TreeItem * parentAccount = addRootNode(parent->child(parent->childCount() - 1),
-                                       pItemDataType(new stItemData(account->getName(), EVET_RO_TEXT, PM_ITEM_ACCOUNT)),
+                                       pItemDataType(new stItemData(account->getName(), EVT_RO_TEXT, PM_ITEM_ACCOUNT)),
                                        EmptyRoItem,
                                        rootItem->columnCount());
 
@@ -96,7 +96,7 @@ void CPortfolioConfigModel::setupModelData(TreeItem * rootItem)
 
         for (auto&& portfolio : account->getModels()) {
             TreeItem * parentPortfolio = addRootNode(parentAccount->child(parentAccount->childCount() - 1),
-                                           pItemDataType(new stItemData(portfolio->getName(), EVET_RO_TEXT, PM_ITEM_PORTFOLIO)),
+                                           pItemDataType(new stItemData(portfolio->getName(), EVT_RO_TEXT, PM_ITEM_PORTFOLIO)),
                                            EmptyRoItem,
                                            rootItem->columnCount());
 
@@ -104,7 +104,7 @@ void CPortfolioConfigModel::setupModelData(TreeItem * rootItem)
 
             for (auto&& strategy : portfolio->getModels()) {
                 TreeItem * parentStrategy = addRootNode(parentPortfolio->child(parentPortfolio->childCount() - 1),
-                                               pItemDataType(new stItemData(strategy->getName(), EVET_RO_TEXT, PM_ITEM_STRATEGY)),
+                                               pItemDataType(new stItemData(strategy->getName(), EVT_RO_TEXT, PM_ITEM_STRATEGY)),
                                                EmptyRoItem,
                                                rootItem->columnCount());
 
@@ -137,13 +137,21 @@ void CPortfolioConfigModel::dataChangeCallback(const QModelIndex &topLeft, const
             {
                 auto accountToUpdate = m_pRoot->getModels().value(index.row(), nullptr);
                 if (accountToUpdate) {
-                    //update parameters
-                    auto paramMap = accountToUpdate->getParameters();
-                    const auto& key = itemToUpdate->data(0).value.toString();
-                    if (paramMap.contains(key))
+                    if(itemToUpdate->data(0).id != PM_ITEM_ACCOUNT)
                     {
-                        paramMap[key] = itemToUpdate->data(valueIndex.column()).value;
-                        accountToUpdate->setParameters(paramMap);
+                        //update parameters
+                        auto paramMap = accountToUpdate->getParameters();
+                        const auto& key = itemToUpdate->data(0).value.toString();
+                        if (paramMap.contains(key))
+                        {
+                            paramMap[key] = itemToUpdate->data(valueIndex.column()).value;
+                            accountToUpdate->setParameters(paramMap);
+                        }
+                    }
+                    else
+                    {
+                        if(valueIndex.column() == 0)
+                            accountToUpdate->setName(itemToUpdate->data(0).value.toString());
                     }
                 }
             }
@@ -244,14 +252,11 @@ void CPortfolioConfigModel::slotOnClickAddPortfolio()
 
 void CPortfolioConfigModel::slotOnClickAddStrategy()
 {
-    static quint16 i = 0;
     QItemSelectionModel *selectionModel = m_treeView->selectionModel();
 
     if (selectionModel->hasSelection()) {
         QModelIndex index = selectionModel->currentIndex();
-        //auto pS1 = QSharedPointer<CTestStrategy>::create();
         auto pS1 = CStrategyFactory::createNewStrategy(STRATEGY_AUTO_DELTA);
-        pS1->setName("S" + QString::number(i++));
         addModel(index, {PM_ITEM_PORTFOLIO}, pS1, PM_ITEM_STRATEGY);
     }
 }
@@ -277,8 +282,8 @@ void CPortfolioConfigModel::addWorkingNode(QModelIndex index, const ptrGenericMo
     beginInsertRows(index,item->childCount(),item->childCount());
 
     TreeItem * parentAccount = addRootNode(item,
-                                   pItemDataType(new stItemData(pModel->getName(), EVET_RO_TEXT, id)),
-                                   pItemDataType(new stItemData(QVariant(), EVET_RO_TEXT, TVM_UNUSED_ID)),
+                                   pItemDataType(new stItemData(pModel->getName(), EVT_TEXT, id)),
+                                   pItemDataType(new stItemData(Qt::Unchecked, EVT_CECK_BOX, id + PT_ITEM_ACTIVATION)),
                                    item->columnCount());
 
     addParameters(parentAccount, pModel->getParameters(), item->columnCount());

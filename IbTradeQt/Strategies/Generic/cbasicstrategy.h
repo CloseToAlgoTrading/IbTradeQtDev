@@ -4,6 +4,8 @@
 #include "cgenericmodelApi.h"
 #include <QList>
 #include <QVariantList>
+#include "cbrokerdataprovider.h"
+#include "IBrokerAPI.h"
 
 class CBasicStrategy : public CGenericModelApi
 {
@@ -21,11 +23,17 @@ public:
     virtual void setParameters(const QVariantMap& parametersMap) override;
     virtual const QVariantMap& getParameters() override;
 
+//    virtual bool start();
+//    virtual bool stop();
+
+    virtual void setBrokerInterface(QSharedPointer<IBrokerAPI> interface);
+
 protected:
     QList<ptrGenericModelType> m_Models;
     QVariantMap m_ParametersMap;
     QVariantMap m_InfoMap;
     QString m_Name;
+    CBrokerDataProvider m_DataProvider;
 
 public slots:
     void onUpdateParametersSlot(const QVariantMap& parameters);

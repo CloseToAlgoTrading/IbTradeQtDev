@@ -149,7 +149,10 @@ Qt::ItemFlags CTreeViewCustomModel::flags(const QModelIndex &index) const
     if(EVT_READ_ONLY == (itemData.vType & EVT_READ_ONLY))
         return QAbstractItemModel::flags(index);
 
-    return Qt::ItemIsEditable | Qt::ItemIsUserCheckable | QAbstractItemModel::flags(index);
+    if(EVT_CECK_BOX == (itemData.vType & EVT_CECK_BOX))
+        return Qt::ItemIsUserCheckable | QAbstractItemModel::flags(index);
+
+    return Qt::ItemIsEditable | QAbstractItemModel::flags(index);
 }
 
 QModelIndex CTreeViewCustomModel::index(int row, int column, const QModelIndex &parent) const
