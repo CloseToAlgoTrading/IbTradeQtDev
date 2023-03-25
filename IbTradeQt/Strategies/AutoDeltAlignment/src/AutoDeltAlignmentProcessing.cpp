@@ -102,6 +102,18 @@ void autoDeltaAligPM::initStrategy(const QString & s1)
     m_TicketName = s1;
 }
 
+bool autoDeltaAligPM::start()
+{
+    CBasicStrategy::start();
+    return true;
+}
+
+bool autoDeltaAligPM::stop()
+{
+    CBasicStrategy::stop();
+    return true;
+}
+
 //----------------------------------------------------------
 void autoDeltaAligPM::startStrategy(const tAutoDeltaOptDataType &_opt, const qint32 &_delta)
 {

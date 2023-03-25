@@ -19,6 +19,8 @@ public:
     QTreeView * getSettingsTreeView();
     QTreeView * getPortfolioConfigTreeView();
 
+    void mapSignals();
+
 
 private:
     Ui::IBTradeSystemClass ui;

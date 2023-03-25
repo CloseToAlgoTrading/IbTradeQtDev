@@ -161,13 +161,34 @@ void CPortfolioConfigModel::dataChangeCallback(const QModelIndex &topLeft, const
                 auto account = m_pRoot->getModels().value(index.parent().row(), nullptr);
                 auto portfolioToUpdate = account ? account->getModels().value(index.row() - 1, nullptr) : nullptr;
                 if (portfolioToUpdate) {
-                    //update parameters
-                    auto paramMap = portfolioToUpdate->getParameters();
-                    const auto& key = itemToUpdate->data(0).value.toString();
-                    if (paramMap.contains(key))
+                    if(itemToUpdate->data(0).id != PM_ITEM_PORTFOLIO)
                     {
-                        paramMap[key] = itemToUpdate->data(valueIndex.column()).value;
-                        portfolioToUpdate->setParameters(paramMap);
+                        //update parameters
+                        auto paramMap = portfolioToUpdate->getParameters();
+                        const auto& key = itemToUpdate->data(0).value.toString();
+                        if (paramMap.contains(key))
+                        {
+                            paramMap[key] = itemToUpdate->data(valueIndex.column()).value;
+                            portfolioToUpdate->setParameters(paramMap);
+                        }
+                    }
+                    else
+                    {
+                        if(valueIndex.column() == 0)
+                            portfolioToUpdate->setName(itemToUpdate->data(0).value.toString());
+                        else if(valueIndex.column() == 1)
+                        {
+                            const auto isActive = itemToUpdate->data(valueIndex.column()).value.toInt() == Qt::Checked ? true : false;
+                            if (isActive == true)
+                            {
+                                (void)portfolioToUpdate->start();
+                            }
+                            else
+                            {
+                                (void)portfolioToUpdate->stop();
+                            }
+
+                        }
                     }
                 }
             }
@@ -178,13 +199,21 @@ void CPortfolioConfigModel::dataChangeCallback(const QModelIndex &topLeft, const
                 auto portfolio = account ? account->getModels().value(index.parent().row() - 1, nullptr) : nullptr;
                 auto strategyToUpdate = portfolio ? portfolio->getModels().value(index.row() - 1, nullptr) : nullptr;
                 if (strategyToUpdate) {
-                    //update parameters
-                    auto paramMap = strategyToUpdate->getParameters();
-                    const auto& key = itemToUpdate->data(0).value.toString();
-                    if (paramMap.contains(key))
+                    if(itemToUpdate->data(0).id != PM_ITEM_STRATEGY)
                     {
-                        paramMap[key] = itemToUpdate->data(valueIndex.column()).value;
-                        strategyToUpdate->setParameters(paramMap);
+                        //update parameters
+                        auto paramMap = strategyToUpdate->getParameters();
+                        const auto& key = itemToUpdate->data(0).value.toString();
+                        if (paramMap.contains(key))
+                        {
+                            paramMap[key] = itemToUpdate->data(valueIndex.column()).value;
+                            strategyToUpdate->setParameters(paramMap);
+                        }
+                    }
+                    else
+                    {
+                        if(valueIndex.column() == 0)
+                            strategyToUpdate->setName(itemToUpdate->data(0).value.toString());
                     }
                 }
             }
@@ -209,14 +238,14 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
             break;
         case PM_ITEM_PORTFOLIO:
             {
-                auto account = m_pRoot->getModels().value(index.row(), nullptr);
+                auto account = m_pRoot->getModels().value(workingIndex.row(), nullptr);
                 account->addModel(model);
             }
             break;
         case PM_ITEM_STRATEGY:
             {
-                auto account = m_pRoot->getModels().value(index.parent().row(), nullptr);
-                auto portfolio = account ? account->getModels().value(index.row() - 1, nullptr) : nullptr;
+                auto account = m_pRoot->getModels().value(workingIndex.parent().row(), nullptr);
+                auto portfolio = account ? account->getModels().value(workingIndex.row() - 1, nullptr) : nullptr;
                 portfolio->addModel(model);
             }
             break;
@@ -256,7 +285,7 @@ void CPortfolioConfigModel::slotOnClickAddStrategy()
 
     if (selectionModel->hasSelection()) {
         QModelIndex index = selectionModel->currentIndex();
-        auto pS1 = CStrategyFactory::createNewStrategy(STRATEGY_AUTO_DELTA);
+        auto pS1 = CStrategyFactory::createNewStrategy(STRATEGY_BASIC_TEST);
         addModel(index, {PM_ITEM_PORTFOLIO}, pS1, PM_ITEM_STRATEGY);
     }
 }

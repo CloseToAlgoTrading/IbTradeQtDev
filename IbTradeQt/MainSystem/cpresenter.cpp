@@ -29,8 +29,8 @@ CPresenter::CPresenter(QObject *parent)
     m_DataProvider.setClien(pClient);
 
 
-	workerIBClient->moveToThread(threadIBClient);
-	threadIBClient->start();
+    workerIBClient->moveToThread(threadIBClient);
+    threadIBClient->start();
 
     QThread::currentThread()->setObjectName("mainThread");
     threadIBClient->setObjectName("myThread");
@@ -82,6 +82,8 @@ void CPresenter::MapSignals()
     QObject::connect(pTreeView->actions()[4], SIGNAL(triggered()), pPConfigModel, SLOT(onClickRemoveNodeButton()), Qt::QueuedConnection);
 
     QObject::connect(pPConfigModel, SIGNAL(signalUpdateData(QModelIndex)), this->pIbtsView, SLOT(slotUpdateTreeView(QModelIndex)));
+
+    this->pIbtsView->mapSignals();
 
 	/////////---------------
 	//ReqManager temp;

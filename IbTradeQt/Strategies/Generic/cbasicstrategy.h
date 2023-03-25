@@ -23,8 +23,8 @@ public:
     virtual void setParameters(const QVariantMap& parametersMap) override;
     virtual const QVariantMap& getParameters() override;
 
-//    virtual bool start();
-//    virtual bool stop();
+    virtual bool start() override;
+    virtual bool stop() override;
 
     virtual void setBrokerInterface(QSharedPointer<IBrokerAPI> interface);
 

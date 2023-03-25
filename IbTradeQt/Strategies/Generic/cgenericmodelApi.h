@@ -5,7 +5,6 @@
 #include <QList>
 #include <QVariantMap>
 #include <QString>
-#include "IBrokerAPI.h"
 
 class CGenericModelApi;
 typedef QSharedPointer<CGenericModelApi> ptrGenericModelType;
@@ -21,6 +20,9 @@ public:
     virtual void setName(const QString& name) = 0;
     virtual void setParameters(const QVariantMap& parametersMap) = 0;
     virtual const QVariantMap& getParameters() = 0;
+
+    virtual bool start() = 0;
+    virtual bool stop() = 0;
 };
 
 

@@ -47,6 +47,18 @@ const QVariantMap &CBasicStrategy::getParameters()
     return this->m_ParametersMap;
 }
 
+bool CBasicStrategy::start()
+{
+    this->m_InfoMap["IsStarted"] = true;
+    return true;
+}
+
+bool CBasicStrategy::stop()
+{
+    this->m_InfoMap["IsStarted"] = false;
+    return false;
+}
+
 void CBasicStrategy::setBrokerInterface(QSharedPointer<IBrokerAPI> interface)
 {
     this->m_DataProvider.setClien(interface);

@@ -27,6 +27,9 @@ public:
 
     void initStrategy(const QString & s1);
 
+    virtual bool start() override;
+    virtual bool stop() override;
+
 private:
     qint32 Ticker_id;
     CDeltaObject m_delta;
