@@ -42,6 +42,7 @@ UI_DIR = $$PWD/GeneratedIncludes
 
 SOURCES += \
     CObjects/cdeltaobject.cpp \
+    Common/cprocessingbase_v2.cpp \
     MainSystem/caccount.cpp \
     MainSystem/capplicationcontroller.cpp \
     MainSystem/cmainmodel.cpp \
@@ -55,6 +56,7 @@ SOURCES += \
     Strategies/Generic/cbasicroot.cpp \
     Strategies/Generic/cbasicstrategy.cpp \
     Strategies/Generic/cgenericmodelApi.cpp \
+    Strategies/Generic/cmovingaveragecrossover.cpp \
     Strategies/Generic/cstrategyfactory.cpp \
     Strategies/Generic/cteststrategy.cpp \
     Strategies/PairTrader/PairTradingGui.cpp \
@@ -128,6 +130,7 @@ SOURCES += \
 
 HEADERS += \
     CObjects/cdeltaobject.h \
+    Common/cprocessingbase_v2.h \
     MainSystem/CPortfolioConfigModel.h \
     MainSystem/PortfolioModelDefines.h \
     MainSystem/TreeItemDataTypesDef.h \
@@ -145,6 +148,7 @@ HEADERS += \
     Strategies/Generic/cbasicroot.h \
     Strategies/Generic/cbasicstrategy.h \
     Strategies/Generic/cgenericmodelApi.h \
+    Strategies/Generic/cmovingaveragecrossover.h \
     Strategies/Generic/cstrategyfactory.h \
     Strategies/Generic/cteststrategy.h \
     Strategies/PairTrader/PairTradingGui.h \

@@ -6,7 +6,8 @@
 enum STRATEGY_ID {
     STRATEGY_NONE = 0,
     STRATEGY_BASIC_TEST,
-    STRATEGY_AUTO_DELTA
+    STRATEGY_AUTO_DELTA,
+    STRATEGY_MA
 };
 
 class CStrategyFactory
