@@ -285,7 +285,7 @@ void CPortfolioConfigModel::slotOnClickAddStrategy()
 
     if (selectionModel->hasSelection()) {
         QModelIndex index = selectionModel->currentIndex();
-        auto pS1 = CStrategyFactory::createNewStrategy(STRATEGY_MA_CROSS);
+        auto pS1 = CStrategyFactory::createNewStrategy(STRATEGY_BASIC_TEST);
         addModel(index, {PM_ITEM_PORTFOLIO}, pS1, PM_ITEM_STRATEGY);
     }
 }

@@ -13,7 +13,7 @@ class PairTradingPresenter : public QObject
 	Q_OBJECT
 
 public:
-    explicit PairTradingPresenter(QObject *parent, CBrokerDataProvider * _refClient);
+    explicit PairTradingPresenter(QObject *parent, CBrokerDataProvider & _refClient);
 	~PairTradingPresenter();
 	
     void init();

@@ -4,7 +4,7 @@
 
 namespace IBWorker
 {
-    Worker::Worker(QObject *parent, CBrokerDataProvider * _refClient)
+    Worker::Worker(QObject *parent, CBrokerDataProvider & _refClient)
 		: QObject(parent)
         , m_Client(_refClient)
 		, m_workerCmd(IDLE)
@@ -22,28 +22,28 @@ namespace IBWorker
         while (true)
         {
 
-            if (nullptr != m_Client->getClien())
+            if (nullptr != m_Client.getClien())
             {
                 switch (m_workerCmd)
                 {
                 case CONNECT:
                     m_workerCmd = IDLE;
-                    if (!m_Client->getClien()->isConnectedAPI())
+                    if (!m_Client.getClien()->isConnectedAPI())
                     {
-                        m_Client->getClien()->connectAPI(CONNECTIONS_SERVER_IP, NHelper::getServerPort(), CONNECTIONS_CLIENT_ID);
+                        m_Client.getClien()->connectAPI(CONNECTIONS_SERVER_IP, NHelper::getServerPort(), CONNECTIONS_CLIENT_ID);
                     }
                     break;
                 case DISCONNECT:
                     m_workerCmd = IDLE;
-                    if (m_Client->getClien()->isConnectedAPI())
+                    if (m_Client.getClien()->isConnectedAPI())
                     {
-                        m_Client->getClien()->disconnectAPI();
+                        m_Client.getClien()->disconnectAPI();
                     }
                     break;
                 case PROCESSING:
-                    if (m_Client->getClien()->isConnectedAPI())
+                    if (m_Client.getClien()->isConnectedAPI())
                     {
-                        m_Client->getClien()->processMessagesAPI();
+                        m_Client.getClien()->processMessagesAPI();
                     }
                     else
                     {
@@ -52,16 +52,16 @@ namespace IBWorker
                     break;
                 case IDLE:
                 default:
-                    if (m_Client->getClien()->isConnectedAPI())
+                    if (m_Client.getClien()->isConnectedAPI())
                     {
                         m_workerCmd = PROCESSING;
                     }
                     break;
 
                 case EXIT:
-                    if (m_Client->getClien()->isConnectedAPI())
+                    if (m_Client.getClien()->isConnectedAPI())
                     {
-                        m_Client->getClien()->disconnectAPI();
+                        m_Client.getClien()->disconnectAPI();
                     }
                     return;
                     break;

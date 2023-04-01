@@ -7,7 +7,7 @@ Q_LOGGING_CATEGORY(processingBaseLog, "processing.Base");
 
 using namespace Observer;
 //----------------------------------------------------------
-CProcessingBase::CProcessingBase(QObject *parent, CBrokerDataProvider * _refClient)
+CProcessingBase::CProcessingBase(QObject *parent, CBrokerDataProvider & _refClient)
     : QObject(parent)
     , m_Client(_refClient)
     , m_aciveReqestsMap()
@@ -23,26 +23,10 @@ CProcessingBase::CProcessingBase(QObject *parent, CBrokerDataProvider * _refClie
     //QObject::connect(this, &CProcessingBase::signalMessageHandler, this, &CProcessingBase::slotMessageHandler, Qt::QueuedConnection);
 }
 
-CProcessingBase::CProcessingBase(QObject *parent)
-    : QObject(parent)
-    , m_Client(nullptr)
-    , m_aciveReqestsMap()
-    , m_historyMap()
-    , m_histMap()
-    , m_tickPriceMap()
-    , m_tickSizeMap()
-    , m_realTImeBarMap()
-    , m_mkDepthMap()
-    , m_positionMap()
-    , m_nextValidId(0)
-{
-
-}
-
 //----------------------------------------------------------
 CProcessingBase::~CProcessingBase()
 {
-    (void)m_Client->UnsubscribeAllItemsOfSubscriber(this->GetSubscriberId());
+    (void)m_Client.UnsubscribeAllItemsOfSubscriber(this->GetSubscriberId());
 }
 
 //----------------------------------------------------------
@@ -93,39 +77,39 @@ void CProcessingBase::MessageHandler(void* pContext, tEReqType _reqType)
 bool CProcessingBase::reqestHistoricalData(reqHistConfigData_t & _config)
 {
     //m_aciveReqestsMap.insert(_symbol, RT_HISTORICAL_DATA);
-    return m_Client->reqestHistoricalData(this, _config);
+    return m_Client.reqestHistoricalData(this, _config);
 }
 
 bool CProcessingBase::requestHistoricalTicksData(reqHistTicksConfigData_t &_config)
 {
-    return m_Client->requestHistoricalTicksData(this, _config);
+    return m_Client.requestHistoricalTicksData(this, _config);
 }
 
 //----------------------------------------------------------
 bool CProcessingBase::reqestRealTimeData(reqReadlTimeDataConfigData_t &_config)
 {
     m_aciveReqestsMap.insert(QString(_config.contract.symbol.c_str()), RT_REQ_REL_DATA);
-    return m_Client->reqestRealTimeData(this, _config);
+    return m_Client.reqestRealTimeData(this, _config);
 }
 
 //----------------------------------------------------------
 bool CProcessingBase::cancelRealTimeData(const QString& _symbol)
 {
     m_aciveReqestsMap.remove(_symbol, RT_REQ_REL_DATA);
-    return m_Client->cancelRealTimeData(this, _symbol);
+    return m_Client.cancelRealTimeData(this, _symbol);
 }
 
 bool CProcessingBase::requestRealTimeBars(const QString& _symbol)
 {
     m_aciveReqestsMap.insert(_symbol, RT_REALTIME_BAR);
-    return m_Client->requestRealTimeBars(this, _symbol);
+    return m_Client.requestRealTimeBars(this, _symbol);
 }
 
 //----------------------------------------------------------
 bool CProcessingBase::cancelRealTimeBars(const QString& _symbol)
 {
     m_aciveReqestsMap.remove(_symbol, RT_REALTIME_BAR);
-    return m_Client->cancelRealTimeBars(this, _symbol);
+    return m_Client.cancelRealTimeBars(this, _symbol);
 }
 
 //----------------------------------------------------------
@@ -133,76 +117,76 @@ bool CProcessingBase::requestPosition()
 {
     m_positionMap.clear();
     //m_aciveReqestsMap.insert(PositionSymbol, RT_REQ_POSITION);
-    return m_Client->requestPosition(this, PositionSymbol);
+    return m_Client.requestPosition(this, PositionSymbol);
 }
 
 //----------------------------------------------------------
 bool CProcessingBase::cancelPosition()
 {
     //m_aciveReqestsMap.remove(PositionSymbol, RT_REQ_POSITION);
-    return m_Client->cancelPosition(this, PositionSymbol);
+    return m_Client.cancelPosition(this, PositionSymbol);
 }
 
 bool CProcessingBase::reqestResetSubscription()
 {
     m_aciveReqestsMap.insert(RestartRequestSymbol, RT_REQ_RESTART_SUBSCRIPTION);
-    return m_Client->requestResetSubscription(this, RestartRequestSymbol);
+    return m_Client.requestResetSubscription(this, RestartRequestSymbol);
 }
 
 bool CProcessingBase::cancelResetSubscription()
 {
     m_aciveReqestsMap.remove(RestartRequestSymbol, RT_REQ_RESTART_SUBSCRIPTION);
-    return m_Client->cancelResetSubscription(this, RestartRequestSymbol);
+    return m_Client.cancelResetSubscription(this, RestartRequestSymbol);
 }
 
 bool CProcessingBase::reqestOrderStatusSubscription()
 {
     m_aciveReqestsMap.insert(OrderStatusSymbol, RT_REQ_ORDER_STATUS);
-    return m_Client->requestOrderStatusSubscription(this, OrderStatusSymbol);
+    return m_Client.requestOrderStatusSubscription(this, OrderStatusSymbol);
 
 }
 
 bool CProcessingBase::cancelOrderStatusSubscription()
 {
     m_aciveReqestsMap.remove(OrderStatusSymbol, RT_REQ_ORDER_STATUS);
-    return m_Client->cancelOrderStatusubscription(this, OrderStatusSymbol);
+    return m_Client.cancelOrderStatusubscription(this, OrderStatusSymbol);
 }
 
 bool CProcessingBase::requestTickByTickData(reqTickByTickDataConfigData_t &_config)
 {
     m_aciveReqestsMap.insert(QString(_config.contract.symbol.c_str()), RT_TICK_BY_TICK_DATA);
-    return m_Client->requestTickByTickData(this, QString(_config.contract.symbol.c_str()), _config);
+    return m_Client.requestTickByTickData(this, QString(_config.contract.symbol.c_str()), _config);
 }
 
 bool CProcessingBase::cancelTickByTickData(const QString &_symbol)
 {
     m_aciveReqestsMap.remove(_symbol, RT_TICK_BY_TICK_DATA);
-    return m_Client->cancelRealTimeBars(this, _symbol);
+    return m_Client.cancelRealTimeBars(this, _symbol);
 }
 
 bool CProcessingBase::requestCalculateOptionPrice(reqCalcOptPriceConfigData_t &_config)
 {
     m_aciveReqestsMap.insert(QString(_config.contract.symbol.c_str()), RT_REQ_OPTION_PRICE);
-    return m_Client->requestCalculateOptionPrice(this, _config);
+    return m_Client.requestCalculateOptionPrice(this, _config);
 }
 
 bool CProcessingBase::cancelCalculateOptionPrice(const QString &_symbol)
 {
     m_aciveReqestsMap.remove(_symbol, RT_REQ_OPTION_PRICE);
-    return m_Client->cancelRealTimeBars(this, _symbol);
+    return m_Client.cancelRealTimeBars(this, _symbol);
 }
 
 //----------------------------------------------------------
 qint32 CProcessingBase::requestPlaceMarketOrder(const QString& _symbol, const qint32 _quantity, const orderAction _action)
 {
     //send order
-    return m_Client->getClien()->reqPlaceOrderAPI(_symbol, _quantity, _action);
+    return m_Client.getClien()->reqPlaceOrderAPI(_symbol, _quantity, _action);
 }
 
 //----------------------------------------------------------
 void CProcessingBase::requestOpenOrders()
 {
-    m_Client->getClien()->reqOpenOrdersAPI();
+    m_Client.getClien()->reqOpenOrdersAPI();
 }
 
 //----------------------------------------------------------
@@ -224,7 +208,7 @@ void CProcessingBase::cancelAllActiveRequests()
             case RT_REQ_NONE:
                 break;
             case RT_REQ_REL_DATA:
-                m_Client->cancelRealTimeData(this, symbol);
+                m_Client.cancelRealTimeData(this, symbol);
                 break;
             case RT_REQ_CUR_TIME:
                 break;
@@ -241,10 +225,10 @@ void CProcessingBase::cancelAllActiveRequests()
             case RT_HISTORICAL_TICK_DATA:
                 break;
             case RT_TICK_BY_TICK_DATA:
-                m_Client->cancelTickByTickData(this, symbol);
+                m_Client.cancelTickByTickData(this, symbol);
                 break;
             case RT_REALTIME_BAR:
-                m_Client->cancelRealTimeBars(this, symbol);
+                m_Client.cancelRealTimeBars(this, symbol);
                 break;
             case RT_MKT_DEPTH:
                 break;
@@ -253,18 +237,18 @@ void CProcessingBase::cancelAllActiveRequests()
             case RT_NEXT_VALID_ID:
                 break;
             case RT_REQ_POSITION:
-                m_Client->cancelResetSubscription(this, PositionSymbol);
+                m_Client.cancelResetSubscription(this, PositionSymbol);
                 break;
             case RT_POSITION:
                 break;
             case RT_REQ_OPTION_PRICE:
-                m_Client->cancelCalculateOptionPrice(this, symbol);
+                m_Client.cancelCalculateOptionPrice(this, symbol);
                 break;
             case RT_REQ_RESTART_SUBSCRIPTION:
-                m_Client->cancelPosition(this, RestartRequestSymbol);
+                m_Client.cancelPosition(this, RestartRequestSymbol);
                 break;
             case RT_REQ_ORDER_STATUS:
-                m_Client->cancelOrderStatusubscription(this, OrderStatusSymbol);
+                m_Client.cancelOrderStatusubscription(this, OrderStatusSymbol);
                 break;
 
 
@@ -279,7 +263,7 @@ void CProcessingBase::cancelAllActiveRequests()
 
 bool CProcessingBase::isConnectedTotheServer()
 {
-    return m_Client->isConnectedToTheServer();
+    return m_Client.isConnectedToTheServer();
 }
 
 //
@@ -288,7 +272,7 @@ bool CProcessingBase::isConnectedTotheServer()
 qint64 CProcessingBase::getIdFromRM(const QString _symbol, const tEReqType _reqType /*= RT_REQ_REL_DATA*/)
 {
     qint64 retId = 0;
-    CDispatcher::CSubscriberItemPtr pSubcrItem = m_Client->getSubscriberItem(this->GetSubscriberId());
+    CDispatcher::CSubscriberItemPtr pSubcrItem = m_Client.getSubscriberItem(this->GetSubscriberId());
     if (nullptr != pSubcrItem)
     {
         retId = pSubcrItem->ReqMenager()->getIdbySymbol(_symbol, _reqType);
@@ -300,7 +284,7 @@ qint64 CProcessingBase::getIdFromRM(const QString _symbol, const tEReqType _reqT
 const QString CProcessingBase::getSymbolFromRM(const qint64 _Id, const tEReqType _reqType /*= RT_REQ_REL_DATA*/)
 {
     QString retSymbol = "";
-    CDispatcher::CSubscriberItemPtr pSubcrItem = m_Client->getSubscriberItem(this->GetSubscriberId());
+    CDispatcher::CSubscriberItemPtr pSubcrItem = m_Client.getSubscriberItem(this->GetSubscriberId());
     if (nullptr != pSubcrItem)
     {
         retSymbol = pSubcrItem->ReqMenager()->getSymbolById(_Id, _reqType);
@@ -313,7 +297,7 @@ const QString CProcessingBase::getSymbolFromRM(const qint64 _Id, const tEReqType
 //----------------------------------------------------------
 void CProcessingBase::removeOldHistoricalRequest(const QString & _s1)
 {
-    CDispatcher::CSubscriberItemPtr pSubcrItem = m_Client->getSubscriberItem(this->GetSubscriberId());
+    CDispatcher::CSubscriberItemPtr pSubcrItem = m_Client.getSubscriberItem(this->GetSubscriberId());
     if (nullptr != pSubcrItem)
     {
         pSubcrItem->ReqMenager()->removeReqData(_s1, RT_HISTORICAL_DATA);
@@ -323,7 +307,7 @@ void CProcessingBase::removeOldHistoricalRequest(const QString & _s1)
 
 void CProcessingBase::removeOldHistoricalTickRequest(const QString &_s1)
 {
-    CDispatcher::CSubscriberItemPtr pSubcrItem = m_Client->getSubscriberItem(this->GetSubscriberId());
+    CDispatcher::CSubscriberItemPtr pSubcrItem = m_Client.getSubscriberItem(this->GetSubscriberId());
     if (nullptr != pSubcrItem)
     {
         pSubcrItem->ReqMenager()->removeReqData(_s1, RT_HISTORICAL_TICK_DATA);
@@ -356,7 +340,7 @@ void CProcessingBase::callback_recvPositionEnd()
 //----------------------------------------------------------
 void CProcessingBase::UnsubscribeHandler()
 {
-    (void)m_Client->UnsubscribeAllItemsOfSubscriber(this->GetSubscriberId());
+    (void)m_Client.UnsubscribeAllItemsOfSubscriber(this->GetSubscriberId());
 
    // cancelAllActiveRequests();
 }
@@ -641,16 +625,6 @@ bool CProcessingBase::calculateOneMinBar(RealTimeBarMap_t & _realTimeBar, Ticker
 
 
     return true;
-}
-
-CBrokerDataProvider *CProcessingBase::Client() const
-{
-    return m_Client;
-}
-
-void CProcessingBase::setClient(CBrokerDataProvider *newClient)
-{
-    m_Client = newClient;
 }
 
 qint32 CProcessingBase::getRequestMapSize() const

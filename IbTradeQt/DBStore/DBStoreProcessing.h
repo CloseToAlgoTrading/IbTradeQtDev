@@ -16,7 +16,7 @@ class DBStorePM :/* public QObject,*/ public CProcessingBase
     Q_OBJECT
 
 public:
-    explicit DBStorePM(QObject *parent, CBrokerDataProvider * _refClient);
+    explicit DBStorePM(QObject *parent, CBrokerDataProvider & _refClient);
     ~DBStorePM() override;
 
     void initStrategy(const QString & s1);

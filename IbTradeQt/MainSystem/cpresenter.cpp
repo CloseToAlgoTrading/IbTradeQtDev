@@ -4,7 +4,6 @@
 #include "IBComClientImpl.h"
 #include "cmainmodel.h"
 
-QSharedPointer<IBComClientImpl> pClient;
 
 CPresenter::CPresenter(QObject *parent)
 	: QObject(parent)
@@ -13,27 +12,25 @@ CPresenter::CPresenter(QObject *parent)
     , pIbtsView(nullptr)
     , pGuiModel(nullptr)
     , threadIBClient(new QThread)
-    , workerIBClient(new IBWorker::Worker(parent, &m_DataProvider))
+    , workerIBClient(new IBWorker::Worker(parent, m_DataProvider))
     , threadAlfaTime(new QThread)
-    , workerAlfaTime(new AlphaModGetTime(parent, &m_DataProvider))
+    , workerAlfaTime(new AlphaModGetTime(parent, m_DataProvider))
     , pAboutDlgPresenter(new AboutDlgPresener(parent))
-//    , pPairTradingPresenter(new PairTradingPresenter(parent, &m_DataProvider))
-//    , pAutoDeltaAligPresenter(new AutoDeltaAligPresenter(parent, &m_DataProvider))
-//    , pDBStorePresenter(new DBStorePresenter(parent, &m_DataProvider))
+    , pPairTradingPresenter(new PairTradingPresenter(parent, m_DataProvider))
+    , pAutoDeltaAligPresenter(new AutoDeltaAligPresenter(parent, m_DataProvider))
+    , pDBStorePresenter(new DBStorePresenter(parent, m_DataProvider))
 {
 	
     //
 
-    pClient = QSharedPointer<IBComClientImpl>(new IBComClientImpl(m_DataProvider));
+    QSharedPointer<IBComClientImpl> pClient = QSharedPointer<IBComClientImpl>(new IBComClientImpl(m_DataProvider));
 
    //Define Data Provider
     m_DataProvider.setClien(pClient);
 
 
     workerIBClient->moveToThread(threadIBClient);
-    QObject::connect(threadIBClient, &QThread::started, workerIBClient, &IBWorker::Worker::process);
     threadIBClient->start();
-
 
     QThread::currentThread()->setObjectName("mainThread");
     threadIBClient->setObjectName("myThread");
@@ -49,33 +46,32 @@ CPresenter::~CPresenter()
 void CPresenter::MapSignals()
 {
 	//MAP Thread signal
-    //QObject::connect(threadIBClient, SIGNAL(started()), workerIBClient, SLOT(process()));
-    //QObject::connect(threadIBClient, &QThread::started, workerIBClient, &IBWorker::Worker::process);
+	QObject::connect(threadIBClient, SIGNAL(started()), workerIBClient, SLOT(process()));
 
 	//MAP GUI Signals/Slots
 	//Click connect button
 	QObject::connect(pIbtsView->getUi().pushButton, SIGNAL(clicked()), this, SLOT(onClickMyButton()));
 	//click Pair Trader button
-//	QObject::connect(pIbtsView->getUi().pushButtonPairTrader, SIGNAL(clicked()), this, SLOT(onClickPairTraderButton()));
-//    //click Auto Delta button
-//    QObject::connect(pIbtsView->getUi().autoDeltaButton, SIGNAL(clicked()), this, SLOT(onClickAutoDeltaButton()));
-//    //click DBStore button
-//    QObject::connect(pIbtsView->getUi().pushButtonDBStore, SIGNAL(clicked()), this, SLOT(onClickDBStoreButton()));
+	QObject::connect(pIbtsView->getUi().pushButtonPairTrader, SIGNAL(clicked()), this, SLOT(onClickPairTraderButton()));
+    //click Auto Delta button
+    QObject::connect(pIbtsView->getUi().autoDeltaButton, SIGNAL(clicked()), this, SLOT(onClickAutoDeltaButton()));
+    //click DBStore button
+    QObject::connect(pIbtsView->getUi().pushButtonDBStore, SIGNAL(clicked()), this, SLOT(onClickDBStoreButton()));
 
 
-    //received Time
-    QObject::connect(workerAlfaTime, SIGNAL(signalTimeReceived(long)), pIbtsView, SLOT(slotOnTimeReceived(long)), Qt::QueuedConnection);
-    //Received info about connection button state
-    QObject::connect(this, SIGNAL(signalClickConnect(bool)), pIbtsView, SLOT(slotRecvConnectButtonState(bool)), Qt::QueuedConnection);
+	//Click received Time button
+	QObject::connect(workerAlfaTime, SIGNAL(signalTimeReceived(long)), pIbtsView, SLOT(slotOnTimeReceived(long)));
+	//Received info about connection button state
+	QObject::connect(this, SIGNAL(signalClickConnect(bool)), pIbtsView, SLOT(slotRecvConnectButtonState(bool)));
 
-    //Logger connection to main gui
-    QObject::connect(&LOGGER, SIGNAL(signalAddLogMsg(QString)), pIbtsView, SLOT(slotOnLogMsgReceived(QString)), Qt::QueuedConnection);
+	//Logger connection to main gui
+	QObject::connect(&LOGGER, SIGNAL(signalAddLogMsg(QString)), pIbtsView, SLOT(slotOnLogMsgReceived(QString)));
 
-//    QObject::connect(workerAlfaTime, &AlphaModGetTime::signalPlanResetSubscribtion,
-//                     pDBStorePresenter.data(), &DBStorePresenter::signalResetSubscribtion, Qt::QueuedConnection);
+    QObject::connect(workerAlfaTime, &AlphaModGetTime::signalPlanResetSubscribtion,
+                     pDBStorePresenter.data(), &DBStorePresenter::signalResetSubscribtion, Qt::QueuedConnection);
 
-//    QObject::connect(workerAlfaTime, &AlphaModGetTime::signalPlanResetSubscribtion,
-//                     pAutoDeltaAligPresenter->getPM().data(), &CProcessingBase::signalRestartSubscription, Qt::QueuedConnection);
+    QObject::connect(workerAlfaTime, &AlphaModGetTime::signalPlanResetSubscribtion,
+                     pAutoDeltaAligPresenter->getPM().data(), &CProcessingBase::signalRestartSubscription, Qt::QueuedConnection);
 
 
     QTreeView * pTreeView = this->pIbtsView->getPortfolioConfigTreeView();
@@ -87,6 +83,7 @@ void CPresenter::MapSignals()
 
     QObject::connect(pPConfigModel, SIGNAL(signalUpdateData(QModelIndex)), this->pIbtsView, SLOT(slotUpdateTreeView(QModelIndex)));
 
+    this->pIbtsView->mapSignals();
 
 	/////////---------------
 	//ReqManager temp;
@@ -107,9 +104,9 @@ void CPresenter::MapSignals()
 	//temp.isPresent(1, RT_REQ_REL_DATA);
 	//temp.isPresent(1, RT_TICK_PRICE);
 	//temp.isPresent(1, RT_MKT_DEPTH);
-//    pPairTradingPresenter->init();
-//    pAutoDeltaAligPresenter->init();
-//    pDBStorePresenter->init();
+    pPairTradingPresenter->init();
+    pAutoDeltaAligPresenter->init();
+    pDBStorePresenter->init();
 
 }
 
@@ -166,29 +163,29 @@ void CPresenter::onClickMyButton()
 }
 
 
-//void CPresenter::onClickPairTraderButton()
-//{
-//	if (!pPairTradingPresenter.isNull())
-//	{
-//		pPairTradingPresenter->showDlg();
-//	}
-//}
+void CPresenter::onClickPairTraderButton()
+{
+	if (!pPairTradingPresenter.isNull())
+	{
+		pPairTradingPresenter->showDlg();
+	}
+}
 
-//void CPresenter::onClickAutoDeltaButton()
-//{
-//    if (!pAutoDeltaAligPresenter.isNull())
-//    {
-//        pAutoDeltaAligPresenter->showDlg();
-//    }
-//}
+void CPresenter::onClickAutoDeltaButton()
+{
+    if (!pAutoDeltaAligPresenter.isNull())
+    {
+        pAutoDeltaAligPresenter->showDlg();
+    }
+}
 
-//void CPresenter::onClickDBStoreButton()
-//{
-//    if (!pDBStorePresenter.isNull())
-//    {
-//        pDBStorePresenter->showDlg();
-//    }
-//}
+void CPresenter::onClickDBStoreButton()
+{
+    if (!pDBStorePresenter.isNull())
+    {
+        pDBStorePresenter->showDlg();
+    }
+}
 
 CMainModel *CPresenter::getPGuiModel() const
 {

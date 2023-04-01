@@ -3,7 +3,7 @@
 #include "GlobalDef.h"
 
 
-AlphaModGetTime::AlphaModGetTime(QObject *parent, CBrokerDataProvider * _refClient)
+AlphaModGetTime::AlphaModGetTime(QObject *parent, CBrokerDataProvider & _refClient)
     : QObject(parent)
     , m_Client(_refClient)
     , timer(new QTimer(this))
@@ -61,8 +61,8 @@ void AlphaModGetTime::StopTimeUpdate()
 void AlphaModGetTime::callbackTimer()
 {
 	//qDebug() << "Update request current time timer...";
-    //m_Client->Subscribe(this, E_RQ_ID_TIME, RT_REQ_CUR_TIME);
+    //m_Client.Subscribe(this, E_RQ_ID_TIME, RT_REQ_CUR_TIME);
     stReqIds r = { E_RQ_ID_TIME, RT_REQ_CUR_TIME };
-    m_Client->Subscribe(this, TimeSymbol, r);
-    m_Client->getClien()->reqCurrentTimeAPI();
+    m_Client.Subscribe(this, TimeSymbol, r);
+    m_Client.getClien()->reqCurrentTimeAPI();
 }

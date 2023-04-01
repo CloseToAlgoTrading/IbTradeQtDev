@@ -2,7 +2,6 @@
 
 #include "cteststrategy.h"
 #include "AutoDeltAlignmentProcessing.h"
-#include "cmovingaveragecrossover.h"
 
 #include <QSharedPointer>
 
@@ -19,11 +18,6 @@ ptrGenericModelType CStrategyFactory::createNewStrategy(STRATEGY_ID id)
     {
         ret = QSharedPointer<autoDeltaAligPM>::create(nullptr);
  //       ret = QSharedPointer<CTestStrategy>::create();
-        break;
-    }
-    case STRATEGY_MA_CROSS:
-    {
-        ret = QSharedPointer<CMovingAverageCrossover>::create(nullptr);
         break;
     }
     default:

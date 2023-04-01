@@ -15,13 +15,13 @@ class AlphaModGetTime : public QObject, public Observer::CSubscriber
 	Q_OBJECT
 
 public:
-    AlphaModGetTime(QObject *parent, CBrokerDataProvider * _refClient);
+    AlphaModGetTime(QObject *parent, CBrokerDataProvider & _refClient);
 	~AlphaModGetTime();
 
 	//void SeIBClient(IBrokerAPI& _mClient);
 
 
-    virtual void MessageHandler(void* pContext, tEReqType _reqType) final;
+	void MessageHandler(void* pContext, tEReqType _reqType);
 	void UnsubscribeHandler();
 
 	void StartGetTimeUpdate(int period);
@@ -30,7 +30,7 @@ public:
 
 	//IBrokerAPI& mClient;
 
-    CBrokerDataProvider * m_Client;
+    CBrokerDataProvider & m_Client;
 
 public slots :
 	void callbackTimer();

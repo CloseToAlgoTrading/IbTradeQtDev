@@ -104,12 +104,6 @@ void MyLogger::myMessageOutput(QtMsgType type, const QMessageLogContext &context
 
     bool isTraceable = false;
 
-//    // Simplify log level checking
-//    if (logLevel & (1 << type))
-//    {
-//        LOGGER.sendLogMsg(logMessage);
-//    }
-
     switch (type) {
     case QtDebugMsg:
         if (logLevel & LL_DEBUG)

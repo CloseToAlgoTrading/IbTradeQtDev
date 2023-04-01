@@ -2,7 +2,7 @@
 #include <QMetaType>
 
 
-DBStorePresenter::DBStorePresenter(QObject *parent, CBrokerDataProvider * _refClient)
+DBStorePresenter::DBStorePresenter(QObject *parent, CBrokerDataProvider & _refClient)
     : QObject(parent)
     , m_pDBStoreGui(new DBStoreGui())
     , m_pDBStorePM(new DBStorePM(parent, _refClient))

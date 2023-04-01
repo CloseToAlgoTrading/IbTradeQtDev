@@ -52,9 +52,9 @@ signals:
 
 private slots:
 	void onClickMyButton();
-//	void onClickPairTraderButton();
-//    void onClickAutoDeltaButton();
-//    void onClickDBStoreButton();
+	void onClickPairTraderButton();
+    void onClickAutoDeltaButton();
+    void onClickDBStoreButton();
 
 private:
 
@@ -73,11 +73,11 @@ private:
 private:
 	QScopedPointer<AboutDlgPresener> pAboutDlgPresenter;
 
-	//QScopedPointer<PairTradingPresenter> pPairTradingPresenter;
+	QScopedPointer<PairTradingPresenter> pPairTradingPresenter;
 
-    //QScopedPointer<AutoDeltaAligPresenter> pAutoDeltaAligPresenter;
+    QScopedPointer<AutoDeltaAligPresenter> pAutoDeltaAligPresenter;
 
-    //QScopedPointer<DBStorePresenter> pDBStorePresenter;
+    QScopedPointer<DBStorePresenter> pDBStorePresenter;
 
 };
 

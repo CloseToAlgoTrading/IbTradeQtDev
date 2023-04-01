@@ -10,7 +10,7 @@ Q_LOGGING_CATEGORY(pairTraderPMLog, "pairTrader.PM");
 
 using namespace Observer;
 //----------------------------------------------------------
-PairTraderPM::PairTraderPM(QObject *parent, CBrokerDataProvider * _refClient)
+PairTraderPM::PairTraderPM(QObject *parent, CBrokerDataProvider & _refClient)
     : CProcessingBase(parent, _refClient)
     , XIV_id(0)
 {

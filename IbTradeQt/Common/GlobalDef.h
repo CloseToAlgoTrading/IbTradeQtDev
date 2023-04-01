@@ -1,7 +1,7 @@
 #ifndef GLOBALDEF_H
 #define GLOBALDEF_H
 
-#define DEBUG_ACTIVE
+//#define DEBUG_ACTIVE
 
 #include "EWrapper.h"
 #include "Contract.h"

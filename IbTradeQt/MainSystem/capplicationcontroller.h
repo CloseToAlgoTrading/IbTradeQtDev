@@ -15,6 +15,9 @@ public:
     ~CApplicationController();
 
     void setUpApplication(QApplication &app);
+
+
+
     void setPMainModel(CMainModel *newPMainModel);
 
 private:

@@ -13,7 +13,7 @@ Q_LOGGING_CATEGORY(DBStorePMLog, "DBStore.PM");
 using namespace Observer;
 
 //----------------------------------------------------------
-DBStorePM::DBStorePM(QObject *parent, CBrokerDataProvider * _refClient)
+DBStorePM::DBStorePM(QObject *parent, CBrokerDataProvider & _refClient)
     : CProcessingBase(parent, _refClient)
     , Ticker_id(0)
     , m_dbc(parent)

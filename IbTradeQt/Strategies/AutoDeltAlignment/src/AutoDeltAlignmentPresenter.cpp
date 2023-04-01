@@ -2,7 +2,7 @@
 #include <QMetaType>
 
 
-AutoDeltaAligPresenter::AutoDeltaAligPresenter(QObject *parent, CBrokerDataProvider * _refClient)
+AutoDeltaAligPresenter::AutoDeltaAligPresenter(QObject *parent, CBrokerDataProvider & _refClient)
     : QObject(parent)
     , m_pAutoDeltaAligGui(new AutoDeltaAligGui())
     , m_pAutoDeltaAligPM(new autoDeltaAligPM(parent, _refClient))
