@@ -48,7 +48,8 @@ class CProcessingBase : public QObject, public Observer::CSubscriber
 	Q_OBJECT
 
 public:
-    explicit CProcessingBase(QObject *parent, CBrokerDataProvider & _refClient);
+    explicit CProcessingBase(QObject *parent, CBrokerDataProvider * _refClient);
+    explicit CProcessingBase(QObject *parent);
     virtual ~CProcessingBase();
 
 	void MessageHandler(void* pContext, tEReqType _reqType);
@@ -85,7 +86,7 @@ private:
 
 private:
 	
-    CBrokerDataProvider & m_Client;
+    CBrokerDataProvider * m_Client;
     ActiveReqestsMap_t m_aciveReqestsMap;
 
 public:
@@ -155,6 +156,9 @@ public:
 //public slots:
 //    virtual void slotMessageHandler(void* pContext, tEReqType _reqType);
     
+    CBrokerDataProvider *Client() const;
+    void setClient(CBrokerDataProvider *newClient);
+
 signals:
     void signalCbkRecvHistoricalData(const QList<IBDataTypes::CHistoricalData> & _histMap, const QString& _symbol);
     void signalMessageHandler(void* pContext, tEReqType _reqType);

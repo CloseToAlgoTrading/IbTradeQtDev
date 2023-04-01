@@ -20,7 +20,7 @@ namespace IBWorker
 		Q_OBJECT
 
 	public:
-        Worker(QObject *parent, CBrokerDataProvider & _refClient);
+        Worker(QObject *parent, CBrokerDataProvider * _refClient);
 		~Worker();
 
 		void setCommand(WorkerCommand cmd);
@@ -32,7 +32,7 @@ namespace IBWorker
 
 
 	private:
-        CBrokerDataProvider & m_Client;
+        CBrokerDataProvider * m_Client;
 
 		WorkerCommand m_workerCmd;
 

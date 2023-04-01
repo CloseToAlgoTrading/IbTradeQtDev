@@ -6,6 +6,7 @@
 #include <QVariantList>
 #include "cbrokerdataprovider.h"
 #include "IBrokerAPI.h"
+#include <QSharedPointer>
 
 class CBasicStrategy : public CGenericModelApi
 {

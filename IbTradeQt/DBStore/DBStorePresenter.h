@@ -13,7 +13,7 @@ class DBStorePresenter : public QObject
     Q_OBJECT
 
 public:
-    explicit DBStorePresenter(QObject *parent, CBrokerDataProvider & _refClient);
+    explicit DBStorePresenter(QObject *parent, CBrokerDataProvider * _refClient);
     ~DBStorePresenter();
 
     void init();

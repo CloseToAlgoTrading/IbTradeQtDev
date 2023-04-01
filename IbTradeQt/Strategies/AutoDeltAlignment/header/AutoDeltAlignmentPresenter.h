@@ -13,7 +13,7 @@ class AutoDeltaAligPresenter : public QObject
     Q_OBJECT
 
 public:
-    explicit AutoDeltaAligPresenter(QObject *parent, CBrokerDataProvider & _refClient);
+    explicit AutoDeltaAligPresenter(QObject *parent, CBrokerDataProvider * _refClient);
     ~AutoDeltaAligPresenter();
 
     void init();

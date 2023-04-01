@@ -3,7 +3,7 @@
 #include <QMetaType>
 
 
-PairTradingPresenter::PairTradingPresenter(QObject *parent, CBrokerDataProvider & _refClient)
+PairTradingPresenter::PairTradingPresenter(QObject *parent, CBrokerDataProvider * _refClient)
 	: QObject(parent)
 	, m_pPairTraderGui(new PairTradingGui())
     , m_pPairTraderPM(new PairTraderPM(parent, _refClient))

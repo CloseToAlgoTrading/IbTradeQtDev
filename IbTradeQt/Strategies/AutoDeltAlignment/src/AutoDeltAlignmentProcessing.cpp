@@ -14,7 +14,7 @@ Q_LOGGING_CATEGORY(autoDeltaAligPMLog, "AutoDeltaAlig.PM");
 using namespace Observer;
 using namespace IBDataTypes;
 //----------------------------------------------------------
-autoDeltaAligPM::autoDeltaAligPM(QObject *parent, CBrokerDataProvider & _refClient)
+autoDeltaAligPM::autoDeltaAligPM(QObject *parent, CBrokerDataProvider * _refClient)
     : CProcessingBase(parent, _refClient)
     , CBasicStrategy()
     , Ticker_id(0)
@@ -54,7 +54,7 @@ autoDeltaAligPM::autoDeltaAligPM(QObject *parent, CBrokerDataProvider & _refClie
 }
 
 autoDeltaAligPM::autoDeltaAligPM(QObject *parent):
-      CProcessingBase(parent, m_DataProvider)
+      CProcessingBase(parent, &m_DataProvider)
     , CBasicStrategy()
     , Ticker_id(0)
     , m_delta()

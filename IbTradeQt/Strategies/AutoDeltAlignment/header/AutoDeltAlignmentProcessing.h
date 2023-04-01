@@ -21,7 +21,7 @@ class autoDeltaAligPM :/* public QObject,*/ public CProcessingBase, public CBasi
     Q_OBJECT
 
 public:
-    explicit autoDeltaAligPM(QObject *parent, CBrokerDataProvider & _refClient);
+    explicit autoDeltaAligPM(QObject *parent, CBrokerDataProvider * _refClient);
     explicit autoDeltaAligPM(QObject *parent);
     ~autoDeltaAligPM() override;
 

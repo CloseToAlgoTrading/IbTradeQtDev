@@ -11,7 +11,7 @@ class PairTraderPM :/* public QObject,*/ public CProcessingBase
 	Q_OBJECT
 
 public:
-    explicit PairTraderPM(QObject *parent, CBrokerDataProvider & _refClient);
+    explicit PairTraderPM(QObject *parent, CBrokerDataProvider * _refClient);
 	~PairTraderPM();
 
 

@@ -1,7 +1,7 @@
 #include "cbasicstrategy.h"
 
 CBasicStrategy::CBasicStrategy():
-    m_Models()
+   m_Models()
   , m_ParametersMap()
   , m_InfoMap()
   , m_Name()
