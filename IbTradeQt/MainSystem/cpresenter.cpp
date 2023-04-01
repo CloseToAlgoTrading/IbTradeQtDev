@@ -26,10 +26,10 @@ CPresenter::CPresenter(QObject *parent)
     QSharedPointer<IBComClientImpl> pClient = QSharedPointer<IBComClientImpl>(new IBComClientImpl(m_DataProvider));
 
    //Define Data Provider
-    m_DataProvider.setClien(pClient);
-
+    m_DataProvider.setClien(QSharedPointer<IBComClientImpl>::create(m_DataProvider));
 
     workerIBClient->moveToThread(threadIBClient);
+    QObject::connect(threadIBClient, SIGNAL(started()), workerIBClient, SLOT(process()));
     threadIBClient->start();
 
     QThread::currentThread()->setObjectName("mainThread");
@@ -45,9 +45,6 @@ CPresenter::~CPresenter()
 
 void CPresenter::MapSignals()
 {
-	//MAP Thread signal
-	QObject::connect(threadIBClient, SIGNAL(started()), workerIBClient, SLOT(process()));
-
 	//MAP GUI Signals/Slots
 	//Click connect button
 	QObject::connect(pIbtsView->getUi().pushButton, SIGNAL(clicked()), this, SLOT(onClickMyButton()));
