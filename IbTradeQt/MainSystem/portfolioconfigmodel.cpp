@@ -14,6 +14,7 @@
 CPortfolioConfigModel::CPortfolioConfigModel(QTreeView *treeView, CBasicRoot *pRoot, QObject *parent)
     : CTreeViewCustomModel(treeView, parent)
     , m_pRoot(pRoot)
+    , m_brokerInterface(nullptr)
 {
     Q_UNUSED(parent);
 
@@ -351,16 +352,16 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
                     model->setName("Portfolio");
                     account->addModel(model);
                 }
-
             }
             break;
         case PM_ITEM_STRATEGY:
             {
                 auto account = m_pRoot->getModels().value(workingIndex.parent().row(), nullptr);
                 auto portfolio = account ? account->getModels().value(workingIndex.row() - 1, nullptr) : nullptr;
-                if(nullptr != portfolio)
+                if((nullptr != portfolio) && (nullptr != this->m_brokerInterface))
                 {
                     model = CStrategyFactory::createNewStrategy(STRATEGY_MA);
+                    model->setBrokerInterface(this->m_brokerInterface);
                     portfolio->addModel(model);
                 }
             }

@@ -26,7 +26,7 @@ public:
     virtual bool start() override;
     virtual bool stop() override;
 
-    virtual void setBrokerInterface(QSharedPointer<IBrokerAPI> interface);
+    virtual void setBrokerInterface(QSharedPointer<IBrokerAPI> interface) override;
 
 protected:
     QList<ptrGenericModelType> m_Models;

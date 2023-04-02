@@ -5,6 +5,7 @@
 #include <QList>
 #include <QVariantMap>
 #include <QString>
+#include "IBrokerAPI.h"
 
 class CGenericModelApi;
 typedef QSharedPointer<CGenericModelApi> ptrGenericModelType;
@@ -23,6 +24,8 @@ public:
 
     virtual bool start() = 0;
     virtual bool stop() = 0;
+
+    virtual void setBrokerInterface(QSharedPointer<IBrokerAPI> interface) = 0;
 };
 
 

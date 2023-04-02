@@ -26,7 +26,7 @@ CPresenter::CPresenter(QObject *parent)
     QSharedPointer<IBComClientImpl> pClient = QSharedPointer<IBComClientImpl>(new IBComClientImpl(m_DataProvider));
 
    //Define Data Provider
-    m_DataProvider.setClien(QSharedPointer<IBComClientImpl>::create(m_DataProvider));
+    m_DataProvider.setClien(pClient);
 
     workerIBClient->moveToThread(threadIBClient);
     QObject::connect(threadIBClient, SIGNAL(started()), workerIBClient, SLOT(process()));
@@ -198,6 +198,7 @@ void CPresenter::setPGuiModel(CMainModel *newPGuiModel)
    this->pIbtsView->getPortfolioConfigTreeView()->setModel(this->pGuiModel->pPortfolioConfigModel());
    this->pIbtsView->getPortfolioConfigTreeView()->expandAll();
 
+   this->getPGuiModel()->pPortfolioConfigModel()->setBrokerInterface(this->m_DataProvider.getClien());
 
 }
 

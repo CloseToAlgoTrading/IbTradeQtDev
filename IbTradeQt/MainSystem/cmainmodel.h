@@ -6,6 +6,7 @@
 #include "CPortfolioConfigModel.h"
 #include "csettinsmodeldata.h"
 
+
 class CPresenter;
 
 class CMainModel : public QObject

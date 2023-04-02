@@ -37,5 +37,6 @@ bool CMovingAverageCrossover::stop()
 
 void CMovingAverageCrossover::slotCbkRecvHistoricalData(const QList<CHistoricalData> &_histMap, const QString &_symbol)
 {
+    Q_UNUSED(_histMap);
     qCDebug(MaCrossoverPmLog(), "Historical data receiverd [%s]", _symbol.toStdString().c_str());
 }

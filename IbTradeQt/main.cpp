@@ -4,7 +4,7 @@
 int main(int argc, char *argv[])
 {
 
-    QString ss = QCoreApplication::applicationDirPath();
+    //QString ss = QCoreApplication::applicationDirPath();
     qInstallMessageHandler(MyLogger::myMessageOutput);
 
     //Log output template

@@ -5,6 +5,7 @@
 #include "cbasicroot.h"
 #include <QList>
 
+
 class CPortfolioConfigModel : public CTreeViewCustomModel
 {
     Q_OBJECT
@@ -18,11 +19,14 @@ public:
     void addModel(const QModelIndex& index, const QList<quint16>& ids, quint32 itemType);
     void removeModel(QModelIndex index);
 
+    void setBrokerInterface(QSharedPointer<IBrokerAPI> newBrokerInterface);
+
 public slots:
     virtual void dataChangeCallback(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QList<int> & param) final;
 
 private:
     CBasicRoot *m_pRoot;
+    QSharedPointer<IBrokerAPI> m_brokerInterface;
 
 public slots:
     void slotOnClickAddAccount();
@@ -34,5 +38,10 @@ public slots:
 signals:
     void signalUpdateData(const QModelIndex& index);
 };
+
+inline void CPortfolioConfigModel::setBrokerInterface(QSharedPointer<IBrokerAPI> newBrokerInterface)
+{
+    m_brokerInterface = newBrokerInterface;
+}
 
 #endif // CPORTFOLIOCONFIGMODEL_H
