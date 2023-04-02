@@ -72,28 +72,14 @@ namespace IBDataTypes
             d = other.d;
         }
 
-        CrealtimeBar & operator= (const CrealtimeBar &other);
+        CrealtimeBar & operator= (const CrealtimeBar &other) ;
+
+        bool operator == (const CrealtimeBar &c1) const {
+            return d == c1.d;
+        }
 
     private:
         QSharedDataPointer<CrealtimeBarData> d;
-
-
-        //bool operator == (const CrealtimeBar &c1)
-        //{ 
-        //    bool ret = false;
-        //    ret = this->m_ReqId == c1.m_ReqId;
-        //    ret &= this->m_DateTime == c1.m_DateTime;
-        //    ret &= this->m_Open == c1.m_Open;
-        //    ret &= this->m_Higt == c1.m_Higt;
-        //    ret &= this->m_Low == c1.m_Low;
-        //    ret &= this->m_Close == c1.m_Close;
-        //    ret &= this->m_Volume == c1.m_Volume;
-        //    ret &= this->m_Wap == c1.m_Wap;
-        //    ret &= this->m_Count == c1.m_Count;
-
-        //    return ret;
-        //}
-
 
     public:
         QSharedDataPointer<CrealtimeBarData> getRTBarDataSharedPointer() const { return d; }

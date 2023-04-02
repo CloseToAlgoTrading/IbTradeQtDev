@@ -25,3 +25,10 @@ CHistoricalData & IBDataTypes::CHistoricalData::operator=(const CHistoricalData 
     return *this;
 }
 
+bool CHistoricalData::operator==(const CHistoricalData &c1) const
+{
+     return d == c1.d;
+}
+
+
+

@@ -57,6 +57,7 @@ SOURCES += \
     Strategies/Generic/cbasicstrategy.cpp \
     Strategies/Generic/cgenericmodelApi.cpp \
     Strategies/Generic/cmovingaveragecrossover.cpp \
+    Strategies/Generic/csma.cpp \
     Strategies/Generic/cstrategyfactory.cpp \
     Strategies/Generic/cteststrategy.cpp \
     Strategies/PairTrader/PairTradingGui.cpp \
@@ -149,6 +150,7 @@ HEADERS += \
     Strategies/Generic/cbasicstrategy.h \
     Strategies/Generic/cgenericmodelApi.h \
     Strategies/Generic/cmovingaveragecrossover.h \
+    Strategies/Generic/csma.h \
     Strategies/Generic/cstrategyfactory.h \
     Strategies/Generic/cteststrategy.h \
     Strategies/PairTrader/PairTradingGui.h \
