@@ -1,4 +1,5 @@
 #include "cmovingaveragecrossover.h"
+#include "IBComClientImpl.h"
 
 Q_LOGGING_CATEGORY(MaCrossoverPmLog, "MovingAverage.PM");
 
@@ -6,6 +7,8 @@ CMovingAverageCrossover::CMovingAverageCrossover(QObject *parent) : CProcessingB
   , CBasicStrategy()
 
 {
+
+    m_DataProvider.setClien(QSharedPointer<IBComClientImpl>::create(m_DataProvider));
     this->setClient(QSharedPointer<CBrokerDataProvider>(&m_DataProvider));
     /***** Init Patameters ******/
     this->setName("Moving Average Crossover");
@@ -17,7 +20,6 @@ CMovingAverageCrossover::CMovingAverageCrossover(QObject *parent) : CProcessingB
 
 bool CMovingAverageCrossover::start()
 {
-
     reqHistConfigData_t histConfiguration(0, BAR_SIZE_1_DAY, "10 D", "SPY");
 
     if (!reqestHistoricalData(histConfiguration))

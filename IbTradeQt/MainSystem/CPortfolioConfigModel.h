@@ -15,7 +15,7 @@ public:
     QModelIndex findWorkingNode(QModelIndex index, const QList<quint16> & Ids);
     void addWorkingNode(QModelIndex index, const ptrGenericModelType pModel, const quint16 id);
 
-    void addModel(const QModelIndex& index, const QList<quint16>& ids, ptrGenericModelType model, quint16 itemType);
+    void addModel(const QModelIndex& index, const QList<quint16>& ids, quint32 itemType);
     void removeModel(QModelIndex index);
 
 public slots:

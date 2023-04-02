@@ -123,159 +123,270 @@ void CPortfolioConfigModel::dataChangeCallback(const QModelIndex &topLeft, const
     Q_UNUSED(param);
 
     if (topLeft.isValid()) {
-        
-        //XXXXXXXXXXXXXXXXXXX
+
         auto valueIndex = topLeft;
-        TreeItem * itemToUpdate = getItem(topLeft);
+        auto *itemToUpdate = getItem(topLeft);
 
         QList<quint16> Ids{PM_ITEM_STRATEGY, PM_ITEM_STRATEGIES, PM_ITEM_PORTFOLIO, PM_ITEM_ACCOUNT};
         auto index = findWorkingNode(topLeft, Ids);
-        TreeItem * tmpItem = getItem(index);
+        auto *tmpItem = getItem(index);
+
+        auto updateModel = [&](auto modelToUpdate) {
+            const auto itemId = itemToUpdate->data(0).id;
+            const auto tmpItemId = tmpItem->data(0).id;
+
+            if (itemId != tmpItemId)
+            {
+                auto paramMap = modelToUpdate->getParameters();
+                const auto& key = itemToUpdate->data(0).value.toString();
+
+                if (paramMap.contains(key))
+                {
+                    paramMap[key] = itemToUpdate->data(valueIndex.column()).value;
+                    modelToUpdate->setParameters(paramMap);
+                }
+            }
+            else
+            {
+                const auto columnIndex = valueIndex.column();
+
+                if (columnIndex == 0)
+                {
+                    modelToUpdate->setName(itemToUpdate->data(0).value.toString());
+                }
+                else if (columnIndex == 1)
+                {
+                    const auto isActive = itemToUpdate->data(valueIndex.column()).value.toInt() == Qt::Checked;
+                    isActive ? modelToUpdate->start() : modelToUpdate->stop();
+                }
+            }
+        };
 
         switch (tmpItem->data(0).id) {
         case PM_ITEM_ACCOUNT:
-            {
-                auto accountToUpdate = m_pRoot->getModels().value(index.row(), nullptr);
-                if (accountToUpdate) {
-                    if(itemToUpdate->data(0).id != PM_ITEM_ACCOUNT)
-                    {
-                        //update parameters
-                        auto paramMap = accountToUpdate->getParameters();
-                        const auto& key = itemToUpdate->data(0).value.toString();
-                        if (paramMap.contains(key))
-                        {
-                            paramMap[key] = itemToUpdate->data(valueIndex.column()).value;
-                            accountToUpdate->setParameters(paramMap);
-                        }
-                    }
-                    else
-                    {
-                        if(valueIndex.column() == 0)
-                            accountToUpdate->setName(itemToUpdate->data(0).value.toString());
-                    }
-                }
+        {
+            auto accountToUpdate = m_pRoot->getModels().value(index.row(), nullptr);
+            if (accountToUpdate) {
+                updateModel(accountToUpdate);
             }
-            break;
+        }
+        break;
         case PM_ITEM_PORTFOLIO:
-            {
-                auto account = m_pRoot->getModels().value(index.parent().row(), nullptr);
-                auto portfolioToUpdate = account ? account->getModels().value(index.row() - 1, nullptr) : nullptr;
-                if (portfolioToUpdate) {
-                    if(itemToUpdate->data(0).id != PM_ITEM_PORTFOLIO)
-                    {
-                        //update parameters
-                        auto paramMap = portfolioToUpdate->getParameters();
-                        const auto& key = itemToUpdate->data(0).value.toString();
-                        if (paramMap.contains(key))
-                        {
-                            paramMap[key] = itemToUpdate->data(valueIndex.column()).value;
-                            portfolioToUpdate->setParameters(paramMap);
-                        }
-                    }
-                    else
-                    {
-                        if(valueIndex.column() == 0)
-                            portfolioToUpdate->setName(itemToUpdate->data(0).value.toString());
-                        else if(valueIndex.column() == 1)
-                        {
-                            const auto isActive = itemToUpdate->data(valueIndex.column()).value.toInt() == Qt::Checked ? true : false;
-                            if (isActive == true)
-                            {
-                                (void)portfolioToUpdate->start();
-                            }
-                            else
-                            {
-                                (void)portfolioToUpdate->stop();
-                            }
-
-                        }
-                    }
-                }
+        {
+            auto account = m_pRoot->getModels().value(index.parent().row(), nullptr);
+            auto portfolioToUpdate = account ? account->getModels().value(index.row() - 1, nullptr) : nullptr;
+            if (portfolioToUpdate) {
+                updateModel(portfolioToUpdate);
             }
-            break;
+        }
+        break;
         case PM_ITEM_STRATEGY:
-            {
-                auto account = m_pRoot->getModels().value(index.parent().parent().row(), nullptr);
-                auto portfolio = account ? account->getModels().value(index.parent().row() - 1, nullptr) : nullptr;
-                auto strategyToUpdate = portfolio ? portfolio->getModels().value(index.row() - 1, nullptr) : nullptr;
-                if (strategyToUpdate) {
-                    if(itemToUpdate->data(0).id != PM_ITEM_STRATEGY)
-                    {
-                        //update parameters
-                        auto paramMap = strategyToUpdate->getParameters();
-                        const auto& key = itemToUpdate->data(0).value.toString();
-                        if (paramMap.contains(key))
-                        {
-                            paramMap[key] = itemToUpdate->data(valueIndex.column()).value;
-                            strategyToUpdate->setParameters(paramMap);
-                        }
-                    }
-                    else
-                    {
-                        if(valueIndex.column() == 0)
-                            strategyToUpdate->setName(itemToUpdate->data(0).value.toString());
-                    }
-                }
+        {
+            auto account = m_pRoot->getModels().value(index.parent().parent().row(), nullptr);
+            auto portfolio = account ? account->getModels().value(index.parent().row() - 1, nullptr) : nullptr;
+            auto strategyToUpdate = portfolio ? portfolio->getModels().value(index.row() - 1, nullptr) : nullptr;
+            if (strategyToUpdate) {
+                updateModel(strategyToUpdate);
             }
-            break;
+        }
+        break;
         default:
             break;
         }
     }
 }
 
-void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint16>& ids, ptrGenericModelType model, quint16 itemType)
+//void CPortfolioConfigModel::dataChangeCallback(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QList<int> &param)
+//{
+//    Q_UNUSED(bottomRight);
+//    Q_UNUSED(param);
+
+//    if (topLeft.isValid()) {
+        
+//        //XXXXXXXXXXXXXXXXXXX
+//        auto valueIndex = topLeft;
+//        TreeItem * itemToUpdate = getItem(topLeft);
+
+//        QList<quint16> Ids{PM_ITEM_STRATEGY, PM_ITEM_STRATEGIES, PM_ITEM_PORTFOLIO, PM_ITEM_ACCOUNT};
+//        auto index = findWorkingNode(topLeft, Ids);
+//        TreeItem * tmpItem = getItem(index);
+
+//        switch (tmpItem->data(0).id) {
+//        case PM_ITEM_ACCOUNT:
+//            {
+//                auto accountToUpdate = m_pRoot->getModels().value(index.row(), nullptr);
+//                if (accountToUpdate) {
+//                    if(itemToUpdate->data(0).id != PM_ITEM_ACCOUNT)
+//                    {
+//                        //update parameters
+//                        auto paramMap = accountToUpdate->getParameters();
+//                        const auto& key = itemToUpdate->data(0).value.toString();
+//                        if (paramMap.contains(key))
+//                        {
+//                            paramMap[key] = itemToUpdate->data(valueIndex.column()).value;
+//                            accountToUpdate->setParameters(paramMap);
+//                        }
+//                    }
+//                    else
+//                    {
+//                        if(valueIndex.column() == 0)
+//                            accountToUpdate->setName(itemToUpdate->data(0).value.toString());
+//                        else if(valueIndex.column() == 1)
+//                        {
+//                            const auto isActive = itemToUpdate->data(valueIndex.column()).value.toInt() == Qt::Checked ? true : false;
+//                            if (isActive == true)
+//                            {
+//                                (void)accountToUpdate->start();
+//                            }
+//                            else
+//                            {
+//                                (void)accountToUpdate->stop();
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//            break;
+//        case PM_ITEM_PORTFOLIO:
+//            {
+//                auto account = m_pRoot->getModels().value(index.parent().row(), nullptr);
+//                auto portfolioToUpdate = account ? account->getModels().value(index.row() - 1, nullptr) : nullptr;
+//                if (portfolioToUpdate) {
+//                    if(itemToUpdate->data(0).id != PM_ITEM_PORTFOLIO)
+//                    {
+//                        //update parameters
+//                        auto paramMap = portfolioToUpdate->getParameters();
+//                        const auto& key = itemToUpdate->data(0).value.toString();
+//                        if (paramMap.contains(key))
+//                        {
+//                            paramMap[key] = itemToUpdate->data(valueIndex.column()).value;
+//                            portfolioToUpdate->setParameters(paramMap);
+//                        }
+//                    }
+//                    else
+//                    {
+//                        if(valueIndex.column() == 0)
+//                            portfolioToUpdate->setName(itemToUpdate->data(0).value.toString());
+//                        else if(valueIndex.column() == 1)
+//                        {
+//                            const auto isActive = itemToUpdate->data(valueIndex.column()).value.toInt() == Qt::Checked ? true : false;
+//                            if (isActive == true)
+//                            {
+//                                (void)portfolioToUpdate->start();
+//                            }
+//                            else
+//                            {
+//                                (void)portfolioToUpdate->stop();
+//                            }
+
+//                        }
+//                    }
+//                }
+//            }
+//            break;
+//        case PM_ITEM_STRATEGY:
+//            {
+//                auto account = m_pRoot->getModels().value(index.parent().parent().row(), nullptr);
+//                auto portfolio = account ? account->getModels().value(index.parent().row() - 1, nullptr) : nullptr;
+//                auto strategyToUpdate = portfolio ? portfolio->getModels().value(index.row() - 1, nullptr) : nullptr;
+//                if (strategyToUpdate) {
+//                    if(itemToUpdate->data(0).id != PM_ITEM_STRATEGY)
+//                    {
+//                        //update parameters
+//                        auto paramMap = strategyToUpdate->getParameters();
+//                        const auto& key = itemToUpdate->data(0).value.toString();
+//                        if (paramMap.contains(key))
+//                        {
+//                            paramMap[key] = itemToUpdate->data(valueIndex.column()).value;
+//                            strategyToUpdate->setParameters(paramMap);
+//                        }
+//                    }
+//                    else
+//                    {
+//                        if(valueIndex.column() == 0)
+//                            strategyToUpdate->setName(itemToUpdate->data(0).value.toString());
+//                        else if(valueIndex.column() == 1)
+//                        {
+//                            const auto isActive = itemToUpdate->data(valueIndex.column()).value.toInt() == Qt::Checked ? true : false;
+//                            if (isActive == true)
+//                            {
+//                                (void)strategyToUpdate->start();
+//                            }
+//                            else
+//                            {
+//                                (void)strategyToUpdate->stop();
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//            break;
+//        default:
+//            break;
+//        }
+//    }
+//}
+
+void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint16>& ids, quint32 itemType)
 {
     QModelIndex workingIndex = findWorkingNode(index, ids);
     TreeItem* item = getItem(workingIndex);
+    ptrGenericModelType model = nullptr;
 
     if (item->data(0).id == ids.first()) {
         switch (itemType) {
         case PM_ITEM_ACCOUNT:
             {
+                model = QSharedPointer<CBasicAccount>::create();
+                model->setName("Account");
                 m_pRoot->addModel(model);
             }
             break;
         case PM_ITEM_PORTFOLIO:
             {
                 auto account = m_pRoot->getModels().value(workingIndex.row(), nullptr);
-                account->addModel(model);
+                if(nullptr != account)
+                {
+                    model = QSharedPointer<CBasicPortfolio>::create();
+                    model->setName("Portfolio");
+                    account->addModel(model);
+                }
+
             }
             break;
         case PM_ITEM_STRATEGY:
             {
                 auto account = m_pRoot->getModels().value(workingIndex.parent().row(), nullptr);
                 auto portfolio = account ? account->getModels().value(workingIndex.row() - 1, nullptr) : nullptr;
-                portfolio->addModel(model);
+                if(nullptr != portfolio)
+                {
+                    model = CStrategyFactory::createNewStrategy(STRATEGY_MA);
+                    portfolio->addModel(model);
+                }
             }
             break;
         default:
             break;
         }
 
-        addWorkingNode(workingIndex, model, itemType);
+        if(nullptr != model)
+        {
+            addWorkingNode(workingIndex, model, itemType);
+        }
     }
 }
 
 void CPortfolioConfigModel::slotOnClickAddAccount()
 {
-    static quint8 i = 0;
-    auto pA1 = QSharedPointer<CBasicAccount>::create();
-    pA1->setName("A" + QString::number(i++));
-    QModelIndex rootIndex = createIndex(0, 0, rootItem->child(rootItem->childCount() - 1));
-    addModel(rootIndex, {PM_ITEM_ACCOUNTS}, pA1, PM_ITEM_ACCOUNT);
+    addModel(createIndex(0, 0, rootItem->child(rootItem->childCount() - 1)), {PM_ITEM_ACCOUNTS}, PM_ITEM_ACCOUNT);
 }
 
 void CPortfolioConfigModel::slotOnClickAddPortfolio()
 {
-    static quint16 i = 0;
     QItemSelectionModel *selectionModel = m_treeView->selectionModel();
 
     if (selectionModel->hasSelection()) {
-        QModelIndex index = selectionModel->currentIndex();
-        auto pP1 = QSharedPointer<CBasicPortfolio>::create();
-        pP1->setName("P" + QString::number(i++));
-        addModel(index, {PM_ITEM_ACCOUNT}, pP1, PM_ITEM_PORTFOLIO);
+        addModel(selectionModel->currentIndex(), {PM_ITEM_ACCOUNT}, PM_ITEM_PORTFOLIO);
     }
 }
 
@@ -284,9 +395,7 @@ void CPortfolioConfigModel::slotOnClickAddStrategy()
     QItemSelectionModel *selectionModel = m_treeView->selectionModel();
 
     if (selectionModel->hasSelection()) {
-        QModelIndex index = selectionModel->currentIndex();
-        auto pS1 = CStrategyFactory::createNewStrategy(STRATEGY_MA);
-        addModel(index, {PM_ITEM_PORTFOLIO}, pS1, PM_ITEM_STRATEGY);
+        addModel(selectionModel->currentIndex(), {PM_ITEM_PORTFOLIO}, PM_ITEM_STRATEGY);
     }
 }
 QModelIndex CPortfolioConfigModel::findWorkingNode(QModelIndex index, const QList<quint16> & Ids)
@@ -345,26 +454,20 @@ void CPortfolioConfigModel::removeModel(QModelIndex index)
 {
     TreeItem *tmpItem = getItem(index);
 
-//    auto removeModelFromList = [&](ptrGenericModelType modelToRemove, QList<ptrGenericModelType>& modelsList) {
-//        if (modelToRemove) {
-//            modelsList.removeOne(modelToRemove);
-//        }
-//    };
-
     switch (tmpItem->data(0).id) {
     case PM_ITEM_ACCOUNT:
         {
             auto accountToRemove = m_pRoot->getModels().value(index.row(), nullptr);
-            m_pRoot->removeModel(accountToRemove);
-            //removeModelFromList(accountToRemove, m_pRoot->getModels());
+            if(nullptr != accountToRemove)
+                m_pRoot->removeModel(accountToRemove);
         }
         break;
     case PM_ITEM_PORTFOLIO:
         {
             auto account = m_pRoot->getModels().value(index.parent().row(), nullptr);
             auto portfolioToRemove = account ? account->getModels().value(index.row() - 1, nullptr) : nullptr;
-            account->removeModel(portfolioToRemove);
-            //removeModelFromList(portfolioToRemove, account->getModels());
+            if(nullptr != portfolioToRemove)
+                account->removeModel(portfolioToRemove);
         }
         break;
     case PM_ITEM_STRATEGY:
@@ -372,8 +475,8 @@ void CPortfolioConfigModel::removeModel(QModelIndex index)
             auto account = m_pRoot->getModels().value(index.parent().parent().row(), nullptr);
             auto portfolio = account ? account->getModels().value(index.parent().row() - 1, nullptr) : nullptr;
             auto strategyToRemove = portfolio ? portfolio->getModels().value(index.row() - 1, nullptr) : nullptr;
-            portfolio->removeModel(strategyToRemove);
-            //removeModelFromList(strategyToRemove, portfolio->getModels());
+            if(nullptr != strategyToRemove)
+                portfolio->removeModel(strategyToRemove);
         }
         break;
     default:
