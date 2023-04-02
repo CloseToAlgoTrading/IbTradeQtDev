@@ -212,7 +212,7 @@ public:
     void winError( const std::string& str, int lastError) override;
     void connectionClosed() override {}
     void updateAccountValue(const std::string& key, const std::string& val,
-    const std::string& currency, const std::string& accountName) override {}
+                            const std::string& currency, const std::string& accountName) override;
     void updatePortfolio( const Contract& contract, Decimal position,
         double marketPrice, double marketValue, double averageCost,
         double unrealizedPNL, double realizedPNL, const std::string& accountName) override {}
