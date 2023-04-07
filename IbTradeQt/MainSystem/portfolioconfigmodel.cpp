@@ -11,6 +11,8 @@
 
 #include "cstrategyfactory.h"
 
+#define START_OF_WORKING_NODES (3u)
+
 CPortfolioConfigModel::CPortfolioConfigModel(QTreeView *treeView, CBasicRoot *pRoot, QObject *parent)
     : CTreeViewCustomModel(treeView, parent)
     , m_pRoot(pRoot)
@@ -20,7 +22,7 @@ CPortfolioConfigModel::CPortfolioConfigModel(QTreeView *treeView, CBasicRoot *pR
     Q_UNUSED(parent);
 
     QObject::connect(&m_UpdateInfoTimer, &QTimer::timeout, this, &CPortfolioConfigModel::slotOnTimeoutCallback);
-    m_UpdateInfoTimer.start(5000);
+    //m_UpdateInfoTimer.start(15000);
     setupModelData(rootItem);
 
 }
@@ -35,40 +37,182 @@ TreeItem * addRootNode(TreeItem * parent, pItemDataType name, pItemDataType valu
     return parent;
 }
 
-void addParameters(TreeItem * parent, const QVariantMap params, int columnCount)
-{
-    auto EmptyRoItem = pItemDataType(new stItemData(QVariant(), EVT_RO_TEXT, TVM_UNUSED_ID));
-    if(!params.empty())
-    {
-        //Create account paramters
-        TreeItem * parentParameters = addRootNode(parent->child(parent->childCount() - 1),
-                                       pItemDataType(new stItemData("Parameters", EVT_RO_TEXT, PM_ITEM_PARAMETERS)),
-                                       EmptyRoItem,
-                                       columnCount);
+//void addParameters(TreeItem * parent, const QVariantMap params, int columnCount)
+//{
+//    auto EmptyRoItem = pItemDataType(new stItemData(QVariant(), EVT_RO_TEXT, TVM_UNUSED_ID));
+//    if(!params.empty())
+//    {
+//        //Create account paramters
+//        TreeItem * parentParameters = addRootNode(parent->child(parent->childCount() - 1),
+//                                       pItemDataType(new stItemData("Parameters", EVT_RO_TEXT, PM_ITEM_PARAMETERS)),
+//                                       EmptyRoItem,
+//                                       columnCount);
 
-        TreeItem * _parent = parentParameters->child(parentParameters->childCount() - 1);
+//        TreeItem * _parent = parentParameters->child(parentParameters->childCount() - 1);
+//        for (auto i = params.begin(); i != params.end(); ++i)
+//        {
+//            _parent->insertChildren(_parent->childCount(), 1, columnCount);
+//            _parent->child(_parent->childCount() - 1)->addData(0, pItemDataType(new stItemData(i.key(), EVT_RO_TEXT, PM_ITEM_PARAMETER)));
+//            switch (i.value().typeId()) {
+//            case QMetaType::Double:
+//            case QMetaType::Float:
+//            case QMetaType::Float16:
+//                _parent->child(_parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(i.value().toDouble(), EVT_TEXT, TVM_UNUSED_ID)));
+//                break;
+//            case QMetaType::Int:
+//                _parent->child(_parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(i.value().toInt(), EVT_TEXT, TVM_UNUSED_ID)));
+//                break;
+//            case QMetaType::QString:
+//                _parent->child(_parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(i.value().toString(), EVT_TEXT, TVM_UNUSED_ID)));
+//                break;
+//            default:
+//                _parent->child(_parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(i.value().toString(), EVT_TEXT, TVM_UNUSED_ID)));
+//                break;
+//            }
+
+//        }
+//    }
+//}
+
+//void addGenericInfo(TreeItem * parent, const QVariantMap params, int columnCount)
+//{
+//    auto EmptyRoItem = pItemDataType(new stItemData(QVariant(), EVT_RO_TEXT, TVM_UNUSED_ID));
+//    if(!params.empty())
+//    {
+//        //Create account paramters
+//        TreeItem * parentInfo = addRootNode(parent->child(parent->childCount() - 1),
+//                                                 pItemDataType(new stItemData("Info", EVT_RO_TEXT, PM_ITEM_PARAMETERS)),
+//                                                 EmptyRoItem,
+//                                                 columnCount);
+
+//        TreeItem * _parent = parentInfo->child(parentInfo->childCount() - 1);
+//        for (auto i = params.begin(); i != params.end(); ++i)
+//        {
+//            _parent->insertChildren(_parent->childCount(), 1, columnCount);
+//            _parent->child(_parent->childCount() - 1)->addData(0, pItemDataType(new stItemData(i.key(), EVT_RO_TEXT, PM_ITEM_PARAMETER)));
+//            switch (i.value().typeId()) {
+//            case QMetaType::Double:
+//            case QMetaType::Float:
+//            case QMetaType::Float16:
+//                _parent->child(_parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(QString::number(i.value().toDouble(), 'f', 2), EVT_RO_TEXT, TVM_UNUSED_ID)));
+//                break;
+//            case QMetaType::Int:
+//                _parent->child(_parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(i.value().toInt(), EVT_RO_TEXT, TVM_UNUSED_ID)));
+//                break;
+//            case QMetaType::QString:
+//                _parent->child(_parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(i.value().toString(), EVT_RO_TEXT, TVM_UNUSED_ID)));
+//                break;
+//            default:
+//                _parent->child(_parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(i.value().toString(), EVT_RO_TEXT, TVM_UNUSED_ID)));
+//                break;
+//            }
+
+//        }
+//    }
+//}
+
+//void addAssetInfo(TreeItem * parent, const QVariantMap params, int columnCount)
+//{
+//    auto EmptyRoItem = pItemDataType(new stItemData(QVariant(), EVT_RO_TEXT, TVM_UNUSED_ID));
+//    if(!params.empty())
+//    {
+//        //Create account paramters
+//        TreeItem * parentInfo = addRootNode(parent->child(parent->childCount() - 1),
+//                                           pItemDataType(new stItemData("Assets", EVT_RO_TEXT, PM_ITEM_PARAMETERS)),
+//                                           EmptyRoItem,
+//                                           columnCount);
+
+//        //TreeItem * _parent = parentInfo->child(parentInfo->childCount() - 1);
+
+//        for (auto z = params.begin(); z != params.end(); ++z)
+//        {
+//            TreeItem * _parentNode = addRootNode(parentInfo->child(parentInfo->childCount() - 1),
+//                                            pItemDataType(new stItemData(z.key(), EVT_RO_TEXT, PM_ITEM_PARAMETERS)),
+//                                            EmptyRoItem,
+//                                            columnCount);
+
+//            QVariantMap tmpMap = z.value().toMap();
+
+//            if(!tmpMap.empty())
+//            {
+//                //Create account paramters
+//                TreeItem * _parent = _parentNode->child(_parentNode->childCount() - 1);
+//                for (auto i = tmpMap.begin(); i != tmpMap.end(); ++i)
+//                {
+//                    _parent->insertChildren(_parent->childCount(), 1, columnCount);
+//                    _parent->child(_parent->childCount() - 1)->addData(0, pItemDataType(new stItemData(i.key(), EVT_RO_TEXT, PM_ITEM_PARAMETER)));
+//                    switch (i.value().typeId()) {
+//                    case QMetaType::Double:
+//                    case QMetaType::Float:
+//                    case QMetaType::Float16:
+//                        _parent->child(_parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(QString::number(i.value().toDouble(), 'f', 2), EVT_RO_TEXT, TVM_UNUSED_ID)));
+//                        break;
+//                    case QMetaType::Int:
+//                        _parent->child(_parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(i.value().toInt(), EVT_RO_TEXT, TVM_UNUSED_ID)));
+//                        break;
+//                    case QMetaType::QString:
+//                        _parent->child(_parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(i.value().toString(), EVT_RO_TEXT, TVM_UNUSED_ID)));
+//                        break;
+//                    default:
+//                        _parent->child(_parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(i.value().toString(), EVT_RO_TEXT, TVM_UNUSED_ID)));
+//                        break;
+//                    }
+
+//                }
+//            }
+//        }
+//    }
+//}
+
+
+void addDataToNode(TreeItem *parent, const QString &key, const QVariant &value, int typeId, bool readOnly, int columnCount)
+{
+    parent->insertChildren(parent->childCount(), 1, columnCount);
+    parent->child(parent->childCount() - 1)->addData(0, pItemDataType(new stItemData(key, EVT_RO_TEXT, PM_ITEM_PARAMETER)));
+
+    int eventType = readOnly ? EVT_RO_TEXT : EVT_TEXT;
+    switch (typeId)
+    {
+    case QMetaType::Double:
+    case QMetaType::Float:
+    case QMetaType::Float16:
+        parent->child(parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(QString::number(value.toDouble(), 'f', 2), eventType, TVM_UNUSED_ID)));
+        break;
+    case QMetaType::Int:
+        parent->child(parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(value.toInt(), eventType, TVM_UNUSED_ID)));
+        break;
+    default:
+        parent->child(parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(value.toString(), eventType, TVM_UNUSED_ID)));
+        break;
+    }
+}
+
+void addNestedNodes(TreeItem *parent, const QString &rootName, const QVariantMap &params, bool readOnly, int columnCount)
+{
+    if (!params.empty())
+    {
+        auto EmptyRoItem = pItemDataType(new stItemData(QVariant(), EVT_RO_TEXT, TVM_UNUSED_ID));
+        TreeItem *parentNode = addRootNode(parent->child(parent->childCount() - 1),
+                                           pItemDataType(new stItemData(rootName, EVT_RO_TEXT, PM_ITEM_PARAMETERS)),
+                                           EmptyRoItem,
+                                           2);
+
+        TreeItem *_parent = parentNode->child(parentNode->childCount() - 1);
         for (auto i = params.begin(); i != params.end(); ++i)
         {
-            _parent->insertChildren(_parent->childCount(), 1, columnCount);
-            _parent->child(_parent->childCount() - 1)->addData(0, pItemDataType(new stItemData(i.key(), EVT_RO_TEXT, PM_ITEM_PARAMETER)));
-            switch (i.value().typeId()) {
-            case QMetaType::Double:
-                _parent->child(_parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(i.value().toDouble(), EVT_TEXT, TVM_UNUSED_ID)));
-                break;
-            case QMetaType::Int:
-                _parent->child(_parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(i.value().toInt(), EVT_TEXT, TVM_UNUSED_ID)));
-                break;
-            case QMetaType::QString:
-                _parent->child(_parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(i.value().toString(), EVT_TEXT, TVM_UNUSED_ID)));
-                break;
-            default:
-                _parent->child(_parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(i.value().toString(), EVT_TEXT, TVM_UNUSED_ID)));
-                break;
+            if (i.value().typeId() == QMetaType::QVariantMap)
+            {
+                QVariantMap nestedMap = i.value().toMap();
+                addNestedNodes(_parent, i.key(), nestedMap, readOnly, columnCount);
             }
-
+            else
+            {
+                addDataToNode(_parent, i.key(), i.value(), i.value().typeId(), readOnly, columnCount);
+            }
         }
     }
 }
+
 
 void CPortfolioConfigModel::setupModelData(TreeItem * rootItem)
 {
@@ -96,7 +240,8 @@ void CPortfolioConfigModel::setupModelData(TreeItem * rootItem)
                                        EmptyRoItem,
                                        rootItem->columnCount());
 
-        addParameters(parentAccount, account->getParameters(), rootItem->columnCount());
+        //addParameters(parentAccount, account->getParameters(), rootItem->columnCount());
+        addNestedNodes(parentAccount, "Parameters", account->getParameters(), false, rootItem->columnCount());
 
         for (auto&& portfolio : account->getModels()) {
             TreeItem * parentPortfolio = addRootNode(parentAccount->child(parentAccount->childCount() - 1),
@@ -104,7 +249,8 @@ void CPortfolioConfigModel::setupModelData(TreeItem * rootItem)
                                            EmptyRoItem,
                                            rootItem->columnCount());
 
-            addParameters(parentPortfolio, portfolio->getParameters(), rootItem->columnCount());
+            //addParameters(parentPortfolio, portfolio->getParameters(), rootItem->columnCount());
+            addNestedNodes(parentPortfolio, "Parameters", portfolio->getParameters(), false, rootItem->columnCount());
 
             for (auto&& strategy : portfolio->getModels()) {
                 TreeItem * parentStrategy = addRootNode(parentPortfolio->child(parentPortfolio->childCount() - 1),
@@ -112,7 +258,8 @@ void CPortfolioConfigModel::setupModelData(TreeItem * rootItem)
                                                EmptyRoItem,
                                                rootItem->columnCount());
 
-                addParameters(parentStrategy, strategy->getParameters(), rootItem->columnCount());
+                //addParameters(parentStrategy, strategy->getParameters(), rootItem->columnCount());
+                addNestedNodes(parentStrategy, "Parameters", strategy->getParameters(), false, rootItem->columnCount());
             }
 
         }
@@ -178,7 +325,7 @@ void CPortfolioConfigModel::dataChangeCallback(const QModelIndex &topLeft, const
         case PM_ITEM_PORTFOLIO:
         {
             auto account = m_pRoot->getModels().value(index.parent().row(), nullptr);
-            auto portfolioToUpdate = account ? account->getModels().value(index.row() - 1, nullptr) : nullptr;
+            auto portfolioToUpdate = account ? account->getModels().value(index.row() - START_OF_WORKING_NODES, nullptr) : nullptr;
             if (portfolioToUpdate) {
                 updateModel(portfolioToUpdate);
             }
@@ -187,8 +334,8 @@ void CPortfolioConfigModel::dataChangeCallback(const QModelIndex &topLeft, const
         case PM_ITEM_STRATEGY:
         {
             auto account = m_pRoot->getModels().value(index.parent().parent().row(), nullptr);
-            auto portfolio = account ? account->getModels().value(index.parent().row() - 1, nullptr) : nullptr;
-            auto strategyToUpdate = portfolio ? portfolio->getModels().value(index.row() - 1, nullptr) : nullptr;
+            auto portfolio = account ? account->getModels().value(index.parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+            auto strategyToUpdate = portfolio ? portfolio->getModels().value(index.row() - START_OF_WORKING_NODES, nullptr) : nullptr;
             if (strategyToUpdate) {
                 updateModel(strategyToUpdate);
             }
@@ -229,10 +376,11 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
         case PM_ITEM_STRATEGY:
             {
                 auto account = m_pRoot->getModels().value(workingIndex.parent().row(), nullptr);
-                auto portfolio = account ? account->getModels().value(workingIndex.row() - 1, nullptr) : nullptr;
+                auto portfolio = account ? account->getModels().value(workingIndex.row() - START_OF_WORKING_NODES, nullptr) : nullptr;
                 if((nullptr != portfolio) && (nullptr != this->m_brokerInterface))
                 {
-                    model = CStrategyFactory::createNewStrategy(STRATEGY_MA);
+                    //model = CStrategyFactory::createNewStrategy(STRATEGY_MA);
+                    model = CStrategyFactory::createNewStrategy(STRATEGY_BASIC_TEST);
                     model->setBrokerInterface(this->m_brokerInterface);
                     portfolio->addModel(model);
                 }
@@ -297,7 +445,12 @@ void CPortfolioConfigModel::addWorkingNode(QModelIndex index, const ptrGenericMo
                                    pItemDataType(new stItemData(Qt::Unchecked, EVT_CECK_BOX, id + PT_ITEM_ACTIVATION)),
                                    item->columnCount());
 
-    addParameters(parentAccount, pModel->getParameters(), item->columnCount());
+    //addParameters(parentAccount, pModel->getParameters(), item->columnCount());
+    addNestedNodes(parentAccount, "Parameters", pModel->getParameters(), false, item->columnCount());
+    //addGenericInfo(parentAccount, pModel->genericInfo(), item->columnCount());
+    addNestedNodes(parentAccount, "Info", pModel->genericInfo(), true, item->columnCount());
+    //addAssetInfo(parentAccount, pModel->assetList(), item->columnCount());
+    addNestedNodes(parentAccount, "Assets", pModel->assetList(), true, item->columnCount());
 
     endInsertRows();
 
@@ -343,7 +496,7 @@ void CPortfolioConfigModel::removeModel(QModelIndex index)
     case PM_ITEM_PORTFOLIO:
         {
             auto account = m_pRoot->getModels().value(index.parent().row(), nullptr);
-            auto portfolioToRemove = account ? account->getModels().value(index.row() - 1, nullptr) : nullptr;
+            auto portfolioToRemove = account ? account->getModels().value(index.row() - START_OF_WORKING_NODES, nullptr) : nullptr;
             if(nullptr != portfolioToRemove)
                 account->removeModel(portfolioToRemove);
         }
@@ -351,8 +504,8 @@ void CPortfolioConfigModel::removeModel(QModelIndex index)
     case PM_ITEM_STRATEGY:
         {
             auto account = m_pRoot->getModels().value(index.parent().parent().row(), nullptr);
-            auto portfolio = account ? account->getModels().value(index.parent().row() - 1, nullptr) : nullptr;
-            auto strategyToRemove = portfolio ? portfolio->getModels().value(index.row() - 1, nullptr) : nullptr;
+            auto portfolio = account ? account->getModels().value(index.parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+            auto strategyToRemove = portfolio ? portfolio->getModels().value(index.row() - START_OF_WORKING_NODES, nullptr) : nullptr;
             if(nullptr != strategyToRemove)
                 portfolio->removeModel(strategyToRemove);
         }

@@ -9,8 +9,12 @@ CBasicStrategy::CBasicStrategy():
     , m_assetList()
     , m_genericInfo()
 {
-    this->m_InfoMap["Generic_Info"] = QVariant::fromValue(m_genericInfo);
-    this->m_InfoMap["Asset_List"] = QVariant::fromValue(m_assetList);
+    this->m_genericInfo["pnl"] = 95.2f;
+    this->m_genericInfo["pnlpnc"] = "2.1 %";
+
+
+    this->m_assetList["SPY"] = QVariantMap({{"pnl",23.0f}, {"aprice",100.0f}});
+    this->m_assetList["V"] = QVariantMap({{"pnl",2.0f}, {"aprice",320.1f}});
 }
 
 void CBasicStrategy::addModel(ptrGenericModelType pModel)
@@ -68,25 +72,26 @@ void CBasicStrategy::setBrokerInterface(QSharedPointer<IBrokerAPI> interface)
     this->m_DataProvider.setClien(interface);
 }
 
-QList<assetInfoType> CBasicStrategy::assetList() const
+QVariantMap CBasicStrategy::assetList() const
 {
     return m_assetList;
 }
 
-void CBasicStrategy::setAssetList(const QList<assetInfoType> &newAssetList)
+void CBasicStrategy::setAssetList(const QVariantMap &newAssetList)
 {
     m_assetList = newAssetList;
 }
 
-strategyGenericInfoType CBasicStrategy::genericInfo() const
+QVariantMap CBasicStrategy::genericInfo() const
 {
     return m_genericInfo;
 }
 
-void CBasicStrategy::setGenericInfo(const strategyGenericInfoType &newGenericInfo)
+void CBasicStrategy::setGenericInfo(const QVariantMap &newGenericInfo)
 {
     m_genericInfo = newGenericInfo;
 }
+
 
 void CBasicStrategy::onUpdateParametersSlot(const QVariantMap& parameters)
 {
