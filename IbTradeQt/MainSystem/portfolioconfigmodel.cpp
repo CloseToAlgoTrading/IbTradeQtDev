@@ -187,6 +187,32 @@ void addDataToNode(TreeItem *parent, const QString &key, const QVariant &value, 
     }
 }
 
+//void addNestedNodes(TreeItem *parent, const QString &rootName, const QVariantMap &params, bool readOnly, int columnCount)
+//{
+//    if (!params.empty())
+//    {
+//        auto EmptyRoItem = pItemDataType(new stItemData(QVariant(), EVT_RO_TEXT, TVM_UNUSED_ID));
+//        TreeItem *parentNode = addRootNode(parent->child(parent->childCount() - 1),
+//                                           pItemDataType(new stItemData(rootName, EVT_RO_TEXT, PM_ITEM_PARAMETERS)),
+//                                           EmptyRoItem,
+//                                           2);
+
+//        TreeItem *_parent = parentNode->child(parentNode->childCount() - 1);
+//        for (auto i = params.begin(); i != params.end(); ++i)
+//        {
+//            if (i.value().typeId() == QMetaType::QVariantMap)
+//            {
+//                QVariantMap nestedMap = i.value().toMap();
+//                addNestedNodes(_parent, i.key(), nestedMap, readOnly, columnCount);
+//            }
+//            else
+//            {
+//                addDataToNode(_parent, i.key(), i.value(), i.value().typeId(), readOnly, columnCount);
+//            }
+//        }
+//    }
+//}
+
 void addNestedNodes(TreeItem *parent, const QString &rootName, const QVariantMap &params, bool readOnly, int columnCount)
 {
     if (!params.empty())
@@ -195,7 +221,7 @@ void addNestedNodes(TreeItem *parent, const QString &rootName, const QVariantMap
         TreeItem *parentNode = addRootNode(parent->child(parent->childCount() - 1),
                                            pItemDataType(new stItemData(rootName, EVT_RO_TEXT, PM_ITEM_PARAMETERS)),
                                            EmptyRoItem,
-                                           2);
+                                           columnCount);
 
         TreeItem *_parent = parentNode->child(parentNode->childCount() - 1);
         for (auto i = params.begin(); i != params.end(); ++i)
@@ -203,7 +229,10 @@ void addNestedNodes(TreeItem *parent, const QString &rootName, const QVariantMap
             if (i.value().typeId() == QMetaType::QVariantMap)
             {
                 QVariantMap nestedMap = i.value().toMap();
-                addNestedNodes(_parent, i.key(), nestedMap, readOnly, columnCount);
+                if(!nestedMap.empty())
+                {
+                    addNestedNodes(parentNode, i.key(), nestedMap, readOnly, columnCount);
+                }
             }
             else
             {
