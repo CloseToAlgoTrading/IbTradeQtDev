@@ -4,6 +4,7 @@
 #include "ctreeviewcustommodel.h"
 #include "cbasicroot.h"
 #include <QList>
+#include <QTimer>
 
 
 class CPortfolioConfigModel : public CTreeViewCustomModel
@@ -21,18 +22,27 @@ public:
 
     void setBrokerInterface(QSharedPointer<IBrokerAPI> newBrokerInterface);
 
+
+private:
+    void traverseNodes(TreeItem *node);
+    void processNode(TreeItem *node);
+
 public slots:
     virtual void dataChangeCallback(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QList<int> & param) final;
+
 
 private:
     CBasicRoot *m_pRoot;
     QSharedPointer<IBrokerAPI> m_brokerInterface;
+    QTimer m_UpdateInfoTimer;
 
 public slots:
     void slotOnClickAddAccount();
     void slotOnClickAddPortfolio();
     void slotOnClickAddStrategy();
     void onClickRemoveNodeButton();
+
+    void slotOnTimeoutCallback();
 
 
 signals:

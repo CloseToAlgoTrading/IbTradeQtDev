@@ -1,12 +1,16 @@
 #include "cbasicstrategy.h"
 
 CBasicStrategy::CBasicStrategy():
-    m_Models()
-  , m_ParametersMap()
-  , m_InfoMap()
-  , m_Name()
-  , m_DataProvider()
+      m_Models()
+    , m_ParametersMap()
+    , m_InfoMap()
+    , m_Name()
+    , m_DataProvider()
+    , m_assetList()
+    , m_genericInfo()
 {
+    this->m_InfoMap["Generic_Info"] = QVariant::fromValue(m_genericInfo);
+    this->m_InfoMap["Asset_List"] = QVariant::fromValue(m_assetList);
 }
 
 void CBasicStrategy::addModel(ptrGenericModelType pModel)
@@ -62,6 +66,26 @@ bool CBasicStrategy::stop()
 void CBasicStrategy::setBrokerInterface(QSharedPointer<IBrokerAPI> interface)
 {
     this->m_DataProvider.setClien(interface);
+}
+
+QList<assetInfoType> CBasicStrategy::assetList() const
+{
+    return m_assetList;
+}
+
+void CBasicStrategy::setAssetList(const QList<assetInfoType> &newAssetList)
+{
+    m_assetList = newAssetList;
+}
+
+strategyGenericInfoType CBasicStrategy::genericInfo() const
+{
+    return m_genericInfo;
+}
+
+void CBasicStrategy::setGenericInfo(const strategyGenericInfoType &newGenericInfo)
+{
+    m_genericInfo = newGenericInfo;
 }
 
 void CBasicStrategy::onUpdateParametersSlot(const QVariantMap& parameters)
