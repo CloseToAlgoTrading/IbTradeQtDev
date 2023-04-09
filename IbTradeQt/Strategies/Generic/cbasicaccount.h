@@ -1,12 +1,14 @@
 #ifndef CBASICACCOUNT_H
 #define CBASICACCOUNT_H
 
-#include "cbasicstrategy.h"
+#include "cbasicstrategy_V2.h"
 
-class CBasicAccount : public CBasicStrategy
+
+class CBasicAccount : public CBasicStrategy_V2
 {
 public:
-    CBasicAccount();
+    explicit CBasicAccount(QObject *parent = nullptr);
+    virtual ~CBasicAccount() {};
 };
 
 #endif // CBASICACCOUNT_H

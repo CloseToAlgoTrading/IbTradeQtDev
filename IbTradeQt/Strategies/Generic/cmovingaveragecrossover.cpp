@@ -3,9 +3,7 @@
 
 Q_LOGGING_CATEGORY(MaCrossoverPmLog, "MovingAverage.PM");
 
-CMovingAverageCrossover::CMovingAverageCrossover(QObject *parent) : CProcessingBase_v2(parent)
-  , CBasicStrategy()
-
+CMovingAverageCrossover::CMovingAverageCrossover(QObject *parent) : CBasicStrategy_V2(parent)
 {
 
     m_DataProvider.setClien(QSharedPointer<IBComClientImpl>::create(m_DataProvider));
@@ -27,12 +25,12 @@ bool CMovingAverageCrossover::start()
         qCWarning(MaCrossoverPmLog(), "request of historical data [SPY] failed!");
     }
 
-    return CBasicStrategy::start();
+    return CBasicStrategy_V2::start();
 }
 
 bool CMovingAverageCrossover::stop()
 {
-    return CBasicStrategy::stop();
+    return CBasicStrategy_V2::stop();
 }
 
 void CMovingAverageCrossover::slotCbkRecvHistoricalData(const QList<CHistoricalData> &_histMap, const QString &_symbol)

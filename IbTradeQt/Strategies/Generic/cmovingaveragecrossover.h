@@ -1,12 +1,11 @@
 #ifndef CMOVINGAVERAGECROSSOVER_H
 #define CMOVINGAVERAGECROSSOVER_H
 
-#include "cbasicstrategy.h"
-#include "cprocessingbase_v2.h"
+#include "cbasicstrategy_v2.h"
 
 Q_DECLARE_LOGGING_CATEGORY(MaCrossoverPmLog);
 
-class CMovingAverageCrossover : public CProcessingBase_v2, public CBasicStrategy
+class CMovingAverageCrossover : public CBasicStrategy_V2
 {
     Q_OBJECT
 public:
