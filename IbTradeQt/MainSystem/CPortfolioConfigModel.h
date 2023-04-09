@@ -23,9 +23,15 @@ public:
     void setBrokerInterface(QSharedPointer<IBrokerAPI> newBrokerInterface);
 
 
+
+
 private:
     void traverseNodes(TreeItem *node);
     void processNode(TreeItem *node);
+
+    void addDataToNode(TreeItem *parent, const QString &key, const QVariant &value, int typeId, bool readOnly, int columnCount);
+    void addNestedNodes(TreeItem *parent, const QString &rootName, const QVariantMap &params, bool readOnly, int columnCount);
+    TreeItem * addRootNode(TreeItem * parent, pItemDataType name, pItemDataType value, int columnCount);
 
 public slots:
     virtual void dataChangeCallback(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QList<int> & param) final;
@@ -47,6 +53,7 @@ public slots:
 
 signals:
     void signalUpdateData(const QModelIndex& index);
+    void signalUpdateDataAll();
 };
 
 inline void CPortfolioConfigModel::setBrokerInterface(QSharedPointer<IBrokerAPI> newBrokerInterface)

@@ -27,7 +27,7 @@ CPortfolioConfigModel::CPortfolioConfigModel(QTreeView *treeView, CBasicRoot *pR
 
 }
 
-TreeItem * addRootNode(TreeItem * parent, pItemDataType name, pItemDataType value, int columnCount)
+TreeItem * CPortfolioConfigModel::addRootNode(TreeItem * parent, pItemDataType name, pItemDataType value, int columnCount)
 {
     TreeItem * _parent = parent;
 
@@ -165,7 +165,7 @@ TreeItem * addRootNode(TreeItem * parent, pItemDataType name, pItemDataType valu
 //}
 
 
-void addDataToNode(TreeItem *parent, const QString &key, const QVariant &value, int typeId, bool readOnly, int columnCount)
+void CPortfolioConfigModel::addDataToNode(TreeItem *parent, const QString &key, const QVariant &value, int typeId, bool readOnly, int columnCount)
 {
     parent->insertChildren(parent->childCount(), 1, columnCount);
     parent->child(parent->childCount() - 1)->addData(0, pItemDataType(new stItemData(key, EVT_RO_TEXT, PM_ITEM_PARAMETER)));
@@ -213,7 +213,7 @@ void addDataToNode(TreeItem *parent, const QString &key, const QVariant &value, 
 //    }
 //}
 
-void addNestedNodes(TreeItem *parent, const QString &rootName, const QVariantMap &params, bool readOnly, int columnCount)
+void CPortfolioConfigModel::addNestedNodes(TreeItem *parent, const QString &rootName, const QVariantMap &params, bool readOnly, int columnCount)
 {
     if (!params.empty())
     {
@@ -554,7 +554,7 @@ void CPortfolioConfigModel::traverseNodes(TreeItem *node)
 {
     processNode(node); // Process the current node
 
-    // Recursively visit all children
+    // Recursively visit all childrenf
     for (int i = 0; i < node->childCount(); ++i) {
         TreeItem* child = node->child(i);
         traverseNodes(child);
@@ -565,6 +565,8 @@ void CPortfolioConfigModel::processNode(TreeItem *node)
 {
     stItemData data = node->data(0);
     qDebug() << "Node data (column 0):" << data.value;
+
+    emit signalUpdateDataAll();
 }
 
 

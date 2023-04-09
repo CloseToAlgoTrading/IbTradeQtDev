@@ -36,6 +36,8 @@ private slots:
     void slotshowSettings();
 
     void slotUpdateTreeView(const QModelIndex& index);
+public:
+    void slotUpdateTreeViewAll();
 
 };
 

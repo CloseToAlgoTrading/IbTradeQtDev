@@ -126,4 +126,9 @@ void CIBTradeSystemView::slotUpdateTreeView(const QModelIndex &index)
     ui.test_treeView->expand(index);
 }
 
+void CIBTradeSystemView::slotUpdateTreeViewAll()
+{
+    ui.test_treeView->update();
+}
+
 
