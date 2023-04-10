@@ -22,7 +22,7 @@ CPortfolioConfigModel::CPortfolioConfigModel(QTreeView *treeView, CBasicRoot *pR
     Q_UNUSED(parent);
 
     QObject::connect(&m_UpdateInfoTimer, &QTimer::timeout, this, &CPortfolioConfigModel::slotOnTimeoutCallback);
-    m_UpdateInfoTimer.start(1000);
+    m_UpdateInfoTimer.start(10000);
     setupModelData(rootItem);
 
 }
@@ -36,133 +36,6 @@ TreeItem * CPortfolioConfigModel::addRootNode(TreeItem * parent, pItemDataType n
     _parent->child(_parent->childCount() - 1)->addData(1, value);
     return parent;
 }
-
-//void addParameters(TreeItem * parent, const QVariantMap params, int columnCount)
-//{
-//    auto EmptyRoItem = pItemDataType(new stItemData(QVariant(), EVT_RO_TEXT, TVM_UNUSED_ID));
-//    if(!params.empty())
-//    {
-//        //Create account paramters
-//        TreeItem * parentParameters = addRootNode(parent->child(parent->childCount() - 1),
-//                                       pItemDataType(new stItemData("Parameters", EVT_RO_TEXT, PM_ITEM_PARAMETERS)),
-//                                       EmptyRoItem,
-//                                       columnCount);
-
-//        TreeItem * _parent = parentParameters->child(parentParameters->childCount() - 1);
-//        for (auto i = params.begin(); i != params.end(); ++i)
-//        {
-//            _parent->insertChildren(_parent->childCount(), 1, columnCount);
-//            _parent->child(_parent->childCount() - 1)->addData(0, pItemDataType(new stItemData(i.key(), EVT_RO_TEXT, PM_ITEM_PARAMETER)));
-//            switch (i.value().typeId()) {
-//            case QMetaType::Double:
-//            case QMetaType::Float:
-//            case QMetaType::Float16:
-//                _parent->child(_parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(i.value().toDouble(), EVT_TEXT, TVM_UNUSED_ID)));
-//                break;
-//            case QMetaType::Int:
-//                _parent->child(_parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(i.value().toInt(), EVT_TEXT, TVM_UNUSED_ID)));
-//                break;
-//            case QMetaType::QString:
-//                _parent->child(_parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(i.value().toString(), EVT_TEXT, TVM_UNUSED_ID)));
-//                break;
-//            default:
-//                _parent->child(_parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(i.value().toString(), EVT_TEXT, TVM_UNUSED_ID)));
-//                break;
-//            }
-
-//        }
-//    }
-//}
-
-//void addGenericInfo(TreeItem * parent, const QVariantMap params, int columnCount)
-//{
-//    auto EmptyRoItem = pItemDataType(new stItemData(QVariant(), EVT_RO_TEXT, TVM_UNUSED_ID));
-//    if(!params.empty())
-//    {
-//        //Create account paramters
-//        TreeItem * parentInfo = addRootNode(parent->child(parent->childCount() - 1),
-//                                                 pItemDataType(new stItemData("Info", EVT_RO_TEXT, PM_ITEM_PARAMETERS)),
-//                                                 EmptyRoItem,
-//                                                 columnCount);
-
-//        TreeItem * _parent = parentInfo->child(parentInfo->childCount() - 1);
-//        for (auto i = params.begin(); i != params.end(); ++i)
-//        {
-//            _parent->insertChildren(_parent->childCount(), 1, columnCount);
-//            _parent->child(_parent->childCount() - 1)->addData(0, pItemDataType(new stItemData(i.key(), EVT_RO_TEXT, PM_ITEM_PARAMETER)));
-//            switch (i.value().typeId()) {
-//            case QMetaType::Double:
-//            case QMetaType::Float:
-//            case QMetaType::Float16:
-//                _parent->child(_parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(QString::number(i.value().toDouble(), 'f', 2), EVT_RO_TEXT, TVM_UNUSED_ID)));
-//                break;
-//            case QMetaType::Int:
-//                _parent->child(_parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(i.value().toInt(), EVT_RO_TEXT, TVM_UNUSED_ID)));
-//                break;
-//            case QMetaType::QString:
-//                _parent->child(_parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(i.value().toString(), EVT_RO_TEXT, TVM_UNUSED_ID)));
-//                break;
-//            default:
-//                _parent->child(_parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(i.value().toString(), EVT_RO_TEXT, TVM_UNUSED_ID)));
-//                break;
-//            }
-
-//        }
-//    }
-//}
-
-//void addAssetInfo(TreeItem * parent, const QVariantMap params, int columnCount)
-//{
-//    auto EmptyRoItem = pItemDataType(new stItemData(QVariant(), EVT_RO_TEXT, TVM_UNUSED_ID));
-//    if(!params.empty())
-//    {
-//        //Create account paramters
-//        TreeItem * parentInfo = addRootNode(parent->child(parent->childCount() - 1),
-//                                           pItemDataType(new stItemData("Assets", EVT_RO_TEXT, PM_ITEM_PARAMETERS)),
-//                                           EmptyRoItem,
-//                                           columnCount);
-
-//        //TreeItem * _parent = parentInfo->child(parentInfo->childCount() - 1);
-
-//        for (auto z = params.begin(); z != params.end(); ++z)
-//        {
-//            TreeItem * _parentNode = addRootNode(parentInfo->child(parentInfo->childCount() - 1),
-//                                            pItemDataType(new stItemData(z.key(), EVT_RO_TEXT, PM_ITEM_PARAMETERS)),
-//                                            EmptyRoItem,
-//                                            columnCount);
-
-//            QVariantMap tmpMap = z.value().toMap();
-
-//            if(!tmpMap.empty())
-//            {
-//                //Create account paramters
-//                TreeItem * _parent = _parentNode->child(_parentNode->childCount() - 1);
-//                for (auto i = tmpMap.begin(); i != tmpMap.end(); ++i)
-//                {
-//                    _parent->insertChildren(_parent->childCount(), 1, columnCount);
-//                    _parent->child(_parent->childCount() - 1)->addData(0, pItemDataType(new stItemData(i.key(), EVT_RO_TEXT, PM_ITEM_PARAMETER)));
-//                    switch (i.value().typeId()) {
-//                    case QMetaType::Double:
-//                    case QMetaType::Float:
-//                    case QMetaType::Float16:
-//                        _parent->child(_parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(QString::number(i.value().toDouble(), 'f', 2), EVT_RO_TEXT, TVM_UNUSED_ID)));
-//                        break;
-//                    case QMetaType::Int:
-//                        _parent->child(_parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(i.value().toInt(), EVT_RO_TEXT, TVM_UNUSED_ID)));
-//                        break;
-//                    case QMetaType::QString:
-//                        _parent->child(_parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(i.value().toString(), EVT_RO_TEXT, TVM_UNUSED_ID)));
-//                        break;
-//                    default:
-//                        _parent->child(_parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(i.value().toString(), EVT_RO_TEXT, TVM_UNUSED_ID)));
-//                        break;
-//                    }
-
-//                }
-//            }
-//        }
-//    }
-//}
 
 
 void CPortfolioConfigModel::addDataToNode(TreeItem *parent, const QString &key, const QVariant &value, int typeId, bool readOnly, int columnCount)
@@ -187,31 +60,6 @@ void CPortfolioConfigModel::addDataToNode(TreeItem *parent, const QString &key, 
     }
 }
 
-//void addNestedNodes(TreeItem *parent, const QString &rootName, const QVariantMap &params, bool readOnly, int columnCount)
-//{
-//    if (!params.empty())
-//    {
-//        auto EmptyRoItem = pItemDataType(new stItemData(QVariant(), EVT_RO_TEXT, TVM_UNUSED_ID));
-//        TreeItem *parentNode = addRootNode(parent->child(parent->childCount() - 1),
-//                                           pItemDataType(new stItemData(rootName, EVT_RO_TEXT, PM_ITEM_PARAMETERS)),
-//                                           EmptyRoItem,
-//                                           2);
-
-//        TreeItem *_parent = parentNode->child(parentNode->childCount() - 1);
-//        for (auto i = params.begin(); i != params.end(); ++i)
-//        {
-//            if (i.value().typeId() == QMetaType::QVariantMap)
-//            {
-//                QVariantMap nestedMap = i.value().toMap();
-//                addNestedNodes(_parent, i.key(), nestedMap, readOnly, columnCount);
-//            }
-//            else
-//            {
-//                addDataToNode(_parent, i.key(), i.value(), i.value().typeId(), readOnly, columnCount);
-//            }
-//        }
-//    }
-//}
 
 void CPortfolioConfigModel::addNestedNodes(TreeItem *parent, const QString &rootName, const QVariantMap &params, bool readOnly, int columnCount)
 {
@@ -474,11 +322,8 @@ void CPortfolioConfigModel::addWorkingNode(QModelIndex index, const ptrGenericMo
                                    pItemDataType(new stItemData(Qt::Unchecked, EVT_CECK_BOX, id + PT_ITEM_ACTIVATION)),
                                    item->columnCount());
 
-    //addParameters(parentAccount, pModel->getParameters(), item->columnCount());
     addNestedNodes(parentAccount, "Parameters", pModel->getParameters(), false, item->columnCount());
-    //addGenericInfo(parentAccount, pModel->genericInfo(), item->columnCount());
     addNestedNodes(parentAccount, "Info", pModel->genericInfo(), true, item->columnCount());
-    //addAssetInfo(parentAccount, pModel->assetList(), item->columnCount());
     addNestedNodes(parentAccount, "Assets", pModel->assetList(), true, item->columnCount());
 
     endInsertRows();
@@ -506,7 +351,8 @@ void CPortfolioConfigModel::onClickRemoveNodeButton()
 
 void CPortfolioConfigModel::slotOnTimeoutCallback()
 {
-    traverseNodes(rootItem);
+//traverseNodes(rootItem);
+    traverseTreeView(createIndex(0, 0, rootItem));
 }
 
 
@@ -549,6 +395,38 @@ void CPortfolioConfigModel::removeModel(QModelIndex index)
     emit signalUpdateData(createIndex(0, 0, rootItem));
 }
 
+const ptrGenericModelType CPortfolioConfigModel::getModelByIdex(QModelIndex index)
+{
+    ptrGenericModelType ret = nullptr;
+    TreeItem *tmpItem = getItem(index);
+    if(nullptr != tmpItem)
+    {
+        switch (tmpItem->data(0).id) {
+        case PM_ITEM_ACCOUNT:
+        {
+            ret = m_pRoot->getModels().value(index.row(), nullptr);
+        }
+        break;
+        case PM_ITEM_PORTFOLIO:
+        {
+            auto account = m_pRoot->getModels().value(index.parent().row(), nullptr);
+            ret = account ? account->getModels().value(index.row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+        }
+        break;
+        case PM_ITEM_STRATEGY:
+        {
+            auto account = m_pRoot->getModels().value(index.parent().parent().row(), nullptr);
+            auto portfolio = account ? account->getModels().value(index.parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+            ret = portfolio ? portfolio->getModels().value(index.row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+        }
+        break;
+        default:
+            break;
+        }
+    }
+    return ret;
+}
+
 
 void CPortfolioConfigModel::traverseNodes(TreeItem *node)
 {
@@ -569,4 +447,151 @@ void CPortfolioConfigModel::processNode(TreeItem *node)
     emit signalUpdateDataAll();
 }
 
+bool isValuesEqual(const QVariant &valueFromTreeView, const QVariant &valueFromModel)
+{
+    bool ret = false;
+    switch (valueFromModel.typeId())
+    {
+    case QMetaType::Double:
+    case QMetaType::Float:
+    case QMetaType::Float16:
+        ret = (valueFromTreeView.toString() == QString::number(valueFromModel.toDouble(), 'f', 2)) ? true : false;
+        break;
+    case QMetaType::Int:
+        ret = (valueFromTreeView.toInt() == valueFromModel.toInt()) ? true : false;
+        break;
+    default:
+        ret = (valueFromTreeView.toString() == valueFromModel.toString()) ? true : false;
+        break;
+    }
+    return ret;
+}
+
+
+void CPortfolioConfigModel::traverseTreeView(const QModelIndex& parentIndex)
+{
+
+    const QAbstractItemModel* model = parentIndex.model();
+    if (!model) {
+        return;
+    }
+
+
+    static quint16 node = PM_ITEM_ACCOUNTS;
+    static quint16 subNode = 0;
+    static QString key = "";
+    static QString assetKey = "";
+
+    TreeItem* item = getItem(parentIndex);
+    static ptrGenericModelType dataModel = nullptr;
+
+    //qDebug() << "row: " << parentIndex.row() << "col: " << parentIndex.column() << parentIndex.data(Qt::DisplayRole).toString();
+    if((parentIndex.column() == 0))
+    {
+        if (item->data(0).id == PM_ITEM_ACCOUNTS)
+        {
+            qDebug() << parentIndex.data(Qt::DisplayRole).toString() << "RESET";
+            node = item->data(0).id;
+            subNode = 0;
+            assetKey = "";
+            key = "";
+        }
+        if (((item->data(0).id == PM_ITEM_ACCOUNT) || (item->data(0).id == PM_ITEM_PORTFOLIO) || (item->data(0).id == PM_ITEM_STRATEGY)))
+        {
+            dataModel = getModelByIdex(parentIndex);
+            // Do something with the current index, e.g. print the data to the console
+            qDebug() << parentIndex.data(Qt::DisplayRole).toString();
+            node = item->data(0).id;
+            subNode = 0;
+        }
+    }
+
+//    qDebug() << "row: " << parentIndex.row() << "col: " << parentIndex.column();
+    /* check parameters */
+    if(PM_ITEM_ACCOUNTS != node)
+    {
+
+        if(parentIndex.column() == 0)
+        {
+            if(parentIndex.data(Qt::DisplayRole).toString() == "Parameters")
+            {
+                subNode = 1;
+                key = "";
+            }
+            else if(parentIndex.data(Qt::DisplayRole).toString() == "Info")
+            {
+                subNode = 2;
+                key = "";
+            }
+            else if(parentIndex.data(Qt::DisplayRole).toString() == "Assets")
+            {
+                subNode = 3;
+                key = "";
+            }
+            else
+            {
+                key = parentIndex.data(Qt::DisplayRole).toString();
+                if(dataModel->assetList().contains(key))
+                {
+                    assetKey = key;
+                    qDebug() << "assetKey" << assetKey;
+                }
+            }
+        }
+        else if((parentIndex.column() == 1) && (key != ""))
+        {
+            if(subNode == 1)
+            {
+                //if (dataModel->getParameters()[key].toString() == parentIndex.data(Qt::DisplayRole).toString())
+                qDebug() << "Parameters" << key << (QString::number(dataModel->getParameters()[key].toDouble(), 'f', 2)) << "treeview:" << parentIndex.data(Qt::DisplayRole).toString() << isValuesEqual(parentIndex.data(Qt::DisplayRole), dataModel->getParameters()[key]);
+                key = "";
+                if(!isValuesEqual(parentIndex.data(Qt::DisplayRole), dataModel->getParameters()[key]))
+                {
+                    TreeItem * tmp = getItem(parentIndex);
+                    //tmp->setData(parentIndex.column(), dataModel->getParameters()[key]);
+                    tmp->data(parentIndex.column()).value = dataModel->getParameters()[key];
+                    emit signalUpdateData(parentIndex);
+                    emit signalUpdateDataAll();
+                }
+            }
+            else if(subNode == 2)
+            {
+                qDebug() << "Info" << key << dataModel->genericInfo()[key].toString() << "treeview:" << parentIndex.data(Qt::DisplayRole).toString() << isValuesEqual(parentIndex.data(Qt::DisplayRole), dataModel->genericInfo()[key]);
+                key = "";
+                if(!isValuesEqual(parentIndex.data(Qt::DisplayRole), dataModel->genericInfo()[key]))
+                {
+                    TreeItem * tmp = getItem(parentIndex);
+                    tmp->data(parentIndex.column()).value = dataModel->genericInfo()[key];
+                    emit signalUpdateData(parentIndex);
+                    emit signalUpdateDataAll();
+                }
+
+            }
+            else if((subNode == 3) && (assetKey != ""))
+            {
+
+                qDebug() << key << dataModel->assetList()[assetKey].toMap()[key].toString() << "treeview:" << parentIndex.data(Qt::DisplayRole).toString() << isValuesEqual(parentIndex.data(Qt::DisplayRole), dataModel->assetList()[assetKey].toMap()[key]);
+                key = "";
+                if(!isValuesEqual(parentIndex.data(Qt::DisplayRole), dataModel->assetList()[assetKey].toMap()[key]))
+                {
+                    TreeItem * tmp = getItem(parentIndex);
+                    //tmp->setData(parentIndex.column(), dataModel->assetList()[assetKey].toMap()[key]);
+                    tmp->data(parentIndex.column()).value = dataModel->assetList()[assetKey].toMap()[key];
+                    emit signalUpdateData(parentIndex);
+                    emit signalUpdateDataAll();
+                }
+
+            }
+        }
+    }
+
+    int numRows = model->rowCount(parentIndex);
+    int numColumns = model->columnCount(parentIndex);
+    for (int row = 0; row < numRows; ++row) {
+        for (int column = 0; column < numColumns; ++column) {
+                QModelIndex childIndex = model->index(row, column, parentIndex);
+                traverseTreeView(childIndex);
+        }
+    }
+}
 

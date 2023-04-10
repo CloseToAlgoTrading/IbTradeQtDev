@@ -19,6 +19,7 @@ public:
 
     void addModel(const QModelIndex& index, const QList<quint16>& ids, quint32 itemType);
     void removeModel(QModelIndex index);
+    const ptrGenericModelType getModelByIdex(QModelIndex index);
 
     void setBrokerInterface(QSharedPointer<IBrokerAPI> newBrokerInterface);
 
@@ -28,6 +29,7 @@ public:
 private:
     void traverseNodes(TreeItem *node);
     void processNode(TreeItem *node);
+    void traverseTreeView(const QModelIndex &parentIndex);
 
     void addDataToNode(TreeItem *parent, const QString &key, const QVariant &value, int typeId, bool readOnly, int columnCount);
     void addNestedNodes(TreeItem *parent, const QString &rootName, const QVariantMap &params, bool readOnly, int columnCount);
