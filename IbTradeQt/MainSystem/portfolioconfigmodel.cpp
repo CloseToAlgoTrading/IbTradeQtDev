@@ -468,6 +468,14 @@ bool isValuesEqual(const QVariant &valueFromTreeView, const QVariant &valueFromM
 }
 
 
+enum class NodeState
+{
+    None,
+    Parameters,
+    Info,
+    Assets
+};
+
 void CPortfolioConfigModel::traverseTreeView(const QModelIndex& parentIndex)
 {
 
@@ -478,7 +486,7 @@ void CPortfolioConfigModel::traverseTreeView(const QModelIndex& parentIndex)
 
 
     static quint16 node = PM_ITEM_ACCOUNTS;
-    static quint16 subNode = 0;
+    static NodeState subNode = NodeState::None;
     static QString key = "";
     static QString assetKey = "";
 
@@ -492,7 +500,7 @@ void CPortfolioConfigModel::traverseTreeView(const QModelIndex& parentIndex)
         {
             qDebug() << parentIndex.data(Qt::DisplayRole).toString() << "RESET";
             node = item->data(0).id;
-            subNode = 0;
+            subNode = NodeState::None;
             assetKey = "";
             key = "";
         }
@@ -502,7 +510,7 @@ void CPortfolioConfigModel::traverseTreeView(const QModelIndex& parentIndex)
             // Do something with the current index, e.g. print the data to the console
             qDebug() << parentIndex.data(Qt::DisplayRole).toString();
             node = item->data(0).id;
-            subNode = 0;
+            subNode = NodeState::None;
         }
     }
 
@@ -513,34 +521,28 @@ void CPortfolioConfigModel::traverseTreeView(const QModelIndex& parentIndex)
 
         if(parentIndex.column() == 0)
         {
-            if(parentIndex.data(Qt::DisplayRole).toString() == "Parameters")
+            static const QHash<QString, NodeState> stateMap = {
+                {"Parameters", NodeState::s},
+                {"Info", NodeState::Info},
+                {"Assets", NodeState::Assets}
+            };
+
+            key = parentIndex.data(Qt::DisplayRole).toString();
+            if (stateMap.contains(key))
             {
-                subNode = 1;
-                key = "";
+                    subNode = stateMap.value(key);
+                    key = "";
             }
-            else if(parentIndex.data(Qt::DisplayRole).toString() == "Info")
+            else if(dataModel->assetList().contains(key))
             {
-                subNode = 2;
-                key = "";
-            }
-            else if(parentIndex.data(Qt::DisplayRole).toString() == "Assets")
-            {
-                subNode = 3;
-                key = "";
-            }
-            else
-            {
-                key = parentIndex.data(Qt::DisplayRole).toString();
-                if(dataModel->assetList().contains(key))
-                {
                     assetKey = key;
                     qDebug() << "assetKey" << assetKey;
-                }
             }
+
         }
         else if((parentIndex.column() == 1) && (key != ""))
         {
-            if(subNode == 1)
+            if(subNode == NodeState::Parameters)
             {
                 //if (dataModel->getParameters()[key].toString() == parentIndex.data(Qt::DisplayRole).toString())
                 qDebug() << "Parameters" << key << (QString::number(dataModel->getParameters()[key].toDouble(), 'f', 2)) << "treeview:" << parentIndex.data(Qt::DisplayRole).toString() << isValuesEqual(parentIndex.data(Qt::DisplayRole), dataModel->getParameters()[key]);
@@ -552,7 +554,7 @@ void CPortfolioConfigModel::traverseTreeView(const QModelIndex& parentIndex)
                 }
                 key = "";
             }
-            else if(subNode == 2)
+            else if(subNode == NodeState::Info)
             {
                 qDebug() << "Info" << key << dataModel->genericInfo()[key].toString() << "treeview:" << parentIndex.data(Qt::DisplayRole).toString() << isValuesEqual(parentIndex.data(Qt::DisplayRole), dataModel->genericInfo()[key]);
                 if(!isValuesEqual(parentIndex.data(Qt::DisplayRole), dataModel->genericInfo()[key]))
@@ -564,7 +566,7 @@ void CPortfolioConfigModel::traverseTreeView(const QModelIndex& parentIndex)
                 key = "";
 
             }
-            else if((subNode == 3) && (assetKey != ""))
+            else if((subNode == NodeState::Assets) && (assetKey != ""))
             {
 
                 qDebug() << key << dataModel->assetList()[assetKey].toMap()[key].toString() << "treeview:" << parentIndex.data(Qt::DisplayRole).toString() << isValuesEqual(parentIndex.data(Qt::DisplayRole), dataModel->assetList()[assetKey].toMap()[key]);
