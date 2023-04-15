@@ -1,6 +1,6 @@
 #include "cteststrategy.h"
 
-CTestStrategy::CTestStrategy() : CBasicStrategy()
+CTestStrategy::CTestStrategy(QObject *parent) : CBasicStrategy_V2(parent)
 {
     this->m_InfoMap["name"] = "Strategy";
     this->m_ParametersMap["param_1"] = 10;

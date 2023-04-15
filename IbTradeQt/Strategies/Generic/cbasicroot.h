@@ -6,7 +6,8 @@
 class CBasicRoot : public CBasicStrategy
 {
 public:
-    CBasicRoot();
+    explicit CBasicRoot();
+    virtual ~CBasicRoot() {};
 };
 
 #endif // CBASICROOT_H

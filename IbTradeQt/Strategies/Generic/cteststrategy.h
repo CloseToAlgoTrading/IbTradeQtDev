@@ -1,12 +1,13 @@
 #ifndef CTESTSTRATEGY_H
 #define CTESTSTRATEGY_H
 
-#include "cbasicstrategy.h"
+#include "cbasicstrategy_V2.h"
 
-class CTestStrategy : public CBasicStrategy
+class CTestStrategy : public CBasicStrategy_V2
 {
 public:
-    CTestStrategy();
+    explicit CTestStrategy(QObject *parent = nullptr);
+    virtual ~CTestStrategy() {};
 };
 
 #endif // CTESTSTRATEGY_H

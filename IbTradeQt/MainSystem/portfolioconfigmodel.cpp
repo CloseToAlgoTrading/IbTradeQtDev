@@ -22,7 +22,7 @@ CPortfolioConfigModel::CPortfolioConfigModel(QTreeView *treeView, CBasicRoot *pR
     Q_UNUSED(parent);
 
     QObject::connect(&m_UpdateInfoTimer, &QTimer::timeout, this, &CPortfolioConfigModel::slotOnTimeoutCallback);
-    m_UpdateInfoTimer.start(10000);
+    m_UpdateInfoTimer.start(100);
     setupModelData(rootItem);
 
 }
@@ -544,42 +544,37 @@ void CPortfolioConfigModel::traverseTreeView(const QModelIndex& parentIndex)
             {
                 //if (dataModel->getParameters()[key].toString() == parentIndex.data(Qt::DisplayRole).toString())
                 qDebug() << "Parameters" << key << (QString::number(dataModel->getParameters()[key].toDouble(), 'f', 2)) << "treeview:" << parentIndex.data(Qt::DisplayRole).toString() << isValuesEqual(parentIndex.data(Qt::DisplayRole), dataModel->getParameters()[key]);
-                key = "";
                 if(!isValuesEqual(parentIndex.data(Qt::DisplayRole), dataModel->getParameters()[key]))
                 {
                     TreeItem * tmp = getItem(parentIndex);
-                    //tmp->setData(parentIndex.column(), dataModel->getParameters()[key]);
-                    tmp->data(parentIndex.column()).value = dataModel->getParameters()[key];
+                    tmp->setData(parentIndex.column(), dataModel->getParameters()[key]);
                     emit signalUpdateData(parentIndex);
-                    emit signalUpdateDataAll();
                 }
+                key = "";
             }
             else if(subNode == 2)
             {
                 qDebug() << "Info" << key << dataModel->genericInfo()[key].toString() << "treeview:" << parentIndex.data(Qt::DisplayRole).toString() << isValuesEqual(parentIndex.data(Qt::DisplayRole), dataModel->genericInfo()[key]);
-                key = "";
                 if(!isValuesEqual(parentIndex.data(Qt::DisplayRole), dataModel->genericInfo()[key]))
                 {
                     TreeItem * tmp = getItem(parentIndex);
-                    tmp->data(parentIndex.column()).value = dataModel->genericInfo()[key];
+                    tmp->setData(parentIndex.column(), dataModel->genericInfo()[key]);
                     emit signalUpdateData(parentIndex);
-                    emit signalUpdateDataAll();
                 }
+                key = "";
 
             }
             else if((subNode == 3) && (assetKey != ""))
             {
 
                 qDebug() << key << dataModel->assetList()[assetKey].toMap()[key].toString() << "treeview:" << parentIndex.data(Qt::DisplayRole).toString() << isValuesEqual(parentIndex.data(Qt::DisplayRole), dataModel->assetList()[assetKey].toMap()[key]);
-                key = "";
                 if(!isValuesEqual(parentIndex.data(Qt::DisplayRole), dataModel->assetList()[assetKey].toMap()[key]))
                 {
                     TreeItem * tmp = getItem(parentIndex);
-                    //tmp->setData(parentIndex.column(), dataModel->assetList()[assetKey].toMap()[key]);
-                    tmp->data(parentIndex.column()).value = dataModel->assetList()[assetKey].toMap()[key];
+                    tmp->setData(parentIndex.column(), dataModel->assetList()[assetKey].toMap()[key]);
                     emit signalUpdateData(parentIndex);
-                    emit signalUpdateDataAll();
                 }
+                key = "";
 
             }
         }

@@ -19,7 +19,7 @@ CBasicStrategy_V2::CBasicStrategy_V2(QObject *parent): CProcessingBase_v2(parent
     this->m_assetList["V"] = QVariantMap({{"pnl",2.0f}, {"aprice",320.1f}});
 
     QObject::connect(&m_tmpTimer, &QTimer::timeout, this, &CBasicStrategy_V2::onTimeoutSlot);
-    m_tmpTimer.start(800);
+    m_tmpTimer.start(100);
 
 }
 
@@ -111,6 +111,8 @@ void CBasicStrategy_V2::onTimeoutSlot()
 
     // Generate a random float value between 10 and 200
     this->m_genericInfo["pnl"] = random.generateDouble() * (200.0 - 10.0) + 10.0;
-    this->m_assetList["SPY"].toMap()["pnl"] = random.generateDouble() * (200.0 - 10.0) + 10.0;
+    QVariantMap tmp = this->m_assetList["SPY"].toMap();
+    tmp["pnl"] = random.generateDouble() * (200.0 - 10.0) + 10.0;
+    this->m_assetList["SPY"] = tmp;
 }
 
