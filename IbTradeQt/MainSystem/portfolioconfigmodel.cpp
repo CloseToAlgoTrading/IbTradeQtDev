@@ -522,7 +522,7 @@ void CPortfolioConfigModel::traverseTreeView(const QModelIndex& parentIndex)
         if(parentIndex.column() == 0)
         {
             static const QHash<QString, NodeState> stateMap = {
-                {"Parameters", NodeState::s},
+                {"Parameters", NodeState::Parameters},
                 {"Info", NodeState::Info},
                 {"Assets", NodeState::Assets}
             };
