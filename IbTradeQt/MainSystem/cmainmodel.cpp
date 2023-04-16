@@ -1,5 +1,7 @@
 #include "cmainmodel.h"
 #include "cpresenter.h"
+#include "cbasicroot.h"
+#include "CPortfolioConfigModel.h"
 
 CMainModel::CMainModel(CPresenter *presenter, CBasicRoot *dataRoot, QObject *parent): QObject(parent)
     , m_pPresenter(presenter)

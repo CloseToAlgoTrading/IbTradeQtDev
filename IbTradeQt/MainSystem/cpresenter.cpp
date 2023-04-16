@@ -3,6 +3,7 @@
 #include "Dispatcher.h"
 #include "IBComClientImpl.h"
 #include "cmainmodel.h"
+#include "CPortfolioConfigModel.h"
 
 
 CPresenter::CPresenter(QObject *parent)

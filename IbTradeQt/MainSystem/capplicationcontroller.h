@@ -1,18 +1,21 @@
 #ifndef CAPPLICATIONCONTROLLER_H
 #define CAPPLICATIONCONTROLLER_H
 
+#include "cbasicroot.h"
+
 #include "cpresenter.h"
 #include "ibtradesystemview.h"
 #include "cmainmodel.h"
 #include <QSharedPointer>
 #include <QApplication>
-#include "cbasicroot.h"
+#include <QObject>
 
-class CApplicationController
+class CApplicationController : public QObject
 {
+    Q_OBJECT
 public:
-    CApplicationController();
-    ~CApplicationController();
+    explicit CApplicationController(QObject *parent = nullptr);
+    virtual ~CApplicationController();
 
     void setUpApplication(QApplication &app);
 
@@ -27,8 +30,6 @@ private:
     CMainModel *pMainModel;
 
     CBasicRoot *m_pDataRoot;
-
-
 };
 
 #endif // CAPPLICATIONCONTROLLER_H

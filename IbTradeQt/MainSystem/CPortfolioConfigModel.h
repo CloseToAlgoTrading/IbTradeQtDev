@@ -2,10 +2,11 @@
 #define CPORTFOLIOCONFIGMODEL_H
 
 #include "ctreeviewcustommodel.h"
-#include "cbasicroot.h"
 #include <QList>
 #include <QTimer>
+#include "cgenericmodelApi.h"
 
+class CBasicRoot;
 
 class CPortfolioConfigModel : public CTreeViewCustomModel
 {

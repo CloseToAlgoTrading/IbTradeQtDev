@@ -5,8 +5,8 @@
 #include <QList>
 #include <QVariantList>
 #include "cbrokerdataprovider.h"
-#include "IBrokerAPI.h"
 #include "cprocessingbase_v2.h"
+#include "IBrokerAPI.h"
 #include <QTimer>
 
 class CBasicStrategy_V2 : public CProcessingBase_v2, public CGenericModelApi

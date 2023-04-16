@@ -1,12 +1,12 @@
 #ifndef CBASICROOT_H
 #define CBASICROOT_H
 
-#include "cbasicstrategy.h"
+#include "cbasicstrategy_V2.h"
 
-class CBasicRoot : public CBasicStrategy
+class CBasicRoot : public CBasicStrategy_V2
 {
 public:
-    explicit CBasicRoot();
+    explicit CBasicRoot(QObject *parent = nullptr);
     virtual ~CBasicRoot() {};
 };
 

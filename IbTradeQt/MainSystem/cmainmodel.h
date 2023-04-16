@@ -3,11 +3,13 @@
 
 
 #include <QObject>
-#include "CPortfolioConfigModel.h"
+//#include "CPortfolioConfigModel.h"
 #include "csettinsmodeldata.h"
 
 
 class CPresenter;
+class CPortfolioConfigModel;
+class CBasicRoot;
 
 class CMainModel : public QObject
 {

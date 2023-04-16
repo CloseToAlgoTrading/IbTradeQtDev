@@ -7,10 +7,11 @@
 #include <QStandardPaths>
 #include<QIcon>
 
-CApplicationController::CApplicationController():
-    pMainPresenter(new CPresenter(nullptr))
-  , pMainView(new CIBTradeSystemView)
-  , m_pDataRoot(new CBasicRoot)
+CApplicationController::CApplicationController(QObject *parent):
+    QObject(parent)
+   , pMainPresenter(new CPresenter(parent))
+   , pMainView(new CIBTradeSystemView)
+   , m_pDataRoot(new CBasicRoot())
 {
     this->pMainPresenter->addView(this->pMainView);
 

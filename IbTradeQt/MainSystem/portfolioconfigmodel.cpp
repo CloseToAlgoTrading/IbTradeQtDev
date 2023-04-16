@@ -5,11 +5,11 @@
 #include "caccount.h"
 #include <QVariantMap>
 
-#include "cteststrategy.h"
 #include "cbasicportfolio.h"
 #include "cbasicaccount.h"
 
 #include "cstrategyfactory.h"
+#include "cbasicroot.h"
 
 #define START_OF_WORKING_NODES (3u)
 
