@@ -11,6 +11,8 @@
 #include "cstrategyfactory.h"
 #include "cbasicroot.h"
 
+#include "ModelType.h"
+
 #define START_OF_WORKING_NODES (3u)
 
 CPortfolioConfigModel::CPortfolioConfigModel(QTreeView *treeView, CBasicRoot *pRoot, QObject *parent)
@@ -256,8 +258,7 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
                 auto portfolio = account ? account->getModels().value(workingIndex.row() - START_OF_WORKING_NODES, nullptr) : nullptr;
                 if((nullptr != portfolio) && (nullptr != this->m_brokerInterface))
                 {
-                    model = CStrategyFactory::createNewStrategy(STRATEGY_MA);
-                    //model = CStrategyFactory::createNewStrategy(STRATEGY_BASIC_TEST);
+                    model = CStrategyFactory::createNewStrategy(ModelType::STRATEGY_MA);
                     model->setBrokerInterface(this->m_brokerInterface);
                     portfolio->addModel(model);
                 }

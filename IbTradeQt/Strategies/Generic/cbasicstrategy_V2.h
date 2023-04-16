@@ -8,6 +8,7 @@
 #include "cprocessingbase_v2.h"
 #include "IBrokerAPI.h"
 #include <QTimer>
+#include <QJsonObject>
 
 class CBasicStrategy_V2 : public CProcessingBase_v2, public CGenericModelApi
 {
@@ -31,12 +32,18 @@ public:
 
     virtual void setBrokerInterface(QSharedPointer<IBrokerAPI> interface) override;
 
+    virtual QJsonObject toJson() const override;
+    virtual void fromJson(const QJsonObject& json) override;
+
+
 
     virtual QVariantMap assetList() const override;
     virtual void setAssetList(const QVariantMap &newAssetList) override;
 
     virtual QVariantMap genericInfo() const override;
     virtual void setGenericInfo(const QVariantMap &newGenericInfo) override;
+
+    virtual ModelType modelType() const override;
 
 protected:
     QList<ptrGenericModelType> m_Models;

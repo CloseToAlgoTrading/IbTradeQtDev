@@ -1,35 +1,29 @@
 #include "cstrategyfactory.h"
 
 #include "cteststrategy.h"
-#include "AutoDeltAlignmentProcessing.h"
 #include "cmovingaveragecrossover.h"
-
+#include "cbasicaccount.h"
+#include "cbasicportfolio.h"
+#include "cbasicroot.h"
+#include "cbasicstrategy_V2.h"
 #include <QSharedPointer>
 
-ptrGenericModelType CStrategyFactory::createNewStrategy(STRATEGY_ID id)
+ptrGenericModelType CStrategyFactory::createNewStrategy(ModelType id)
 {
-    ptrGenericModelType ret = nullptr;
     switch (id) {
-    case STRATEGY_BASIC_TEST:
-    {
-        ret = QSharedPointer<CTestStrategy>::create();
-        break;
-    }
-    case STRATEGY_AUTO_DELTA:
-    {
-        ret = QSharedPointer<autoDeltaAligPM>::create(nullptr);
- //       ret = QSharedPointer<CTestStrategy>::create();
-        break;
-    }
-    case STRATEGY_MA:
-    {
-        ret = QSharedPointer<CMovingAverageCrossover>::create(nullptr);
-        break;
-    }
-
+    case ModelType::ROOT:
+        return QSharedPointer<CBasicRoot>::create();
+    case ModelType::ACCOUNT:
+        return QSharedPointer<CBasicAccount>::create();
+    case ModelType::PORTFOLIO:
+        return QSharedPointer<CBasicPortfolio>::create();
+    case ModelType::STRATEGY:
+        return QSharedPointer<CBasicStrategy_V2>::create();
+    case ModelType::STRATEGY_BASIC_TEST:
+        return QSharedPointer<CTestStrategy>::create();
+    case ModelType::STRATEGY_MA:
+        return QSharedPointer<CMovingAverageCrossover>::create();
     default:
-        break;
+        return nullptr;
     }
-
-    return ret;
 }

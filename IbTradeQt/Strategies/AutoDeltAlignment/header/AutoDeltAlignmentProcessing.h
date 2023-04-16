@@ -30,6 +30,8 @@ public:
     virtual bool start() override;
     virtual bool stop() override;
 
+    ModelType modelType() const override { return ModelType::STRATEGY; }
+
 private:
     qint32 Ticker_id;
     CDeltaObject m_delta;

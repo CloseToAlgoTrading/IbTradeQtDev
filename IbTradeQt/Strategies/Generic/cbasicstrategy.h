@@ -6,6 +6,7 @@
 #include <QVariantList>
 #include "cbrokerdataprovider.h"
 #include "IBrokerAPI.h"
+#include "qjsonobject.h"
 
 
 class CBasicStrategy : public CGenericModelApi
@@ -29,12 +30,16 @@ public:
 
     virtual void setBrokerInterface(QSharedPointer<IBrokerAPI> interface) override;
 
+    virtual QJsonObject toJson() const override {QJsonObject tmp; return tmp;};
+    virtual void fromJson(const QJsonObject& json) override {};
 
     virtual QVariantMap assetList() const override;
     virtual void setAssetList(const QVariantMap &newAssetList) override;
 
     virtual QVariantMap genericInfo() const override;
     virtual void setGenericInfo(const QVariantMap &newGenericInfo) override;
+
+    ModelType modelType() const override { return ModelType::STRATEGY; }
 
 protected:
     QList<ptrGenericModelType> m_Models;

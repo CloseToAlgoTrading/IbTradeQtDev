@@ -9,10 +9,13 @@ class CMovingAverageCrossover : public CBasicStrategy_V2
 {
     Q_OBJECT
 public:
-    CMovingAverageCrossover(QObject * parent);
+    explicit CMovingAverageCrossover(QObject * parent = nullptr);
+    virtual ~CMovingAverageCrossover() {};
 
     virtual bool start() final;
     virtual bool stop() final;
+
+    ModelType modelType() const override { return ModelType::STRATEGY_MA; }
 
 
 public slots:

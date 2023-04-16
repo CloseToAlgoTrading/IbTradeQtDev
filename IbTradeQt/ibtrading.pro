@@ -146,6 +146,7 @@ HEADERS += \
     MainSystem/ibtradesystemview.h \
     Strategies/AutoDeltAlignment/header/CModelInputData.h \
     Strategies/AutoDeltAlignment/header/autodeltatypes.h \
+    Strategies/Generic/ModelType.h \
     Strategies/Generic/cbasicaccount.h \
     Strategies/Generic/cbasicportfolio.h \
     Strategies/Generic/cbasicroot.h \

@@ -1,5 +1,6 @@
 #include "cbasicstrategy_V2.h"
 #include <QRandomGenerator>
+#include <QJsonArray>
 
 CBasicStrategy_V2::CBasicStrategy_V2(QObject *parent): CProcessingBase_v2(parent)
     , m_Models()
@@ -78,6 +79,63 @@ void CBasicStrategy_V2::setBrokerInterface(QSharedPointer<IBrokerAPI> interface)
     this->m_DataProvider.setClien(interface);
 }
 
+QJsonObject CBasicStrategy_V2::toJson() const
+{
+    QJsonObject json;
+
+    // Serialize m_Name
+    json["name"] = m_Name;
+
+    // Serialize m_Models
+    QJsonArray modelsArray;
+    for (const auto& model : m_Models) {
+        modelsArray.append(model->toJson());
+    }
+    json["models"] = modelsArray;
+
+    // Serialize m_ParametersMap
+    json["parameters"] = QJsonObject::fromVariantMap(m_ParametersMap);
+
+    // Serialize m_InfoMap
+    json["info"] = QJsonObject::fromVariantMap(m_InfoMap);
+
+    // Serialize m_assetList
+    json["assetList"] = QJsonObject::fromVariantMap(m_assetList);
+
+    // Serialize m_genericInfo
+    json["genericInfo"] = QJsonObject::fromVariantMap(m_genericInfo);
+
+    return json;
+}
+
+void CBasicStrategy_V2::fromJson(const QJsonObject &json)
+{
+    // Deserialize m_Name
+            m_Name = json["name"].toString();
+
+    // Deserialize m_Models
+    m_Models.clear();
+    QJsonArray modelsArray = json["models"].toArray();
+    for (const auto& modelJson : modelsArray) {
+        ptrGenericModelType model = QSharedPointer<CBasicStrategy_V2>::create();
+        model->fromJson(modelJson.toObject());
+        m_Models.append(model);
+    }
+
+    // Deserialize m_ParametersMap
+    m_ParametersMap = json["parameters"].toObject().toVariantMap();
+
+    // Deserialize m_InfoMap
+    m_InfoMap = json["info"].toObject().toVariantMap();
+
+    // Deserialize m_assetList
+    m_assetList = json["assetList"].toObject().toVariantMap();
+
+    // Deserialize m_genericInfo
+    m_genericInfo = json["genericInfo"].toObject().toVariantMap();
+
+}
+
 QVariantMap CBasicStrategy_V2::assetList() const
 {
     return m_assetList;
@@ -96,6 +154,11 @@ QVariantMap CBasicStrategy_V2::genericInfo() const
 void CBasicStrategy_V2::setGenericInfo(const QVariantMap &newGenericInfo)
 {
     m_genericInfo = newGenericInfo;
+}
+
+ModelType CBasicStrategy_V2::modelType() const
+{
+    return ModelType::STRATEGY;
 }
 
 

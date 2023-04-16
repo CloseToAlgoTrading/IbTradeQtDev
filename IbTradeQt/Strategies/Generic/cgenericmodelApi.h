@@ -7,6 +7,7 @@
 #include <QString>
 #include "IBrokerAPI.h"
 #include <QEnableSharedFromThis>
+#include "ModelType.h"
 
 class CGenericModelApi;
 typedef QSharedPointer<CGenericModelApi> ptrGenericModelType;
@@ -29,11 +30,16 @@ public:
     virtual QVariantMap genericInfo() const = 0;
     virtual void setGenericInfo(const QVariantMap &newGenericInfo) = 0;
 
+    virtual QJsonObject toJson() const = 0;
+    virtual void fromJson(const QJsonObject& json) = 0;
+
 
     virtual bool start() = 0;
     virtual bool stop() = 0;
 
     virtual void setBrokerInterface(QSharedPointer<IBrokerAPI> interface) = 0;
+
+    virtual ModelType modelType() const = 0;
 };
 
 
