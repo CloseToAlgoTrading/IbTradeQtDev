@@ -82,7 +82,10 @@ void CPresenter::MapSignals()
     QObject::connect(pPConfigModel, SIGNAL(signalUpdateData(QModelIndex)), this->pIbtsView, SLOT(slotUpdateTreeView(QModelIndex)));
     QObject::connect(pPConfigModel, &CPortfolioConfigModel::signalUpdateDataAll, this->pIbtsView, &CIBTradeSystemView::slotUpdateTreeViewAll, Qt::QueuedConnection);
 
+
     this->pIbtsView->mapSignals();
+
+
 
 	/////////---------------
 	//ReqManager temp;

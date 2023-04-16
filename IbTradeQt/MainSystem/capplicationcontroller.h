@@ -19,9 +19,14 @@ public:
 
     void setUpApplication(QApplication &app);
 
-
-
     void setPMainModel(CMainModel *newPMainModel);
+
+private:
+    void loadTreeFromFile(const QString& fileName);
+
+
+public slots:
+    void slotStoreModelTree();
 
 private:
 

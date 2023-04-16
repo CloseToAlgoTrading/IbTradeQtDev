@@ -95,56 +95,34 @@ void CPortfolioConfigModel::addNestedNodes(TreeItem *parent, const QString &root
 
 void CPortfolioConfigModel::setupModelData(TreeItem * rootItem)
 {
-    CAccount myMap;
-
-    auto EmptyRoItem = pItemDataType(new stItemData(QVariant(), EVT_RO_TEXT, TVM_UNUSED_ID));
-
     rootItem->insertColumns(0,2);
     rootItem->addData(0, pItemDataType(new stItemData("Parameter", EVT_TEXT, TVM_UNUSED_ID)));
     rootItem->addData(1, pItemDataType(new stItemData("Value", EVT_TEXT, TVM_UNUSED_ID)));
 
     QList<TreeItem * > parents;
     parents << rootItem;
+    // Add the necessary root nodes
+    addRootNode(rootItem, pItemDataType(new stItemData("Accounts", EVT_RO_TEXT, PM_ITEM_ACCOUNTS)), pItemDataType(new stItemData(QVariant(), EVT_RO_TEXT, TVM_UNUSED_ID)), rootItem->columnCount());
+    // Loop through accounts
+    for (const auto &accountModel : m_pRoot->getModels())
+    {
+        QModelIndex accountIndex = createIndex(rootItem->childCount() - 1, 0, rootItem->child(rootItem->childCount() - 1));
+        addWorkingNode(accountIndex, accountModel, PM_ITEM_ACCOUNT);
 
-    //Create an Accounts
-    TreeItem * parent = addRootNode(parents.last(),
-                                   pItemDataType(new stItemData("Accounts", EVT_RO_TEXT, PM_ITEM_ACCOUNTS)),
-                                   EmptyRoItem,
-                                   rootItem->columnCount());
+        // Loop through portfolios in the account
+        for (const auto &portfolioModel : accountModel->getModels())
+        {
+            QModelIndex portfolioIndex = createIndex(accountIndex.row() + START_OF_WORKING_NODES, 0, getItem(accountIndex)->child(getItem(accountIndex)->childCount() - 1));
+            addWorkingNode(portfolioIndex, portfolioModel, PM_ITEM_PORTFOLIO);
 
-    //*+++++++++++++++++++++++++
-    for (auto&& account : this->m_pRoot->getModels()) {
-        TreeItem * parentAccount = addRootNode(parent->child(parent->childCount() - 1),
-                                       pItemDataType(new stItemData(account->getName(), EVT_RO_TEXT, PM_ITEM_ACCOUNT)),
-                                       EmptyRoItem,
-                                       rootItem->columnCount());
-
-        //addParameters(parentAccount, account->getParameters(), rootItem->columnCount());
-        addNestedNodes(parentAccount, "Parameters", account->getParameters(), false, rootItem->columnCount());
-
-        for (auto&& portfolio : account->getModels()) {
-            TreeItem * parentPortfolio = addRootNode(parentAccount->child(parentAccount->childCount() - 1),
-                                           pItemDataType(new stItemData(portfolio->getName(), EVT_RO_TEXT, PM_ITEM_PORTFOLIO)),
-                                           EmptyRoItem,
-                                           rootItem->columnCount());
-
-            //addParameters(parentPortfolio, portfolio->getParameters(), rootItem->columnCount());
-            addNestedNodes(parentPortfolio, "Parameters", portfolio->getParameters(), false, rootItem->columnCount());
-
-            for (auto&& strategy : portfolio->getModels()) {
-                TreeItem * parentStrategy = addRootNode(parentPortfolio->child(parentPortfolio->childCount() - 1),
-                                               pItemDataType(new stItemData(strategy->getName(), EVT_RO_TEXT, PM_ITEM_STRATEGY)),
-                                               EmptyRoItem,
-                                               rootItem->columnCount());
-
-                //addParameters(parentStrategy, strategy->getParameters(), rootItem->columnCount());
-                addNestedNodes(parentStrategy, "Parameters", strategy->getParameters(), false, rootItem->columnCount());
+            // Loop through strategies in the portfolio
+            for (const auto &strategyModel : portfolioModel->getModels())
+            {
+                QModelIndex strategyIndex = createIndex(portfolioIndex.row() + START_OF_WORKING_NODES, 0, getItem(portfolioIndex)->child(getItem(portfolioIndex)->childCount() - 1));
+                addWorkingNode(strategyIndex, strategyModel, PM_ITEM_STRATEGY);
             }
-
         }
-
     }
-
 }
 
 void CPortfolioConfigModel::dataChangeCallback(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QList<int> &param)

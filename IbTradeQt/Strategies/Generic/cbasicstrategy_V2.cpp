@@ -1,12 +1,12 @@
 #include "cbasicstrategy_V2.h"
 #include <QRandomGenerator>
 #include <QJsonArray>
+#include "cstrategyfactory.h"
 
 CBasicStrategy_V2::CBasicStrategy_V2(QObject *parent): CProcessingBase_v2(parent)
     , m_Models()
     , m_ParametersMap()
     , m_InfoMap()
-    , m_Name()
     , m_DataProvider()
     , m_assetList()
     , m_genericInfo()
@@ -84,14 +84,7 @@ QJsonObject CBasicStrategy_V2::toJson() const
     QJsonObject json;
 
     // Serialize m_Name
-    json["name"] = m_Name;
-
-    // Serialize m_Models
-    QJsonArray modelsArray;
-    for (const auto& model : m_Models) {
-        modelsArray.append(model->toJson());
-    }
-    json["models"] = modelsArray;
+    json["modelType"] = static_cast<int>(modelType());
 
     // Serialize m_ParametersMap
     json["parameters"] = QJsonObject::fromVariantMap(m_ParametersMap);
@@ -105,22 +98,18 @@ QJsonObject CBasicStrategy_V2::toJson() const
     // Serialize m_genericInfo
     json["genericInfo"] = QJsonObject::fromVariantMap(m_genericInfo);
 
+    // Serialize m_Models
+    QJsonArray modelsArray;
+    for (const auto& model : m_Models) {
+        modelsArray.append(model->toJson());
+    }
+    json["models"] = modelsArray;
+
     return json;
 }
 
 void CBasicStrategy_V2::fromJson(const QJsonObject &json)
 {
-    // Deserialize m_Name
-            m_Name = json["name"].toString();
-
-    // Deserialize m_Models
-    m_Models.clear();
-    QJsonArray modelsArray = json["models"].toArray();
-    for (const auto& modelJson : modelsArray) {
-        ptrGenericModelType model = QSharedPointer<CBasicStrategy_V2>::create();
-        model->fromJson(modelJson.toObject());
-        m_Models.append(model);
-    }
 
     // Deserialize m_ParametersMap
     m_ParametersMap = json["parameters"].toObject().toVariantMap();
@@ -133,6 +122,16 @@ void CBasicStrategy_V2::fromJson(const QJsonObject &json)
 
     // Deserialize m_genericInfo
     m_genericInfo = json["genericInfo"].toObject().toVariantMap();
+
+    // Deserialize m_Models
+    m_Models.clear();
+    QJsonArray modelsArray = json["models"].toArray();
+    for (const auto& modelJson : modelsArray) {
+        ModelType modelType = static_cast<ModelType>(modelJson.toObject()["modelType"].toInt());
+        ptrGenericModelType model = CStrategyFactory::createNewStrategy(modelType);
+        model->fromJson(modelJson.toObject());
+        m_Models.append(model);
+    }
 
 }
 
