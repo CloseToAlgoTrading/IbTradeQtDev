@@ -2,7 +2,6 @@
 #include "TreeItemDataTypesDef.h"
 #include "PortfolioModelDefines.h"
 
-#include "caccount.h"
 #include <QVariantMap>
 
 #include "cbasicportfolio.h"
@@ -331,7 +330,7 @@ void CPortfolioConfigModel::onClickRemoveNodeButton()
 void CPortfolioConfigModel::slotOnTimeoutCallback()
 {
 //traverseNodes(rootItem);
-    traverseTreeView(createIndex(0, 0, rootItem));
+    //traverseTreeView(createIndex(0, 0, rootItem));
 }
 
 

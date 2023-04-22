@@ -24,7 +24,7 @@ CPresenter::CPresenter(QObject *parent)
 	
     //
 
-    QSharedPointer<IBComClientImpl> pClient = QSharedPointer<IBComClientImpl>(new IBComClientImpl(m_DataProvider));
+    QSharedPointer<IBComClientImpl> pClient = QSharedPointer<IBComClientImpl>::create(m_DataProvider);
 
    //Define Data Provider
     m_DataProvider.setClien(pClient);
@@ -201,7 +201,7 @@ void CPresenter::setPGuiModel(CMainModel *newPGuiModel)
    this->pIbtsView->getSettingsTreeView()->expandAll();
 
    this->pIbtsView->getPortfolioConfigTreeView()->setModel(this->pGuiModel->pPortfolioConfigModel());
-   this->pIbtsView->getPortfolioConfigTreeView()->expandAll();
+   //this->pIbtsView->getPortfolioConfigTreeView()->expandAll();
 
    this->getPGuiModel()->pPortfolioConfigModel()->setBrokerInterface(this->m_DataProvider.getClien());
 

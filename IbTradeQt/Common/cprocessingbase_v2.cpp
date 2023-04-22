@@ -9,7 +9,7 @@ using namespace Observer;
 //----------------------------------------------------------
 CProcessingBase_v2::CProcessingBase_v2(QObject *parent)
     : QObject(parent)
-    , m_Client(0)
+    , m_Client(nullptr)
     , m_aciveReqestsMap()
     , m_historyMap()
 	, m_histMap()
@@ -26,7 +26,10 @@ CProcessingBase_v2::CProcessingBase_v2(QObject *parent)
 //----------------------------------------------------------
 CProcessingBase_v2::~CProcessingBase_v2()
 {
-    (void)m_Client->UnsubscribeAllItemsOfSubscriber(this->GetSubscriberId());
+    if(nullptr != m_Client)
+    {
+        (void)m_Client->UnsubscribeAllItemsOfSubscriber(this->GetSubscriberId());
+    }
 }
 
 //----------------------------------------------------------

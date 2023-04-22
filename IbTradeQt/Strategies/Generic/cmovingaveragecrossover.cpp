@@ -5,9 +5,17 @@ Q_LOGGING_CATEGORY(MaCrossoverPmLog, "MovingAverage.PM");
 
 CMovingAverageCrossover::CMovingAverageCrossover(QObject *parent) : CBasicStrategy_V2(parent)
 {
+    //TODO: The strategy must have access to the BrokerInbterface!
 
-    m_DataProvider.setClien(QSharedPointer<IBComClientImpl>::create(m_DataProvider));
-    this->setClient(QSharedPointer<CBrokerDataProvider>(&m_DataProvider));
+//    QSharedPointer<IBComClientImpl> pClient = QSharedPointer<IBComClientImpl>::create(m_DataProvider);
+//    m_DataProvider.setClien(pClient);
+
+//    QSharedPointer<CBrokerDataProvider> dataProviderPtr = QSharedPointer<CBrokerDataProvider>::create(m_DataProvider);
+
+
+//    this->setClient(dataProviderPtr);
+    //m_DataProvider.setClien(QSharedPointer<IBComClientImpl>::create(m_DataProvider));
+    //this->setClient(QSharedPointer<CBrokerDataProvider>(&m_DataProvider));
     /***** Init Patameters ******/
     this->setName("Moving Average Crossover");
 
