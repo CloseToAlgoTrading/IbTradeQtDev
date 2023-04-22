@@ -1,5 +1,6 @@
 #include "csettinsmodeldata.h"
 #include "MyLogger.h"
+#include "NHelper.h"
 
 CSettinsModelData::CSettinsModelData(QTreeView *treeView, QObject *parent)
     : CTreeViewCustomModel(treeView, parent),
@@ -10,6 +11,15 @@ CSettinsModelData::CSettinsModelData(QTreeView *treeView, QObject *parent)
     Q_UNUSED(parent);
     setupModelData(rootItem);
 
+    QObject::connect(this, &CSettinsModelData::signalEditLogSettingsCompleted, this, &CSettinsModelData::slotEditSettingLogSettingsComlited, Qt::QueuedConnection);
+    QObject::connect(this, &CSettinsModelData::signalEditServerPortCompleted, NHelper::writeServerPort);
+    QObject::connect(this, &CSettinsModelData::signalEditServerAddresCompleted, NHelper::writeServerAddress);
+
+    NHelper::initSettings();
+
+    createSettingsView();
+
+    MyLogger::setDebugLevelMask(NHelper::getLoggerMask());
 
 }
 
@@ -26,21 +36,21 @@ void CSettinsModelData::setupModelData(TreeItem * rootItem)
     TreeItem * parent = parents.last();
 
     parent->insertChildren(parent->childCount(), 1, rootItem->columnCount());
-    parent->child(parent->childCount() - 1)->addData(0, pItemDataType(new stItemData("Servers", EVET_RO_TEXT, S_DATA_ID_UNSET)));
+    parent->child(parent->childCount() - 1)->addData(0, pItemDataType(new stItemData("Servers", EVT_RO_TEXT, S_DATA_ID_UNSET)));
     parent->child(parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(QVariant(), EVT_READ_ONLY, S_DATA_ID_UNSET)));
 
     TreeItem * _parent = parent->child(parent->childCount() - 1);
     _parent->insertChildren(_parent->childCount(), 1, rootItem->columnCount());
     m_pServerAddress = pItemDataType(new stItemData("127.0.0.1", EVT_TEXT, S_DATA_ID_SERVER_ADDRESS));
-    _parent->child(_parent->childCount() - 1)->addData(0, pItemDataType(new stItemData("Address", EVET_RO_TEXT, S_DATA_ID_UNSET)));
+    _parent->child(_parent->childCount() - 1)->addData(0, pItemDataType(new stItemData("Address", EVT_RO_TEXT, S_DATA_ID_UNSET)));
     m_pServerPort = pItemDataType(new stItemData("4448", EVT_TEXT, S_DATA_ID_SERVER_PORT));
     _parent->child(_parent->childCount() - 1)->addData(1, m_pServerAddress);
     _parent->insertChildren(_parent->childCount(), 1, rootItem->columnCount());
-    _parent->child(_parent->childCount() - 1)->addData(0, pItemDataType(new stItemData("Port", EVET_RO_TEXT, S_DATA_ID_UNSET)));
+    _parent->child(_parent->childCount() - 1)->addData(0, pItemDataType(new stItemData("Port", EVT_RO_TEXT, S_DATA_ID_UNSET)));
     _parent->child(_parent->childCount() - 1)->addData(1, m_pServerPort);
 
     parent->insertChildren(parent->childCount(), 1, rootItem->columnCount());
-    parent->child(parent->childCount() - 1)->addData(0, pItemDataType(new stItemData("Log Setting", EVET_RO_TEXT, S_DATA_ID_UNSET)));
+    parent->child(parent->childCount() - 1)->addData(0, pItemDataType(new stItemData("Log Setting", EVT_RO_TEXT, S_DATA_ID_UNSET)));
     parent->child(parent->childCount() - 1)->addData(1, pItemDataType(new stItemData(QVariant(), EVT_READ_ONLY, S_DATA_ID_UNSET)));
 
     m_plogLevel.reserve(S_LOG_LEVEL_COUNT);
@@ -54,22 +64,22 @@ void CSettinsModelData::setupModelData(TreeItem * rootItem)
 
     _parent = parent->child(parent->childCount() - 1);
     _parent->insertChildren(_parent->childCount(), 1, rootItem->columnCount());
-    _parent->child(_parent->childCount() - 1)->addData(0, pItemDataType(new stItemData("ALL", EVET_RO_TEXT, S_DATA_ID_UNSET)));
+    _parent->child(_parent->childCount() - 1)->addData(0, pItemDataType(new stItemData("ALL", EVT_RO_TEXT, S_DATA_ID_UNSET)));
     _parent->child(_parent->childCount() - 1)->addData(1, m_plogLevel.at(S_INDEX_LOG_LEVEL_ALL));
     _parent->insertChildren(_parent->childCount(), 1, rootItem->columnCount());
-    _parent->child(_parent->childCount() - 1)->addData(0, pItemDataType(new stItemData("Fatal", EVET_RO_TEXT, S_DATA_ID_UNSET)));
+    _parent->child(_parent->childCount() - 1)->addData(0, pItemDataType(new stItemData("Fatal", EVT_RO_TEXT, S_DATA_ID_UNSET)));
     _parent->child(_parent->childCount() - 1)->addData(1, m_plogLevel.at(S_INDEX_LOG_LEVEL_FATAL));
     _parent->insertChildren(_parent->childCount(), 1, rootItem->columnCount());
-    _parent->child(_parent->childCount() - 1)->addData(0, pItemDataType(new stItemData("Error", EVET_RO_TEXT, S_DATA_ID_UNSET)));
+    _parent->child(_parent->childCount() - 1)->addData(0, pItemDataType(new stItemData("Error", EVT_RO_TEXT, S_DATA_ID_UNSET)));
     _parent->child(_parent->childCount() - 1)->addData(1, m_plogLevel.at(S_INDEX_LOG_LEVEL_ERROR));
     _parent->insertChildren(_parent->childCount(), 1, rootItem->columnCount());
-    _parent->child(_parent->childCount() - 1)->addData(0, pItemDataType(new stItemData("Warning", EVET_RO_TEXT, S_DATA_ID_UNSET)));
+    _parent->child(_parent->childCount() - 1)->addData(0, pItemDataType(new stItemData("Warning", EVT_RO_TEXT, S_DATA_ID_UNSET)));
     _parent->child(_parent->childCount() - 1)->addData(1, m_plogLevel.at(S_INDEX_LOG_LEVEL_WARNING));
     _parent->insertChildren(_parent->childCount(), 1, rootItem->columnCount());
-    _parent->child(_parent->childCount() - 1)->addData(0, pItemDataType(new stItemData("Info", EVET_RO_TEXT, S_DATA_ID_UNSET)));
+    _parent->child(_parent->childCount() - 1)->addData(0, pItemDataType(new stItemData("Info", EVT_RO_TEXT, S_DATA_ID_UNSET)));
     _parent->child(_parent->childCount() - 1)->addData(1, m_plogLevel.at(S_INDEX_LOG_LEVEL_INFO));
     _parent->insertChildren(_parent->childCount(), 1, rootItem->columnCount());
-    _parent->child(_parent->childCount() - 1)->addData(0, pItemDataType(new stItemData("Debug", EVET_RO_TEXT, S_DATA_ID_UNSET)));
+    _parent->child(_parent->childCount() - 1)->addData(0, pItemDataType(new stItemData("Debug", EVT_RO_TEXT, S_DATA_ID_UNSET)));
     _parent->child(_parent->childCount() - 1)->addData(1, m_plogLevel.at(S_INDEX_LOG_LEVEL_DEBUG));
 }
 
@@ -98,6 +108,13 @@ void CSettinsModelData::dataChangeCallback(const QModelIndex &topLeft, const QMo
 
         }
     }
+}
+
+void CSettinsModelData::slotEditSettingLogSettingsComlited()
+{
+    quint8 mask = CSettinsModelData::getMaskFromLoggerSettings(this->getLoggerSettings());//CSettinsModelData::getMaskFromLoggerSettings(m_SettingsModel.getLoggerSettings());
+    NHelper::writeLoggerMask(mask);
+    MyLogger::setDebugLevelMask(mask);
 }
 
 void CSettinsModelData::setLoggerSettings(const QVector<bool> _levels)
@@ -187,4 +204,15 @@ void CSettinsModelData::updateLoggerSettingsArray(quint8 _mask, QVector<bool> & 
     {
         _levels[S_INDEX_LOG_LEVEL_FATAL] = true;
     }
+}
+
+void CSettinsModelData::createSettingsView()
+{
+    quint8 _mask = NHelper::getLoggerMask();
+    QVector<bool> levelArr(S_LOG_LEVEL_COUNT);
+
+    CSettinsModelData::updateLoggerSettingsArray(_mask, levelArr);
+
+    setLoggerSettings(levelArr);
+    setServerSettings(NHelper::getServerAddress(), NHelper::getServerPort());
 }

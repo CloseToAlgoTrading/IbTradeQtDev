@@ -12,7 +12,7 @@ enum orderAction
 class IBrokerAPI
 {
 public:
-    //virtual ~IBrokerAPI();
+    virtual ~IBrokerAPI() {};
 
 	//interface
     virtual void processMessagesAPI() = 0;

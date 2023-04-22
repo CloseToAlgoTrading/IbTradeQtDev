@@ -1,14 +1,17 @@
 ﻿#include "cpresenter.h"
 #include "ReqManager.h"
-
 #include "Dispatcher.h"
-
 #include "IBComClientImpl.h"
+#include "cmainmodel.h"
+#include "CPortfolioConfigModel.h"
+
 
 CPresenter::CPresenter(QObject *parent)
 	: QObject(parent)
     , m_pLog(LOGGER)
     , m_DataProvider()
+    , pIbtsView(nullptr)
+    , pGuiModel(nullptr)
     , threadIBClient(new QThread)
     , workerIBClient(new IBWorker::Worker(parent, m_DataProvider))
     , threadAlfaTime(new QThread)
@@ -19,14 +22,16 @@ CPresenter::CPresenter(QObject *parent)
     , pDBStorePresenter(new DBStorePresenter(parent, m_DataProvider))
 {
 	
-    QSharedPointer<IBComClientImpl> pClient = QSharedPointer<IBComClientImpl>(new IBComClientImpl(m_DataProvider));
+    //
+
+    QSharedPointer<IBComClientImpl> pClient = QSharedPointer<IBComClientImpl>::create(m_DataProvider);
 
    //Define Data Provider
     m_DataProvider.setClien(pClient);
 
-
-	workerIBClient->moveToThread(threadIBClient);
-	threadIBClient->start();
+    workerIBClient->moveToThread(threadIBClient);
+    QObject::connect(threadIBClient, SIGNAL(started()), workerIBClient, SLOT(process()));
+    threadIBClient->start();
 
     QThread::currentThread()->setObjectName("mainThread");
     threadIBClient->setObjectName("myThread");
@@ -41,9 +46,6 @@ CPresenter::~CPresenter()
 
 void CPresenter::MapSignals()
 {
-	//MAP Thread signal
-	QObject::connect(threadIBClient, SIGNAL(started()), workerIBClient, SLOT(process()));
-
 	//MAP GUI Signals/Slots
 	//Click connect button
 	QObject::connect(pIbtsView->getUi().pushButton, SIGNAL(clicked()), this, SLOT(onClickMyButton()));
@@ -68,6 +70,21 @@ void CPresenter::MapSignals()
 
     QObject::connect(workerAlfaTime, &AlphaModGetTime::signalPlanResetSubscribtion,
                      pAutoDeltaAligPresenter->getPM().data(), &CProcessingBase::signalRestartSubscription, Qt::QueuedConnection);
+
+
+    QTreeView * pTreeView = this->pIbtsView->getPortfolioConfigTreeView();
+    CPortfolioConfigModel *pPConfigModel = this->getPGuiModel()->pPortfolioConfigModel();
+    QObject::connect(pTreeView->actions()[0], SIGNAL(triggered()), pPConfigModel, SLOT(slotOnClickAddAccount()), Qt::QueuedConnection);
+    QObject::connect(pTreeView->actions()[1], SIGNAL(triggered()), pPConfigModel, SLOT(slotOnClickAddPortfolio()), Qt::QueuedConnection);
+    QObject::connect(pTreeView->actions()[2], SIGNAL(triggered()), pPConfigModel, SLOT(slotOnClickAddStrategy()), Qt::QueuedConnection);
+    QObject::connect(pTreeView->actions()[4], SIGNAL(triggered()), pPConfigModel, SLOT(onClickRemoveNodeButton()), Qt::QueuedConnection);
+
+    QObject::connect(pPConfigModel, SIGNAL(signalUpdateData(QModelIndex)), this->pIbtsView, SLOT(slotUpdateTreeView(QModelIndex)));
+    QObject::connect(pPConfigModel, &CPortfolioConfigModel::signalUpdateDataAll, this->pIbtsView, &CIBTradeSystemView::slotUpdateTreeViewAll, Qt::QueuedConnection);
+
+
+    this->pIbtsView->mapSignals();
+
 
 
 	/////////---------------
@@ -100,16 +117,18 @@ void CPresenter::UnsubscribeHandler()
 
 }
 
-void CPresenter::addView(IBTradeSystem * mw)
+void CPresenter::addView(CIBTradeSystemView * mw)
 {
 	this->pIbtsView = mw;
+
 }
 
 
 
 void CPresenter::MessageHandler(void* pContext, tEReqType _reqType)
 {
-
+    Q_UNUSED(pContext);
+    Q_UNUSED(_reqType);
 };
 
 /*! 
@@ -168,6 +187,30 @@ void CPresenter::onClickDBStoreButton()
     {
         pDBStorePresenter->showDlg();
     }
+}
+
+CMainModel *CPresenter::getPGuiModel() const
+{
+    return pGuiModel;
+}
+
+void CPresenter::setPGuiModel(CMainModel *newPGuiModel)
+{
+   pGuiModel = newPGuiModel;
+   this->pIbtsView->getSettingsTreeView()->setModel(this->pGuiModel->pSettingsModel());
+   this->pIbtsView->getSettingsTreeView()->expandAll();
+
+   this->pIbtsView->getPortfolioConfigTreeView()->setModel(this->pGuiModel->pPortfolioConfigModel());
+   //this->pIbtsView->getPortfolioConfigTreeView()->expandAll();
+
+   this->getPGuiModel()->pPortfolioConfigModel()->setBrokerInterface(this->m_DataProvider.getClien());
+
+}
+
+
+CIBTradeSystemView *CPresenter::getPIbtsView() const
+{
+    return pIbtsView;
 }
 
 

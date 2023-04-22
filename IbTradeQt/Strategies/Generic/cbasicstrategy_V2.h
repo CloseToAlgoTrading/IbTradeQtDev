@@ -1,18 +1,20 @@
-#ifndef CBASICSTRATEGY_H
-#define CBASICSTRATEGY_H
+#ifndef CBasicStrategy_V2_H
+#define CBasicStrategy_V2_H
 
 #include "cgenericmodelApi.h"
 #include <QList>
 #include <QVariantList>
 #include "cbrokerdataprovider.h"
+#include "cprocessingbase_v2.h"
 #include "IBrokerAPI.h"
-#include "qjsonobject.h"
+#include <QTimer>
+#include <QJsonObject>
 
-
-class CBasicStrategy : public CGenericModelApi
+class CBasicStrategy_V2 : public CProcessingBase_v2, public CGenericModelApi
 {
 public:
-    explicit CBasicStrategy();
+    explicit CBasicStrategy_V2(QObject *parent = nullptr);
+    virtual ~CBasicStrategy_V2() {};
 
     // CGenericModelApi interface
 public:
@@ -30,8 +32,10 @@ public:
 
     virtual void setBrokerInterface(QSharedPointer<IBrokerAPI> interface) override;
 
-    virtual QJsonObject toJson() const override {QJsonObject tmp; return tmp;};
-    virtual void fromJson(const QJsonObject& json) override {};
+    virtual QJsonObject toJson() const override;
+    virtual void fromJson(const QJsonObject& json) override;
+
+
 
     virtual QVariantMap assetList() const override;
     virtual void setAssetList(const QVariantMap &newAssetList) override;
@@ -39,7 +43,7 @@ public:
     virtual QVariantMap genericInfo() const override;
     virtual void setGenericInfo(const QVariantMap &newGenericInfo) override;
 
-    ModelType modelType() const override { return ModelType::STRATEGY; }
+    virtual ModelType modelType() const override;
 
 protected:
     QList<ptrGenericModelType> m_Models;
@@ -50,12 +54,15 @@ protected:
 
     QVariantMap m_assetList;
     QVariantMap m_genericInfo;
+    QTimer m_tmpTimer;
 
 public slots:
     void onUpdateParametersSlot(const QVariantMap& parameters);
+
+    void onTimeoutSlot();
 //public: signals:
 //    void onUpdateParametersSignal(const QVariantMap& parameters);
 
 };
 
-#endif // CBASICSTRATEGY_H
+#endif // CBasicStrategy_V2_H

@@ -42,16 +42,25 @@ UI_DIR = $$PWD/GeneratedIncludes
 
 SOURCES += \
     CObjects/cdeltaobject.cpp \
+    Common/cprocessingbase_v2.cpp \
     MainSystem/caccount.cpp \
+    MainSystem/capplicationcontroller.cpp \
+    MainSystem/cmainmodel.cpp \
     MainSystem/csettinsmodeldata.cpp \
     MainSystem/ctreeviewcustommodel.cpp \
+    MainSystem/ibtradesystemview.cpp \
     MainSystem/portfolioconfigmodel.cpp \
     Strategies/AutoDeltAlignment/src/CModelInputData.cpp \
     Strategies/Generic/cbasicaccount.cpp \
     Strategies/Generic/cbasicportfolio.cpp \
     Strategies/Generic/cbasicroot.cpp \
     Strategies/Generic/cbasicstrategy.cpp \
+    Strategies/Generic/cbasicstrategy_V2.cpp \
     Strategies/Generic/cgenericmodelApi.cpp \
+    Strategies/Generic/cgenericmodelApi_V2.cpp \
+    Strategies/Generic/cmovingaveragecrossover.cpp \
+    Strategies/Generic/csma.cpp \
+    Strategies/Generic/cstrategyfactory.cpp \
     Strategies/Generic/cteststrategy.cpp \
     Strategies/PairTrader/PairTradingGui.cpp \
     Strategies/PairTrader/PairTradingPresenter.cpp \
@@ -86,7 +95,6 @@ SOURCES += \
     IBComm/IBworker.cpp \
     Logger/MyLogger.cpp \
     MainSystem/cpresenter.cpp \
-    MainSystem/ibtradesystem.cpp \
     ReqManager/globalreqmanager.cpp \
     ReqManager/ReqManager.cpp \
     Brokers/IB/src/ContractCondition.cpp \
@@ -125,20 +133,30 @@ SOURCES += \
 
 HEADERS += \
     CObjects/cdeltaobject.h \
-    MainSystem/PortfolioConfigModel.h \
+    Common/cprocessingbase_v2.h \
+    MainSystem/CPortfolioConfigModel.h \
     MainSystem/PortfolioModelDefines.h \
     MainSystem/TreeItemDataTypesDef.h \
     MainSystem/caccount.h \
+    MainSystem/capplicationcontroller.h \
+    MainSystem/cmainmodel.h \
     MainSystem/csettinsmodeldata.h \
     MainSystem/ctreeviewcustommodel.h \
     MainSystem/ctreeviewdatamodel.h \
+    MainSystem/ibtradesystemview.h \
     Strategies/AutoDeltAlignment/header/CModelInputData.h \
     Strategies/AutoDeltAlignment/header/autodeltatypes.h \
+    Strategies/Generic/ModelType.h \
     Strategies/Generic/cbasicaccount.h \
     Strategies/Generic/cbasicportfolio.h \
     Strategies/Generic/cbasicroot.h \
     Strategies/Generic/cbasicstrategy.h \
+    Strategies/Generic/cbasicstrategy_V2.h \
     Strategies/Generic/cgenericmodelApi.h \
+    Strategies/Generic/cgenericmodelApi_V2.h \
+    Strategies/Generic/cmovingaveragecrossover.h \
+    Strategies/Generic/csma.h \
+    Strategies/Generic/cstrategyfactory.h \
     Strategies/Generic/cteststrategy.h \
     Strategies/PairTrader/PairTradingGui.h \
     Strategies/PairTrader/PairTradingPresenter.h \
@@ -181,7 +199,6 @@ HEADERS += \
     IBComm/IBworker.h \
     Logger/MyLogger.h \
     MainSystem/cpresenter.h \
-    MainSystem/ibtradesystem.h \
     ReqManager/globalreqmanager.h \
     ReqManager/ReqManager.h \
     Brokers/IB/Shared/standardincludes.h \
@@ -255,7 +272,7 @@ HEADERS += \
 
 FORMS += \
     AboutDialog/aboutdialog.ui \
-    MainSystem/ibtradesystem.ui \
+    MainSystem/ibtradesystemview.ui \
     Strategies/PairTrader/pairtrading.ui \
     Strategies/AutoDeltAlignment/autodeltaaligform.ui \
     DBStore/dbstroreform.ui \

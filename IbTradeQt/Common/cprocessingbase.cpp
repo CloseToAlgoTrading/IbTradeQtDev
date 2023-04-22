@@ -69,8 +69,19 @@ void CProcessingBase::MessageHandler(void* pContext, tEReqType _reqType)
         recvOrdersCommission(pContext, _reqType);
         break;
 
-
-	}
+    case RT_REQ_NONE:
+    case RT_REQ_REL_DATA:
+    case RT_REQ_CUR_TIME:
+    case RT_TICK_GENERIC:
+    case RT_TICK_STRING:
+    case RT_HISTORICAL_TICK_DATA:
+    case RT_MKT_DEPTH_L2:
+    case RT_POSITION:
+    case RT_REQ_ORDER_STATUS:
+    case RT_ORDER_STATUS:
+    case RT_ORDER_EXECUTION:
+        break;
+    }
 }
 
 //----------------------------------------------------------

@@ -3,7 +3,7 @@
 
 
 #include <QObject>
-#include "ibtradesystem.h"
+#include "ibtradesystemview.h"
 #include "IBworker.h"
 #include "cbrokerdataprovider.h"
 #include "AlphaModGetTime.h"
@@ -15,9 +15,10 @@
 #include "AboutDlgPresener.h"
 #include "PairTradingPresenter.h"
 
+
 #include "DBConnector.h"
 
-
+class CMainModel;
 
 class CPresenter : public QObject, public Observer::CSubscriber
 {
@@ -27,7 +28,7 @@ public:
 	CPresenter(QObject *parent);
 	~CPresenter();
 
-	void addView(IBTradeSystem * mw);
+    void addView(CIBTradeSystemView * mw);
 
 	void MessageHandler(void* pContext, tEReqType _reqType);
 	void UnsubscribeHandler();
@@ -38,6 +39,12 @@ public:
 
 
 	MyLogger& m_pLog;
+
+    CIBTradeSystemView *getPIbtsView() const;
+
+
+    CMainModel *getPGuiModel() const;
+    void setPGuiModel(CMainModel *newPGuiModel);
 
 signals:
 	void signalTimeReceived(long time);
@@ -53,7 +60,8 @@ private:
 
     CBrokerDataProvider m_DataProvider;
 
-	IBTradeSystem * pIbtsView;
+    CIBTradeSystemView * pIbtsView;
+    CMainModel * pGuiModel;
 	
 	QThread* threadIBClient;
 	IBWorker::Worker* workerIBClient;

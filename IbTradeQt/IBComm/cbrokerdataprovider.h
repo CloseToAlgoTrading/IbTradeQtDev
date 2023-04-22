@@ -15,7 +15,7 @@ class CBrokerDataProvider : public Observer::CDispatcher
 public:
     CBrokerDataProvider();
     CBrokerDataProvider(QSharedPointer<IBrokerAPI> _pClien);
-    ~CBrokerDataProvider();
+    virtual ~CBrokerDataProvider() {};
 
     QSharedPointer<IBrokerAPI> getClien() const { return m_pClien; }
     void setClien(QSharedPointer<IBrokerAPI> val) { m_pClien = val;}

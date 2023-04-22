@@ -1,12 +1,15 @@
 #ifndef CBASICPORTFOLIO_H
 #define CBASICPORTFOLIO_H
 
-#include "cbasicstrategy.h"
+#include "cbasicstrategy_V2.h"
 
-class CBasicPortfolio : public CBasicStrategy
+class CBasicPortfolio : public CBasicStrategy_V2
 {
 public:
-    CBasicPortfolio();
+    explicit CBasicPortfolio(QObject *parent = nullptr);
+    virtual ~CBasicPortfolio() {};
+
+    ModelType modelType() const override { return ModelType::PORTFOLIO; }
 };
 
 #endif // CBASICPORTFOLIO_H

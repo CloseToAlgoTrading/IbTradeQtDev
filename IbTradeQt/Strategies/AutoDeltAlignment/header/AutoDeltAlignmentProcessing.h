@@ -10,20 +10,27 @@
 #include <QNetworkAccessManager>
 #include <QSemaphore>
 #include <QNetworkRequest>
+#include "cbasicstrategy.h"
 
 Q_DECLARE_LOGGING_CATEGORY(autoDeltaAligPMLog);
 
 
 
-class autoDeltaAligPM :/* public QObject,*/ public CProcessingBase
+class autoDeltaAligPM :/* public QObject,*/ public CProcessingBase, public CBasicStrategy
 {
     Q_OBJECT
 
 public:
     explicit autoDeltaAligPM(QObject *parent, CBrokerDataProvider & _refClient);
+    explicit autoDeltaAligPM(QObject *parent);
     ~autoDeltaAligPM() override;
 
     void initStrategy(const QString & s1);
+
+    virtual bool start() override;
+    virtual bool stop() override;
+
+    ModelType modelType() const override { return ModelType::STRATEGY; }
 
 private:
     qint32 Ticker_id;
@@ -33,6 +40,8 @@ private:
     qreal m_rpnlSum;
     qint32 m_deltaThresold;
     bool m_IsOrderBusy;
+
+    CBrokerDataProvider m_DataProvider;
 
     tAutoDeltaOptDataType m_GuiInfo;
     //QSharedPointer<QTimer> m_pTimer;

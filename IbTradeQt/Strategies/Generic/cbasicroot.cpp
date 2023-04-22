@@ -1,5 +1,5 @@
 #include "cbasicroot.h"
 
-CBasicRoot::CBasicRoot(): CBasicStrategy()
+CBasicRoot::CBasicRoot(QObject *parent): CBasicStrategy_V2(parent)
 {
 }

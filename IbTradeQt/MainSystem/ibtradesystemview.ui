@@ -223,16 +223,16 @@
     <addaction name="actionShow_Log"/>
     <addaction name="actionSetting"/>
    </widget>
-   <widget class="QMenu" name="menuOperations">
+   <widget class="QMenu" name="menuConfiguration">
     <property name="title">
-     <string>Operations</string>
+     <string>Configuration</string>
     </property>
-    <addaction name="actionAdd_Model"/>
-    <addaction name="actionRemove_Model"/>
+    <addaction name="actionLoad"/>
+    <addaction name="actionSave"/>
    </widget>
    <addaction name="menuclear_log"/>
    <addaction name="menuView"/>
-   <addaction name="menuOperations"/>
+   <addaction name="menuConfiguration"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
    <attribute name="toolBarArea">
@@ -365,6 +365,16 @@
   <action name="actionRemove_Model">
    <property name="text">
     <string>Remove Model</string>
+   </property>
+  </action>
+  <action name="actionLoad">
+   <property name="text">
+    <string>Load ...</string>
+   </property>
+  </action>
+  <action name="actionSave">
+   <property name="text">
+    <string>Save ...</string>
    </property>
   </action>
  </widget>

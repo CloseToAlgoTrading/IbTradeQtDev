@@ -77,7 +77,7 @@ inline std::string decimalStringToDisplay(Decimal value) {
         return ""; // if is invalid, then return empty string
     }
 
-    int expPos = tempStr.find("E"); // find position of 'E' char (e.g. 2)
+    auto expPos = tempStr.find("E"); // find position of 'E' char (e.g. 2)
     if (expPos < 0) {
         return tempStr; // if 'E' char is missing, then return string as-is
     }
@@ -91,7 +91,7 @@ inline std::string decimalStringToDisplay(Decimal value) {
     if (expStr[1] == '-') {
         exp *= -1;
     }
-    int numLength = tempStr.size() - expStr.size() - 1; // length of numbers substring
+    auto numLength = tempStr.size() - expStr.size() - 1; // length of numbers substring
 
     // check sign
     bool isNegative = false;
@@ -108,7 +108,7 @@ inline std::string decimalStringToDisplay(Decimal value) {
     bool decPtAdded = false;
 
     // add zero(s) and decimal point
-    for (int i = numLength; i <= (-exp); i++) {
+    for (auto i = numLength; i <= (-exp); i++) {
         result += '0';
         if (i == numLength) {
             result += '.';
@@ -117,7 +117,7 @@ inline std::string decimalStringToDisplay(Decimal value) {
     }
 
     // add numbers and decimal point
-    for (int i = 0; i < numLength; i++) {
+    for (auto i = 0; i < numLength; i++) {
         if (numLength - i == (-exp) && !decPtAdded) {
             result += '.';
         }

@@ -22,6 +22,8 @@ public:
 
     QSharedPointer<autoDeltaAligPM> getPM();
 
+
+
 private:
     QScopedPointer<AutoDeltaAligGui> m_pAutoDeltaAligGui;
     QSharedPointer<autoDeltaAligPM> m_pAutoDeltaAligPM;

@@ -539,7 +539,13 @@ void IBComClientImpl::error(int id, int errorCode, const std::string& errorStrin
 //---------------------------------------------------------------
 void IBComClientImpl::winError(const std::string& str, int lastError)
 {
-	qCDebug(IBComClientImplLog(), "lastError=%d, msg=%s\n", lastError, str.c_str());
+    qCDebug(IBComClientImplLog(), "lastError=%d, msg=%s\n", lastError, str.c_str());
+}
+
+//---------------------------------------------------------------
+void IBComClientImpl::updateAccountValue(const std::string &key, const std::string &val, const std::string &currency, const std::string &accountName)
+{
+    qCDebug(IBComClientImplLog(), "Account Info: key: %s, value: %s, currency: %s, account: %s\n", key.c_str(), val.c_str(), currency.c_str(), accountName.c_str());
 };
 
 
@@ -663,7 +669,7 @@ void IBComClientImpl::historicalTicksLast(int reqId, const std::vector<Historica
 
     }
 }
-
+//---------------------------------------------------------------
 void IBComClientImpl::tickByTickAllLast(int reqId, int tickType, time_t time, double price, Decimal size, const TickAttribLast &tickAttribLast, const std::string &exchange, const std::string &specialConditions)
 {
     QDateTime timestamp;
@@ -691,6 +697,7 @@ void IBComClientImpl::tickByTickAllLast(int reqId, int tickType, time_t time, do
 
     m_DispatcherBrokerData.SendMessageToSubscribers(&_tickbytick, reqId, RT_TICK_BY_TICK_DATA);
 }
+
 //////////////////////////////////////////////////////////////////
 // methods
 //! [connectack]

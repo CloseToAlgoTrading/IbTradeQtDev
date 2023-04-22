@@ -48,6 +48,8 @@ namespace IBDataTypes
 
         CHistoricalData & operator= (const CHistoricalData &other);
 
+        bool operator== (const IBDataTypes::CHistoricalData &c1) const;
+
     private:
         QSharedDataPointer<CHistoricalDataSharedData> d;
 

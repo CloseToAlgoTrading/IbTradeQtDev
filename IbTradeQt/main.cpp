@@ -1,28 +1,10 @@
-
-#include <QtWidgets/QApplication>
-#include <QProcess>
-#include <QLibraryInfo>
-#include <QStringList>
-#include <QStandardPaths>
-
-#include "cpresenter.h"
-#include "ibtradesystem.h"
-#include "MyLogger.h"
-
-#include<QIcon>
+#include "capplicationcontroller.h"
 
 #define QT_LOGGING_DEBUG 1
 int main(int argc, char *argv[])
 {
-    QFont font("Courier New", 8);
-    font.setStyleHint(QFont::Monospace);
-    QApplication::setFont(font);
 
-   // QLocale::setDefault(QLocale(QLocale::English, QLocale::RussianFederation));
-
-	QApplication a(argc, argv);
-
-    QString ss = QCoreApplication::applicationDirPath();
+    //QString ss = QCoreApplication::applicationDirPath();
     qInstallMessageHandler(MyLogger::myMessageOutput);
 
     //Log output template
@@ -46,27 +28,10 @@ int main(int argc, char *argv[])
     //MyLogger::setDebugLevelMask(MyLogger::LL_ALL);
     MyLogger::setDebugLevelMask(MyLogger::LL_INFO|MyLogger::LL_DEBUG);
 
-	IBTradeSystem w;
-	CPresenter prst(nullptr);
 
-
-
-
-	prst.addView(&w);
-	prst.MapSignals();
-	w.show();
-
-    auto icon = QIcon(":/IBTradeSystem/x_resources/app.png");
-    a.setWindowIcon(icon);
-
-//    QFile file("Combinear.qss");
-//    file.open(QFile::ReadOnly | QFile::Text);
-//    QTextStream stream(&file);
-//    QString styleSheet = stream.readAll();
-
-//    a.setStyleSheet(styleSheet);
-
-//    file.close();
-
-	return a.exec();
+    QApplication a(argc, argv);
+    CApplicationController app;
+    app.setUpApplication(a);
+//    return app.run(argc, argv);
+    return a.exec();
 }

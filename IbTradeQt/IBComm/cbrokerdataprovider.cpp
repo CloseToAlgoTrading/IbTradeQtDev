@@ -16,7 +16,10 @@ CBrokerDataProvider::CBrokerDataProvider(QSharedPointer<IBrokerAPI> _pClien)
 
 }
 
-CBrokerDataProvider::~CBrokerDataProvider() = default;
+//CBrokerDataProvider::~CBrokerDataProvider()
+//{
+//    m_pClien.clear();
+//};
 
 //************************************
 // Method:    reqestHistoricalData
