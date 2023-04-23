@@ -34,7 +34,7 @@ public:
     virtual bool start() = 0;
     virtual bool stop() = 0;
 
-    virtual void setBrokerInterface(QSharedPointer<IBrokerAPI> interface) = 0;
+    //virtual void setBrokerInterface(QSharedPointer<IBrokerAPI> interface) = 0;
 };
 
 

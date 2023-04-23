@@ -236,7 +236,8 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
                 if((nullptr != portfolio) && (nullptr != this->m_brokerInterface))
                 {
                     model = CStrategyFactory::createNewStrategy(ModelType::STRATEGY_MA);
-                    model->setBrokerInterface(this->m_brokerInterface);
+                    model->setBrokerDataProvider(this->m_brokerInterface);
+
                     portfolio->addModel(model);
                 }
             }
@@ -404,7 +405,6 @@ const ptrGenericModelType CPortfolioConfigModel::getModelByIdex(QModelIndex inde
     }
     return ret;
 }
-
 
 void CPortfolioConfigModel::traverseNodes(TreeItem *node)
 {

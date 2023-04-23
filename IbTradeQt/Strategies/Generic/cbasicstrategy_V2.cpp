@@ -7,7 +7,7 @@ CBasicStrategy_V2::CBasicStrategy_V2(QObject *parent): CProcessingBase_v2(parent
     , m_Models()
     , m_ParametersMap()
     , m_InfoMap()
-    , m_DataProvider()
+//    , m_DataProvider()
     , m_assetList()
     , m_genericInfo()
     , m_tmpTimer()
@@ -74,10 +74,10 @@ bool CBasicStrategy_V2::stop()
     return false;
 }
 
-void CBasicStrategy_V2::setBrokerInterface(QSharedPointer<IBrokerAPI> interface)
-{
-    this->m_DataProvider.setClien(interface);
-}
+//void CBasicStrategy_V2::setBrokerInterface(QSharedPointer<IBrokerAPI> interface)
+//{
+//    this->m_DataProvider.setClien(interface);
+//}
 
 QJsonObject CBasicStrategy_V2::toJson() const
 {
@@ -158,6 +158,11 @@ void CBasicStrategy_V2::setGenericInfo(const QVariantMap &newGenericInfo)
 ModelType CBasicStrategy_V2::modelType() const
 {
     return ModelType::STRATEGY;
+}
+
+void CBasicStrategy_V2::setBrokerDataProvider(QSharedPointer<CBrokerDataProvider> newClient)
+{
+    CProcessingBase_v2::setIBrokerDataProvider(newClient);
 }
 
 

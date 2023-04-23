@@ -20,6 +20,8 @@ public:
 
 public slots:
     void slotCbkRecvHistoricalData(const QList<IBDataTypes::CHistoricalData> & _histMap, const QString& _symbol);
+    void slotEndRecvPosition();
+
 };
 
 #endif // CMOVINGAVERAGECROSSOVER_H

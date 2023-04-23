@@ -5,11 +5,12 @@
 #include <QList>
 #include <QVariantMap>
 #include <QString>
-#include "IBrokerAPI.h"
+//#include "IBrokerAPI.h"
 #include <QEnableSharedFromThis>
 #include "ModelType.h"
 
 class CGenericModelApi;
+class CBrokerDataProvider;
 typedef QSharedPointer<CGenericModelApi> ptrGenericModelType;
 
 class CGenericModelApi : public QEnableSharedFromThis<CGenericModelApi>
@@ -37,9 +38,9 @@ public:
     virtual bool start() = 0;
     virtual bool stop() = 0;
 
-    virtual void setBrokerInterface(QSharedPointer<IBrokerAPI> interface) = 0;
 
     virtual ModelType modelType() const = 0;
+    virtual void setBrokerDataProvider(QSharedPointer<CBrokerDataProvider> newClient) = 0;
 };
 
 

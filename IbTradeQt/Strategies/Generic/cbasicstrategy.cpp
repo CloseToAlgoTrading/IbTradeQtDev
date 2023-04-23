@@ -67,10 +67,6 @@ bool CBasicStrategy::stop()
     return false;
 }
 
-void CBasicStrategy::setBrokerInterface(QSharedPointer<IBrokerAPI> interface)
-{
-    this->m_DataProvider.setClien(interface);
-}
 
 QVariantMap CBasicStrategy::assetList() const
 {

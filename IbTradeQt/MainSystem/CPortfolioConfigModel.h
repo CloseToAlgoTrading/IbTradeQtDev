@@ -22,7 +22,7 @@ public:
     void removeModel(QModelIndex index);
     const ptrGenericModelType getModelByIdex(QModelIndex index);
 
-    void setBrokerInterface(QSharedPointer<IBrokerAPI> newBrokerInterface);
+    void setBrokerDataProvider(QSharedPointer<CBrokerDataProvider> newBrokerInterface);
 
 
 
@@ -42,7 +42,7 @@ public slots:
 
 private:
     CBasicRoot *m_pRoot;
-    QSharedPointer<IBrokerAPI> m_brokerInterface;
+    QSharedPointer<CBrokerDataProvider> m_brokerInterface;
     QTimer m_UpdateInfoTimer;
 
 public slots:
@@ -59,7 +59,7 @@ signals:
     void signalUpdateDataAll();
 };
 
-inline void CPortfolioConfigModel::setBrokerInterface(QSharedPointer<IBrokerAPI> newBrokerInterface)
+inline void CPortfolioConfigModel::setBrokerDataProvider(QSharedPointer<CBrokerDataProvider> newBrokerInterface)
 {
     m_brokerInterface = newBrokerInterface;
 }

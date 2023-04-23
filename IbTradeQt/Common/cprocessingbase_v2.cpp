@@ -630,12 +630,12 @@ bool CProcessingBase_v2::calculateOneMinBar(RealTimeBarMap_t & _realTimeBar, Tic
     return true;
 }
 
-QSharedPointer<CBrokerDataProvider> CProcessingBase_v2::Client() const
+QSharedPointer<CBrokerDataProvider> CProcessingBase_v2::getIBrokerDataProvider() const
 {
     return m_Client;
 }
 
-void CProcessingBase_v2::setClient(QSharedPointer<CBrokerDataProvider> newClient)
+void CProcessingBase_v2::setIBrokerDataProvider(QSharedPointer<CBrokerDataProvider> newClient)
 {
     m_Client = newClient;
 }

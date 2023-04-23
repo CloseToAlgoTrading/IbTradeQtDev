@@ -30,7 +30,7 @@ public:
     virtual bool start() override;
     virtual bool stop() override;
 
-    virtual void setBrokerInterface(QSharedPointer<IBrokerAPI> interface) override;
+
 
     virtual QJsonObject toJson() const override;
     virtual void fromJson(const QJsonObject& json) override;
@@ -44,13 +44,14 @@ public:
     virtual void setGenericInfo(const QVariantMap &newGenericInfo) override;
 
     virtual ModelType modelType() const override;
+    virtual void setBrokerDataProvider(QSharedPointer<CBrokerDataProvider> newClient) override;
 
 protected:
     QList<ptrGenericModelType> m_Models;
     QVariantMap m_ParametersMap;
     QVariantMap m_InfoMap;
     QString m_Name;
-    CBrokerDataProvider m_DataProvider;
+    //CBrokerDataProvider m_DataProvider;
 
     QVariantMap m_assetList;
     QVariantMap m_genericInfo;
