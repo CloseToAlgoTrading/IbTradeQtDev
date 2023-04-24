@@ -205,7 +205,7 @@ void CPresenter::setPGuiModel(CMainModel *newPGuiModel)
    //this->pIbtsView->getPortfolioConfigTreeView()->expandAll();
 
    this->getPGuiModel()->pPortfolioConfigModel()->setBrokerDataProvider(this->m_pDataProvider);
-
+   this->getPGuiModel()->pPortfolioConfigModel()->setupModelData();
 }
 
 

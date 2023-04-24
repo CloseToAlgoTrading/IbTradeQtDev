@@ -24,8 +24,11 @@ CPortfolioConfigModel::CPortfolioConfigModel(QTreeView *treeView, CBasicRoot *pR
 
     QObject::connect(&m_UpdateInfoTimer, &QTimer::timeout, this, &CPortfolioConfigModel::slotOnTimeoutCallback);
     m_UpdateInfoTimer.start(100);
-    setupModelData(rootItem);
+}
 
+void CPortfolioConfigModel::setupModelData()
+{
+    this->setupModelData(rootItem);
 }
 
 TreeItem * CPortfolioConfigModel::addRootNode(TreeItem * parent, pItemDataType name, pItemDataType value, int columnCount)
@@ -102,21 +105,26 @@ void CPortfolioConfigModel::setupModelData(TreeItem * rootItem)
     parents << rootItem;
     // Add the necessary root nodes
     addRootNode(rootItem, pItemDataType(new stItemData("Accounts", EVT_RO_TEXT, PM_ITEM_ACCOUNTS)), pItemDataType(new stItemData(QVariant(), EVT_RO_TEXT, TVM_UNUSED_ID)), rootItem->columnCount());
+
+    m_pRoot->setBrokerDataProvider(m_brokerInterface);
     // Loop through accounts
     for (const auto &accountModel : m_pRoot->getModels())
     {
+        accountModel->setBrokerDataProvider(m_brokerInterface);
         QModelIndex accountIndex = createIndex(rootItem->childCount() - 1, 0, rootItem->child(rootItem->childCount() - 1));
         addWorkingNode(accountIndex, accountModel, PM_ITEM_ACCOUNT);
 
         // Loop through portfolios in the account
         for (const auto &portfolioModel : accountModel->getModels())
         {
+            portfolioModel->setBrokerDataProvider(m_brokerInterface);
             QModelIndex portfolioIndex = createIndex(accountIndex.row() + START_OF_WORKING_NODES, 0, getItem(accountIndex)->child(getItem(accountIndex)->childCount() - 1));
             addWorkingNode(portfolioIndex, portfolioModel, PM_ITEM_PORTFOLIO);
 
             // Loop through strategies in the portfolio
             for (const auto &strategyModel : portfolioModel->getModels())
             {
+                strategyModel->setBrokerDataProvider(m_brokerInterface);
                 QModelIndex strategyIndex = createIndex(portfolioIndex.row() + START_OF_WORKING_NODES, 0, getItem(portfolioIndex)->child(getItem(portfolioIndex)->childCount() - 1));
                 addWorkingNode(strategyIndex, strategyModel, PM_ITEM_STRATEGY);
             }
