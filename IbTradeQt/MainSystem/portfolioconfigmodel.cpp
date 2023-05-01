@@ -679,18 +679,23 @@ void CPortfolioConfigModel::synchronizeModelParameters(const QModelIndex& parent
         // Check if the tree view node key matches the model parameter key
         if (i < treeViewRowCount)
         {
-                QModelIndex valueIndex = index(i, 1, parentIndex);
+                //QModelIndex valueIndex = index(i, 1, parentIndex);
                 QVariant treeViewValue = childItem->data(1).value;
                 QVariant modelValue = modelParameters[keysFromModel[i]];
 
                 // If the tree view value doesn't match the model value, update the tree view value
-                if ((!isValuesEqual(treeViewValue, modelValue)) || (keysFromModel[i] != childItem->data(0).value.toString()))
+                if (keysFromModel[i] != childItem->data(0).value.toString())
                 {
-                    qDebug() << "Updating value for key:" << keysFromModel[i] << "from" << treeViewValue << "to" << modelValue;
                     childItem->setData(0, keysFromModel[i]);
-                    childItem->setData(1, modelValue);
-                    emit signalUpdateData(valueIndex);
+                    emit signalUpdateData(index(i, 0, parentIndex));
                 }
+                if (!isValuesEqual(treeViewValue, modelValue))
+                {
+                    childItem->setData(1, modelValue);
+                    emit signalUpdateData(index(i, 1, parentIndex));
+                }
+
+
 
                 // If the value is a QVariantMap, recursively synchronize its children
                 if (modelValue.typeId() == QMetaType::QVariantMap)
