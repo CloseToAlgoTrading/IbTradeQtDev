@@ -23,7 +23,7 @@ CPortfolioConfigModel::CPortfolioConfigModel(QTreeView *treeView, CBasicRoot *pR
     Q_UNUSED(parent);
 
     QObject::connect(&m_UpdateInfoTimer, &QTimer::timeout, this, &CPortfolioConfigModel::slotOnTimeoutCallback);
-    m_UpdateInfoTimer.start(100);
+    m_UpdateInfoTimer.start(5000);
 }
 
 void CPortfolioConfigModel::setupModelData()
@@ -338,8 +338,10 @@ void CPortfolioConfigModel::onClickRemoveNodeButton()
 
 void CPortfolioConfigModel::slotOnTimeoutCallback()
 {
+    qDebug() << "-----------Start--------------";
 //traverseNodes(rootItem);
-    //traverseTreeView(createIndex(0, 0, rootItem));
+    traverseTreeView(createIndex(0, 0, rootItem));
+    qDebug() << "-----------End--------------";
 }
 
 
@@ -516,56 +518,76 @@ void CPortfolioConfigModel::traverseTreeView(const QModelIndex& parentIndex)
             key = parentIndex.data(Qt::DisplayRole).toString();
             if (stateMap.contains(key))
             {
-                    subNode = stateMap.value(key);
-                    key = "";
+                if(key == "Parameters")
+                {
+                    synchronizeModelParameters(parentIndex, dataModel->getParameters());
+                }
+                else if(key == "Info")
+                {
+                    synchronizeModelParameters(parentIndex, dataModel->genericInfo());
+                }
+                else if(key == "Assets")
+                {
+                    synchronizeModelParameters(parentIndex, dataModel->assetList());
+                }
+                subNode = stateMap.value(key);
+                key = "";
+
             }
             else if(dataModel->assetList().contains(key))
             {
+                    //synchronizeModelParameters(parentIndex, dataModel->assetList());
                     assetKey = key;
                     qDebug() << "assetKey" << assetKey;
             }
 
+            qDebug() << "COLUMN 0: " << parentIndex.data(Qt::DisplayRole).toString();
+
         }
-        else if((parentIndex.column() == 1) && (key != ""))
-        {
-            if(subNode == NodeState::Parameters)
-            {
-                //if (dataModel->getParameters()[key].toString() == parentIndex.data(Qt::DisplayRole).toString())
-                qDebug() << "Parameters" << key << (QString::number(dataModel->getParameters()[key].toDouble(), 'f', 2)) << "treeview:" << parentIndex.data(Qt::DisplayRole).toString() << isValuesEqual(parentIndex.data(Qt::DisplayRole), dataModel->getParameters()[key]);
-                if(!isValuesEqual(parentIndex.data(Qt::DisplayRole), dataModel->getParameters()[key]))
-                {
-                    TreeItem * tmp = getItem(parentIndex);
-                    tmp->setData(parentIndex.column(), dataModel->getParameters()[key]);
-                    emit signalUpdateData(parentIndex);
-                }
-                key = "";
-            }
-            else if(subNode == NodeState::Info)
-            {
-                qDebug() << "Info" << key << dataModel->genericInfo()[key].toString() << "treeview:" << parentIndex.data(Qt::DisplayRole).toString() << isValuesEqual(parentIndex.data(Qt::DisplayRole), dataModel->genericInfo()[key]);
-                if(!isValuesEqual(parentIndex.data(Qt::DisplayRole), dataModel->genericInfo()[key]))
-                {
-                    TreeItem * tmp = getItem(parentIndex);
-                    tmp->setData(parentIndex.column(), dataModel->genericInfo()[key]);
-                    emit signalUpdateData(parentIndex);
-                }
-                key = "";
+//        else if((parentIndex.column() == 1) && (key != ""))
+//        {
+//            qDebug() << "COLUMN 1: " << parentIndex.data(Qt::DisplayRole).toString();
+//            if(subNode == NodeState::Parameters)
+//            {
+//                //if (dataModel->getParameters()[key].toString() == parentIndex.data(Qt::DisplayRole).toString())
+//                qDebug() << "Parameters" << key << (QString::number(dataModel->getParameters()[key].toDouble(), 'f', 2)) << "treeview:" << parentIndex.data(Qt::DisplayRole).toString() << isValuesEqual(parentIndex.data(Qt::DisplayRole), dataModel->getParameters()[key]);
+//                //updateNodeIfChanged(parentIndex, dataModel->getParameters()[key]);
+////                if(!isValuesEqual(parentIndex.data(Qt::DisplayRole), dataModel->getParameters()[key]))
+////                {
+////                    TreeItem * tmp = getItem(parentIndex);
+////                    tmp->setData(parentIndex.column(), dataModel->getParameters()[key]);
+////                    emit signalUpdateData(parentIndex);
+////                }
+//                key = "";
+//            }
+//            else if(subNode == NodeState::Info)
+//            {
+//                qDebug() << "Info" << key << dataModel->genericInfo()[key].toString() << "treeview:" << parentIndex.data(Qt::DisplayRole).toString() << isValuesEqual(parentIndex.data(Qt::DisplayRole), dataModel->genericInfo()[key]);
+//            //    updateNodeIfChanged(parentIndex, dataModel->genericInfo()[key]);
+////                if(!isValuesEqual(parentIndex.data(Qt::DisplayRole), dataModel->genericInfo()[key]))
+////                {
+////                    TreeItem * tmp = getItem(parentIndex);
+////                    tmp->setData(parentIndex.column(), dataModel->genericInfo()[key]);
+////                    emit signalUpdateData(parentIndex);
+////                }
+//                key = "";
 
-            }
-            else if((subNode == NodeState::Assets) && (assetKey != ""))
-            {
+//            }
+//            else if((subNode == NodeState::Assets) && (assetKey != ""))
+//            {
 
-                qDebug() << key << dataModel->assetList()[assetKey].toMap()[key].toString() << "treeview:" << parentIndex.data(Qt::DisplayRole).toString() << isValuesEqual(parentIndex.data(Qt::DisplayRole), dataModel->assetList()[assetKey].toMap()[key]);
-                if(!isValuesEqual(parentIndex.data(Qt::DisplayRole), dataModel->assetList()[assetKey].toMap()[key]))
-                {
-                    TreeItem * tmp = getItem(parentIndex);
-                    tmp->setData(parentIndex.column(), dataModel->assetList()[assetKey].toMap()[key]);
-                    emit signalUpdateData(parentIndex);
-                }
-                key = "";
+//                qDebug() << key << dataModel->assetList()[assetKey].toMap()[key].toString() << "treeview:" << parentIndex.data(Qt::DisplayRole).toString() << isValuesEqual(parentIndex.data(Qt::DisplayRole), dataModel->assetList()[assetKey].toMap()[key]);
+//                //updateNodeIfChanged(parentIndex, dataModel->assetList()[assetKey].toMap()[key]);
+////                if(!isValuesEqual(parentIndex.data(Qt::DisplayRole), dataModel->assetList()[assetKey].toMap()[key]))
+////                {
+////                    TreeItem * tmp = getItem(parentIndex);
+////                    tmp->setData(parentIndex.column(), dataModel->assetList()[assetKey].toMap()[key]);
+////                    emit signalUpdateData(parentIndex);
+////                }
+//                key = "";
 
-            }
-        }
+//            }
+//        }
     }
 
     int numRows = model->rowCount(parentIndex);
@@ -578,3 +600,128 @@ void CPortfolioConfigModel::traverseTreeView(const QModelIndex& parentIndex)
     }
 }
 
+
+void CPortfolioConfigModel::updateNodeIfChanged(const QModelIndex& index, const QVariant& valueFromModel)
+{
+    if (!isValuesEqual(index.data(Qt::DisplayRole), valueFromModel))
+    {
+        TreeItem* tmp = getItem(index);
+        tmp->setData(index.column(), valueFromModel);
+        emit signalUpdateData(index);
+    }
+}
+
+//void CPortfolioConfigModel::synchronizeModelParameters(const QModelIndex& parentIndex, const QVariantMap& modelParameters)
+//{
+//    QStringList keysFromModel = modelParameters.keys();
+
+//    int treeViewRowCount = rowCount(parentIndex);
+
+//    // Add or update rows in the tree view to match the model parameters
+//    for (int i = 0; i < keysFromModel.size(); ++i)
+//    {
+//        QModelIndex childIndex = index(i, 0, parentIndex);
+//        TreeItem* childItem = getItem(childIndex);
+
+//        // Check if the tree view node key matches the model parameter key
+//        //if (childItem && childItem->data(0).value.toString() == keysFromModel[i])
+//        if(i < treeViewRowCount)
+//        {
+//                QModelIndex valueIndex = index(i, 1, parentIndex);
+//                QVariant treeViewValue = childItem->data(1).value;
+//                QVariant modelValue = modelParameters[keysFromModel[i]];
+
+//                // If the tree view value doesn't match the model value, update the tree view value
+//                if (!isValuesEqual(treeViewValue, modelValue))
+//                {
+//                qDebug() << "Updating value for key:" << keysFromModel[i] << "from" << treeViewValue << "to" << modelValue;
+//                childItem->setData(0, keysFromModel[i]);
+//                childItem->setData(1, modelValue);
+//                emit signalUpdateData(valueIndex);
+//                }
+//        }
+//        else
+//        {
+//                // Insert a new row for the new model parameter
+//                qDebug() << "Inserting new row for key:" << keysFromModel[i] << "with value:" << modelParameters[keysFromModel[i]];
+//                beginInsertRows(parentIndex, i, i);
+////                TreeItem* newRow = new TreeItem({keysFromModel[i], modelParameters[keysFromModel[i]]}, getItem(parentIndex));
+////                getItem(parentIndex)->insertChild(i, newRow);
+//                addDataToNode(getItem(parentIndex), keysFromModel[i], modelParameters[keysFromModel[i]], modelParameters[keysFromModel[i]].typeId(), true, columnCount(parentIndex));
+//                endInsertRows();
+//        }
+//    }
+
+//    // Remove extra rows in the tree view if they don't exist in the model parameters
+//    while (treeViewRowCount > keysFromModel.size())
+//    {
+//        qDebug() << "Removing extra row with key:" << getItem(index(treeViewRowCount - 1, 0, parentIndex))->data(0).value.toString();
+//        beginRemoveRows(parentIndex, treeViewRowCount - 1, treeViewRowCount - 1);
+//        getItem(parentIndex)->removeChildren(treeViewRowCount - 1, 1);
+//        endRemoveRows();
+//        treeViewRowCount--;
+//    }
+//}
+
+
+void CPortfolioConfigModel::synchronizeModelParameters(const QModelIndex& parentIndex, const QVariantMap& modelParameters)
+{
+    QStringList keysFromModel = modelParameters.keys();
+
+    int treeViewRowCount = rowCount(parentIndex);
+
+    // Add or update rows in the tree view to match the model parameters
+    for (int i = 0; i < keysFromModel.size(); ++i)
+    {
+        QModelIndex childIndex = index(i, 0, parentIndex);
+        TreeItem* childItem = getItem(childIndex);
+
+        // Check if the tree view node key matches the model parameter key
+        if (i < treeViewRowCount)
+        {
+                QModelIndex valueIndex = index(i, 1, parentIndex);
+                QVariant treeViewValue = childItem->data(1).value;
+                QVariant modelValue = modelParameters[keysFromModel[i]];
+
+                // If the tree view value doesn't match the model value, update the tree view value
+                if ((!isValuesEqual(treeViewValue, modelValue)) || (keysFromModel[i] != childItem->data(0).value.toString()))
+                {
+                    qDebug() << "Updating value for key:" << keysFromModel[i] << "from" << treeViewValue << "to" << modelValue;
+                    childItem->setData(0, keysFromModel[i]);
+                    childItem->setData(1, modelValue);
+                    emit signalUpdateData(valueIndex);
+                }
+
+                // If the value is a QVariantMap, recursively synchronize its children
+                if (modelValue.typeId() == QMetaType::QVariantMap)
+                {
+                synchronizeModelParameters(childIndex, modelValue.toMap());
+                }
+        }
+        else
+        {
+                // Insert a new row for the new model parameter
+                qDebug() << "Inserting new row for key:" << keysFromModel[i] << "with value:" << modelParameters[keysFromModel[i]];
+                beginInsertRows(parentIndex, i, i);
+                addDataToNode(getItem(parentIndex), keysFromModel[i], modelParameters[keysFromModel[i]], modelParameters[keysFromModel[i]].typeId(), true, columnCount(parentIndex));
+                endInsertRows();
+
+                // If the value is a QVariantMap, recursively synchronize its children
+                if (modelParameters[keysFromModel[i]].typeId() == QMetaType::QVariantMap)
+                {
+                QModelIndex newNodeIndex = index(i, 0, parentIndex);
+                synchronizeModelParameters(newNodeIndex, modelParameters[keysFromModel[i]].toMap());
+                }
+        }
+    }
+
+    // Remove extra rows in the tree view if they don't exist in the model parameters
+    while (treeViewRowCount > keysFromModel.size())
+    {
+        qDebug() << "Removing extra row with key:" << getItem(index(treeViewRowCount - 1, 0, parentIndex))->data(0).value.toString();
+        beginRemoveRows(parentIndex, treeViewRowCount - 1, treeViewRowCount - 1);
+        getItem(parentIndex)->removeChildren(treeViewRowCount - 1, 1);
+        endRemoveRows();
+        treeViewRowCount--;
+    }
+}

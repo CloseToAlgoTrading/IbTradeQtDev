@@ -1,5 +1,6 @@
 #include "cmovingaveragecrossover.h"
 #include "IBComClientImpl.h"
+#include "contractsdefs.h"
 
 Q_LOGGING_CATEGORY(MaCrossoverPmLog, "MovingAverage.PM");
 
@@ -28,12 +29,22 @@ CMovingAverageCrossover::CMovingAverageCrossover(QObject *parent) : CBasicStrate
 
 bool CMovingAverageCrossover::start()
 {
-    reqHistConfigData_t histConfiguration(0, BAR_SIZE_1_DAY, "10 D", "SPY");
+//    reqHistConfigData_t histConfiguration(0, BAR_SIZE_1_DAY, "10 D", "SPY");
 
 //    if (!reqestHistoricalData(histConfiguration))
 //    {
 //        qCWarning(MaCrossoverPmLog(), "request of historical data [SPY] failed!");
 //    }
+//    QString m_TicketName = "EUR";
+//    //Contract optContract = ContractsDefs::CashCFD(m_TicketName);
+//    Contract contract;
+//    contract.symbol = "EUR";
+//    contract.secType = "CASH";
+//    contract.currency = "USD";
+//    contract.exchange = "IDEALPRO";
+
+//    reqReadlTimeDataConfigData_t optCfg{0, contract, "", false, false};
+//    reqestRealTimeData(optCfg);
 
     requestPosition();
 
@@ -54,8 +65,14 @@ void CMovingAverageCrossover::slotCbkRecvHistoricalData(const QList<CHistoricalD
 void CMovingAverageCrossover::slotEndRecvPosition()
 {
     qCDebug(MaCrossoverPmLog(), "TADA!!!");
+    m_assetList.clear();
     // find all stock position according to ticketName
-    auto it = m_positionMap.begin();
-    while (it != m_positionMap.end())
-        qCDebug(MaCrossoverPmLog(), "Ticker [%s]", it.key().toStdString().c_str());
+    for (auto iter = m_positionMap.constBegin(); iter != m_positionMap.constEnd(); ++iter)
+    {
+        qCDebug(MaCrossoverPmLog(), "Ticker [%s] size[%f] cost[%f]", iter.key().toStdString().c_str(), iter.value().getPos(), iter.value().getAvgCost());
+        this->m_assetList[iter.key()] = QVariantMap({{"Size",iter.value().getPos()}, {"Avg. Cost",iter.value().getAvgCost()}});
+    }
+
+
+
 }

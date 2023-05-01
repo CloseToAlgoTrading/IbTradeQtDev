@@ -13,8 +13,8 @@ CBasicStrategy::CBasicStrategy():
     this->m_genericInfo["pnlpnc"] = "2.1 %";
 
 
-    this->m_assetList["SPY"] = QVariantMap({{"pnl",23.0f}, {"aprice",100.0f}});
-    this->m_assetList["V"] = QVariantMap({{"pnl",2.0f}, {"aprice",320.1f}});
+//    this->m_assetList["SPY"] = QVariantMap({{"pnl",23.0f}, {"aprice",100.0f}});
+//    this->m_assetList["V"] = QVariantMap({{"pnl",2.0f}, {"aprice",320.1f}});
 }
 
 void CBasicStrategy::addModel(ptrGenericModelType pModel)

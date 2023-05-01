@@ -32,6 +32,9 @@ private:
     void traverseNodes(TreeItem *node);
     void processNode(TreeItem *node);
     void traverseTreeView(const QModelIndex &parentIndex);
+    void updateNodeIfChanged(const QModelIndex& index, const QVariant& valueFromModel);
+    void synchronizeModelParameters(const QModelIndex& parentIndex, const QVariantMap& modelParameters);
+
 
     void addDataToNode(TreeItem *parent, const QString &key, const QVariant &value, int typeId, bool readOnly, int columnCount);
     void addNestedNodes(TreeItem *parent, const QString &rootName, const QVariantMap &params, bool readOnly, int columnCount);
