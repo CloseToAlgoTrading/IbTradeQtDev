@@ -624,7 +624,7 @@ void IBComClientImpl::commissionReport(const CommissionReport& commissionReport)
 //---------------------------------------------------------------
 void IBComClientImpl::position(const std::string &account, const Contract &contract, Decimal position, double avgCost)
 {
-    CPosition positionObj(QString::fromLocal8Bit(account.data(), static_cast<qint32>(account.size())), contract, position, avgCost);
+    CPosition positionObj(QString::fromLocal8Bit(account.data(), static_cast<qint32>(account.size())), contract, decimalToDouble(position), avgCost);
 
     qCDebug(IBComClientImplLog(), "acc: %s contract: %s, %s, %s - pos: %f, ac: %f n", positionObj.getAccount().toLocal8Bit().data(),
             positionObj.getContract().symbol.c_str(), positionObj.getContract().secType.c_str(), positionObj.getContract().currency.c_str(),

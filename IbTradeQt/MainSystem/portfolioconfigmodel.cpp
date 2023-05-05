@@ -338,10 +338,10 @@ void CPortfolioConfigModel::onClickRemoveNodeButton()
 
 void CPortfolioConfigModel::slotOnTimeoutCallback()
 {
-    qDebug() << "-----------Start--------------";
+    //qDebug() << "-----------Start--------------";
 //traverseNodes(rootItem);
     traverseTreeView(createIndex(0, 0, rootItem));
-    qDebug() << "-----------End--------------";
+    //qDebug() << "-----------End--------------";
 }
 
 
@@ -430,7 +430,7 @@ void CPortfolioConfigModel::traverseNodes(TreeItem *node)
 void CPortfolioConfigModel::processNode(TreeItem *node)
 {
     stItemData data = node->data(0);
-    qDebug() << "Node data (column 0):" << data.value;
+   // qDebug() << "Node data (column 0):" << data.value;
 
     emit signalUpdateDataAll();
 }
@@ -486,7 +486,7 @@ void CPortfolioConfigModel::traverseTreeView(const QModelIndex& parentIndex)
     {
         if (item->data(0).id == PM_ITEM_ACCOUNTS)
         {
-            qDebug() << parentIndex.data(Qt::DisplayRole).toString() << "RESET";
+            //qDebug() << parentIndex.data(Qt::DisplayRole).toString() << "RESET";
             node = item->data(0).id;
             subNode = NodeState::None;
             assetKey = "";
@@ -496,7 +496,7 @@ void CPortfolioConfigModel::traverseTreeView(const QModelIndex& parentIndex)
         {
             dataModel = getModelByIdex(parentIndex);
             // Do something with the current index, e.g. print the data to the console
-            qDebug() << parentIndex.data(Qt::DisplayRole).toString();
+            //qDebug() << parentIndex.data(Qt::DisplayRole).toString();
             node = item->data(0).id;
             subNode = NodeState::None;
         }
@@ -538,10 +538,10 @@ void CPortfolioConfigModel::traverseTreeView(const QModelIndex& parentIndex)
             {
                     //synchronizeModelParameters(parentIndex, dataModel->assetList());
                     assetKey = key;
-                    qDebug() << "assetKey" << assetKey;
+                    //qDebug() << "assetKey" << assetKey;
             }
 
-            qDebug() << "COLUMN 0: " << parentIndex.data(Qt::DisplayRole).toString();
+            //qDebug() << "COLUMN 0: " << parentIndex.data(Qt::DisplayRole).toString();
 
         }
 //        else if((parentIndex.column() == 1) && (key != ""))
@@ -706,7 +706,7 @@ void CPortfolioConfigModel::synchronizeModelParameters(const QModelIndex& parent
         else
         {
                 // Insert a new row for the new model parameter
-                qDebug() << "Inserting new row for key:" << keysFromModel[i] << "with value:" << modelParameters[keysFromModel[i]];
+                //qDebug() << "Inserting new row for key:" << keysFromModel[i] << "with value:" << modelParameters[keysFromModel[i]];
                 beginInsertRows(parentIndex, i, i);
                 addDataToNode(getItem(parentIndex), keysFromModel[i], modelParameters[keysFromModel[i]], modelParameters[keysFromModel[i]].typeId(), true, columnCount(parentIndex));
                 endInsertRows();
@@ -723,7 +723,7 @@ void CPortfolioConfigModel::synchronizeModelParameters(const QModelIndex& parent
     // Remove extra rows in the tree view if they don't exist in the model parameters
     while (treeViewRowCount > keysFromModel.size())
     {
-        qDebug() << "Removing extra row with key:" << getItem(index(treeViewRowCount - 1, 0, parentIndex))->data(0).value.toString();
+        //qDebug() << "Removing extra row with key:" << getItem(index(treeViewRowCount - 1, 0, parentIndex))->data(0).value.toString();
         beginRemoveRows(parentIndex, treeViewRowCount - 1, treeViewRowCount - 1);
         getItem(parentIndex)->removeChildren(treeViewRowCount - 1, 1);
         endRemoveRows();

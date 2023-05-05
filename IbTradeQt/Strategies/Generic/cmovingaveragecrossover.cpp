@@ -1,6 +1,7 @@
 #include "cmovingaveragecrossover.h"
 #include "IBComClientImpl.h"
 #include "contractsdefs.h"
+#include "Decimal.h"
 
 Q_LOGGING_CATEGORY(MaCrossoverPmLog, "MovingAverage.PM");
 
@@ -69,8 +70,12 @@ void CMovingAverageCrossover::slotEndRecvPosition()
     // find all stock position according to ticketName
     for (auto iter = m_positionMap.constBegin(); iter != m_positionMap.constEnd(); ++iter)
     {
-        qCDebug(MaCrossoverPmLog(), "Ticker [%s] size[%f] cost[%f]", iter.key().toStdString().c_str(), iter.value().getPos(), iter.value().getAvgCost());
-        this->m_assetList[iter.key()] = QVariantMap({{"Size",iter.value().getPos()}, {"Avg. Cost",iter.value().getAvgCost()}});
+        if(iter.value().getPos() > 0.0)
+        {
+            qCDebug(MaCrossoverPmLog(), "Ticker [%s] size[%f] cost[%f]", iter.key().toStdString().c_str(), iter.value().getPos(), iter.value().getAvgCost());
+            this->m_assetList[iter.key()] = QVariantMap({{"Size", iter.value().getPos()}, {"Avg. Cost",iter.value().getAvgCost()}});
+        }
+
     }
 
 
