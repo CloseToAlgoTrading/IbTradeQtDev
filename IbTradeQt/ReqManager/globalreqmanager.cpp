@@ -153,8 +153,8 @@ qint32 GlobalReqManager::removeReqData(const QString & _symbol, const tEReqType 
     while ((0 == ret) && (itMap != m_tickerMap.end()) && (itMap.key() == _symbol)) {
         if (itMap.value().reqType == _t)
         {
-            removeReqIdsExt(_symbol, { itMap->id, itMap->reqType });
             ret = itMap->id;
+            removeReqIdsExt(_symbol, { itMap->id, itMap->reqType });
         }
         else
         {

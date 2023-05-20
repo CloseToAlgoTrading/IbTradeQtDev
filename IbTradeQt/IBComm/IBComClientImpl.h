@@ -233,7 +233,7 @@ public:
     void managedAccounts( const std::string& accountsList) override {}
     void receiveFA(faDataType pFaDataType, const std::string& cxml) override {}
     void historicalData(TickerId reqId, const Bar& bar) override;
-    void historicalDataEnd(int reqId, const std::string& startDateStr, const std::string& endDateStr) override {}
+    void historicalDataEnd(int reqId, const std::string& startDateStr, const std::string& endDateStr) override;
     void scannerParameters(const std::string& xml) override {}
     void scannerData(int reqId, int rank, const ContractDetails& contractDetails,
         const std::string& distance, const std::string& benchmark, const std::string& projection,

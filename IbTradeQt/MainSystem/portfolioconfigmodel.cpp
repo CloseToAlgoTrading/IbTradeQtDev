@@ -243,7 +243,7 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
                 auto portfolio = account ? account->getModels().value(workingIndex.row() - START_OF_WORKING_NODES, nullptr) : nullptr;
                 if((nullptr != portfolio) && (nullptr != this->m_brokerInterface))
                 {
-                    model = CStrategyFactory::createNewStrategy(ModelType::STRATEGY_MA);
+                    model = CStrategyFactory::createNewStrategy(ModelType::STRATEGY_MOMENTUM);
                     model->setBrokerDataProvider(this->m_brokerInterface);
 
                     portfolio->addModel(model);

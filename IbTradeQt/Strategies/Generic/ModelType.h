@@ -9,7 +9,8 @@ enum class ModelType {
     PORTFOLIO,
     STRATEGY,
     STRATEGY_BASIC_TEST,
-    STRATEGY_MA
+    STRATEGY_MA,
+    STRATEGY_MOMENTUM
 };
 
 #endif // MODELTYPE_H

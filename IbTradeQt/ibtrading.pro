@@ -58,6 +58,7 @@ SOURCES += \
     Strategies/Generic/cbasicstrategy_V2.cpp \
     Strategies/Generic/cgenericmodelApi.cpp \
     Strategies/Generic/cgenericmodelApi_V2.cpp \
+    Strategies/Generic/cmomentum.cpp \
     Strategies/Generic/cmovingaveragecrossover.cpp \
     Strategies/Generic/csma.cpp \
     Strategies/Generic/cstrategyfactory.cpp \
@@ -154,6 +155,7 @@ HEADERS += \
     Strategies/Generic/cbasicstrategy_V2.h \
     Strategies/Generic/cgenericmodelApi.h \
     Strategies/Generic/cgenericmodelApi_V2.h \
+    Strategies/Generic/cmomentum.h \
     Strategies/Generic/cmovingaveragecrossover.h \
     Strategies/Generic/csma.h \
     Strategies/Generic/cstrategyfactory.h \

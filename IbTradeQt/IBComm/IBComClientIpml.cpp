@@ -383,6 +383,14 @@ void IBComClientImpl::tickString(TickerId tickerId, TickType tickType, const std
 //    double low, double close, int volume, int barCount, double WAP, int hasGaps)
 void IBComClientImpl::historicalData(TickerId reqId, const Bar& bar)
 {
+    //TODO: Decimal!!
+    CHistoricalData _historicalData(reqId, bar.time.c_str(), bar.open, bar.high, bar.low, bar.close, static_cast<int>(decimalToDouble(bar.volume)), bar.count, static_cast<int>(decimalToDouble(bar.wap)), false);
+
+    qCDebug(IBComClientImplLog(), "tickerId = %d , date = %s, open = %f, high = %f, low =%f, close = %f, volume = %d, barCount = %d, WAP = %f, hasGaps = %d",
+            _historicalData.getId(), NHelper::convertQTDataTimeToString(_historicalData.getDateTime()).toStdString().c_str(), _historicalData.getOpen(), _historicalData.getHigh(), _historicalData.getLow(),
+            _historicalData.getClose(), _historicalData.getVolume(), _historicalData.getCount(), _historicalData.getWap(), _historicalData.getHasGaps());
+    m_DispatcherBrokerData.SendMessageToSubscribers(&_historicalData, reqId, RT_HISTORICAL_DATA);
+
 /*    QString tmpString(QString::fromLocal8Bit(date.data(), date.size()));
     
     
@@ -409,8 +417,14 @@ void IBComClientImpl::historicalData(TickerId reqId, const Bar& bar)
 
         m_DispatcherBrokerData.SendMessageToSubscribers(&_historicalData, reqId, RT_HISTORICAL_DATA);
     }
-
 */
+
+}
+
+void IBComClientImpl::historicalDataEnd(int reqId, const std::string &startDateStr, const std::string &endDateStr)
+{
+    CHistoricalData _historicalData(reqId, "", 0, 0, 0, 0, 0, 0, 0, false, true);
+    m_DispatcherBrokerData.SendMessageToSubscribers(&_historicalData, reqId, RT_HISTORICAL_DATA);
 }
 
 
