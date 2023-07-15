@@ -172,7 +172,18 @@ void CPortfolioConfigModel::dataChangeCallback(const QModelIndex &topLeft, const
                 else if (columnIndex == 1)
                 {
                     const auto isActive = itemToUpdate->data(valueIndex.column()).value.toInt() == Qt::Checked;
-                    isActive ? modelToUpdate->start() : modelToUpdate->stop();
+                    auto tmp_parent = itemToUpdate->parent();
+                    auto tmp_id = tmp_parent->data(0).id;
+                    bool parents_isActive = true;
+                    while (PM_ITEM_ACCOUNTS != tmp_id) {
+                        parents_isActive &= tmp_parent->data(valueIndex.column()).value.toInt() == Qt::Checked;
+                        tmp_parent = tmp_parent->parent();
+                        tmp_id = tmp_parent->data(0).id;
+                    };
+                    if(true == parents_isActive)
+                    {
+                        isActive ? modelToUpdate->start() : modelToUpdate->stop();
+                    }
                 }
             }
         };
