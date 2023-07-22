@@ -54,6 +54,7 @@ SOURCES += \
     Strategies/Generic/cbasicaccount.cpp \
     Strategies/Generic/cbasicportfolio.cpp \
     Strategies/Generic/cbasicroot.cpp \
+    Strategies/Generic/cbasicselectionmodel.cpp \
     Strategies/Generic/cbasicstrategy.cpp \
     Strategies/Generic/cbasicstrategy_V2.cpp \
     Strategies/Generic/cgenericmodelApi.cpp \
@@ -151,6 +152,7 @@ HEADERS += \
     Strategies/Generic/cbasicaccount.h \
     Strategies/Generic/cbasicportfolio.h \
     Strategies/Generic/cbasicroot.h \
+    Strategies/Generic/cbasicselectionmodel.h \
     Strategies/Generic/cbasicstrategy.h \
     Strategies/Generic/cbasicstrategy_V2.h \
     Strategies/Generic/cgenericmodelApi.h \

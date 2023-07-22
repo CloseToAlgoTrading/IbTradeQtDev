@@ -6,7 +6,7 @@
 #include <QVariantList>
 #include "cbrokerdataprovider.h"
 #include "cprocessingbase_v2.h"
-#include "IBrokerAPI.h"
+//#include "IBrokerAPI.h"
 #include <QTimer>
 #include <QJsonObject>
 
@@ -30,12 +30,8 @@ public:
     virtual bool start() override;
     virtual bool stop() override;
 
-
-
     virtual QJsonObject toJson() const override;
     virtual void fromJson(const QJsonObject& json) override;
-
-
 
     virtual QVariantMap assetList() const override;
     virtual void setAssetList(const QVariantMap &newAssetList) override;
@@ -56,6 +52,7 @@ protected:
     QVariantMap m_assetList;
     QVariantMap m_genericInfo;
     QTimer m_tmpTimer;
+
 
 public slots:
     void onUpdateParametersSlot(const QVariantMap& parameters);
