@@ -40,6 +40,26 @@ public:
     ModelType modelType() const override { return ModelType::STRATEGY; }
     void setBrokerDataProvider(QSharedPointer<CBrokerDataProvider> newClient) override {Q_UNUSED(newClient)};
 
+    virtual void addSelectionModel(ptrGenericModelType pModel) override {};
+    virtual void removeSelectionModel() override{};
+
+    virtual void addAlphaModel(ptrGenericModelType pModel) override{};
+    virtual void removeAlphaModel() override{};
+
+    virtual void addRebalanceModel(ptrGenericModelType pModel) override{};
+    virtual void removeRebalanceModel() override{};
+
+    virtual void addRiskModel(ptrGenericModelType pModel) override{};
+    virtual void removeRiskModel() override{};
+
+    virtual void addExecutionModel(ptrGenericModelType pModel) override{};
+    virtual void removeExecutionModel() override{};
+
+    virtual ptrGenericModelType getSelectionModel() override{return 0;};
+    virtual ptrGenericModelType getAlphaModel() override{return 0;};
+    virtual ptrGenericModelType getRebalanceModel() override{return 0;};
+    virtual ptrGenericModelType getRiskModel() override{return 0;};
+    virtual ptrGenericModelType getExecutionModel() override{return 0;};
 protected:
     QList<ptrGenericModelType> m_Models;
     QVariantMap m_ParametersMap;

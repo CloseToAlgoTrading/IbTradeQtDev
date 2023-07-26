@@ -51,6 +51,7 @@ SOURCES += \
     MainSystem/ibtradesystemview.cpp \
     MainSystem/portfolioconfigmodel.cpp \
     Strategies/AutoDeltAlignment/src/CModelInputData.cpp \
+    Strategies/Generic/cbasemodel.cpp \
     Strategies/Generic/cbasicaccount.cpp \
     Strategies/Generic/cbasicportfolio.cpp \
     Strategies/Generic/cbasicroot.cpp \
@@ -149,6 +150,7 @@ HEADERS += \
     Strategies/AutoDeltAlignment/header/CModelInputData.h \
     Strategies/AutoDeltAlignment/header/autodeltatypes.h \
     Strategies/Generic/ModelType.h \
+    Strategies/Generic/cbasemodel.h \
     Strategies/Generic/cbasicaccount.h \
     Strategies/Generic/cbasicportfolio.h \
     Strategies/Generic/cbasicroot.h \

@@ -34,13 +34,32 @@ public:
     virtual QJsonObject toJson() const = 0;
     virtual void fromJson(const QJsonObject& json) = 0;
 
-
     virtual bool start() = 0;
     virtual bool stop() = 0;
 
-
     virtual ModelType modelType() const = 0;
     virtual void setBrokerDataProvider(QSharedPointer<CBrokerDataProvider> newClient) = 0;
+
+    virtual void addSelectionModel(ptrGenericModelType pModel) = 0;
+    virtual void removeSelectionModel() = 0;
+
+    virtual void addAlphaModel(ptrGenericModelType pModel) = 0;
+    virtual void removeAlphaModel() = 0;
+
+    virtual void addRebalanceModel(ptrGenericModelType pModel) = 0;
+    virtual void removeRebalanceModel() = 0;
+
+    virtual void addRiskModel(ptrGenericModelType pModel) = 0;
+    virtual void removeRiskModel() = 0;
+
+    virtual void addExecutionModel(ptrGenericModelType pModel) = 0;
+    virtual void removeExecutionModel() = 0;
+
+    virtual ptrGenericModelType getSelectionModel() = 0;
+    virtual ptrGenericModelType getAlphaModel() = 0;
+    virtual ptrGenericModelType getRebalanceModel() = 0;
+    virtual ptrGenericModelType getRiskModel() = 0;
+    virtual ptrGenericModelType getExecutionModel() = 0;
 };
 
 

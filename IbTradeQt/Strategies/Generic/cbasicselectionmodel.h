@@ -14,8 +14,8 @@ public:
     virtual ~CBasicSelectionModel() {};
 
 public:
-    virtual bool start() final;
-    virtual bool stop() final;
+    //virtual bool start() final;
+    //virtual bool stop() final;
 
     ModelType modelType() const override { return ModelType::STRATEGY_SELECTION_MODEL; }
 

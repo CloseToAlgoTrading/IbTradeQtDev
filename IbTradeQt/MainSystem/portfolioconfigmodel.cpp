@@ -127,6 +127,10 @@ void CPortfolioConfigModel::setupModelData(TreeItem * rootItem)
                 strategyModel->setBrokerDataProvider(m_brokerInterface);
                 QModelIndex strategyIndex = createIndex(portfolioIndex.row() + START_OF_WORKING_NODES, 0, getItem(portfolioIndex)->child(getItem(portfolioIndex)->childCount() - 1));
                 addWorkingNode(strategyIndex, strategyModel, PM_ITEM_STRATEGY);
+
+                QModelIndex SelectionModelIndex = createIndex(strategyIndex.row() + START_OF_WORKING_NODES, 0, getItem(strategyIndex)->child(getItem(strategyIndex)->childCount() - 1));
+                addWorkingNode(SelectionModelIndex, strategyModel->getSelectionModel(), PM_ITEM_SELECTION_MODEL, "Selection Model");
+
             }
         }
     }
@@ -310,23 +314,32 @@ QModelIndex CPortfolioConfigModel::findWorkingNode(QModelIndex index, const QLis
     return QModelIndex();
 }
 
-void CPortfolioConfigModel::addWorkingNode(QModelIndex index, const ptrGenericModelType pModel, const quint16 id)
+void CPortfolioConfigModel::addWorkingNode(QModelIndex index, const ptrGenericModelType pModel, const quint16 id, QString modelName)
 {
     TreeItem * item = getItem(index);
     beginInsertRows(index,item->childCount(),item->childCount());
+    TreeItem * parent;
+    if(pModel != nullptr)
+    {
+        parent = addRootNode(item,
+                                       pItemDataType(new stItemData(pModel->getName(), EVT_TEXT, id)),
+                                       pItemDataType(new stItemData(Qt::Unchecked, EVT_CECK_BOX, id + PT_ITEM_ACTIVATION)),
+                                       item->columnCount());
 
-    TreeItem * parentAccount = addRootNode(item,
-                                   pItemDataType(new stItemData(pModel->getName(), EVT_TEXT, id)),
-                                   pItemDataType(new stItemData(Qt::Unchecked, EVT_CECK_BOX, id + PT_ITEM_ACTIVATION)),
-                                   item->columnCount());
-
-    addNestedNodes(parentAccount, "Parameters", pModel->getParameters(), false, item->columnCount());
-    addNestedNodes(parentAccount, "Info", pModel->genericInfo(), true, item->columnCount());
-    addNestedNodes(parentAccount, "Assets", pModel->assetList(), true, item->columnCount());
-
+        addNestedNodes(parent, "Parameters", pModel->getParameters(), false, item->columnCount());
+        addNestedNodes(parent, "Info", pModel->genericInfo(), true, item->columnCount());
+        addNestedNodes(parent, "Assets", pModel->assetList(), true, item->columnCount());
+    }
+    else
+    {
+        parent = addRootNode(item,
+                                       pItemDataType(new stItemData("<empty>", EVT_RO_TEXT, id)),
+                                       pItemDataType(new stItemData(modelName, EVT_RO_TEXT, id)),
+                                       item->columnCount());
+    }
     endInsertRows();
 
-    QModelIndex newIndex = createIndex(index.row(), 0, parentAccount);
+    QModelIndex newIndex = createIndex(index.row(), 0, parent);
     emit signalUpdateData(newIndex);
 }
 
@@ -515,7 +528,7 @@ void CPortfolioConfigModel::traverseTreeView(const QModelIndex& parentIndex)
 
 //    qDebug() << "row: " << parentIndex.row() << "col: " << parentIndex.column();
     /* check parameters */
-    if(PM_ITEM_ACCOUNTS != node)
+    if((nullptr != dataModel) && (PM_ITEM_ACCOUNTS != node))
     {
 
         if(parentIndex.column() == 0)

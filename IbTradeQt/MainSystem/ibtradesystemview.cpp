@@ -17,6 +17,7 @@ CIBTradeSystemView::CIBTradeSystemView(QWidget *parent)
     ui.test_treeView->addAction(QIcon(":/IBTradeSystem/x_resources/Account.png"), "Add New Account");
     ui.test_treeView->addAction(QIcon(":/IBTradeSystem/x_resources/Portfolio.png"), "Add New Portfolio");
     ui.test_treeView->addAction(QIcon(":/IBTradeSystem/x_resources/Strategy.png"), "Add New Strategy");
+    //ui.test_treeView->addAction(QIcon(":/IBTradeSystem/x_resources/Strategy.png"), "Add New SelectionModel");
     QAction *act = new QAction(this);
     act->setSeparator(true);
     ui.test_treeView->addAction(act);
