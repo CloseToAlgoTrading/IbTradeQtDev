@@ -6,7 +6,7 @@ Q_LOGGING_CATEGORY(MomentumPmLog, "Momentum.PM");
 cMomentum::cMomentum(QObject *parent)
     : CBasicStrategy_V2{parent}
 {
-    this->setName("Momentumr");
+    this->setName("Momentum");
 
 
     QObject::connect(this, &CProcessingBase_v2::signalCbkRecvHistoricalData, this, &cMomentum::slotCbkRecvHistoricalData, Qt::QueuedConnection);
