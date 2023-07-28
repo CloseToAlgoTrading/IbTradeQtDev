@@ -7,6 +7,7 @@
 #include "cbasicroot.h"
 #include "cbasicstrategy_V2.h"
 #include "cmomentum.h"
+#include "cbasicselectionmodel.h"
 #include <QSharedPointer>
 
 ptrGenericModelType CStrategyFactory::createNewStrategy(ModelType id)
@@ -26,6 +27,8 @@ ptrGenericModelType CStrategyFactory::createNewStrategy(ModelType id)
         return QSharedPointer<CMovingAverageCrossover>::create();
     case ModelType::STRATEGY_MOMENTUM:
         return QSharedPointer<cMomentum>::create();
+    case ModelType::STRATEGY_SELECTION_MODEL:
+        return QSharedPointer<CBasicSelectionModel>::create();
     default:
         return nullptr;
     }
