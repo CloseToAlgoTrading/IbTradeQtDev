@@ -3,6 +3,7 @@
 #define CBASICSELECTIONMODEL_H
 
 #include "cbasicstrategy_v2.h"
+#include <QStringList>
 
 Q_DECLARE_LOGGING_CATEGORY(BasicSelectionModelLog);
 
@@ -18,6 +19,7 @@ public:
     //virtual bool stop() final;
 
     ModelType modelType() const override { return ModelType::STRATEGY_SELECTION_MODEL; }
+    QStringList getAssets();
 
 };
 

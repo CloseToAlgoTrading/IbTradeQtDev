@@ -52,8 +52,11 @@ SOURCES += \
     MainSystem/portfolioconfigmodel.cpp \
     Strategies/AutoDeltAlignment/src/CModelInputData.cpp \
     Strategies/Generic/cbasemodel.cpp \
+    Strategies/Generic/cbaserebalancemodel.cpp \
     Strategies/Generic/cbasicaccount.cpp \
+    Strategies/Generic/cbasicalphamodel.cpp \
     Strategies/Generic/cbasicportfolio.cpp \
+    Strategies/Generic/cbasicriskmodel.cpp \
     Strategies/Generic/cbasicroot.cpp \
     Strategies/Generic/cbasicselectionmodel.cpp \
     Strategies/Generic/cbasicstrategy.cpp \
@@ -151,8 +154,11 @@ HEADERS += \
     Strategies/AutoDeltAlignment/header/autodeltatypes.h \
     Strategies/Generic/ModelType.h \
     Strategies/Generic/cbasemodel.h \
+    Strategies/Generic/cbaserebalancemodel.h \
     Strategies/Generic/cbasicaccount.h \
+    Strategies/Generic/cbasicalphamodel.h \
     Strategies/Generic/cbasicportfolio.h \
+    Strategies/Generic/cbasicriskmodel.h \
     Strategies/Generic/cbasicroot.h \
     Strategies/Generic/cbasicselectionmodel.h \
     Strategies/Generic/cbasicstrategy.h \
