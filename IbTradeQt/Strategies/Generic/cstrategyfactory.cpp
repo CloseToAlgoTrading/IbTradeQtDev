@@ -1,5 +1,6 @@
 #include "cstrategyfactory.h"
 
+#include "cbasicexecutionmodel.h"
 #include "cteststrategy.h"
 #include "cmovingaveragecrossover.h"
 #include "cbasicaccount.h"
@@ -38,6 +39,8 @@ ptrGenericModelType CStrategyFactory::createNewStrategy(ModelType id)
         return QSharedPointer<CBaseRebalanceModel>::create();
     case ModelType::STRATEGY_RISK_MODEL:
         return QSharedPointer<CBasicRiskModel>::create();
+    case ModelType::STRATEGY_EXECTION_MODEL:
+        return QSharedPointer<CBasicExecutionModel>::create();
     default:
         return nullptr;
     }

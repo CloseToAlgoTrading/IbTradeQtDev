@@ -55,6 +55,7 @@ SOURCES += \
     Strategies/Generic/cbaserebalancemodel.cpp \
     Strategies/Generic/cbasicaccount.cpp \
     Strategies/Generic/cbasicalphamodel.cpp \
+    Strategies/Generic/cbasicexecutionmodel.cpp \
     Strategies/Generic/cbasicportfolio.cpp \
     Strategies/Generic/cbasicriskmodel.cpp \
     Strategies/Generic/cbasicroot.cpp \
@@ -157,6 +158,7 @@ HEADERS += \
     Strategies/Generic/cbaserebalancemodel.h \
     Strategies/Generic/cbasicaccount.h \
     Strategies/Generic/cbasicalphamodel.h \
+    Strategies/Generic/cbasicexecutionmodel.h \
     Strategies/Generic/cbasicportfolio.h \
     Strategies/Generic/cbasicriskmodel.h \
     Strategies/Generic/cbasicroot.h \

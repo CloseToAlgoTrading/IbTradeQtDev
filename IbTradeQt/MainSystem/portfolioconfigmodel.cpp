@@ -286,6 +286,7 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
                     model->addAlphaModel(CStrategyFactory::createNewStrategy(ModelType::STRATEGY_ALPHA_MODEL));
                     model->addRebalanceModel(CStrategyFactory::createNewStrategy(ModelType::STRATEGY_REBALANCE_MODEL));
                     model->addRiskModel(CStrategyFactory::createNewStrategy(ModelType::STRATEGY_RISK_MODEL));
+                    model->addExecutionModel(CStrategyFactory::createNewStrategy(ModelType::STRATEGY_EXECTION_MODEL));
                     portfolio->addModel(model);
                 }
             }
@@ -350,8 +351,11 @@ void CPortfolioConfigModel::addWorkingNode(QModelIndex index, const ptrGenericMo
     TreeItem * parent;
     if(pModel != nullptr)
     {
-        auto _isModelExist = (pModel->modelType() == ModelType::STRATEGY_SELECTION_MODEL) ||
-          (pModel->modelType() == ModelType::STRATEGY_ALPHA_MODEL);
+        auto _isModelExist = (pModel->modelType() == ModelType::STRATEGY_SELECTION_MODEL)
+                           || (pModel->modelType() == ModelType::STRATEGY_ALPHA_MODEL)
+                           || (pModel->modelType() == ModelType::STRATEGY_REBALANCE_MODEL)
+                           || (pModel->modelType() == ModelType::STRATEGY_RISK_MODEL)
+                           || (pModel->modelType() == ModelType::STRATEGY_EXECTION_MODEL);
         auto _vType = _isModelExist ? EVT_RO_TEXT : EVT_TEXT;
         auto secondIdem = _isModelExist ?
             pItemDataType(new stItemData(QVariant(), EVT_RO_TEXT, TVM_UNUSED_ID)) :
