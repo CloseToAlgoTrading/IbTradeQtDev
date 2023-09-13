@@ -101,35 +101,65 @@ QJsonObject CBaseModel::toJson() const
     }
     json["models"] = modelsArray;
 
+    if(nullptr != this->m_SelectionModel) {
+        json["selectionModel"] = m_SelectionModel->toJson();
+    }
+    if(nullptr != this->m_AlphaModel) {
+        json["alphaModel"] = m_AlphaModel->toJson();
+    }
+    if(nullptr != this->m_RebalanceModel) {
+        json["rebalanceModel"] = m_RebalanceModel->toJson();
+    }
+    if(nullptr != this->m_RiskModel) {
+        json["riskModel"] = m_RiskModel->toJson();
+    }
+    if(nullptr != this->m_ExecutionModel) {
+        json["executionModel"] = m_ExecutionModel->toJson();
+    }
+
     return json;
 }
 
+
 void CBaseModel::fromJson(const QJsonObject &json)
 {
+    // helper function
+    auto createAndLoadModel = [](const QJsonValue& modelJsonValue) -> std::optional<ptrGenericModelType> {
+        if (modelJsonValue == QJsonValue::Undefined) return std::nullopt;
 
-    // Deserialize m_ParametersMap
+        auto modelObject = modelJsonValue.toObject();
+        ModelType modelType = static_cast<ModelType>(modelObject["modelType"].toInt(static_cast<int>(ModelType::NONE)));
+        ptrGenericModelType model = CStrategyFactory::createNewStrategy(modelType);
+
+        if (model) {
+            model->fromJson(modelObject);
+            return model;
+        }
+        return std::nullopt;
+    };
+
+    // from json
     m_ParametersMap = json["parameters"].toObject().toVariantMap();
-
-    // Deserialize m_InfoMap
     m_InfoMap = json["info"].toObject().toVariantMap();
-
-    // Deserialize m_assetList
     m_assetList = json["assetList"].toObject().toVariantMap();
-
-    // Deserialize m_genericInfo
     m_genericInfo = json["genericInfo"].toObject().toVariantMap();
 
-    // Deserialize m_Models
     m_Models.clear();
     QJsonArray modelsArray = json["models"].toArray();
+
     for (const auto& modelJson : modelsArray) {
-        ModelType modelType = static_cast<ModelType>(modelJson.toObject()["modelType"].toInt());
-        ptrGenericModelType model = CStrategyFactory::createNewStrategy(modelType);
-        model->fromJson(modelJson.toObject());
-        m_Models.append(model);
+        if(auto model = createAndLoadModel(modelJson)) {
+            m_Models.append(*model);
+        }
     }
 
+    if (auto model = createAndLoadModel(json["selectionModel"])) m_SelectionModel = *model;
+    if (auto model = createAndLoadModel(json["alphaModel"])) m_AlphaModel = *model;
+    if (auto model = createAndLoadModel(json["rebalanceModel"])) m_RebalanceModel = *model;
+    if (auto model = createAndLoadModel(json["riskModel"])) m_RiskModel = *model;
+    if (auto model = createAndLoadModel(json["executionModel"])) m_ExecutionModel = *model;
 }
+
 
 QVariantMap CBaseModel::assetList() const
 {

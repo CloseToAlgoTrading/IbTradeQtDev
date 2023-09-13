@@ -556,7 +556,10 @@ void CPortfolioConfigModel::traverseTreeView(const QModelIndex& parentIndex)
             assetKey = "";
             key = "";
         }
-        if (((item->data(0).id == PM_ITEM_ACCOUNT) || (item->data(0).id == PM_ITEM_PORTFOLIO) || (item->data(0).id == PM_ITEM_STRATEGY)))
+        if (((item->data(0).id == PM_ITEM_ACCOUNT) || (item->data(0).id == PM_ITEM_PORTFOLIO) || (item->data(0).id == PM_ITEM_STRATEGY)
+             || (item->data(0).id == PM_ITEM_REBALANCE_MODEL)|| (item->data(0).id == PM_ITEM_ALFA_MODEL)
+             || (item->data(0).id == PM_ITEM_EXECUTION_MODEL) || (item->data(0).id == PM_ITEM_SELECTION_MODEL)
+             || (item->data(0).id == PM_ITEM_RISK_MODEL)))
         {
             dataModel = getModelByIdex(parentIndex);
             // Do something with the current index, e.g. print the data to the console

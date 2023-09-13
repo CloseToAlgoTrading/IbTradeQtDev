@@ -4,6 +4,7 @@
 
 // ModelType.h
 enum class ModelType {
+    NONE,
     ROOT,
     ACCOUNT,
     PORTFOLIO,
