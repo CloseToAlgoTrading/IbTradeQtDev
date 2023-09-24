@@ -48,7 +48,7 @@ namespace IBDataTypes
         //	count	the number of trades during the bar's timespan (only available for TRADES).
 
         TickerId m_ReqId;
-        quint32	m_DateTime;
+        quint64	m_DateTime;
         qreal	m_Open;
         qreal	m_Higt;
         qreal	m_Low;
@@ -88,8 +88,8 @@ namespace IBDataTypes
         TickerId getId() const { return d->m_ReqId; }
         void setId(TickerId val) { d->m_ReqId = val; }
 
-        quint32 getDateTime() const { return d->m_DateTime; }
-        void setDateTime(quint32 val) { d->m_DateTime = val; }
+        quint64 getDateTime() const { return d->m_DateTime; }
+        void setDateTime(quint64 val) { d->m_DateTime = val; }
 
         double getOpen() const { return d->m_Open; }
         void setOpen(double val) { d->m_Open = val; }

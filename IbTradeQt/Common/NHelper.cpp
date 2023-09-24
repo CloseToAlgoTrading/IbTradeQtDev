@@ -29,7 +29,7 @@ quint64 NHelper::convertTimeStringToTimestamp(QString date, bool isFormat)
         }
         else
         {
-            l_dt = QDateTime::fromString(date);
+            l_dt = QDateTime::fromString(date, "yyyyMMdd");
         }
 
         if (l_dt.isValid())
@@ -161,4 +161,10 @@ const QVariant NHelper::readSomeData(const QString &_dataslot, const QVariant &_
 {
     QSettings settings(SETTINGS_FILE_NAME, QSettings::IniFormat);
     return settings.value(_dataslot, _data);
+}
+
+QString NHelper::convertQTDataTimeToString(quint64 time, QString format)
+{
+    return QDateTime::fromMSecsSinceEpoch(time).toString(format);
+
 }

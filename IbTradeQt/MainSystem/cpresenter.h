@@ -58,7 +58,9 @@ private slots:
 
 private:
 
-    CBrokerDataProvider m_DataProvider;
+    //CBrokerDataProvider m_DataProvider;
+    QSharedPointer<CBrokerDataProvider> m_pDataProvider;
+
 
     CIBTradeSystemView * pIbtsView;
     CMainModel * pGuiModel;

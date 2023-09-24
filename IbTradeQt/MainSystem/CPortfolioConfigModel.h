@@ -14,15 +14,18 @@ class CPortfolioConfigModel : public CTreeViewCustomModel
 public:
     CPortfolioConfigModel(QTreeView *treeView, CBasicRoot *pRoot, QObject *parent);
 
+    void setupModelData();
     void setupModelData(TreeItem * rootItem);
+    void addGenericModelToNodes(ptrGenericModelType inputModel, QModelIndex correntIndex);
+
     QModelIndex findWorkingNode(QModelIndex index, const QList<quint16> & Ids);
-    void addWorkingNode(QModelIndex index, const ptrGenericModelType pModel, const quint16 id);
+    void addWorkingNode(QModelIndex index, const ptrGenericModelType pModel, const quint16 id, QString modelName = "");
 
     void addModel(const QModelIndex& index, const QList<quint16>& ids, quint32 itemType);
     void removeModel(QModelIndex index);
     const ptrGenericModelType getModelByIdex(QModelIndex index);
 
-    void setBrokerInterface(QSharedPointer<IBrokerAPI> newBrokerInterface);
+    void setBrokerDataProvider(QSharedPointer<CBrokerDataProvider> newBrokerInterface);
 
 
 
@@ -31,6 +34,9 @@ private:
     void traverseNodes(TreeItem *node);
     void processNode(TreeItem *node);
     void traverseTreeView(const QModelIndex &parentIndex);
+    void updateNodeIfChanged(const QModelIndex& index, const QVariant& valueFromModel);
+    void synchronizeModelParameters(const QModelIndex& parentIndex, const QVariantMap& modelParameters);
+
 
     void addDataToNode(TreeItem *parent, const QString &key, const QVariant &value, int typeId, bool readOnly, int columnCount);
     void addNestedNodes(TreeItem *parent, const QString &rootName, const QVariantMap &params, bool readOnly, int columnCount);
@@ -42,7 +48,7 @@ public slots:
 
 private:
     CBasicRoot *m_pRoot;
-    QSharedPointer<IBrokerAPI> m_brokerInterface;
+    QSharedPointer<CBrokerDataProvider> m_brokerInterface;
     QTimer m_UpdateInfoTimer;
 
 public slots:
@@ -59,7 +65,7 @@ signals:
     void signalUpdateDataAll();
 };
 
-inline void CPortfolioConfigModel::setBrokerInterface(QSharedPointer<IBrokerAPI> newBrokerInterface)
+inline void CPortfolioConfigModel::setBrokerDataProvider(QSharedPointer<CBrokerDataProvider> newBrokerInterface)
 {
     m_brokerInterface = newBrokerInterface;
 }

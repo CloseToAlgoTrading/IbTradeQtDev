@@ -2,6 +2,7 @@
 #include "./IBComm/Dispatcher.h"
 #include <QSharedPointer>
 #include <QtConcurrent/QtConcurrentRun>
+#include "NHelper.h"
 
 Q_LOGGING_CATEGORY(processingBaseV2Log, "processing.Base");
 
@@ -359,9 +360,16 @@ void CProcessingBase_v2::recvHistoricalData(void* pContext, tEReqType _reqType)
 
     QString retSymbol = getSymbolFromRM(_pHistoricalData->getId(), RT_HISTORICAL_DATA);
 
-    qCDebug(processingBaseLog(), "[%s] tickerId = %ld , date = %d, open = %f, high = %f, low =%f, close = %f, volume = %f, barCount = %d, WAP = %f, hasGaps = %d", retSymbol.toLocal8Bit().data(),
-        _pHistoricalData->getId(), _pHistoricalData->getDateTime(), _pHistoricalData->getOpen(), _pHistoricalData->getHigh(), _pHistoricalData->getLow(),
-        _pHistoricalData->getClose(), _pHistoricalData->getVolume(), _pHistoricalData->getCount(), _pHistoricalData->getWap(), _pHistoricalData->getHasGaps());
+    if (!_pHistoricalData->getIsLast())
+    {
+        qCDebug(processingBaseLog(), "[%s] tickerId = %ld , date = %s, open = %f, high = %f, low =%f, close = %f, volume = %f, barCount = %d, WAP = %f, hasGaps = %d", retSymbol.toLocal8Bit().data(),
+                _pHistoricalData->getId(), NHelper::convertQTDataTimeToString(_pHistoricalData->getDateTime()).toStdString().c_str(), _pHistoricalData->getOpen(), _pHistoricalData->getHigh(), _pHistoricalData->getLow(),
+                _pHistoricalData->getClose(), _pHistoricalData->getVolume(), _pHistoricalData->getCount(), _pHistoricalData->getWap(), _pHistoricalData->getHasGaps());
+    }
+    else
+    {
+        qCDebug(processingBaseLog(), "[%s] tickerId = %ld , ", retSymbol.toLocal8Bit().data(), _pHistoricalData->getId());
+    }
 
     qint64 realtimeDataId = getIdFromRM(retSymbol, RT_HISTORICAL_DATA);
     if (0 != realtimeDataId)
@@ -630,12 +638,12 @@ bool CProcessingBase_v2::calculateOneMinBar(RealTimeBarMap_t & _realTimeBar, Tic
     return true;
 }
 
-QSharedPointer<CBrokerDataProvider> CProcessingBase_v2::Client() const
+QSharedPointer<CBrokerDataProvider> CProcessingBase_v2::getIBrokerDataProvider() const
 {
     return m_Client;
 }
 
-void CProcessingBase_v2::setClient(QSharedPointer<CBrokerDataProvider> newClient)
+void CProcessingBase_v2::setIBrokerDataProvider(QSharedPointer<CBrokerDataProvider> newClient)
 {
     m_Client = newClient;
 }

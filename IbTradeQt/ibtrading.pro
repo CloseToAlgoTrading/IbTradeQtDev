@@ -51,13 +51,20 @@ SOURCES += \
     MainSystem/ibtradesystemview.cpp \
     MainSystem/portfolioconfigmodel.cpp \
     Strategies/AutoDeltAlignment/src/CModelInputData.cpp \
+    Strategies/Generic/cbasemodel.cpp \
+    Strategies/Generic/cbaserebalancemodel.cpp \
     Strategies/Generic/cbasicaccount.cpp \
+    Strategies/Generic/cbasicalphamodel.cpp \
+    Strategies/Generic/cbasicexecutionmodel.cpp \
     Strategies/Generic/cbasicportfolio.cpp \
+    Strategies/Generic/cbasicriskmodel.cpp \
     Strategies/Generic/cbasicroot.cpp \
+    Strategies/Generic/cbasicselectionmodel.cpp \
     Strategies/Generic/cbasicstrategy.cpp \
     Strategies/Generic/cbasicstrategy_V2.cpp \
     Strategies/Generic/cgenericmodelApi.cpp \
     Strategies/Generic/cgenericmodelApi_V2.cpp \
+    Strategies/Generic/cmomentum.cpp \
     Strategies/Generic/cmovingaveragecrossover.cpp \
     Strategies/Generic/csma.cpp \
     Strategies/Generic/cstrategyfactory.cpp \
@@ -147,13 +154,20 @@ HEADERS += \
     Strategies/AutoDeltAlignment/header/CModelInputData.h \
     Strategies/AutoDeltAlignment/header/autodeltatypes.h \
     Strategies/Generic/ModelType.h \
+    Strategies/Generic/cbasemodel.h \
+    Strategies/Generic/cbaserebalancemodel.h \
     Strategies/Generic/cbasicaccount.h \
+    Strategies/Generic/cbasicalphamodel.h \
+    Strategies/Generic/cbasicexecutionmodel.h \
     Strategies/Generic/cbasicportfolio.h \
+    Strategies/Generic/cbasicriskmodel.h \
     Strategies/Generic/cbasicroot.h \
+    Strategies/Generic/cbasicselectionmodel.h \
     Strategies/Generic/cbasicstrategy.h \
     Strategies/Generic/cbasicstrategy_V2.h \
     Strategies/Generic/cgenericmodelApi.h \
     Strategies/Generic/cgenericmodelApi_V2.h \
+    Strategies/Generic/cmomentum.h \
     Strategies/Generic/cmovingaveragecrossover.h \
     Strategies/Generic/csma.h \
     Strategies/Generic/cstrategyfactory.h \

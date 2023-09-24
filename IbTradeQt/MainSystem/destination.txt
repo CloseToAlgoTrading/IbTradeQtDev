@@ -1,10 +1,42 @@
+#ifndef PORTFOLIOMODELDEFINES_H
+#define PORTFOLIOMODELDEFINES_H
+
+#define PM_ITEM_ACCOUNTS   (0x0010u)
+#define PM_ITEM_ACCOUNT    (0x0020u)
+#define PM_ITEM_PORTFOLIO  (0x0030u)
+#define PM_ITEM_STRATEGIES (0x0040u)
+#define PM_ITEM_STRATEGY   (0x0050u)
+#define PM_ITEM_PARAMETERS (0x0060u)
+#define PM_ITEM_PARAMETER  (0x0070u)
+
+#define PM_ITEM_SELECTION_MODEL (0x0080u)
+#define PM_ITEM_ALFA_MODEL      (0x0090u)
+#define PM_ITEM_REBALANCE_MODEL (0x00A0u)
+#define PM_ITEM_EXECUTION_MODEL (0x00B0u)
+#define PM_ITEM_RISK_MODEL      (0x00C0u)
+
+
+
+#define PT_ITEM_ACTIVATION (0x0F00u)
+#define PM_ITEM_ACCOUNT_ACTIVATION    (PT_ITEM_ACTIVATION + PM_ITEM_ACCOUNT)
+#define PM_ITEM_PARAMETERS_ACTIVATION (PT_ITEM_ACTIVATION + PM_ITEM_PARAMETERS)
+#define PM_ITEM_PARAMETER_ACTIVATION  (PT_ITEM_ACTIVATION + PM_ITEM_PARAMETER)
+#define PM_ITEM_STRATEGIES_ACTIVATION (PT_ITEM_ACTIVATION + PM_ITEM_STRATEGIES)
+#define PM_ITEM_STRATEGY_ACTIVATION   (PT_ITEM_ACTIVATION + PM_ITEM_STRATEGY)
+#define PM_ITEM_PORTFOLIO_ACTIVATION  (PT_ITEM_ACTIVATION + PM_ITEM_PORTFOLIO)
+#define PM_ITEM_ACCOUNTS_ACTIVATION   (PT_ITEM_ACTIVATION + PM_ITEM_ACCOUNTS)
+
+#define PM_ITEM_ID_MASK    (0x0FFFu)
+
+#endif // PORTFOLIOMODELDEFINES_H
+
+
 #include "CPortfolioConfigModel.h"
 #include "TreeItemDataTypesDef.h"
 #include "PortfolioModelDefines.h"
 
 #include <QVariantMap>
-#include <tuple>
-#include <functional>
+
 #include "cbasicportfolio.h"
 #include "cbasicaccount.h"
 
@@ -95,31 +127,6 @@ void CPortfolioConfigModel::addNestedNodes(TreeItem *parent, const QString &root
     }
 }
 
-void CPortfolioConfigModel::addGenericModelToNodes(ptrGenericModelType inputModel, QModelIndex correntIndex)
-{
-    inputModel->setBrokerDataProvider(m_brokerInterface);
-
-    auto createNodeAndAddWorkingNode = [&](int startIndex, auto parentModelIndex, auto getModel, auto modelItem, const std::string& modelName = "") {
-        QModelIndex modelIndex = createIndex(startIndex, 0, getItem(parentModelIndex)->child(getItem(parentModelIndex)->childCount() - 1));
-        addWorkingNode(modelIndex, getModel(inputModel), modelItem, QString::fromStdString(modelName));
-    };
-
-    using ModelGetter = std::function<ptrGenericModelType(ptrGenericModelType)>;
-
-    std::array<std::tuple<ModelGetter, int, std::string>, 5> modelInfos = {
-        std::make_tuple(ModelGetter([](ptrGenericModelType model) { return model->getSelectionModel(); }), PM_ITEM_SELECTION_MODEL, "Selection Model"),
-        std::make_tuple(ModelGetter([](ptrGenericModelType model) { return model->getAlphaModel(); }), PM_ITEM_ALFA_MODEL, "Alpha Model"),
-        std::make_tuple(ModelGetter([](ptrGenericModelType model) { return model->getRebalanceModel(); }), PM_ITEM_REBALANCE_MODEL, "Rebalance Model"),
-        std::make_tuple(ModelGetter([](ptrGenericModelType model) { return model->getRiskModel(); }), PM_ITEM_REBALANCE_MODEL, "Risk Model"),
-        std::make_tuple(ModelGetter([](ptrGenericModelType model) { return model->getExecutionModel(); }), PM_ITEM_EXECUTION_MODEL, "Execution Model")
-    };
-
-    for (const auto& [getModel, modelItem, modelName] : modelInfos) {
-        createNodeAndAddWorkingNode(correntIndex.row() + START_OF_WORKING_NODES, correntIndex, getModel, modelItem, modelName);
-    }
-
-}
-
 
 void CPortfolioConfigModel::setupModelData(TreeItem * rootItem)
 {
@@ -144,15 +151,15 @@ void CPortfolioConfigModel::setupModelData(TreeItem * rootItem)
         for (const auto &portfolioModel : accountModel->getModels())
         {
             portfolioModel->setBrokerDataProvider(m_brokerInterface);
-            auto portfolioIndex = createIndex(accountIndex.row() + START_OF_WORKING_NODES, 0, getItem(accountIndex)->child(getItem(accountIndex)->childCount() - 1));
+            QModelIndex portfolioIndex = createIndex(accountIndex.row() + START_OF_WORKING_NODES, 0, getItem(accountIndex)->child(getItem(accountIndex)->childCount() - 1));
             addWorkingNode(portfolioIndex, portfolioModel, PM_ITEM_PORTFOLIO);
-            //auto portfolioIndex = addGenericModelToNodes(portfolioModel, accountIndex);
+
             // Loop through strategies in the portfolio
             for (const auto &strategyModel : portfolioModel->getModels())
             {
-                auto correntIndex = createIndex(portfolioIndex.row() + START_OF_WORKING_NODES, 0, getItem(portfolioIndex)->child(getItem(portfolioIndex)->childCount() - 1));
-                addWorkingNode(correntIndex, strategyModel, PM_ITEM_STRATEGY);
-                addGenericModelToNodes(strategyModel, correntIndex);
+                strategyModel->setBrokerDataProvider(m_brokerInterface);
+                QModelIndex strategyIndex = createIndex(portfolioIndex.row() + START_OF_WORKING_NODES, 0, getItem(portfolioIndex)->child(getItem(portfolioIndex)->childCount() - 1));
+                addWorkingNode(strategyIndex, strategyModel, PM_ITEM_STRATEGY);
             }
         }
     }
@@ -168,7 +175,7 @@ void CPortfolioConfigModel::dataChangeCallback(const QModelIndex &topLeft, const
         auto valueIndex = topLeft;
         auto *itemToUpdate = getItem(topLeft);
 
-        QList<quint16> Ids{PM_ITEM_STRATEGY, PM_ITEM_STRATEGIES, PM_ITEM_PORTFOLIO, PM_ITEM_ACCOUNT, PM_ITEM_SELECTION_MODEL};
+        QList<quint16> Ids{PM_ITEM_STRATEGY, PM_ITEM_STRATEGIES, PM_ITEM_PORTFOLIO, PM_ITEM_ACCOUNT};
         auto index = findWorkingNode(topLeft, Ids);
         auto *tmpItem = getItem(index);
 
@@ -242,24 +249,6 @@ void CPortfolioConfigModel::dataChangeCallback(const QModelIndex &topLeft, const
             }
         }
         break;
-        case PM_ITEM_SELECTION_MODEL:
-        {
-            auto account = m_pRoot->getModels().value(index.parent().parent().parent().row(), nullptr);
-            auto portfolio = account ? account->getModels().value(index.parent().parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
-            auto strategyToUpdate = portfolio ? portfolio->getModels().value(index.parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
-            if (strategyToUpdate) {
-                if(nullptr != strategyToUpdate->getSelectionModel())
-                {
-                    updateModel(strategyToUpdate->getSelectionModel());
-                }
-                else
-                {
-                    tmpItem->setData(0, "Selection Model");
-                    tmpItem->setData(1, "<Empty>");
-                }
-            }
-        }
-        break;
         default:
             break;
         }
@@ -300,11 +289,7 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
                 {
                     model = CStrategyFactory::createNewStrategy(ModelType::STRATEGY_MOMENTUM);
                     model->setBrokerDataProvider(this->m_brokerInterface);
-                    model->addSelectionModel(CStrategyFactory::createNewStrategy(ModelType::STRATEGY_SELECTION_MODEL));
-                    model->addAlphaModel(CStrategyFactory::createNewStrategy(ModelType::STRATEGY_ALPHA_MODEL));
-                    model->addRebalanceModel(CStrategyFactory::createNewStrategy(ModelType::STRATEGY_REBALANCE_MODEL));
-                    model->addRiskModel(CStrategyFactory::createNewStrategy(ModelType::STRATEGY_RISK_MODEL));
-                    model->addExecutionModel(CStrategyFactory::createNewStrategy(ModelType::STRATEGY_EXECTION_MODEL));
+
                     portfolio->addModel(model);
                 }
             }
@@ -316,10 +301,6 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
         if(nullptr != model)
         {
             addWorkingNode(workingIndex, model, itemType);
-            if(PM_ITEM_STRATEGY == itemType)
-            {
-                addGenericModelToNodes(model, workingIndex);
-            }
         }
     }
 }
@@ -362,42 +343,23 @@ QModelIndex CPortfolioConfigModel::findWorkingNode(QModelIndex index, const QLis
     return QModelIndex();
 }
 
-void CPortfolioConfigModel::addWorkingNode(QModelIndex index, const ptrGenericModelType pModel, const quint16 id, QString modelName)
+void CPortfolioConfigModel::addWorkingNode(QModelIndex index, const ptrGenericModelType pModel, const quint16 id)
 {
     TreeItem * item = getItem(index);
     beginInsertRows(index,item->childCount(),item->childCount());
-    TreeItem * parent;
-    if(pModel != nullptr)
-    {
-        auto _isModelExist = (pModel->modelType() == ModelType::STRATEGY_SELECTION_MODEL)
-                           || (pModel->modelType() == ModelType::STRATEGY_ALPHA_MODEL)
-                           || (pModel->modelType() == ModelType::STRATEGY_REBALANCE_MODEL)
-                           || (pModel->modelType() == ModelType::STRATEGY_RISK_MODEL)
-                           || (pModel->modelType() == ModelType::STRATEGY_EXECTION_MODEL);
-        auto _vType = _isModelExist ? EVT_RO_TEXT : EVT_TEXT;
-        auto secondIdem = _isModelExist ?
-            pItemDataType(new stItemData(QVariant(), EVT_RO_TEXT, TVM_UNUSED_ID)) :
-            pItemDataType(new stItemData(Qt::Unchecked, EVT_CECK_BOX, id + PT_ITEM_ACTIVATION));
-        parent = addRootNode(item,
-                            pItemDataType(new stItemData(pModel->getName(), _vType, id)),
-                            secondIdem,
-                            //pItemDataType(new stItemData(Qt::Unchecked, EVT_CECK_BOX, id + PT_ITEM_ACTIVATION)),
-                            item->columnCount());
 
-        addNestedNodes(parent, "Parameters", pModel->getParameters(), false, item->columnCount());
-        addNestedNodes(parent, "Info", pModel->genericInfo(), true, item->columnCount());
-        addNestedNodes(parent, "Assets", pModel->assetList(), true, item->columnCount());
-    }
-    else
-    {
-        parent = addRootNode(item,
-                            pItemDataType(new stItemData(modelName, EVT_RO_TEXT, id)),
-                            pItemDataType(new stItemData("<empty>", EVT_RO_TEXT, id)),
-                            item->columnCount());
-    }
+    TreeItem * parentAccount = addRootNode(item,
+                                   pItemDataType(new stItemData(pModel->getName(), EVT_TEXT, id)),
+                                   pItemDataType(new stItemData(Qt::Unchecked, EVT_CECK_BOX, id + PT_ITEM_ACTIVATION)),
+                                   item->columnCount());
+
+    addNestedNodes(parentAccount, "Parameters", pModel->getParameters(), false, item->columnCount());
+    addNestedNodes(parentAccount, "Info", pModel->genericInfo(), true, item->columnCount());
+    addNestedNodes(parentAccount, "Assets", pModel->assetList(), true, item->columnCount());
+
     endInsertRows();
 
-    QModelIndex newIndex = createIndex(index.row(), 0, parent);
+    QModelIndex newIndex = createIndex(index.row(), 0, parentAccount);
     emit signalUpdateData(newIndex);
 }
 
@@ -410,7 +372,7 @@ void CPortfolioConfigModel::onClickRemoveNodeButton()
         QModelIndex index = selectionModel->currentIndex(); // Assumes single selection mode
         if(PM_ITEM_ACCOUNTS != getItem(index)->data(0).id)
         {
-            QList<quint16> Ids{PM_ITEM_STRATEGY, PM_ITEM_STRATEGIES, PM_ITEM_PORTFOLIO, PM_ITEM_ACCOUNT, PM_ITEM_SELECTION_MODEL};
+            QList<quint16> Ids{PM_ITEM_STRATEGY, PM_ITEM_STRATEGIES, PM_ITEM_PORTFOLIO, PM_ITEM_ACCOUNT};
             index = findWorkingNode(index, Ids);
 
             removeModel(index);
@@ -456,46 +418,14 @@ void CPortfolioConfigModel::removeModel(QModelIndex index)
                 portfolio->removeModel(strategyToRemove);
         }
         break;
-    case PM_ITEM_SELECTION_MODEL:
-    {
-            auto account = m_pRoot->getModels().value(index.parent().parent().parent().row(), nullptr);
-            auto portfolio = account ? account->getModels().value(index.parent().parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
-            auto strategyToRemove = portfolio ? portfolio->getModels().value(index.parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
-            //if(nullptr != strategyToRemove) strategyToRemove = strategyToRemove->getSelectionModel();
-            if(nullptr != strategyToRemove)
-                strategyToRemove->removeSelectionModel();
-    }
-    break;
     default:
         break;
     }
 
-    if(PM_ITEM_SELECTION_MODEL != tmpItem->data(0).id)
-    {
-        beginRemoveRows(index.parent(), index.row(), index.row());
-        tmpItem->parent()->removeChildren(tmpItem->childNumber(), 1);
-        endRemoveRows();
-        emit signalUpdateData(createIndex(0, 0, rootItem));
-    }
-    else
-    {
-        int childCount = tmpItem->childCount();
-        if(childCount > 0)
-        {
-            // Notify the view that you're about to remove rows (child nodes)
-            beginRemoveRows(index, 0, childCount - 1);
-            // Remove all child nodes of tmpItem
-            tmpItem->removeChildren(0, childCount);
-            // Notify the view that you've finished removing rows
-            endRemoveRows();
-            emit signalUpdateData(createIndex(0, 0, rootItem));
-
-            QModelIndex topLeft = createIndex(index.row(), 0, index.internalPointer());
-            QModelIndex bottomRight = createIndex(index.row(), columnCount(index) - 1, index.internalPointer());
-
-            emit dataChanged(topLeft, bottomRight);
-        }
-    }
+    beginRemoveRows(index.parent(), index.row(), index.row());
+    tmpItem->parent()->removeChildren(tmpItem->childNumber(), 1);
+    endRemoveRows();
+    emit signalUpdateData(createIndex(0, 0, rootItem));
 }
 
 const ptrGenericModelType CPortfolioConfigModel::getModelByIdex(QModelIndex index)
@@ -521,14 +451,6 @@ const ptrGenericModelType CPortfolioConfigModel::getModelByIdex(QModelIndex inde
             auto account = m_pRoot->getModels().value(index.parent().parent().row(), nullptr);
             auto portfolio = account ? account->getModels().value(index.parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
             ret = portfolio ? portfolio->getModels().value(index.row() - START_OF_WORKING_NODES, nullptr) : nullptr;
-        }
-        break;
-        case PM_ITEM_SELECTION_MODEL:
-        {
-            auto account = m_pRoot->getModels().value(index.parent().parent().row(), nullptr);
-            auto portfolio = account ? account->getModels().value(index.parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
-            ret = portfolio ? portfolio->getModels().value(index.row() - START_OF_WORKING_NODES, nullptr) : nullptr;
-            if(nullptr != ret) ret = ret->getSelectionModel();
         }
         break;
         default:
@@ -614,10 +536,7 @@ void CPortfolioConfigModel::traverseTreeView(const QModelIndex& parentIndex)
             assetKey = "";
             key = "";
         }
-        if (((item->data(0).id == PM_ITEM_ACCOUNT) || (item->data(0).id == PM_ITEM_PORTFOLIO) || (item->data(0).id == PM_ITEM_STRATEGY)
-             || (item->data(0).id == PM_ITEM_REBALANCE_MODEL)|| (item->data(0).id == PM_ITEM_ALFA_MODEL)
-             || (item->data(0).id == PM_ITEM_EXECUTION_MODEL) || (item->data(0).id == PM_ITEM_SELECTION_MODEL)
-             || (item->data(0).id == PM_ITEM_RISK_MODEL)))
+        if (((item->data(0).id == PM_ITEM_ACCOUNT) || (item->data(0).id == PM_ITEM_PORTFOLIO) || (item->data(0).id == PM_ITEM_STRATEGY)))
         {
             dataModel = getModelByIdex(parentIndex);
             // Do something with the current index, e.g. print the data to the console
@@ -629,7 +548,7 @@ void CPortfolioConfigModel::traverseTreeView(const QModelIndex& parentIndex)
 
 //    qDebug() << "row: " << parentIndex.row() << "col: " << parentIndex.column();
     /* check parameters */
-    if((nullptr != dataModel) && (PM_ITEM_ACCOUNTS != node))
+    if(PM_ITEM_ACCOUNTS != node)
     {
 
         if(parentIndex.column() == 0)
@@ -669,6 +588,50 @@ void CPortfolioConfigModel::traverseTreeView(const QModelIndex& parentIndex)
             //qDebug() << "COLUMN 0: " << parentIndex.data(Qt::DisplayRole).toString();
 
         }
+//        else if((parentIndex.column() == 1) && (key != ""))
+//        {
+//            qDebug() << "COLUMN 1: " << parentIndex.data(Qt::DisplayRole).toString();
+//            if(subNode == NodeState::Parameters)
+//            {
+//                //if (dataModel->getParameters()[key].toString() == parentIndex.data(Qt::DisplayRole).toString())
+//                qDebug() << "Parameters" << key << (QString::number(dataModel->getParameters()[key].toDouble(), 'f', 2)) << "treeview:" << parentIndex.data(Qt::DisplayRole).toString() << isValuesEqual(parentIndex.data(Qt::DisplayRole), dataModel->getParameters()[key]);
+//                //updateNodeIfChanged(parentIndex, dataModel->getParameters()[key]);
+////                if(!isValuesEqual(parentIndex.data(Qt::DisplayRole), dataModel->getParameters()[key]))
+////                {
+////                    TreeItem * tmp = getItem(parentIndex);
+////                    tmp->setData(parentIndex.column(), dataModel->getParameters()[key]);
+////                    emit signalUpdateData(parentIndex);
+////                }
+//                key = "";
+//            }
+//            else if(subNode == NodeState::Info)
+//            {
+//                qDebug() << "Info" << key << dataModel->genericInfo()[key].toString() << "treeview:" << parentIndex.data(Qt::DisplayRole).toString() << isValuesEqual(parentIndex.data(Qt::DisplayRole), dataModel->genericInfo()[key]);
+//            //    updateNodeIfChanged(parentIndex, dataModel->genericInfo()[key]);
+////                if(!isValuesEqual(parentIndex.data(Qt::DisplayRole), dataModel->genericInfo()[key]))
+////                {
+////                    TreeItem * tmp = getItem(parentIndex);
+////                    tmp->setData(parentIndex.column(), dataModel->genericInfo()[key]);
+////                    emit signalUpdateData(parentIndex);
+////                }
+//                key = "";
+
+//            }
+//            else if((subNode == NodeState::Assets) && (assetKey != ""))
+//            {
+
+//                qDebug() << key << dataModel->assetList()[assetKey].toMap()[key].toString() << "treeview:" << parentIndex.data(Qt::DisplayRole).toString() << isValuesEqual(parentIndex.data(Qt::DisplayRole), dataModel->assetList()[assetKey].toMap()[key]);
+//                //updateNodeIfChanged(parentIndex, dataModel->assetList()[assetKey].toMap()[key]);
+////                if(!isValuesEqual(parentIndex.data(Qt::DisplayRole), dataModel->assetList()[assetKey].toMap()[key]))
+////                {
+////                    TreeItem * tmp = getItem(parentIndex);
+////                    tmp->setData(parentIndex.column(), dataModel->assetList()[assetKey].toMap()[key]);
+////                    emit signalUpdateData(parentIndex);
+////                }
+//                key = "";
+
+//            }
+//        }
     }
 
     int numRows = model->rowCount(parentIndex);
@@ -691,6 +654,59 @@ void CPortfolioConfigModel::updateNodeIfChanged(const QModelIndex& index, const 
         emit signalUpdateData(index);
     }
 }
+
+//void CPortfolioConfigModel::synchronizeModelParameters(const QModelIndex& parentIndex, const QVariantMap& modelParameters)
+//{
+//    QStringList keysFromModel = modelParameters.keys();
+
+//    int treeViewRowCount = rowCount(parentIndex);
+
+//    // Add or update rows in the tree view to match the model parameters
+//    for (int i = 0; i < keysFromModel.size(); ++i)
+//    {
+//        QModelIndex childIndex = index(i, 0, parentIndex);
+//        TreeItem* childItem = getItem(childIndex);
+
+//        // Check if the tree view node key matches the model parameter key
+//        //if (childItem && childItem->data(0).value.toString() == keysFromModel[i])
+//        if(i < treeViewRowCount)
+//        {
+//                QModelIndex valueIndex = index(i, 1, parentIndex);
+//                QVariant treeViewValue = childItem->data(1).value;
+//                QVariant modelValue = modelParameters[keysFromModel[i]];
+
+//                // If the tree view value doesn't match the model value, update the tree view value
+//                if (!isValuesEqual(treeViewValue, modelValue))
+//                {
+//                qDebug() << "Updating value for key:" << keysFromModel[i] << "from" << treeViewValue << "to" << modelValue;
+//                childItem->setData(0, keysFromModel[i]);
+//                childItem->setData(1, modelValue);
+//                emit signalUpdateData(valueIndex);
+//                }
+//        }
+//        else
+//        {
+//                // Insert a new row for the new model parameter
+//                qDebug() << "Inserting new row for key:" << keysFromModel[i] << "with value:" << modelParameters[keysFromModel[i]];
+//                beginInsertRows(parentIndex, i, i);
+////                TreeItem* newRow = new TreeItem({keysFromModel[i], modelParameters[keysFromModel[i]]}, getItem(parentIndex));
+////                getItem(parentIndex)->insertChild(i, newRow);
+//                addDataToNode(getItem(parentIndex), keysFromModel[i], modelParameters[keysFromModel[i]], modelParameters[keysFromModel[i]].typeId(), true, columnCount(parentIndex));
+//                endInsertRows();
+//        }
+//    }
+
+//    // Remove extra rows in the tree view if they don't exist in the model parameters
+//    while (treeViewRowCount > keysFromModel.size())
+//    {
+//        qDebug() << "Removing extra row with key:" << getItem(index(treeViewRowCount - 1, 0, parentIndex))->data(0).value.toString();
+//        beginRemoveRows(parentIndex, treeViewRowCount - 1, treeViewRowCount - 1);
+//        getItem(parentIndex)->removeChildren(treeViewRowCount - 1, 1);
+//        endRemoveRows();
+//        treeViewRowCount--;
+//    }
+//}
+
 
 void CPortfolioConfigModel::synchronizeModelParameters(const QModelIndex& parentIndex, const QVariantMap& modelParameters)
 {

@@ -9,25 +9,26 @@
 CPresenter::CPresenter(QObject *parent)
 	: QObject(parent)
     , m_pLog(LOGGER)
-    , m_DataProvider()
+    //, m_DataProvider()
+    , m_pDataProvider(QSharedPointer<CBrokerDataProvider>::create())
     , pIbtsView(nullptr)
     , pGuiModel(nullptr)
     , threadIBClient(new QThread)
-    , workerIBClient(new IBWorker::Worker(parent, m_DataProvider))
+    , workerIBClient(new IBWorker::Worker(parent, *m_pDataProvider.data()))
     , threadAlfaTime(new QThread)
-    , workerAlfaTime(new AlphaModGetTime(parent, m_DataProvider))
+    , workerAlfaTime(new AlphaModGetTime(parent, *m_pDataProvider.data()))
     , pAboutDlgPresenter(new AboutDlgPresener(parent))
-    , pPairTradingPresenter(new PairTradingPresenter(parent, m_DataProvider))
-    , pAutoDeltaAligPresenter(new AutoDeltaAligPresenter(parent, m_DataProvider))
-    , pDBStorePresenter(new DBStorePresenter(parent, m_DataProvider))
+    , pPairTradingPresenter(new PairTradingPresenter(parent, *m_pDataProvider.data()))
+    , pAutoDeltaAligPresenter(new AutoDeltaAligPresenter(parent, *m_pDataProvider.data()))
+    , pDBStorePresenter(new DBStorePresenter(parent, *m_pDataProvider.data()))
 {
 	
     //
 
-    QSharedPointer<IBComClientImpl> pClient = QSharedPointer<IBComClientImpl>::create(m_DataProvider);
+    QSharedPointer<IBComClientImpl> pClient = QSharedPointer<IBComClientImpl>::create(*m_pDataProvider.data());
 
    //Define Data Provider
-    m_DataProvider.setClien(pClient);
+    m_pDataProvider->setClien(pClient);
 
     workerIBClient->moveToThread(threadIBClient);
     QObject::connect(threadIBClient, SIGNAL(started()), workerIBClient, SLOT(process()));
@@ -137,7 +138,7 @@ void CPresenter::MessageHandler(void* pContext, tEReqType _reqType)
 void CPresenter::onClickMyButton()
 {
     static bool buttonState = false;
-    if ((false == buttonState) && (!m_DataProvider.getClien()->isConnectedAPI()))
+    if ((false == buttonState) && (!m_pDataProvider->getClien()->isConnectedAPI()))
     {
         //Connect to the server
         workerIBClient->setCommand(IBWorker::CONNECT);
@@ -203,8 +204,8 @@ void CPresenter::setPGuiModel(CMainModel *newPGuiModel)
    this->pIbtsView->getPortfolioConfigTreeView()->setModel(this->pGuiModel->pPortfolioConfigModel());
    //this->pIbtsView->getPortfolioConfigTreeView()->expandAll();
 
-   this->getPGuiModel()->pPortfolioConfigModel()->setBrokerInterface(this->m_DataProvider.getClien());
-
+   this->getPGuiModel()->pPortfolioConfigModel()->setBrokerDataProvider(this->m_pDataProvider);
+   this->getPGuiModel()->pPortfolioConfigModel()->setupModelData();
 }
 
 

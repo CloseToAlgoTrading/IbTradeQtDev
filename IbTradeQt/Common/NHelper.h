@@ -15,6 +15,7 @@ namespace NHelper
 
 
 // functions
+    QString convertQTDataTimeToString(quint64 time, QString format="yyyy/MM/dd hh:mm:ss");
     quint64 convertTimeStringToTimestamp(QString date, bool isFormat = false);
 
     void initSettings();

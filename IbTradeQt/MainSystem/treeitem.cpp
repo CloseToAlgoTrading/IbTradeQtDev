@@ -1,69 +1,56 @@
-// Copyright (C) 2016 The Qt Company Ltd.
-// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR BSD-3-Clause
-
-/*
-    treeitem.cpp
-
-    A container for items of data supplied by the simple tree model.
-*/
+// treeitem.cpp
+// Implements a class that serves as a container for individual items in a tree model.
 
 #include "treeitem.h"
 
-//! [0]
+// Constructor: Initializes a tree item with given data and parent item.
 TreeItem::TreeItem(const QList<pItemDataType> &data, TreeItem *parent)
     : itemData(data), parentItem(parent)
 {}
-//! [0]
 
-//! [1]
+// Destructor: Deletes all child items.
 TreeItem::~TreeItem()
 {
     qDeleteAll(childItems);
 }
-//! [1]
 
-//! [2]
+// Retrieve a child item at the given index. Returns nullptr if index is invalid.
 TreeItem *TreeItem::child(int number)
 {
     if (number < 0 || number >= childItems.size())
         return nullptr;
     return childItems.at(number);
 }
-//! [2]
 
-//! [3]
+// Returns the number of child items.
 int TreeItem::childCount() const
 {
     return childItems.count();
 }
-//! [3]
 
-//! [4]
+// Returns the index of this item in its parent item's list of children.
 int TreeItem::childNumber() const
 {
     if (parentItem)
         return parentItem->childItems.indexOf(const_cast<TreeItem*>(this));
     return 0;
 }
-//! [4]
 
-//! [5]
+// Returns the number of columns of data held by this item.
 int TreeItem::columnCount() const
 {
     return itemData.count();
 }
-//! [5]
 
-//! [6]
+// Returns the data at the given column index.
 stItemData TreeItem::data(int column) const
 {
     if (column < 0 || column >= itemData.size())
         return stItemData();
     return *(itemData.at(column));
 }
-//! [6]
 
-//! [7]
+// Inserts children at the given position.
 bool TreeItem::insertChildren(int position, int count, int columns)
 {
     if (position < 0 || position > childItems.size())
@@ -77,9 +64,8 @@ bool TreeItem::insertChildren(int position, int count, int columns)
 
     return true;
 }
-//! [7]
 
-//! [8]
+// Inserts columns at the given position.
 bool TreeItem::insertColumns(int position, int columns)
 {
     if (position < 0 || position > itemData.size())
@@ -93,16 +79,14 @@ bool TreeItem::insertColumns(int position, int columns)
 
     return true;
 }
-//! [8]
 
-//! [9]
+// Returns the parent item.
 TreeItem *TreeItem::parent()
 {
     return parentItem;
 }
-//! [9]
 
-//! [10]
+// Removes children at the given position.
 bool TreeItem::removeChildren(int position, int count)
 {
     if (position < 0 || position + count > childItems.size())
@@ -113,8 +97,8 @@ bool TreeItem::removeChildren(int position, int count)
 
     return true;
 }
-//! [10]
 
+// Removes columns at the given position.
 bool TreeItem::removeColumns(int position, int columns)
 {
     if (position < 0 || position + columns > itemData.size())
@@ -129,7 +113,7 @@ bool TreeItem::removeColumns(int position, int columns)
     return true;
 }
 
-//! [11]
+// Sets the data at the given column.
 bool TreeItem::setData(int column, const QVariant &value)
 {
     if (column < 0 || column >= itemData.size())
@@ -139,6 +123,7 @@ bool TreeItem::setData(int column, const QVariant &value)
     return true;
 }
 
+// Adds or replaces data at the given column.
 bool TreeItem::addData(int column, const pItemDataType &value)
 {
     if (column < 0 || column >= itemData.size())
@@ -147,4 +132,3 @@ bool TreeItem::addData(int column, const pItemDataType &value)
     itemData[column] = value;
     return true;
 }
-//! [11]

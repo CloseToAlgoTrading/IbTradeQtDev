@@ -157,8 +157,8 @@ public:
 //public slots:
 //    virtual void slotMessageHandler(void* pContext, tEReqType _reqType);
 
-    QSharedPointer<CBrokerDataProvider> Client() const;
-    void setClient(QSharedPointer<CBrokerDataProvider> newClient);
+    QSharedPointer<CBrokerDataProvider> getIBrokerDataProvider() const;
+    void setIBrokerDataProvider(QSharedPointer<CBrokerDataProvider> newClient);
 
 signals:
     void signalCbkRecvHistoricalData(const QList<IBDataTypes::CHistoricalData> & _histMap, const QString& _symbol);
