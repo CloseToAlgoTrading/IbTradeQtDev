@@ -168,7 +168,7 @@ void CPortfolioConfigModel::dataChangeCallback(const QModelIndex &topLeft, const
         auto valueIndex = topLeft;
         auto *itemToUpdate = getItem(topLeft);
 
-        QList<quint16> Ids{PM_ITEM_STRATEGY, PM_ITEM_STRATEGIES, PM_ITEM_PORTFOLIO, PM_ITEM_ACCOUNT};
+        QList<quint16> Ids{PM_ITEM_STRATEGY, PM_ITEM_STRATEGIES, PM_ITEM_PORTFOLIO, PM_ITEM_ACCOUNT, PM_ITEM_SELECTION_MODEL};
         auto index = findWorkingNode(topLeft, Ids);
         auto *tmpItem = getItem(index);
 
@@ -239,6 +239,24 @@ void CPortfolioConfigModel::dataChangeCallback(const QModelIndex &topLeft, const
             auto strategyToUpdate = portfolio ? portfolio->getModels().value(index.row() - START_OF_WORKING_NODES, nullptr) : nullptr;
             if (strategyToUpdate) {
                 updateModel(strategyToUpdate);
+            }
+        }
+        break;
+        case PM_ITEM_SELECTION_MODEL:
+        {
+            auto account = m_pRoot->getModels().value(index.parent().parent().parent().row(), nullptr);
+            auto portfolio = account ? account->getModels().value(index.parent().parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+            auto strategyToUpdate = portfolio ? portfolio->getModels().value(index.parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+            if (strategyToUpdate) {
+                if(nullptr != strategyToUpdate->getSelectionModel())
+                {
+                    updateModel(strategyToUpdate->getSelectionModel());
+                }
+                else
+                {
+                    tmpItem->setData(0, "Selection Model");
+                    tmpItem->setData(1, "<Empty>");
+                }
             }
         }
         break;
@@ -392,7 +410,7 @@ void CPortfolioConfigModel::onClickRemoveNodeButton()
         QModelIndex index = selectionModel->currentIndex(); // Assumes single selection mode
         if(PM_ITEM_ACCOUNTS != getItem(index)->data(0).id)
         {
-            QList<quint16> Ids{PM_ITEM_STRATEGY, PM_ITEM_STRATEGIES, PM_ITEM_PORTFOLIO, PM_ITEM_ACCOUNT};
+            QList<quint16> Ids{PM_ITEM_STRATEGY, PM_ITEM_STRATEGIES, PM_ITEM_PORTFOLIO, PM_ITEM_ACCOUNT, PM_ITEM_SELECTION_MODEL};
             index = findWorkingNode(index, Ids);
 
             removeModel(index);
@@ -438,14 +456,46 @@ void CPortfolioConfigModel::removeModel(QModelIndex index)
                 portfolio->removeModel(strategyToRemove);
         }
         break;
+    case PM_ITEM_SELECTION_MODEL:
+    {
+            auto account = m_pRoot->getModels().value(index.parent().parent().parent().row(), nullptr);
+            auto portfolio = account ? account->getModels().value(index.parent().parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+            auto strategyToRemove = portfolio ? portfolio->getModels().value(index.parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+            //if(nullptr != strategyToRemove) strategyToRemove = strategyToRemove->getSelectionModel();
+            if(nullptr != strategyToRemove)
+                strategyToRemove->removeSelectionModel();
+    }
+    break;
     default:
         break;
     }
 
-    beginRemoveRows(index.parent(), index.row(), index.row());
-    tmpItem->parent()->removeChildren(tmpItem->childNumber(), 1);
-    endRemoveRows();
-    emit signalUpdateData(createIndex(0, 0, rootItem));
+    if(PM_ITEM_SELECTION_MODEL != tmpItem->data(0).id)
+    {
+        beginRemoveRows(index.parent(), index.row(), index.row());
+        tmpItem->parent()->removeChildren(tmpItem->childNumber(), 1);
+        endRemoveRows();
+        emit signalUpdateData(createIndex(0, 0, rootItem));
+    }
+    else
+    {
+        int childCount = tmpItem->childCount();
+        if(childCount > 0)
+        {
+            // Notify the view that you're about to remove rows (child nodes)
+            beginRemoveRows(index, 0, childCount - 1);
+            // Remove all child nodes of tmpItem
+            tmpItem->removeChildren(0, childCount);
+            // Notify the view that you've finished removing rows
+            endRemoveRows();
+            emit signalUpdateData(createIndex(0, 0, rootItem));
+
+            QModelIndex topLeft = createIndex(index.row(), 0, index.internalPointer());
+            QModelIndex bottomRight = createIndex(index.row(), columnCount(index) - 1, index.internalPointer());
+
+            emit dataChanged(topLeft, bottomRight);
+        }
+    }
 }
 
 const ptrGenericModelType CPortfolioConfigModel::getModelByIdex(QModelIndex index)
@@ -471,6 +521,14 @@ const ptrGenericModelType CPortfolioConfigModel::getModelByIdex(QModelIndex inde
             auto account = m_pRoot->getModels().value(index.parent().parent().row(), nullptr);
             auto portfolio = account ? account->getModels().value(index.parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
             ret = portfolio ? portfolio->getModels().value(index.row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+        }
+        break;
+        case PM_ITEM_SELECTION_MODEL:
+        {
+            auto account = m_pRoot->getModels().value(index.parent().parent().row(), nullptr);
+            auto portfolio = account ? account->getModels().value(index.parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+            ret = portfolio ? portfolio->getModels().value(index.row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+            if(nullptr != ret) ret = ret->getSelectionModel();
         }
         break;
         default:
