@@ -58,10 +58,10 @@ public slots:
     void slotOnClickAddPortfolio();
     void slotOnClickAddStrategy();
     void slotOnClickAddSelectionModel();
-    void slotOnClickAddAlphaModel(){};
-    void slotOnClickAddRebalanceModel(){};
-    void slotOnClickAddRiskModel(){};
-    void slotOnClickAddExecutionModel(){};
+    void slotOnClickAddAlphaModel();
+    void slotOnClickAddRebalanceModel();
+    void slotOnClickAddRiskModel();
+    void slotOnClickAddExecutionModel();
     void onClickRemoveNodeButton();
 
     void slotOnTimeoutCallback();

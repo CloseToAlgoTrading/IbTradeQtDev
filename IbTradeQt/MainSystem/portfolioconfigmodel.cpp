@@ -381,10 +381,10 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
                     model = CStrategyFactory::createNewStrategy(ModelType::STRATEGY_MOMENTUM);
                     model->setBrokerDataProvider(this->m_brokerInterface);
                     //model->addSelectionModel(CStrategyFactory::createNewStrategy(ModelType::STRATEGY_SELECTION_MODEL));
-                    model->addAlphaModel(CStrategyFactory::createNewStrategy(ModelType::STRATEGY_ALPHA_MODEL));
-                    model->addRebalanceModel(CStrategyFactory::createNewStrategy(ModelType::STRATEGY_REBALANCE_MODEL));
-                    model->addRiskModel(CStrategyFactory::createNewStrategy(ModelType::STRATEGY_RISK_MODEL));
-                    model->addExecutionModel(CStrategyFactory::createNewStrategy(ModelType::STRATEGY_EXECTION_MODEL));
+//                    model->addAlphaModel(CStrategyFactory::createNewStrategy(ModelType::STRATEGY_ALPHA_MODEL));
+//                    model->addRebalanceModel(CStrategyFactory::createNewStrategy(ModelType::STRATEGY_REBALANCE_MODEL));
+//                    model->addRiskModel(CStrategyFactory::createNewStrategy(ModelType::STRATEGY_RISK_MODEL));
+//                    model->addExecutionModel(CStrategyFactory::createNewStrategy(ModelType::STRATEGY_EXECTION_MODEL));
                     portfolio->addModel(model);
                 }
             }
@@ -405,6 +405,70 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
 
             }
             break;
+        case PM_ITEM_ALFA_MODEL:
+        {
+                auto account = m_pRoot->getModels().value(workingIndex.parent().parent().row(), nullptr);
+                auto portfolio = account ? account->getModels().value(workingIndex.parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+                auto strategy = portfolio ? portfolio->getModels().value(workingIndex.row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+                if(nullptr != strategy){
+                    if(nullptr != strategy->getAlphaModel())
+                    {
+                        strategy->removeAlphaModel();
+                    }
+                    model = CStrategyFactory::createNewStrategy(ModelType::STRATEGY_ALPHA_MODEL);
+                    strategy->addAlphaModel(model);
+                }
+
+        }
+        break;
+        case PM_ITEM_REBALANCE_MODEL:
+        {
+                auto account = m_pRoot->getModels().value(workingIndex.parent().parent().row(), nullptr);
+                auto portfolio = account ? account->getModels().value(workingIndex.parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+                auto strategy = portfolio ? portfolio->getModels().value(workingIndex.row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+                if(nullptr != strategy){
+                    if(nullptr != strategy->getRebalanceModel())
+                    {
+                        strategy->removeRebalanceModel();
+                    }
+                    model = CStrategyFactory::createNewStrategy(ModelType::STRATEGY_REBALANCE_MODEL);
+                    strategy->addRebalanceModel(model);
+                }
+
+        }
+        break;
+        case PM_ITEM_RISK_MODEL:
+        {
+                auto account = m_pRoot->getModels().value(workingIndex.parent().parent().row(), nullptr);
+                auto portfolio = account ? account->getModels().value(workingIndex.parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+                auto strategy = portfolio ? portfolio->getModels().value(workingIndex.row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+                if(nullptr != strategy){
+                    if(nullptr != strategy->getRiskModel())
+                    {
+                        strategy->removeRiskModel();
+                    }
+                    model = CStrategyFactory::createNewStrategy(ModelType::STRATEGY_RISK_MODEL);
+                    strategy->addRiskModel(model);
+                }
+
+        }
+        break;
+        case PM_ITEM_EXECUTION_MODEL:
+        {
+                auto account = m_pRoot->getModels().value(workingIndex.parent().parent().row(), nullptr);
+                auto portfolio = account ? account->getModels().value(workingIndex.parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+                auto strategy = portfolio ? portfolio->getModels().value(workingIndex.row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+                if(nullptr != strategy){
+                    if(nullptr != strategy->getExecutionModel())
+                    {
+                        strategy->removeExecutionModel();
+                    }
+                    model = CStrategyFactory::createNewStrategy(ModelType::STRATEGY_EXECTION_MODEL);
+                    strategy->addExecutionModel(model);
+                }
+
+        }
+        break;
         default:
             break;
         }
@@ -451,6 +515,44 @@ void CPortfolioConfigModel::slotOnClickAddSelectionModel()
         addModel(selectionModel->currentIndex(), {PM_ITEM_STRATEGY}, PM_ITEM_SELECTION_MODEL);
     }
 }
+
+void CPortfolioConfigModel::slotOnClickAddAlphaModel()
+{
+    QItemSelectionModel *selectionModel = m_treeView->selectionModel();
+
+    if (selectionModel->hasSelection()) {
+        addModel(selectionModel->currentIndex(), {PM_ITEM_STRATEGY}, PM_ITEM_ALFA_MODEL);
+    }
+}
+
+void CPortfolioConfigModel::slotOnClickAddRebalanceModel()
+{
+    QItemSelectionModel *selectionModel = m_treeView->selectionModel();
+
+    if (selectionModel->hasSelection()) {
+        addModel(selectionModel->currentIndex(), {PM_ITEM_STRATEGY}, PM_ITEM_REBALANCE_MODEL);
+    }
+}
+
+void CPortfolioConfigModel::slotOnClickAddRiskModel()
+{
+    QItemSelectionModel *selectionModel = m_treeView->selectionModel();
+
+    if (selectionModel->hasSelection()) {
+        addModel(selectionModel->currentIndex(), {PM_ITEM_STRATEGY}, PM_ITEM_RISK_MODEL);
+    }
+}
+
+void CPortfolioConfigModel::slotOnClickAddExecutionModel()
+{
+    QItemSelectionModel *selectionModel = m_treeView->selectionModel();
+
+    if (selectionModel->hasSelection()) {
+        addModel(selectionModel->currentIndex(), {PM_ITEM_STRATEGY}, PM_ITEM_EXECUTION_MODEL);
+    }
+}
+
+
 QModelIndex CPortfolioConfigModel::findWorkingNode(QModelIndex index, const QList<quint16> & Ids)
 {
     TreeItem * tmpItem = getItem(index);
@@ -485,6 +587,7 @@ void CPortfolioConfigModel::addWorkingNode(QModelIndex index, const ptrGenericMo
       for (int i = 0; i < item->childCount(); ++i) {
         if (item->child(i)->data(0).id == id) {
                 existingChild = item->child(i);
+                beginInsertRows(index,i,i);
                 break;
         }
       }
@@ -495,10 +598,14 @@ void CPortfolioConfigModel::addWorkingNode(QModelIndex index, const ptrGenericMo
         replaceChildNode(existingChild, pModel, id, modelName);
         QModelIndex topLeft = createIndex(index.row(), 0, existingChild);
         QModelIndex bottomRight = createIndex(index.row(), columnCount(index) - 1, existingChild);
+        endInsertRows();
 
         emit dataChanged(topLeft, bottomRight);
-        emit signalUpdateData(index);  // Emit signal with the parent index
-        emit layoutChanged();
+
+//        //emit signalUpdateData(index);  // Emit signal with the parent index
+//        emit layoutChanged();
+        //emit signalUpdateData(index);
+
     } else {
 //       Add a new child node
         beginInsertRows(index,item->childCount(),item->childCount());
@@ -541,9 +648,9 @@ void CPortfolioConfigModel::replaceChildNode(TreeItem * parent, const ptrGeneric
     parent->setData(0, pModel->getName());
     parent->setData(1, QVariant());
     // Add any other necessary modifications here
- //   addNestedNodes(parent, "Parameters", pModel->getParameters(), false, parent->columnCount());
+    addNestedNodes(parent, "Parameters", pModel->getParameters(), false, parent->columnCount());
     addNestedNodes(parent, "Info", pModel->genericInfo(), true, parent->columnCount());
-//    addNestedNodes(parent, "Assets", pModel->assetList(), true, parent->columnCount());
+    addNestedNodes(parent, "Assets", pModel->assetList(), true, parent->columnCount());
 }
 
 //void CPortfolioConfigModel::addWorkingNode(QModelIndex index, const ptrGenericModelType pModel, const quint16 id, QString modelName)
