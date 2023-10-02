@@ -21,6 +21,8 @@ public:
     QModelIndex findWorkingNode(QModelIndex index, const QList<quint16> & Ids);
     void addWorkingNode(QModelIndex index, const ptrGenericModelType pModel, const quint16 id, QString modelName = "");
 
+    void replaceChildNode(TreeItem * parent, const ptrGenericModelType pModel, const quint16 id, QString modelName);
+
     void addModel(const QModelIndex& index, const QList<quint16>& ids, quint32 itemType);
     void removeModel(QModelIndex index);
     const ptrGenericModelType getModelByIdex(QModelIndex index);
@@ -55,6 +57,11 @@ public slots:
     void slotOnClickAddAccount();
     void slotOnClickAddPortfolio();
     void slotOnClickAddStrategy();
+    void slotOnClickAddSelectionModel();
+    void slotOnClickAddAlphaModel();
+    void slotOnClickAddRebalanceModel();
+    void slotOnClickAddRiskModel();
+    void slotOnClickAddExecutionModel();
     void onClickRemoveNodeButton();
 
     void slotOnTimeoutCallback();

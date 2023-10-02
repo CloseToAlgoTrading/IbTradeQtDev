@@ -71,7 +71,15 @@ void CPortfolioConfigModel::addNestedNodes(TreeItem *parent, const QString &root
     if (!params.empty())
     {
         auto EmptyRoItem = pItemDataType(new stItemData(QVariant(), EVT_RO_TEXT, TVM_UNUSED_ID));
-        TreeItem *parentNode = addRootNode(parent->child(parent->childCount() - 1),
+        auto _workingItem = parent;
+        if(0 < parent->childCount())
+        {
+            _workingItem = parent->child(parent->childCount() - 1);
+            //parent->insertChildren(parent->childCount(), 1, columnCount);
+        }
+
+
+        TreeItem *parentNode = addRootNode(_workingItem, //parent->child(parent->childCount() - 1),
                                            pItemDataType(new stItemData(rootName, EVT_RO_TEXT, PM_ITEM_PARAMETERS)),
                                            EmptyRoItem,
                                            columnCount);
@@ -110,7 +118,7 @@ void CPortfolioConfigModel::addGenericModelToNodes(ptrGenericModelType inputMode
         std::make_tuple(ModelGetter([](ptrGenericModelType model) { return model->getSelectionModel(); }), PM_ITEM_SELECTION_MODEL, "Selection Model"),
         std::make_tuple(ModelGetter([](ptrGenericModelType model) { return model->getAlphaModel(); }), PM_ITEM_ALFA_MODEL, "Alpha Model"),
         std::make_tuple(ModelGetter([](ptrGenericModelType model) { return model->getRebalanceModel(); }), PM_ITEM_REBALANCE_MODEL, "Rebalance Model"),
-        std::make_tuple(ModelGetter([](ptrGenericModelType model) { return model->getRiskModel(); }), PM_ITEM_REBALANCE_MODEL, "Risk Model"),
+        std::make_tuple(ModelGetter([](ptrGenericModelType model) { return model->getRiskModel(); }), PM_ITEM_RISK_MODEL, "Risk Model"),
         std::make_tuple(ModelGetter([](ptrGenericModelType model) { return model->getExecutionModel(); }), PM_ITEM_EXECUTION_MODEL, "Execution Model")
     };
 
@@ -168,7 +176,7 @@ void CPortfolioConfigModel::dataChangeCallback(const QModelIndex &topLeft, const
         auto valueIndex = topLeft;
         auto *itemToUpdate = getItem(topLeft);
 
-        QList<quint16> Ids{PM_ITEM_STRATEGY, PM_ITEM_STRATEGIES, PM_ITEM_PORTFOLIO, PM_ITEM_ACCOUNT, PM_ITEM_SELECTION_MODEL};
+        QList<quint16> Ids{PM_ITEM_STRATEGY, PM_ITEM_STRATEGIES, PM_ITEM_PORTFOLIO, PM_ITEM_ACCOUNT, PM_ITEM_SELECTION_MODEL, PM_ITEM_ALFA_MODEL, PM_ITEM_REBALANCE_MODEL, PM_ITEM_RISK_MODEL, PM_ITEM_EXECUTION_MODEL};
         auto index = findWorkingNode(topLeft, Ids);
         auto *tmpItem = getItem(index);
 
@@ -260,6 +268,78 @@ void CPortfolioConfigModel::dataChangeCallback(const QModelIndex &topLeft, const
             }
         }
         break;
+        case PM_ITEM_ALFA_MODEL:
+        {
+            auto account = m_pRoot->getModels().value(index.parent().parent().parent().row(), nullptr);
+            auto portfolio = account ? account->getModels().value(index.parent().parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+            auto strategyToUpdate = portfolio ? portfolio->getModels().value(index.parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+            if (strategyToUpdate) {
+                if(nullptr != strategyToUpdate->getAlphaModel())
+                {
+                    updateModel(strategyToUpdate->getAlphaModel());
+                }
+                else
+                {
+                    tmpItem->setData(0, "Alpha Model");
+                    tmpItem->setData(1, "<Empty>");
+                }
+            }
+        }
+        break;
+        case PM_ITEM_REBALANCE_MODEL:
+        {
+            auto account = m_pRoot->getModels().value(index.parent().parent().parent().row(), nullptr);
+            auto portfolio = account ? account->getModels().value(index.parent().parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+            auto strategyToUpdate = portfolio ? portfolio->getModels().value(index.parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+            if (strategyToUpdate) {
+                if(nullptr != strategyToUpdate->getRebalanceModel())
+                {
+                    updateModel(strategyToUpdate->getRebalanceModel());
+                }
+                else
+                {
+                    tmpItem->setData(0, "Rebalance Model");
+                    tmpItem->setData(1, "<Empty>");
+                }
+            }
+        }
+        break;
+        case PM_ITEM_RISK_MODEL:
+        {
+            auto account = m_pRoot->getModels().value(index.parent().parent().parent().row(), nullptr);
+            auto portfolio = account ? account->getModels().value(index.parent().parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+            auto strategyToUpdate = portfolio ? portfolio->getModels().value(index.parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+            if (strategyToUpdate) {
+                if(nullptr != strategyToUpdate->getRiskModel())
+                {
+                    updateModel(strategyToUpdate->getRiskModel());
+                }
+                else
+                {
+                    tmpItem->setData(0, "Risk Model");
+                    tmpItem->setData(1, "<Empty>");
+                }
+            }
+        }
+        break;
+        case PM_ITEM_EXECUTION_MODEL:
+        {
+            auto account = m_pRoot->getModels().value(index.parent().parent().parent().row(), nullptr);
+            auto portfolio = account ? account->getModels().value(index.parent().parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+            auto strategyToUpdate = portfolio ? portfolio->getModels().value(index.parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+            if (strategyToUpdate) {
+                if(nullptr != strategyToUpdate->getExecutionModel())
+                {
+                    updateModel(strategyToUpdate->getExecutionModel());
+                }
+                else
+                {
+                    tmpItem->setData(0, "Execution Model");
+                    tmpItem->setData(1, "<Empty>");
+                }
+            }
+        }
+        break;
         default:
             break;
         }
@@ -300,15 +380,95 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
                 {
                     model = CStrategyFactory::createNewStrategy(ModelType::STRATEGY_MOMENTUM);
                     model->setBrokerDataProvider(this->m_brokerInterface);
-                    model->addSelectionModel(CStrategyFactory::createNewStrategy(ModelType::STRATEGY_SELECTION_MODEL));
-                    model->addAlphaModel(CStrategyFactory::createNewStrategy(ModelType::STRATEGY_ALPHA_MODEL));
-                    model->addRebalanceModel(CStrategyFactory::createNewStrategy(ModelType::STRATEGY_REBALANCE_MODEL));
-                    model->addRiskModel(CStrategyFactory::createNewStrategy(ModelType::STRATEGY_RISK_MODEL));
-                    model->addExecutionModel(CStrategyFactory::createNewStrategy(ModelType::STRATEGY_EXECTION_MODEL));
+                    //model->addSelectionModel(CStrategyFactory::createNewStrategy(ModelType::STRATEGY_SELECTION_MODEL));
+//                    model->addAlphaModel(CStrategyFactory::createNewStrategy(ModelType::STRATEGY_ALPHA_MODEL));
+//                    model->addRebalanceModel(CStrategyFactory::createNewStrategy(ModelType::STRATEGY_REBALANCE_MODEL));
+//                    model->addRiskModel(CStrategyFactory::createNewStrategy(ModelType::STRATEGY_RISK_MODEL));
+//                    model->addExecutionModel(CStrategyFactory::createNewStrategy(ModelType::STRATEGY_EXECTION_MODEL));
                     portfolio->addModel(model);
                 }
             }
             break;
+        case PM_ITEM_SELECTION_MODEL:
+            {
+                auto account = m_pRoot->getModels().value(workingIndex.parent().parent().row(), nullptr);
+                auto portfolio = account ? account->getModels().value(workingIndex.parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+                auto strategy = portfolio ? portfolio->getModels().value(workingIndex.row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+                if(nullptr != strategy){
+                    if(nullptr != strategy->getSelectionModel())
+                    {
+                        strategy->removeSelectionModel();
+                    }
+                    model = CStrategyFactory::createNewStrategy(ModelType::STRATEGY_SELECTION_MODEL);
+                    strategy->addSelectionModel(model);
+                }
+
+            }
+            break;
+        case PM_ITEM_ALFA_MODEL:
+        {
+                auto account = m_pRoot->getModels().value(workingIndex.parent().parent().row(), nullptr);
+                auto portfolio = account ? account->getModels().value(workingIndex.parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+                auto strategy = portfolio ? portfolio->getModels().value(workingIndex.row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+                if(nullptr != strategy){
+                    if(nullptr != strategy->getAlphaModel())
+                    {
+                        strategy->removeAlphaModel();
+                    }
+                    model = CStrategyFactory::createNewStrategy(ModelType::STRATEGY_ALPHA_MODEL);
+                    strategy->addAlphaModel(model);
+                }
+
+        }
+        break;
+        case PM_ITEM_REBALANCE_MODEL:
+        {
+                auto account = m_pRoot->getModels().value(workingIndex.parent().parent().row(), nullptr);
+                auto portfolio = account ? account->getModels().value(workingIndex.parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+                auto strategy = portfolio ? portfolio->getModels().value(workingIndex.row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+                if(nullptr != strategy){
+                    if(nullptr != strategy->getRebalanceModel())
+                    {
+                        strategy->removeRebalanceModel();
+                    }
+                    model = CStrategyFactory::createNewStrategy(ModelType::STRATEGY_REBALANCE_MODEL);
+                    strategy->addRebalanceModel(model);
+                }
+
+        }
+        break;
+        case PM_ITEM_RISK_MODEL:
+        {
+                auto account = m_pRoot->getModels().value(workingIndex.parent().parent().row(), nullptr);
+                auto portfolio = account ? account->getModels().value(workingIndex.parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+                auto strategy = portfolio ? portfolio->getModels().value(workingIndex.row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+                if(nullptr != strategy){
+                    if(nullptr != strategy->getRiskModel())
+                    {
+                        strategy->removeRiskModel();
+                    }
+                    model = CStrategyFactory::createNewStrategy(ModelType::STRATEGY_RISK_MODEL);
+                    strategy->addRiskModel(model);
+                }
+
+        }
+        break;
+        case PM_ITEM_EXECUTION_MODEL:
+        {
+                auto account = m_pRoot->getModels().value(workingIndex.parent().parent().row(), nullptr);
+                auto portfolio = account ? account->getModels().value(workingIndex.parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+                auto strategy = portfolio ? portfolio->getModels().value(workingIndex.row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+                if(nullptr != strategy){
+                    if(nullptr != strategy->getExecutionModel())
+                    {
+                        strategy->removeExecutionModel();
+                    }
+                    model = CStrategyFactory::createNewStrategy(ModelType::STRATEGY_EXECTION_MODEL);
+                    strategy->addExecutionModel(model);
+                }
+
+        }
+        break;
         default:
             break;
         }
@@ -346,6 +506,53 @@ void CPortfolioConfigModel::slotOnClickAddStrategy()
         addModel(selectionModel->currentIndex(), {PM_ITEM_PORTFOLIO}, PM_ITEM_STRATEGY);
     }
 }
+
+void CPortfolioConfigModel::slotOnClickAddSelectionModel()
+{
+    QItemSelectionModel *selectionModel = m_treeView->selectionModel();
+
+    if (selectionModel->hasSelection()) {
+        addModel(selectionModel->currentIndex(), {PM_ITEM_STRATEGY}, PM_ITEM_SELECTION_MODEL);
+    }
+}
+
+void CPortfolioConfigModel::slotOnClickAddAlphaModel()
+{
+    QItemSelectionModel *selectionModel = m_treeView->selectionModel();
+
+    if (selectionModel->hasSelection()) {
+        addModel(selectionModel->currentIndex(), {PM_ITEM_STRATEGY}, PM_ITEM_ALFA_MODEL);
+    }
+}
+
+void CPortfolioConfigModel::slotOnClickAddRebalanceModel()
+{
+    QItemSelectionModel *selectionModel = m_treeView->selectionModel();
+
+    if (selectionModel->hasSelection()) {
+        addModel(selectionModel->currentIndex(), {PM_ITEM_STRATEGY}, PM_ITEM_REBALANCE_MODEL);
+    }
+}
+
+void CPortfolioConfigModel::slotOnClickAddRiskModel()
+{
+    QItemSelectionModel *selectionModel = m_treeView->selectionModel();
+
+    if (selectionModel->hasSelection()) {
+        addModel(selectionModel->currentIndex(), {PM_ITEM_STRATEGY}, PM_ITEM_RISK_MODEL);
+    }
+}
+
+void CPortfolioConfigModel::slotOnClickAddExecutionModel()
+{
+    QItemSelectionModel *selectionModel = m_treeView->selectionModel();
+
+    if (selectionModel->hasSelection()) {
+        addModel(selectionModel->currentIndex(), {PM_ITEM_STRATEGY}, PM_ITEM_EXECUTION_MODEL);
+    }
+}
+
+
 QModelIndex CPortfolioConfigModel::findWorkingNode(QModelIndex index, const QList<quint16> & Ids)
 {
     TreeItem * tmpItem = getItem(index);
@@ -365,41 +572,125 @@ QModelIndex CPortfolioConfigModel::findWorkingNode(QModelIndex index, const QLis
 void CPortfolioConfigModel::addWorkingNode(QModelIndex index, const ptrGenericModelType pModel, const quint16 id, QString modelName)
 {
     TreeItem * item = getItem(index);
-    beginInsertRows(index,item->childCount(),item->childCount());
-    TreeItem * parent;
-    if(pModel != nullptr)
-    {
-        auto _isModelExist = (pModel->modelType() == ModelType::STRATEGY_SELECTION_MODEL)
-                           || (pModel->modelType() == ModelType::STRATEGY_ALPHA_MODEL)
-                           || (pModel->modelType() == ModelType::STRATEGY_REBALANCE_MODEL)
-                           || (pModel->modelType() == ModelType::STRATEGY_RISK_MODEL)
-                           || (pModel->modelType() == ModelType::STRATEGY_EXECTION_MODEL);
-        auto _vType = _isModelExist ? EVT_RO_TEXT : EVT_TEXT;
-        auto secondIdem = _isModelExist ?
-            pItemDataType(new stItemData(QVariant(), EVT_RO_TEXT, TVM_UNUSED_ID)) :
-            pItemDataType(new stItemData(Qt::Unchecked, EVT_CECK_BOX, id + PT_ITEM_ACTIVATION));
-        parent = addRootNode(item,
-                            pItemDataType(new stItemData(pModel->getName(), _vType, id)),
-                            secondIdem,
-                            //pItemDataType(new stItemData(Qt::Unchecked, EVT_CECK_BOX, id + PT_ITEM_ACTIVATION)),
-                            item->columnCount());
+    TreeItem * existingChild = nullptr;
 
-        addNestedNodes(parent, "Parameters", pModel->getParameters(), false, item->columnCount());
-        addNestedNodes(parent, "Info", pModel->genericInfo(), true, item->columnCount());
-        addNestedNodes(parent, "Assets", pModel->assetList(), true, item->columnCount());
-    }
-    else
-    {
-        parent = addRootNode(item,
-                            pItemDataType(new stItemData(modelName, EVT_RO_TEXT, id)),
-                            pItemDataType(new stItemData("<empty>", EVT_RO_TEXT, id)),
-                            item->columnCount());
-    }
-    endInsertRows();
 
-    QModelIndex newIndex = createIndex(index.row(), 0, parent);
-    emit signalUpdateData(newIndex);
+    bool _isModelExist = (pModel != nullptr) &&
+                         ((pModel->modelType() == ModelType::STRATEGY_SELECTION_MODEL)
+                          || (pModel->modelType() == ModelType::STRATEGY_ALPHA_MODEL)
+                          || (pModel->modelType() == ModelType::STRATEGY_REBALANCE_MODEL)
+                          || (pModel->modelType() == ModelType::STRATEGY_RISK_MODEL)
+                          || (pModel->modelType() == ModelType::STRATEGY_EXECTION_MODEL));
+
+    if (_isModelExist) {
+      // Check if a child with the given id already exists
+      for (int i = 0; i < item->childCount(); ++i) {
+        if (item->child(i)->data(0).id == id) {
+                existingChild = item->child(i);
+                beginInsertRows(index,i,i);
+                break;
+        }
+      }
+    }
+
+    if (existingChild) {
+      // Replace the existing child's data
+        replaceChildNode(existingChild, pModel, id, modelName);
+        QModelIndex topLeft = createIndex(index.row(), 0, existingChild);
+        QModelIndex bottomRight = createIndex(index.row(), columnCount(index) - 1, existingChild);
+        endInsertRows();
+
+        emit dataChanged(topLeft, bottomRight);
+
+//        //emit signalUpdateData(index);  // Emit signal with the parent index
+//        emit layoutChanged();
+        //emit signalUpdateData(index);
+
+    } else {
+//       Add a new child node
+        beginInsertRows(index,item->childCount(),item->childCount());
+        TreeItem * parent;
+        if(pModel != nullptr)
+        {
+          auto _vType = _isModelExist ? EVT_RO_TEXT : EVT_TEXT;
+          auto secondIdem = _isModelExist ?
+              pItemDataType(new stItemData(QVariant(), EVT_RO_TEXT, TVM_UNUSED_ID)) :
+              pItemDataType(new stItemData(Qt::Unchecked, EVT_CECK_BOX, id + PT_ITEM_ACTIVATION));
+          parent = addRootNode(item,
+                              pItemDataType(new stItemData(pModel->getName(), _vType, id)),
+                              secondIdem,
+                              //pItemDataType(new stItemData(Qt::Unchecked, EVT_CECK_BOX, id + PT_ITEM_ACTIVATION)),
+                              item->columnCount());
+
+          addNestedNodes(parent, "Parameters", pModel->getParameters(), false, item->columnCount());
+          addNestedNodes(parent, "Info", pModel->genericInfo(), true, item->columnCount());
+          addNestedNodes(parent, "Assets", pModel->assetList(), true, item->columnCount());
+        }
+        else
+        {
+          parent = addRootNode(item,
+                              pItemDataType(new stItemData(modelName, EVT_RO_TEXT, id)),
+                              pItemDataType(new stItemData("<empty>", EVT_RO_TEXT, id)),
+                              item->columnCount());
+        }
+        endInsertRows();
+
+        QModelIndex newIndex = createIndex(index.row(), 0, parent);
+        emit signalUpdateData(newIndex);
+    }
 }
+
+// Define the replaceChildNode function to handle replacing the child's data
+void CPortfolioConfigModel::replaceChildNode(TreeItem * parent, const ptrGenericModelType pModel, const quint16 id, QString modelName)
+{
+    // Replace the data of the existingChild with the new data
+    // This is just a basic example, you might need to adjust it based on your needs
+    parent->setData(0, pModel->getName());
+    parent->setData(1, QVariant());
+    // Add any other necessary modifications here
+    addNestedNodes(parent, "Parameters", pModel->getParameters(), false, parent->columnCount());
+    addNestedNodes(parent, "Info", pModel->genericInfo(), true, parent->columnCount());
+    addNestedNodes(parent, "Assets", pModel->assetList(), true, parent->columnCount());
+}
+
+//void CPortfolioConfigModel::addWorkingNode(QModelIndex index, const ptrGenericModelType pModel, const quint16 id, QString modelName)
+//{
+//    TreeItem * item = getItem(index);
+//    beginInsertRows(index,item->childCount(),item->childCount());
+//    TreeItem * parent;
+//    if(pModel != nullptr)
+//    {
+//        auto _isModelExist = (pModel->modelType() == ModelType::STRATEGY_SELECTION_MODEL)
+//                           || (pModel->modelType() == ModelType::STRATEGY_ALPHA_MODEL)
+//                           || (pModel->modelType() == ModelType::STRATEGY_REBALANCE_MODEL)
+//                           || (pModel->modelType() == ModelType::STRATEGY_RISK_MODEL)
+//                           || (pModel->modelType() == ModelType::STRATEGY_EXECTION_MODEL);
+//        auto _vType = _isModelExist ? EVT_RO_TEXT : EVT_TEXT;
+//        auto secondIdem = _isModelExist ?
+//            pItemDataType(new stItemData(QVariant(), EVT_RO_TEXT, TVM_UNUSED_ID)) :
+//            pItemDataType(new stItemData(Qt::Unchecked, EVT_CECK_BOX, id + PT_ITEM_ACTIVATION));
+//        parent = addRootNode(item,
+//                            pItemDataType(new stItemData(pModel->getName(), _vType, id)),
+//                            secondIdem,
+//                            //pItemDataType(new stItemData(Qt::Unchecked, EVT_CECK_BOX, id + PT_ITEM_ACTIVATION)),
+//                            item->columnCount());
+
+//        addNestedNodes(parent, "Parameters", pModel->getParameters(), false, item->columnCount());
+//        addNestedNodes(parent, "Info", pModel->genericInfo(), true, item->columnCount());
+//        addNestedNodes(parent, "Assets", pModel->assetList(), true, item->columnCount());
+//    }
+//    else
+//    {
+//        parent = addRootNode(item,
+//                            pItemDataType(new stItemData(modelName, EVT_RO_TEXT, id)),
+//                            pItemDataType(new stItemData("<empty>", EVT_RO_TEXT, id)),
+//                            item->columnCount());
+//    }
+//    endInsertRows();
+
+//    QModelIndex newIndex = createIndex(index.row(), 0, parent);
+//    emit signalUpdateData(newIndex);
+//}
 
 
 void CPortfolioConfigModel::onClickRemoveNodeButton()
@@ -410,7 +701,7 @@ void CPortfolioConfigModel::onClickRemoveNodeButton()
         QModelIndex index = selectionModel->currentIndex(); // Assumes single selection mode
         if(PM_ITEM_ACCOUNTS != getItem(index)->data(0).id)
         {
-            QList<quint16> Ids{PM_ITEM_STRATEGY, PM_ITEM_STRATEGIES, PM_ITEM_PORTFOLIO, PM_ITEM_ACCOUNT, PM_ITEM_SELECTION_MODEL};
+            QList<quint16> Ids{PM_ITEM_STRATEGY, PM_ITEM_STRATEGIES, PM_ITEM_PORTFOLIO, PM_ITEM_ACCOUNT, PM_ITEM_SELECTION_MODEL, PM_ITEM_ALFA_MODEL, PM_ITEM_REBALANCE_MODEL, PM_ITEM_RISK_MODEL, PM_ITEM_EXECUTION_MODEL};
             index = findWorkingNode(index, Ids);
 
             removeModel(index);
@@ -461,40 +752,83 @@ void CPortfolioConfigModel::removeModel(QModelIndex index)
             auto account = m_pRoot->getModels().value(index.parent().parent().parent().row(), nullptr);
             auto portfolio = account ? account->getModels().value(index.parent().parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
             auto strategyToRemove = portfolio ? portfolio->getModels().value(index.parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
-            //if(nullptr != strategyToRemove) strategyToRemove = strategyToRemove->getSelectionModel();
             if(nullptr != strategyToRemove)
                 strategyToRemove->removeSelectionModel();
+    }
+    break;
+    case PM_ITEM_ALFA_MODEL:
+    {
+            auto account = m_pRoot->getModels().value(index.parent().parent().parent().row(), nullptr);
+            auto portfolio = account ? account->getModels().value(index.parent().parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+            auto strategyToRemove = portfolio ? portfolio->getModels().value(index.parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+            //if(nullptr != strategyToRemove) strategyToRemove = strategyToRemove->getSelectionModel();
+            if(nullptr != strategyToRemove)
+                strategyToRemove->removeAlphaModel();
+    }
+    break;
+    case PM_ITEM_REBALANCE_MODEL:
+    {
+            auto account = m_pRoot->getModels().value(index.parent().parent().parent().row(), nullptr);
+            auto portfolio = account ? account->getModels().value(index.parent().parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+            auto strategyToRemove = portfolio ? portfolio->getModels().value(index.parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+            //if(nullptr != strategyToRemove) strategyToRemove = strategyToRemove->getSelectionModel();
+            if(nullptr != strategyToRemove)
+                strategyToRemove->removeRebalanceModel();
+    }
+    break;
+    case PM_ITEM_RISK_MODEL:
+    {
+            auto account = m_pRoot->getModels().value(index.parent().parent().parent().row(), nullptr);
+            auto portfolio = account ? account->getModels().value(index.parent().parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+            auto strategyToRemove = portfolio ? portfolio->getModels().value(index.parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+            //if(nullptr != strategyToRemove) strategyToRemove = strategyToRemove->getSelectionModel();
+            if(nullptr != strategyToRemove)
+                strategyToRemove->removeRiskModel();
+    }
+    break;
+    case PM_ITEM_EXECUTION_MODEL:
+    {
+            auto account = m_pRoot->getModels().value(index.parent().parent().parent().row(), nullptr);
+            auto portfolio = account ? account->getModels().value(index.parent().parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+            auto strategyToRemove = portfolio ? portfolio->getModels().value(index.parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+            //if(nullptr != strategyToRemove) strategyToRemove = strategyToRemove->getSelectionModel();
+            if(nullptr != strategyToRemove)
+                strategyToRemove->removeExecutionModel();
     }
     break;
     default:
         break;
     }
 
-    if(PM_ITEM_SELECTION_MODEL != tmpItem->data(0).id)
+    if((PM_ITEM_SELECTION_MODEL == tmpItem->data(0).id)
+        || (PM_ITEM_ALFA_MODEL == tmpItem->data(0).id)
+        || (PM_ITEM_RISK_MODEL == tmpItem->data(0).id)
+        || (PM_ITEM_REBALANCE_MODEL == tmpItem->data(0).id)
+        || (PM_ITEM_EXECUTION_MODEL == tmpItem->data(0).id))
+    {
+        int childCount = tmpItem->childCount();
+        if(childCount > 0)
+        {
+                // Notify the view that you're about to remove rows (child nodes)
+                beginRemoveRows(index, 0, childCount - 1);
+                // Remove all child nodes of tmpItem
+                tmpItem->removeChildren(0, childCount);
+                // Notify the view that you've finished removing rows
+                endRemoveRows();
+                emit signalUpdateData(createIndex(0, 0, rootItem));
+
+                QModelIndex topLeft = createIndex(index.row(), 0, index.internalPointer());
+                QModelIndex bottomRight = createIndex(index.row(), columnCount(index) - 1, index.internalPointer());
+
+                emit dataChanged(topLeft, bottomRight);
+        }
+    }
+    else
     {
         beginRemoveRows(index.parent(), index.row(), index.row());
         tmpItem->parent()->removeChildren(tmpItem->childNumber(), 1);
         endRemoveRows();
         emit signalUpdateData(createIndex(0, 0, rootItem));
-    }
-    else
-    {
-        int childCount = tmpItem->childCount();
-        if(childCount > 0)
-        {
-            // Notify the view that you're about to remove rows (child nodes)
-            beginRemoveRows(index, 0, childCount - 1);
-            // Remove all child nodes of tmpItem
-            tmpItem->removeChildren(0, childCount);
-            // Notify the view that you've finished removing rows
-            endRemoveRows();
-            emit signalUpdateData(createIndex(0, 0, rootItem));
-
-            QModelIndex topLeft = createIndex(index.row(), 0, index.internalPointer());
-            QModelIndex bottomRight = createIndex(index.row(), columnCount(index) - 1, index.internalPointer());
-
-            emit dataChanged(topLeft, bottomRight);
-        }
     }
 }
 
@@ -529,6 +863,38 @@ const ptrGenericModelType CPortfolioConfigModel::getModelByIdex(QModelIndex inde
             auto portfolio = account ? account->getModels().value(index.parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
             ret = portfolio ? portfolio->getModels().value(index.row() - START_OF_WORKING_NODES, nullptr) : nullptr;
             if(nullptr != ret) ret = ret->getSelectionModel();
+        }
+        break;
+        case PM_ITEM_ALFA_MODEL:
+        {
+            auto account = m_pRoot->getModels().value(index.parent().parent().row(), nullptr);
+            auto portfolio = account ? account->getModels().value(index.parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+            ret = portfolio ? portfolio->getModels().value(index.row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+            if(nullptr != ret) ret = ret->getAlphaModel();
+        }
+        break;
+        case PM_ITEM_REBALANCE_MODEL:
+        {
+            auto account = m_pRoot->getModels().value(index.parent().parent().row(), nullptr);
+            auto portfolio = account ? account->getModels().value(index.parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+            ret = portfolio ? portfolio->getModels().value(index.row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+            if(nullptr != ret) ret = ret->getRebalanceModel();
+        }
+        break;
+        case PM_ITEM_RISK_MODEL:
+        {
+            auto account = m_pRoot->getModels().value(index.parent().parent().row(), nullptr);
+            auto portfolio = account ? account->getModels().value(index.parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+            ret = portfolio ? portfolio->getModels().value(index.row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+            if(nullptr != ret) ret = ret->getRiskModel();
+        }
+        break;
+        case PM_ITEM_EXECUTION_MODEL:
+        {
+            auto account = m_pRoot->getModels().value(index.parent().parent().row(), nullptr);
+            auto portfolio = account ? account->getModels().value(index.parent().row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+            ret = portfolio ? portfolio->getModels().value(index.row() - START_OF_WORKING_NODES, nullptr) : nullptr;
+            if(nullptr != ret) ret = ret->getExecutionModel();
         }
         break;
         default:

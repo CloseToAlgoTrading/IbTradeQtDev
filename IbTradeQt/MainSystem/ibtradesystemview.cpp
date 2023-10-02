@@ -21,6 +21,14 @@ CIBTradeSystemView::CIBTradeSystemView(QWidget *parent)
     QAction *act = new QAction(this);
     act->setSeparator(true);
     ui.test_treeView->addAction(act);
+    ui.test_treeView->addAction(QIcon(":/IBTradeSystem/x_resources/Strategy.png"), "Add Selection Model");
+    ui.test_treeView->addAction(QIcon(":/IBTradeSystem/x_resources/Strategy.png"), "Add Aplha Model");
+    ui.test_treeView->addAction(QIcon(":/IBTradeSystem/x_resources/Strategy.png"), "Add Rebalance Model");
+    ui.test_treeView->addAction(QIcon(":/IBTradeSystem/x_resources/Strategy.png"), "Add Risk Model");
+    ui.test_treeView->addAction(QIcon(":/IBTradeSystem/x_resources/Strategy.png"), "Add Execution Model");
+    act = new QAction(this);
+    act->setSeparator(true);
+    ui.test_treeView->addAction(act);
     ui.test_treeView->addAction("Remove Selected Node");
 
     /*** End Create Context Menu **************/
