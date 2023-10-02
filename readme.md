@@ -1,6 +1,6 @@
 # IbTradeQt
 
-**IbTradeQt** is a cross-platform application for automated trading written on QT/C++.
+**IbTradeQt** is a cross-platform application designed for automated trading. It is written in QT/C++ and primarily targets the Interactive Brokers (IB) platform.
 
 ## Requirements
 
