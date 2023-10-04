@@ -29,10 +29,15 @@ public:
     bool setData(int column, const QVariant &value);
     bool addData(int column, const pItemDataType &value);
 
+    bool isModel(const quint16 id) const;
+    qint8 getFirstModelChildIndexCache() const;
+    void updateFirstModelChildIndex();
+
 private:
     QList<TreeItem *> childItems;
     QList<pItemDataType> itemData;
     TreeItem * parentItem;
+    qint8 firstModelChildIndexCache;
 };
 //! [0]
 

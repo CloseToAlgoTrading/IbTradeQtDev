@@ -7,7 +7,7 @@
 #include <QObject>
 #include <QModelIndex>
 #include <QTreeView>
-#include "CTreeViewCustomModel.h"
+#include "ctreeviewcustommodel.h"
 
 enum S_LOG_LEVEL{
     S_INDEX_LOG_LEVEL_ALL = 0,

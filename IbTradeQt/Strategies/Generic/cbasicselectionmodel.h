@@ -2,7 +2,7 @@
 #ifndef CBASICSELECTIONMODEL_H
 #define CBASICSELECTIONMODEL_H
 
-#include "cbasicstrategy_v2.h"
+#include "cbasicstrategy_V2.h"
 #include <QStringList>
 
 Q_DECLARE_LOGGING_CATEGORY(BasicSelectionModelLog);

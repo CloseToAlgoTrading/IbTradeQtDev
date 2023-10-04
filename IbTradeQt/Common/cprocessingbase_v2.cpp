@@ -1,4 +1,4 @@
-#include "CProcessingBase_v2.h"
+#include "cprocessingbase_v2.h"
 #include "./IBComm/Dispatcher.h"
 #include <QSharedPointer>
 #include <QtConcurrent/QtConcurrentRun>
