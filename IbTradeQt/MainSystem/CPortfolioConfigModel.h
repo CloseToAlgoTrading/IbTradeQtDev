@@ -16,7 +16,7 @@ public:
 
     void setupModelData();
     void setupModelData(TreeItem * rootItem);
-    void addGenericModelToNodes(ptrGenericModelType inputModel, QModelIndex correntIndex);
+    //void addGenericModelToNodes(ptrGenericModelType inputModel, QModelIndex correntIndex);
 
     QModelIndex findWorkingNode(QModelIndex index, const QList<quint16> & Ids);
     void addWorkingNode(QModelIndex index, const ptrGenericModelType pModel, const quint16 id, QString modelName = "");

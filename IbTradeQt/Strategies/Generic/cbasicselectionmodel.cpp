@@ -8,6 +8,7 @@ CBasicSelectionModel::CBasicSelectionModel(QObject *parent) : CBasicStrategy_V2(
     this->setName("Base Selection Model");
     this->m_genericInfo.clear();
     this->m_genericInfo["Selected_Assets"] = QString("AAPL, MSFT, NVDA, SPY");
+    this->m_ParametersMap["test"] = 12;
 }
 
 QStringList CBasicSelectionModel::getAssets()
