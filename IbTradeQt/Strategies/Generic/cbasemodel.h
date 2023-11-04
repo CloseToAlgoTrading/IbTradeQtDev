@@ -67,7 +67,7 @@ protected:
     QList<ptrGenericModelType> m_Models;
     QVariantMap m_ParametersMap;
     QVariantMap m_InfoMap;
-    //QString m_Name;
+    QString m_Name;
     //CBrokerDataProvider m_DataProvider;
 
     QVariantMap m_assetList;

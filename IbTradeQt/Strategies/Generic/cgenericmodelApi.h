@@ -61,7 +61,7 @@ public:
     virtual ptrGenericModelType getRiskModel() = 0;
     virtual ptrGenericModelType getExecutionModel() = 0;
 
-    QString m_Name;
+    //QString m_Name;
 };
 
 

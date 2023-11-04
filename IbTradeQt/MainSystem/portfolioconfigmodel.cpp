@@ -394,7 +394,6 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
                     model = CStrategyFactory::createNewStrategy(ModelType::STRATEGY_SELECTION_MODEL);
                     strategy->addSelectionModel(model);
                 }
-
             }
             break;
         case PM_ITEM_ALFA_MODEL:
