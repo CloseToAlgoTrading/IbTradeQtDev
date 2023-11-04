@@ -13,7 +13,7 @@ class CGenericModelApi;
 class CBrokerDataProvider;
 typedef QSharedPointer<CGenericModelApi> ptrGenericModelType;
 
-class CGenericModelApi : public QEnableSharedFromThis<CGenericModelApi>
+class CGenericModelApi //: public QEnableSharedFromThis<CGenericModelApi>
 {
 public:
 
@@ -60,6 +60,8 @@ public:
     virtual ptrGenericModelType getRebalanceModel() = 0;
     virtual ptrGenericModelType getRiskModel() = 0;
     virtual ptrGenericModelType getExecutionModel() = 0;
+
+    QString m_Name;
 };
 
 

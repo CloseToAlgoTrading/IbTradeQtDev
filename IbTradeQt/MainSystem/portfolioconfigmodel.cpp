@@ -387,7 +387,9 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
                 if(nullptr != strategy){
                     if(nullptr != strategy->getSelectionModel())
                     {
-                        strategy->removeSelectionModel();
+//                        strategy->removeSelectionModel();
+                        auto _offset = getItem(workingIndex)->getFirstModelChildIndexCache();
+                        removeModel(this->index(_offset,0,workingIndex));
                     }
                     model = CStrategyFactory::createNewStrategy(ModelType::STRATEGY_SELECTION_MODEL);
                     strategy->addSelectionModel(model);
@@ -405,7 +407,9 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
                 if(nullptr != strategy){
                     if(nullptr != strategy->getAlphaModel())
                     {
-                        strategy->removeAlphaModel();
+                        //strategy->removeAlphaModel();
+                        auto _offset = getItem(workingIndex)->getFirstModelChildIndexCache();
+                        removeModel(this->index(_offset+1,0,workingIndex));
                     }
                     model = CStrategyFactory::createNewStrategy(ModelType::STRATEGY_ALPHA_MODEL);
                     strategy->addAlphaModel(model);
@@ -509,6 +513,16 @@ void CPortfolioConfigModel::slotOnClickAddSelectionModel()
     QItemSelectionModel *selectionModel = m_treeView->selectionModel();
 
     if (selectionModel->hasSelection()) {
+
+        QModelIndex index = selectionModel->currentIndex(); // Assumes single selection mode
+//        if(PM_ITEM_ACCOUNTS != getItem(index)->data(0).id)
+//        {
+//                QList<quint16> Ids{PM_ITEM_SELECTION_MODEL};
+//                index = findWorkingNode(index, Ids);
+//                TreeItem *ti = getItem(index);
+//                removeModel(index);
+//        }
+
         addModel(selectionModel->currentIndex(), {PM_ITEM_STRATEGY}, PM_ITEM_SELECTION_MODEL);
     }
 }
@@ -689,6 +703,7 @@ void CPortfolioConfigModel::onClickRemoveNodeButton()
         if(PM_ITEM_ACCOUNTS != getItem(index)->data(0).id)
         {
             QList<quint16> Ids{PM_ITEM_STRATEGY, PM_ITEM_STRATEGIES, PM_ITEM_PORTFOLIO, PM_ITEM_ACCOUNT, PM_ITEM_SELECTION_MODEL, PM_ITEM_ALFA_MODEL, PM_ITEM_REBALANCE_MODEL, PM_ITEM_RISK_MODEL, PM_ITEM_EXECUTION_MODEL};
+            //QList<quint16> Ids{PM_ITEM_STRATEGY, PM_ITEM_STRATEGIES, PM_ITEM_PORTFOLIO, PM_ITEM_ACCOUNT};
             index = findWorkingNode(index, Ids);
 
             removeModel(index);

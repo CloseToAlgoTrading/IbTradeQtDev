@@ -20,7 +20,7 @@ public:
     SMA(int window);
 
     void calculate(const QList<CHistoricalData>& priceDataList);
-    void update(const PriceData& newPriceData);
+    void update(const CHistoricalData& newPriceData);
 
     QVector<double> getList() const;
     int getWindow() const;

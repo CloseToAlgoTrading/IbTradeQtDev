@@ -6,6 +6,7 @@ Q_LOGGING_CATEGORY(MomentumPmLog, "Momentum.PM");
 cMomentum::cMomentum(QObject *parent)
     : CBasicStrategy_V2{parent}
 {
+    m_Name = "Momentum";
     this->setName("Momentum");
 
 

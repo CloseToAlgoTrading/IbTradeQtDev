@@ -18,6 +18,7 @@ CBaseModel::CBaseModel(QObject *parent): CProcessingBase_v2(parent)
     , m_RiskModel()
     , m_ExecutionModel()
 {
+    m_Name = "basemodel";
     this->m_genericInfo["test_pnl"] = 0.2f;
     //this->m_assetList["test_SPY"] = QVariantMap({{"pnl",23.0f}, {"aprice",100.0f}});
 
