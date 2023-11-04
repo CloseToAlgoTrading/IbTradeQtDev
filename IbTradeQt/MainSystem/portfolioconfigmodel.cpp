@@ -754,33 +754,33 @@ void CPortfolioConfigModel::removeModel(QModelIndex index)
     case PM_ITEM_SELECTION_MODEL:
     {
             auto account = m_pRoot->getModels().value(index.parent().parent().parent().row(), nullptr);
-            auto portfolio_offset = tmpItem->parent()->parent()->getFirstModelChildIndexCache();
-            auto portfolio = account ? account->getModels().value(index.parent().row() - portfolio_offset, nullptr) : nullptr;
-            auto strategy_offset = tmpItem->parent()->getFirstModelChildIndexCache();
-            auto strategyToRemove = portfolio ? portfolio->getModels().value(index.row() - strategy_offset, nullptr) : nullptr;
+            auto portfolio_offset = tmpItem->parent()->parent()->parent()->getFirstModelChildIndexCache();
+            auto portfolio = account ? account->getModels().value(index.parent().parent().row() - portfolio_offset, nullptr) : nullptr;
+            auto strategy_offset = tmpItem->parent()->parent()->getFirstModelChildIndexCache();
+            auto strategyToRemove = portfolio ? portfolio->getModels().value(index.parent().row() - strategy_offset, nullptr) : nullptr;
             if(nullptr != strategyToRemove)
                 strategyToRemove->removeSelectionModel();
     }
     break;
     case PM_ITEM_ALFA_MODEL:
     {
-            auto account = m_pRoot->getModels().value(index.parent().parent().parent().row(), nullptr);
-            auto portfolio_offset = tmpItem->parent()->parent()->getFirstModelChildIndexCache();
-            auto portfolio = account ? account->getModels().value(index.parent().row() - portfolio_offset, nullptr) : nullptr;
-            auto strategy_offset = tmpItem->parent()->getFirstModelChildIndexCache();
-            auto strategyToRemove = portfolio ? portfolio->getModels().value(index.row() - strategy_offset, nullptr) : nullptr;
-            //if(nullptr != strategyToRemove) strategyToRemove = strategyToRemove->getSelectionModel();
-            if(nullptr != strategyToRemove)
-                strategyToRemove->removeAlphaModel();
-    }
+        auto account = m_pRoot->getModels().value(index.parent().parent().parent().row(), nullptr);
+        auto portfolio_offset = tmpItem->parent()->parent()->parent()->getFirstModelChildIndexCache();
+        auto portfolio = account ? account->getModels().value(index.parent().parent().row() - portfolio_offset, nullptr) : nullptr;
+        auto strategy_offset = tmpItem->parent()->parent()->getFirstModelChildIndexCache();
+        auto strategyToRemove = portfolio ? portfolio->getModels().value(index.parent().row() - strategy_offset, nullptr) : nullptr;
+        //if(nullptr != strategyToRemove) strategyToRemove = strategyToRemove->getSelectionModel();
+        if(nullptr != strategyToRemove)
+            strategyToRemove->removeAlphaModel();
+}
     break;
     case PM_ITEM_REBALANCE_MODEL:
     {
-            auto account = m_pRoot->getModels().value(index.parent().parent().parent().row(), nullptr);
-            auto portfolio_offset = tmpItem->parent()->parent()->getFirstModelChildIndexCache();
-            auto portfolio = account ? account->getModels().value(index.parent().row() - portfolio_offset, nullptr) : nullptr;
-            auto strategy_offset = tmpItem->parent()->getFirstModelChildIndexCache();
-            auto strategyToRemove = portfolio ? portfolio->getModels().value(index.row() - strategy_offset, nullptr) : nullptr;
+        auto account = m_pRoot->getModels().value(index.parent().parent().parent().row(), nullptr);
+        auto portfolio_offset = tmpItem->parent()->parent()->parent()->getFirstModelChildIndexCache();
+        auto portfolio = account ? account->getModels().value(index.parent().parent().row() - portfolio_offset, nullptr) : nullptr;
+        auto strategy_offset = tmpItem->parent()->parent()->getFirstModelChildIndexCache();
+        auto strategyToRemove = portfolio ? portfolio->getModels().value(index.parent().row() - strategy_offset, nullptr) : nullptr;
             //if(nullptr != strategyToRemove) strategyToRemove = strategyToRemove->getSelectionModel();
             if(nullptr != strategyToRemove)
                 strategyToRemove->removeRebalanceModel();
@@ -789,10 +789,10 @@ void CPortfolioConfigModel::removeModel(QModelIndex index)
     case PM_ITEM_RISK_MODEL:
     {
             auto account = m_pRoot->getModels().value(index.parent().parent().parent().row(), nullptr);
-            auto portfolio_offset = tmpItem->parent()->parent()->getFirstModelChildIndexCache();
-            auto portfolio = account ? account->getModels().value(index.parent().row() - portfolio_offset, nullptr) : nullptr;
-            auto strategy_offset = tmpItem->parent()->getFirstModelChildIndexCache();
-            auto strategyToRemove = portfolio ? portfolio->getModels().value(index.row() - strategy_offset, nullptr) : nullptr;
+            auto portfolio_offset = tmpItem->parent()->parent()->parent()->getFirstModelChildIndexCache();
+            auto portfolio = account ? account->getModels().value(index.parent().parent().row() - portfolio_offset, nullptr) : nullptr;
+            auto strategy_offset = tmpItem->parent()->parent()->getFirstModelChildIndexCache();
+            auto strategyToRemove = portfolio ? portfolio->getModels().value(index.parent().row() - strategy_offset, nullptr) : nullptr;
             //if(nullptr != strategyToRemove) strategyToRemove = strategyToRemove->getSelectionModel();
             if(nullptr != strategyToRemove)
                 strategyToRemove->removeRiskModel();
@@ -801,10 +801,10 @@ void CPortfolioConfigModel::removeModel(QModelIndex index)
     case PM_ITEM_EXECUTION_MODEL:
     {
             auto account = m_pRoot->getModels().value(index.parent().parent().parent().row(), nullptr);
-            auto portfolio_offset = tmpItem->parent()->parent()->getFirstModelChildIndexCache();
-            auto portfolio = account ? account->getModels().value(index.parent().row() - portfolio_offset, nullptr) : nullptr;
-            auto strategy_offset = tmpItem->parent()->getFirstModelChildIndexCache();
-            auto strategyToRemove = portfolio ? portfolio->getModels().value(index.row() - strategy_offset, nullptr) : nullptr;
+            auto portfolio_offset = tmpItem->parent()->parent()->parent()->getFirstModelChildIndexCache();
+            auto portfolio = account ? account->getModels().value(index.parent().parent().row() - portfolio_offset, nullptr) : nullptr;
+            auto strategy_offset = tmpItem->parent()->parent()->getFirstModelChildIndexCache();
+            auto strategyToRemove = portfolio ? portfolio->getModels().value(index.parent().row() - strategy_offset, nullptr) : nullptr;
             //if(nullptr != strategyToRemove) strategyToRemove = strategyToRemove->getSelectionModel();
             if(nullptr != strategyToRemove)
                 strategyToRemove->removeExecutionModel();
