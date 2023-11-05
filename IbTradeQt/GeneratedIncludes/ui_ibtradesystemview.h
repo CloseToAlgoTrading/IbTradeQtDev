@@ -20,7 +20,6 @@
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QMenuBar>
-#include <QtWidgets/QPushButton>
 #include <QtWidgets/QSplitter>
 #include <QtWidgets/QStatusBar>
 #include <QtWidgets/QTextEdit>
@@ -42,20 +41,15 @@ public:
     QAction *actionLoad;
     QAction *actionSave;
     QAction *actionConnect;
+    QAction *actionPair_Trader;
+    QAction *actionAuto_Delta;
+    QAction *actionDBStore;
     QWidget *centralWidget;
     QVBoxLayout *verticalLayout_2;
     QSplitter *splitter_2;
     QFrame *frameControlPanel;
     QHBoxLayout *horizontalLayout;
     QSplitter *splitter;
-    QFrame *frame_5;
-    QGridLayout *gridLayout_2;
-    QFrame *frame_3;
-    QVBoxLayout *verticalLayout;
-    QPushButton *pushButton;
-    QPushButton *pushButtonPairTrader;
-    QPushButton *autoDeltaButton;
-    QPushButton *pushButtonDBStore;
     QFrame *frame_4;
     QVBoxLayout *verticalLayout_3;
     QHBoxLayout *horizontalLayout_2;
@@ -64,6 +58,7 @@ public:
     QMenu *menuclear_log;
     QMenu *menuView;
     QMenu *menuConfiguration;
+    QMenu *menuObsolete;
     QToolBar *mainToolBar;
     QStatusBar *statusBar;
     QDockWidget *dockWidget_Logging;
@@ -86,19 +81,37 @@ public:
         actionClear_Log->setObjectName("actionClear_Log");
         actionClear_Log->setCheckable(false);
         actionClear_Log->setChecked(false);
-        QIcon icon(QIcon::fromTheme(QString::fromUtf8("edit-clear")));
+        QIcon icon;
+        QString iconThemeName = QString::fromUtf8("edit-clear");
+        if (QIcon::hasThemeIcon(iconThemeName)) {
+            icon = QIcon::fromTheme(iconThemeName);
+        } else {
+            icon.addFile(QString::fromUtf8("."), QSize(), QIcon::Normal, QIcon::Off);
+        }
         actionClear_Log->setIcon(icon);
         actionShow_Log = new QAction(IBTradeSystemClass);
         actionShow_Log->setObjectName("actionShow_Log");
         actionShow_Log->setCheckable(false);
         actionShow_Log->setChecked(false);
-        QIcon icon1(QIcon::fromTheme(QString::fromUtf8("text-x-generic")));
+        QIcon icon1;
+        iconThemeName = QString::fromUtf8("text-x-generic");
+        if (QIcon::hasThemeIcon(iconThemeName)) {
+            icon1 = QIcon::fromTheme(iconThemeName);
+        } else {
+            icon1.addFile(QString::fromUtf8("."), QSize(), QIcon::Normal, QIcon::Off);
+        }
         actionShow_Log->setIcon(icon1);
         actionSetting = new QAction(IBTradeSystemClass);
         actionSetting->setObjectName("actionSetting");
         actionSetting->setCheckable(false);
         actionSetting->setChecked(false);
-        QIcon icon2(QIcon::fromTheme(QString::fromUtf8("preferences-other")));
+        QIcon icon2;
+        iconThemeName = QString::fromUtf8("preferences-other");
+        if (QIcon::hasThemeIcon(iconThemeName)) {
+            icon2 = QIcon::fromTheme(iconThemeName);
+        } else {
+            icon2.addFile(QString::fromUtf8("."), QSize(), QIcon::Normal, QIcon::Off);
+        }
         actionSetting->setIcon(icon2);
         actionAdd_Model = new QAction(IBTradeSystemClass);
         actionAdd_Model->setObjectName("actionAdd_Model");
@@ -106,16 +119,40 @@ public:
         actionRemove_Model->setObjectName("actionRemove_Model");
         actionLoad = new QAction(IBTradeSystemClass);
         actionLoad->setObjectName("actionLoad");
-        QIcon icon3(QIcon::fromTheme(QString::fromUtf8("document-open")));
+        QIcon icon3;
+        iconThemeName = QString::fromUtf8("document-open");
+        if (QIcon::hasThemeIcon(iconThemeName)) {
+            icon3 = QIcon::fromTheme(iconThemeName);
+        } else {
+            icon3.addFile(QString::fromUtf8("."), QSize(), QIcon::Normal, QIcon::Off);
+        }
         actionLoad->setIcon(icon3);
         actionSave = new QAction(IBTradeSystemClass);
         actionSave->setObjectName("actionSave");
-        QIcon icon4(QIcon::fromTheme(QString::fromUtf8("document-save")));
+        QIcon icon4;
+        iconThemeName = QString::fromUtf8("document-save");
+        if (QIcon::hasThemeIcon(iconThemeName)) {
+            icon4 = QIcon::fromTheme(iconThemeName);
+        } else {
+            icon4.addFile(QString::fromUtf8("."), QSize(), QIcon::Normal, QIcon::Off);
+        }
         actionSave->setIcon(icon4);
         actionConnect = new QAction(IBTradeSystemClass);
         actionConnect->setObjectName("actionConnect");
-        QIcon icon5(QIcon::fromTheme(QString::fromUtf8("network-idle")));
+        QIcon icon5;
+        iconThemeName = QString::fromUtf8("network-idle");
+        if (QIcon::hasThemeIcon(iconThemeName)) {
+            icon5 = QIcon::fromTheme(iconThemeName);
+        } else {
+            icon5.addFile(QString::fromUtf8("."), QSize(), QIcon::Normal, QIcon::Off);
+        }
         actionConnect->setIcon(icon5);
+        actionPair_Trader = new QAction(IBTradeSystemClass);
+        actionPair_Trader->setObjectName("actionPair_Trader");
+        actionAuto_Delta = new QAction(IBTradeSystemClass);
+        actionAuto_Delta->setObjectName("actionAuto_Delta");
+        actionDBStore = new QAction(IBTradeSystemClass);
+        actionDBStore->setObjectName("actionDBStore");
         centralWidget = new QWidget(IBTradeSystemClass);
         centralWidget->setObjectName("centralWidget");
         verticalLayout_2 = new QVBoxLayout(centralWidget);
@@ -140,56 +177,6 @@ public:
         splitter->setObjectName("splitter");
         splitter->setFrameShape(QFrame::Box);
         splitter->setOrientation(Qt::Horizontal);
-        frame_5 = new QFrame(splitter);
-        frame_5->setObjectName("frame_5");
-        QSizePolicy sizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
-        sizePolicy.setHorizontalStretch(0);
-        sizePolicy.setVerticalStretch(0);
-        sizePolicy.setHeightForWidth(frame_5->sizePolicy().hasHeightForWidth());
-        frame_5->setSizePolicy(sizePolicy);
-        frame_5->setMinimumSize(QSize(120, 0));
-        frame_5->setMaximumSize(QSize(120, 16777215));
-        frame_5->setFrameShape(QFrame::StyledPanel);
-        frame_5->setFrameShadow(QFrame::Raised);
-        gridLayout_2 = new QGridLayout(frame_5);
-        gridLayout_2->setSpacing(6);
-        gridLayout_2->setContentsMargins(11, 11, 11, 11);
-        gridLayout_2->setObjectName("gridLayout_2");
-        gridLayout_2->setSizeConstraint(QLayout::SetDefaultConstraint);
-        gridLayout_2->setContentsMargins(4, 4, 0, 0);
-        frame_3 = new QFrame(frame_5);
-        frame_3->setObjectName("frame_3");
-        frame_3->setFrameShape(QFrame::NoFrame);
-        frame_3->setFrameShadow(QFrame::Raised);
-        verticalLayout = new QVBoxLayout(frame_3);
-        verticalLayout->setSpacing(0);
-        verticalLayout->setContentsMargins(11, 11, 11, 11);
-        verticalLayout->setObjectName("verticalLayout");
-        verticalLayout->setContentsMargins(0, 0, 0, 0);
-        pushButton = new QPushButton(frame_3);
-        pushButton->setObjectName("pushButton");
-
-        verticalLayout->addWidget(pushButton);
-
-        pushButtonPairTrader = new QPushButton(frame_3);
-        pushButtonPairTrader->setObjectName("pushButtonPairTrader");
-
-        verticalLayout->addWidget(pushButtonPairTrader);
-
-        autoDeltaButton = new QPushButton(frame_3);
-        autoDeltaButton->setObjectName("autoDeltaButton");
-
-        verticalLayout->addWidget(autoDeltaButton);
-
-        pushButtonDBStore = new QPushButton(frame_3);
-        pushButtonDBStore->setObjectName("pushButtonDBStore");
-
-        verticalLayout->addWidget(pushButtonDBStore);
-
-
-        gridLayout_2->addWidget(frame_3, 0, 0, 1, 1, Qt::AlignTop);
-
-        splitter->addWidget(frame_5);
         frame_4 = new QFrame(splitter);
         frame_4->setObjectName("frame_4");
         frame_4->setFrameShape(QFrame::StyledPanel);
@@ -228,11 +215,14 @@ public:
         menuView->setObjectName("menuView");
         menuConfiguration = new QMenu(menuBar);
         menuConfiguration->setObjectName("menuConfiguration");
+        menuObsolete = new QMenu(menuBar);
+        menuObsolete->setObjectName("menuObsolete");
         IBTradeSystemClass->setMenuBar(menuBar);
         mainToolBar = new QToolBar(IBTradeSystemClass);
         mainToolBar->setObjectName("mainToolBar");
+        mainToolBar->setMovable(false);
         mainToolBar->setIconSize(QSize(16, 16));
-        IBTradeSystemClass->addToolBar(Qt::TopToolBarArea, mainToolBar);
+        IBTradeSystemClass->addToolBar(Qt::LeftToolBarArea, mainToolBar);
         statusBar = new QStatusBar(IBTradeSystemClass);
         statusBar->setObjectName("statusBar");
         IBTradeSystemClass->setStatusBar(statusBar);
@@ -253,11 +243,11 @@ public:
         horizontalLayout_3->setObjectName("horizontalLayout_3");
         textEdit = new QTextEdit(dockWidgetContents_2);
         textEdit->setObjectName("textEdit");
-        QSizePolicy sizePolicy1(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
-        sizePolicy1.setHorizontalStretch(0);
-        sizePolicy1.setVerticalStretch(0);
-        sizePolicy1.setHeightForWidth(textEdit->sizePolicy().hasHeightForWidth());
-        textEdit->setSizePolicy(sizePolicy1);
+        QSizePolicy sizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
+        sizePolicy.setHorizontalStretch(0);
+        sizePolicy.setVerticalStretch(0);
+        sizePolicy.setHeightForWidth(textEdit->sizePolicy().hasHeightForWidth());
+        textEdit->setSizePolicy(sizePolicy);
         textEdit->setFrameShape(QFrame::NoFrame);
         textEdit->setSizeAdjustPolicy(QAbstractScrollArea::AdjustIgnored);
 
@@ -297,6 +287,7 @@ public:
         menuBar->addAction(menuclear_log->menuAction());
         menuBar->addAction(menuView->menuAction());
         menuBar->addAction(menuConfiguration->menuAction());
+        menuBar->addAction(menuObsolete->menuAction());
         menuclear_log->addAction(actionConnect);
         menuclear_log->addSeparator();
         menuclear_log->addAction(actionClear_Log);
@@ -304,6 +295,9 @@ public:
         menuView->addAction(actionSetting);
         menuConfiguration->addAction(actionLoad);
         menuConfiguration->addAction(actionSave);
+        menuObsolete->addAction(actionPair_Trader);
+        menuObsolete->addAction(actionAuto_Delta);
+        menuObsolete->addAction(actionDBStore);
         mainToolBar->addAction(actionConnect);
         mainToolBar->addSeparator();
         mainToolBar->addAction(actionSetting);
@@ -330,13 +324,13 @@ public:
         actionLoad->setText(QCoreApplication::translate("IBTradeSystemClass", "Load ...", nullptr));
         actionSave->setText(QCoreApplication::translate("IBTradeSystemClass", "Save ...", nullptr));
         actionConnect->setText(QCoreApplication::translate("IBTradeSystemClass", "Connect", nullptr));
-        pushButton->setText(QCoreApplication::translate("IBTradeSystemClass", "Connect", nullptr));
-        pushButtonPairTrader->setText(QCoreApplication::translate("IBTradeSystemClass", "Pair Trader", nullptr));
-        autoDeltaButton->setText(QCoreApplication::translate("IBTradeSystemClass", "Auto Delta", nullptr));
-        pushButtonDBStore->setText(QCoreApplication::translate("IBTradeSystemClass", "DBStore", nullptr));
+        actionPair_Trader->setText(QCoreApplication::translate("IBTradeSystemClass", "Pair Trader", nullptr));
+        actionAuto_Delta->setText(QCoreApplication::translate("IBTradeSystemClass", "Auto Delta", nullptr));
+        actionDBStore->setText(QCoreApplication::translate("IBTradeSystemClass", "DBStore", nullptr));
         menuclear_log->setTitle(QCoreApplication::translate("IBTradeSystemClass", "options", nullptr));
         menuView->setTitle(QCoreApplication::translate("IBTradeSystemClass", "View", nullptr));
         menuConfiguration->setTitle(QCoreApplication::translate("IBTradeSystemClass", "Configuration", nullptr));
+        menuObsolete->setTitle(QCoreApplication::translate("IBTradeSystemClass", "Obsolete", nullptr));
         dockWidget_Logging->setWindowTitle(QCoreApplication::translate("IBTradeSystemClass", "Logs", nullptr));
         dockWidget_Settings->setWindowTitle(QCoreApplication::translate("IBTradeSystemClass", "Settings", nullptr));
     } // retranslateUi

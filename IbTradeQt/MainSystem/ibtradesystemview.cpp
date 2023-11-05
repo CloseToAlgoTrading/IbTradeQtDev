@@ -81,7 +81,6 @@ void CIBTradeSystemView::mapSignals()
     QObject::connect(ui.actionShow_Log, &QAction::triggered, this, &CIBTradeSystemView::slotShowLog);
     QObject::connect(ui.actionSetting, &QAction::triggered, this, &CIBTradeSystemView::slotshowSettings);
 
-
     QObject::connect(ui.test_treeView, &QTreeView::expanded,  [=](const QModelIndex& index) { ui.test_treeView->resizeColumnToContents(index.column()); });
     QObject::connect(ui.test_treeView, &QTreeView::collapsed, [=](const QModelIndex& index) { ui.test_treeView->resizeColumnToContents(index.column()); });
 
@@ -106,11 +105,13 @@ void CIBTradeSystemView::slotRecvConnectButtonState(bool isConnect)
 {
 	if (isConnect)
 	{
-		ui.pushButton->setText("Disconnect");
+        ui.actionConnect->setText("Disconnect");
+        ui.actionConnect->setIcon(QIcon::fromTheme("network-offline"));
 	}
 	else
 	{
-		ui.pushButton->setText("Connect");
+        ui.actionConnect->setText("Connect");
+        ui.actionConnect->setIcon(QIcon::fromTheme("network-idle"));
     }
 }
 
