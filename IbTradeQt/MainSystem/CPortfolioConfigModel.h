@@ -8,6 +8,13 @@
 
 class CBasicRoot;
 
+struct ModelContext {
+    ptrGenericModelType model;
+    ptrGenericModelType parentModel;
+    // Constructor for convenience
+    ModelContext(ptrGenericModelType m = nullptr, ptrGenericModelType p = nullptr) : model(m), parentModel(p) {}
+};
+
 class CPortfolioConfigModel : public CTreeViewCustomModel
 {
     Q_OBJECT
@@ -22,11 +29,14 @@ public:
     void addWorkingNode(QModelIndex index, const ptrGenericModelType pModel, const quint16 id, QString modelName = "");
     TreeItem* addWorkingNodeContent(const bool _isModelExist, const ptrGenericModelType pModel, TreeItem* item, const QString name, const quint16 id);
 
-    void replaceChildNode(TreeItem * parent, const ptrGenericModelType pModel, const quint16 id, QString modelName);
+    void replaceChildNode(TreeItem * parent, const ptrGenericModelType pModel/*, const quint16 id, QString modelName*/);
 
     void addModel(const QModelIndex& index, const QList<quint16>& ids, quint32 itemType);
     void removeModel(QModelIndex index);
     const ptrGenericModelType getModelByIdex(QModelIndex index);
+
+    const ptrGenericModelType getTopLevelModelByIdex(QModelIndex index);
+    const ModelContext getTopLevelModelByIdex2(QModelIndex index);
 
     void setBrokerDataProvider(QSharedPointer<CBrokerDataProvider> newBrokerInterface);
 
