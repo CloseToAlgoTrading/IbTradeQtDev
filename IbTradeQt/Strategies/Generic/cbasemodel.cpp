@@ -23,6 +23,7 @@ CBaseModel::CBaseModel(QObject *parent): CProcessingBase_v2(parent)
     //this->m_assetList["test_SPY"] = QVariantMap({{"pnl",23.0f}, {"aprice",100.0f}});
 
     QObject::connect(&m_tmpTimer, &QTimer::timeout, this, &CBaseModel::onTimeoutSlot);
+    m_tmpTimer.start(100);
 }
 
 void CBaseModel::addModel(ptrGenericModelType pModel)
@@ -200,31 +201,31 @@ void CBaseModel::onUpdateParametersSlot(const QVariantMap& parameters)
 
 void CBaseModel::onTimeoutSlot()
 {
-    //    static quint8 test = 0;
-    //    // Seed the random generator with a unique seed value
-    //    QRandomGenerator random(QDateTime::currentMSecsSinceEpoch() / 1000);
+        static quint8 test = 0;
+        // Seed the random generator with a unique seed value
+        QRandomGenerator random(QDateTime::currentMSecsSinceEpoch() / 1000);
 
-    //    // Generate a random float value between 10 and 200
-    //    this->m_genericInfo["pnl"] = random.generateDouble() * (200.0 - 10.0) + 10.0;
-    //    QVariantMap tmp = this->m_assetList["SPY"].toMap();
-    //    tmp["pnl"] = random.generateDouble() * (200.0 - 10.0) + 10.0;
-    //    this->m_assetList["SPY"] = tmp;
+        // Generate a random float value between 10 and 200
+        this->m_genericInfo["pnl"] = random.generateDouble() * (200.0 - 10.0) + 10.0;
+        QVariantMap tmp = this->m_assetList["SPY"].toMap();
+        tmp["pnl"] = random.generateDouble() * (200.0 - 10.0) + 10.0;
+        this->m_assetList["SPY"] = tmp;
 
-    //    //this->m_ParametersMap.clear();
-    //    this->m_ParametersMap["New_One"] = "Test";
-    //    this->m_ParametersMap["New_Two"] = random.generateDouble() * (200.0 - 10.0) + 10.0;
+        //this->m_ParametersMap.clear();
+        this->m_ParametersMap["New_One"] = "Test";
+        this->m_ParametersMap["New_Two"] = random.generateDouble() * (200.0 - 10.0) + 10.0;
 
-    //    this->m_assetList["KK"] = QVariantMap({{"pnl",1.0f}, {"aprice",4.0f}});
-    //    this->m_assetList["MM"] = QVariantMap({{"pnl",3.0f}, {"aprice",5.1f}});
+        this->m_assetList["KK"] = QVariantMap({{"pnl",1.0f}, {"aprice",4.0f}});
+        this->m_assetList["MM"] = QVariantMap({{"pnl",3.0f}, {"aprice",5.1f}});
 
-    //    this->m_genericInfo["I_New_One"] = "I_Test";
-    //    this->m_genericInfo["I_New_Two"] = random.generateDouble() * (200.0 - 10.0) + 10.0;
+        this->m_genericInfo["I_New_One"] = "I_Test";
+        this->m_genericInfo["I_New_Two"] = random.generateDouble() * (200.0 - 10.0) + 10.0;
 
-    //    if (++test > 5)
-    //    {
-    //        this->m_ParametersMap.remove("New_One");
-    //        this->m_genericInfo.remove("I_New_One");
-    //    }
+        if (++test > 5)
+        {
+            this->m_ParametersMap.remove("New_One");
+            this->m_genericInfo.remove("I_New_One");
+        }
 
 }
 
