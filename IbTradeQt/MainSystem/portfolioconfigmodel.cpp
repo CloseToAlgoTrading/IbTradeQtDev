@@ -68,7 +68,7 @@ void CPortfolioConfigModel::addDataToNode(TreeItem *parent, const QString &key, 
 
 void CPortfolioConfigModel::addNestedNodes(TreeItem *parent, const QString &rootName, const QVariantMap &params, bool readOnly, int columnCount)
 {
-    if (!params.empty())
+    //if (!params.empty())
     {
         auto EmptyRoItem = pItemDataType(new stItemData(QVariant(), EVT_RO_TEXT, TVM_UNUSED_ID));
         auto _workingItem = parent;
