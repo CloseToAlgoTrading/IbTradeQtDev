@@ -9,6 +9,7 @@ CBasicStrategy::CBasicStrategy():
     , m_assetList()
     , m_genericInfo()
 {
+    m_Name = "CBasicStrategy";
     this->m_genericInfo["pnl"] = 95.2f;
     this->m_genericInfo["pnlpnc"] = "2.1 %";
 

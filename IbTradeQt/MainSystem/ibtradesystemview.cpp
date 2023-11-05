@@ -8,6 +8,9 @@
 
 CIBTradeSystemView::CIBTradeSystemView(QWidget *parent)
 	: QMainWindow(parent)
+    , m_pTimeLabel(new QLabel(this))
+    , m_pConnectLabel(new QLabel(ui.statusBar))
+    , m_ConnectIcon()
 {
 	ui.setupUi(this);
 
@@ -33,13 +36,17 @@ CIBTradeSystemView::CIBTradeSystemView(QWidget *parent)
 
     /*** End Create Context Menu **************/
 
-
     this->setWindowTitle(QString("IB Trade v. ") + QString(APP_VERSION));
 
 
 
-	m_pTimeLabel = new QLabel(this);
+    //m_pTimeLabel = new QLabel(this);
 	ui.statusBar->addWidget(m_pTimeLabel);
+    ui.statusBar->addPermanentWidget(m_pConnectLabel);
+
+    m_pConnectLabel->setPixmap(QIcon::fromTheme("network-offline").pixmap(16));
+    m_pConnectLabel->setToolTip("Disconnected");
+    //m_pConnectLabel->setText("Disconnected");
 
 //    QObject::connect(ui.actionClear_Log, &QAction::triggered, this, &CIBTradeSystemView::slotClearLog);
 //    QObject::connect(ui.actionShow_Log, &QAction::triggered, this, &CIBTradeSystemView::slotShowLog);
@@ -81,7 +88,6 @@ void CIBTradeSystemView::mapSignals()
     QObject::connect(ui.actionShow_Log, &QAction::triggered, this, &CIBTradeSystemView::slotShowLog);
     QObject::connect(ui.actionSetting, &QAction::triggered, this, &CIBTradeSystemView::slotshowSettings);
 
-
     QObject::connect(ui.test_treeView, &QTreeView::expanded,  [=](const QModelIndex& index) { ui.test_treeView->resizeColumnToContents(index.column()); });
     QObject::connect(ui.test_treeView, &QTreeView::collapsed, [=](const QModelIndex& index) { ui.test_treeView->resizeColumnToContents(index.column()); });
 
@@ -106,11 +112,21 @@ void CIBTradeSystemView::slotRecvConnectButtonState(bool isConnect)
 {
 	if (isConnect)
 	{
-		ui.pushButton->setText("Disconnect");
+        ui.actionConnect->setText("Disconnect");
+        ui.actionConnect->setIcon(QIcon::fromTheme("network-offline"));
+
+        m_pConnectLabel->setPixmap(QIcon::fromTheme("network-idle").pixmap(16));
+        m_pConnectLabel->setToolTip("Connected");
+
 	}
 	else
 	{
-		ui.pushButton->setText("Connect");
+        ui.actionConnect->setText("Connect");
+        ui.actionConnect->setIcon(QIcon::fromTheme("network-idle"));
+
+        m_pConnectLabel->setPixmap(QIcon::fromTheme("network-offline").pixmap(16));
+        m_pConnectLabel->setToolTip("Disconnected");
+
     }
 }
 

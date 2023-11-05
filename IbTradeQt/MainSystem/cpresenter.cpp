@@ -49,13 +49,17 @@ void CPresenter::MapSignals()
 {
 	//MAP GUI Signals/Slots
 	//Click connect button
-	QObject::connect(pIbtsView->getUi().pushButton, SIGNAL(clicked()), this, SLOT(onClickMyButton()));
+    QObject::connect(pIbtsView->getUi().actionConnect, &QAction::triggered, this, &CPresenter::onClickMyButton);
+
 	//click Pair Trader button
-	QObject::connect(pIbtsView->getUi().pushButtonPairTrader, SIGNAL(clicked()), this, SLOT(onClickPairTraderButton()));
+    QObject::connect(pIbtsView->getUi().actionPair_Trader, &QAction::triggered, this, &CPresenter::onClickPairTraderButton);
+
     //click Auto Delta button
-    QObject::connect(pIbtsView->getUi().autoDeltaButton, SIGNAL(clicked()), this, SLOT(onClickAutoDeltaButton()));
+    QObject::connect(pIbtsView->getUi().actionAuto_Delta, &QAction::triggered, this, &CPresenter::onClickAutoDeltaButton);
+
     //click DBStore button
-    QObject::connect(pIbtsView->getUi().pushButtonDBStore, SIGNAL(clicked()), this, SLOT(onClickDBStoreButton()));
+    QObject::connect(pIbtsView->getUi().actionDBStore, &QAction::triggered, this, &CPresenter::onClickDBStoreButton);
+
 
 
 	//Click received Time button

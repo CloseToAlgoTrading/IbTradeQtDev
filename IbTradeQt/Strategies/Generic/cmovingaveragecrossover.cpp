@@ -19,6 +19,7 @@ CMovingAverageCrossover::CMovingAverageCrossover(QObject *parent) : CBasicStrate
     //m_DataProvider.setClien(QSharedPointer<IBComClientImpl>::create(m_DataProvider));
     //this->setClient(QSharedPointer<CBrokerDataProvider>(&m_DataProvider));
     /***** Init Patameters ******/
+    m_Name = "Moving Average Crossover";
     this->setName("Moving Average Crossover");
 
     this->m_ParametersMap["Asset"] = "SPY";

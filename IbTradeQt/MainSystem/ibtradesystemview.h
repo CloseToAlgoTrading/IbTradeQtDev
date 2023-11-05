@@ -5,6 +5,7 @@
 #include <QtConcurrent/QtConcurrentRun>
 #include "ui_ibtradesystemview.h"
 #include <QLabel>
+#include <QIcon>
 
 class CIBTradeSystemView : public QMainWindow
 {
@@ -24,7 +25,9 @@ public:
 
 private:
     Ui::IBTradeSystemClass ui;
-	QLabel * m_pTimeLabel;
+    QLabel * m_pTimeLabel;
+    QLabel * m_pConnectLabel;
+    QIcon m_ConnectIcon;
 
 
 private slots:

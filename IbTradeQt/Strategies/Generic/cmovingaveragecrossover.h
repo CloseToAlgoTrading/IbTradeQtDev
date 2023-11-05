@@ -1,7 +1,7 @@
 #ifndef CMOVINGAVERAGECROSSOVER_H
 #define CMOVINGAVERAGECROSSOVER_H
 
-#include "cbasicstrategy_v2.h"
+#include "cbasicstrategy_V2.h"
 
 Q_DECLARE_LOGGING_CATEGORY(MaCrossoverPmLog);
 

@@ -154,6 +154,7 @@ HEADERS += \
     Strategies/AutoDeltAlignment/header/CModelInputData.h \
     Strategies/AutoDeltAlignment/header/autodeltatypes.h \
     Strategies/Generic/ModelType.h \
+    Strategies/Generic/UnifiedModelData.h \
     Strategies/Generic/cbasemodel.h \
     Strategies/Generic/cbaserebalancemodel.h \
     Strategies/Generic/cbasicaccount.h \

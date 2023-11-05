@@ -169,6 +169,33 @@ QModelIndex CTreeViewCustomModel::index(int row, int column, const QModelIndex &
         return createIndex(row, column, childItem);
     return QModelIndex();
 }
+//QModelIndex CTreeViewCustomModel::index(int row, int column, const QModelIndex &parent) const
+//{
+//    // Check for valid column
+//    if (column != 0)
+//        return QModelIndex();
+
+//    // Get the parent item
+//    TreeItem *parentItem = getItem(parent);
+
+//    // Check if parentItem is valid and if the row is within bounds
+//    if (!parentItem || row < 0 || row >= parentItem->childCount())
+//        return QModelIndex();
+
+//    // Get the child item at the specified row
+//    TreeItem *childItem = parentItem->child(row);
+
+//    // Check if the child item is valid
+//    if (childItem)
+//    {
+//        // Create and return a valid QModelIndex
+//        return createIndex(row, column, childItem);
+//    }
+
+//    // Return an invalid QModelIndex if the child item is not found
+//    return QModelIndex();
+//}
+
 
 QModelIndex CTreeViewCustomModel::parent(const QModelIndex &index) const
 {

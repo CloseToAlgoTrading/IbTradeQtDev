@@ -2,10 +2,11 @@
 // Implements a class that serves as a container for individual items in a tree model.
 
 #include "treeitem.h"
+#include "PortfolioModelDefines.h"
 
 // Constructor: Initializes a tree item with given data and parent item.
 TreeItem::TreeItem(const QList<pItemDataType> &data, TreeItem *parent)
-    : itemData(data), parentItem(parent)
+    : itemData(data), parentItem(parent), firstModelChildIndexCache(-1)
 {}
 
 // Destructor: Deletes all child items.
@@ -47,6 +48,9 @@ stItemData TreeItem::data(int column) const
 {
     if (column < 0 || column >= itemData.size())
         return stItemData();
+    // Add check for nullptr
+    if (itemData.at(column) == nullptr)
+        return stItemData();
     return *(itemData.at(column));
 }
 
@@ -62,6 +66,7 @@ bool TreeItem::insertChildren(int position, int count, int columns)
         childItems.insert(position, item);
     }
 
+//    updateFirstModelChildIndex(); // Update cache after insertion.
     return true;
 }
 
@@ -92,8 +97,14 @@ bool TreeItem::removeChildren(int position, int count)
     if (position < 0 || position + count > childItems.size())
         return false;
 
-    for (int row = 0; row < count; ++row)
+    for (int row = 0; row < count; ++row){
+        //childItems.takeAt(position);
         delete childItems.takeAt(position);
+        //TODO: Sothing wrong with the memory
+    }
+
+
+    updateFirstModelChildIndex(); // Update cache after insertion.
 
     return true;
 }
@@ -130,5 +141,45 @@ bool TreeItem::addData(int column, const pItemDataType &value)
         return false;
 
     itemData[column] = value;
+
+    if(isModel(value.data()->id))
+    {
+        parentItem->updateFirstModelChildIndex(); // Update cache after insertion.
+    }
+
     return true;
+}
+
+bool TreeItem::isModel(const quint16 id) const
+{
+    auto _id = PM_ITEM_ID_MASK & id;
+    return (_id == PM_ITEM_ACCOUNT)
+        || (_id == PM_ITEM_PORTFOLIO)
+        || (_id == PM_ITEM_STRATEGY)
+        || (_id == PM_ITEM_SELECTION_MODEL);
+}
+
+void TreeItem::updateFirstModelChildIndex()
+{
+    firstModelChildIndexCache = -1; // Reset cache.
+
+    // Check each child.
+    for (int i = 0; i < childItems.size(); ++i) {
+        if(nullptr != childItems[i])
+        {
+            if (childItems[i]->isModel(childItems[i]->data(0).id)) { // Placeholder condition. Replace with actual check.
+                firstModelChildIndexCache = i; // Update cache.
+                break;
+            }
+        }
+        else
+        {
+            break;
+        }
+    }
+}
+
+qint8 TreeItem::getFirstModelChildIndexCache() const
+{
+    return firstModelChildIndexCache;
 }

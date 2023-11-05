@@ -27,13 +27,13 @@ void SMA::calculate(const QList<CHistoricalData>& priceDataList) {
     }
 }
 
-void SMA::update(const PriceData& newPriceData) {
+void SMA::update(const CHistoricalData& newPriceData) {
     if (smaList.isEmpty()) {
         std::cout << "Call calculate() method first to initialize the SMA." << std::endl;
         return;
     }
 
-    sum += newPriceData.close - smaList.last() * windowSize;
+    sum += newPriceData.getClose() - smaList.last() * windowSize;
     smaList.append(sum / windowSize);
 }
 
