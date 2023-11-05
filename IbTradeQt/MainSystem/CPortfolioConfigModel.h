@@ -28,6 +28,8 @@ public:
     void removeModel(QModelIndex index);
     const ptrGenericModelType getModelByIdex(QModelIndex index);
 
+    const ptrGenericModelType getTopLevelModelByIdex(QModelIndex index);
+
     void setBrokerDataProvider(QSharedPointer<CBrokerDataProvider> newBrokerInterface);
 
 
