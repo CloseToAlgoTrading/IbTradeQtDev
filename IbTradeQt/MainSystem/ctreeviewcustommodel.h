@@ -11,6 +11,7 @@
 //#include "csettinsmodeldata.h"
 //#include "ctreeviewdatamodel.h"
 #include <QTreeView>
+#include "ciconhandler.h"
 
 
 class CTreeViewCustomModel : public QAbstractItemModel
@@ -44,6 +45,7 @@ protected:
     //CTreeViewDataModel* m_data;
     TreeItem * rootItem;
     QTreeView *m_treeView;
+    CIconHandler m_ih;
 signals:
     void signalEditCompleted();
     void siganlSataChangeCallback(const pItemDataType pDataItem);

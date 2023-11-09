@@ -3,6 +3,7 @@
 
 #include <QtWidgets/QMainWindow>
 #include <QtConcurrent/QtConcurrentRun>
+#include "ciconhandler.h"
 #include "ui_ibtradesystemview.h"
 #include <QLabel>
 #include <QIcon>
@@ -27,7 +28,7 @@ private:
     Ui::IBTradeSystemClass ui;
     QLabel * m_pTimeLabel;
     QLabel * m_pConnectLabel;
-    QIcon m_ConnectIcon;
+    CIconHandler m_ih;
 
 
 private slots:

@@ -22,6 +22,7 @@ CTreeViewCustomModel::CTreeViewCustomModel(QTreeView *treeView, QObject *parent)
     : QAbstractItemModel(parent)
     , rootItem(new TreeItem(QList<pItemDataType>()))
     , m_treeView(treeView)
+    , m_ih()
 {
     QObject::connect(this, &CTreeViewCustomModel::dataChanged,
                      this, &CTreeViewCustomModel::dataChangeCallback, Qt::AutoConnection);
@@ -75,22 +76,22 @@ QVariant CTreeViewCustomModel::data(const QModelIndex &index, int role) const
     case Qt::DecorationRole:
         switch ((PM_ITEM_ID_MASK & itemData.id)) {
         case PM_ITEM_ACCOUNTS:
-            return QIcon(":/IBTradeSystem/x_resources/Accounts_1.png");
+            return m_ih.loadIconFromResourceTheme("Accounts_1");
             break;
         case PM_ITEM_ACCOUNT:
-            return QIcon(":/IBTradeSystem/x_resources/Account.png");
+            return m_ih.loadIconFromResourceTheme("Account");
             break;
         case PM_ITEM_PARAMETER:
-            return QIcon(":/IBTradeSystem/x_resources/Parameter.png");
+            return m_ih.loadIconFromResourceTheme("Parameter");
             break;
         case PM_ITEM_PARAMETERS:
-            return QIcon(":/IBTradeSystem/x_resources/Parameters.png");
+            return m_ih.loadIconFromResourceTheme("Parameters");
             break;
         case PM_ITEM_PORTFOLIO:
-            return QIcon(":/IBTradeSystem/x_resources/Portfolio.png");
+            return m_ih.loadIconFromResourceTheme("Portfolio");
             break;
         case PM_ITEM_STRATEGY:
-            return QIcon(":/IBTradeSystem/x_resources/Strategy.png");
+            return m_ih.loadIconFromResourceTheme("Strategy");
             break;
         default:
             break;

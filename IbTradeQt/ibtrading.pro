@@ -45,6 +45,7 @@ SOURCES += \
     Common/cprocessingbase_v2.cpp \
     MainSystem/caccount.cpp \
     MainSystem/capplicationcontroller.cpp \
+    MainSystem/ciconhandler.cpp \
     MainSystem/cmainmodel.cpp \
     MainSystem/csettinsmodeldata.cpp \
     MainSystem/ctreeviewcustommodel.cpp \
@@ -146,6 +147,7 @@ HEADERS += \
     MainSystem/TreeItemDataTypesDef.h \
     MainSystem/caccount.h \
     MainSystem/capplicationcontroller.h \
+    MainSystem/ciconhandler.h \
     MainSystem/cmainmodel.h \
     MainSystem/csettinsmodeldata.h \
     MainSystem/ctreeviewcustommodel.h \
