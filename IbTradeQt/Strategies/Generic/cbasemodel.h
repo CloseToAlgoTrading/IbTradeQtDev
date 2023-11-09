@@ -81,7 +81,7 @@ protected:
     ptrGenericModelType m_ExecutionModel;
 
 public slots:
-    void onUpdateParametersSlot(const QVariantMap& parameters);
+    virtual void onUpdateParametersSlot(const QVariantMap& parameters);
 
     void onTimeoutSlot();
     //public: signals:

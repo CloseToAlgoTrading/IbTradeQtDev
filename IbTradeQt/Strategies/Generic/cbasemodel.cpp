@@ -19,11 +19,11 @@ CBaseModel::CBaseModel(QObject *parent): CProcessingBase_v2(parent)
     , m_ExecutionModel()
 {
     m_Name = "basemodel";
-    this->m_genericInfo["test_pnl"] = 0.2f;
+    //this->m_genericInfo["test_pnl"] = 0.2f;
     //this->m_assetList["test_SPY"] = QVariantMap({{"pnl",23.0f}, {"aprice",100.0f}});
 
-    QObject::connect(&m_tmpTimer, &QTimer::timeout, this, &CBaseModel::onTimeoutSlot);
-    m_tmpTimer.start(100);
+//    QObject::connect(&m_tmpTimer, &QTimer::timeout, this, &CBaseModel::onTimeoutSlot);
+//    m_tmpTimer.start(100);
 }
 
 void CBaseModel::addModel(ptrGenericModelType pModel)

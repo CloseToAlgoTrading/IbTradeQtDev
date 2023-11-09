@@ -20,6 +20,10 @@ public:
 
     ModelType modelType() const override { return ModelType::STRATEGY_SELECTION_MODEL; }
     QStringList getAssets();
+    virtual void setParameters(const QVariantMap& parametersMap) override;
+
+public:
+    QStringList m_AssetList;
 
 };
 
