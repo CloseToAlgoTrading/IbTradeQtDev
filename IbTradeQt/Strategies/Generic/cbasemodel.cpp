@@ -66,12 +66,16 @@ const QVariantMap &CBaseModel::getParameters()
 
 bool CBaseModel::start()
 {
+    //qDebug() << "Base start";
+    connectModels();
     this->m_InfoMap["IsStarted"] = true;
     return true;
 }
 
 bool CBaseModel::stop()
 {
+    //qDebug() << "Base stop";
+    disconnectModels();
     this->m_InfoMap["IsStarted"] = false;
     return false;
 }
@@ -229,6 +233,11 @@ void CBaseModel::onTimeoutSlot()
 
 }
 
+void CBaseModel::processData(DataListPtr data)
+{
+    emit dataProcessed(data);
+}
+
 void CBaseModel::addSelectionModel(ptrGenericModelType pModel) {
     m_SelectionModel = pModel;
 }
@@ -288,3 +297,44 @@ ptrGenericModelType CBaseModel::getRiskModel() {
 ptrGenericModelType CBaseModel::getExecutionModel() {
     return m_ExecutionModel;
 }
+
+void CBaseModel::connectModels()
+{
+    QList<QSharedPointer<CBaseModel>> models = {
+        m_SelectionModel.staticCast<CBaseModel>(),
+        m_AlphaModel.staticCast<CBaseModel>(),
+        m_RebalanceModel.staticCast<CBaseModel>(),
+        m_RiskModel.staticCast<CBaseModel>(),
+        m_ExecutionModel.staticCast<CBaseModel>()
+    };
+
+    QSharedPointer<CBaseModel> previousModel = nullptr;
+
+    for (auto &currentModel : models) {
+        if (!currentModel.isNull()) {
+            if (!previousModel.isNull()) {
+                QObject::connect(previousModel.data(), &CBaseModel::dataProcessed,
+                                 currentModel.data(), &CBaseModel::processData);
+            }
+            previousModel = currentModel;
+        }
+    }
+}
+
+void CBaseModel::disconnectModels() {
+    QList<QSharedPointer<CBaseModel>> models = {
+        m_SelectionModel.staticCast<CBaseModel>(),
+        m_AlphaModel.staticCast<CBaseModel>(),
+        m_RebalanceModel.staticCast<CBaseModel>(),
+        m_RiskModel.staticCast<CBaseModel>(),
+        m_ExecutionModel.staticCast<CBaseModel>()
+    };
+
+    for (int i = 0; i < models.size() - 1; ++i) {
+        if (!models[i].isNull() && !models[i + 1].isNull()) {
+            QObject::disconnect(models[i].data(), &CBaseModel::dataProcessed,
+                                models[i + 1].data(), &CBaseModel::processData);
+        }
+    }
+}
+

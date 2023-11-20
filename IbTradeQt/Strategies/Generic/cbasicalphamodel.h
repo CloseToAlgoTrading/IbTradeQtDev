@@ -3,6 +3,8 @@
 #define CBASICALPHAMODEL_H
 
 #include "cbasicstrategy_V2.h"
+#include "UnifiedModelData.h"
+#include <QStringList>
 
 Q_DECLARE_LOGGING_CATEGORY(BasicAlphaModelLog);
 
@@ -14,6 +16,9 @@ public:
     virtual ~CBasicAlphaModel() {};
 
     ModelType modelType() const override { return ModelType::STRATEGY_ALPHA_MODEL; }
+
+public slots:
+    virtual void processData(DataListPtr data) override;
 };
 
 #endif // CBASICALPHAMODEL_H

@@ -10,9 +10,12 @@
 #include "cprocessingbase_v2.h"
 #include <QTimer>
 #include <QJsonObject>
+#include "UnifiedModelData.h"
+#include <QObject>
 
 class CBaseModel : public CProcessingBase_v2, public CGenericModelApi
 {
+Q_OBJECT
 public:
     explicit CBaseModel(QObject *parent = nullptr);
     virtual ~CBaseModel() {};
@@ -64,6 +67,10 @@ public:
     virtual ptrGenericModelType getExecutionModel() override;
 
 protected:
+    void connectModels();
+    void disconnectModels();
+
+protected:
     QList<ptrGenericModelType> m_Models;
     QVariantMap m_ParametersMap;
     QVariantMap m_InfoMap;
@@ -80,13 +87,16 @@ protected:
     ptrGenericModelType m_RiskModel;
     ptrGenericModelType m_ExecutionModel;
 
+
 public slots:
     virtual void onUpdateParametersSlot(const QVariantMap& parameters);
-
+    virtual void processData(DataListPtr data);
     void onTimeoutSlot();
     //public: signals:
     //    void onUpdateParametersSignal(const QVariantMap& parameters);
 
+signals:
+    void dataProcessed(DataListPtr data);
 };
 
 #endif // CBASEMODEL_H

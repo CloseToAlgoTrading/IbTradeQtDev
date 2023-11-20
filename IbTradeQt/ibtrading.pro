@@ -52,6 +52,7 @@ SOURCES += \
     MainSystem/ibtradesystemview.cpp \
     MainSystem/portfolioconfigmodel.cpp \
     Strategies/AutoDeltAlignment/src/CModelInputData.cpp \
+    Strategies/Generic/UnifiedModelData.cpp \
     Strategies/Generic/cbasemodel.cpp \
     Strategies/Generic/cbaserebalancemodel.cpp \
     Strategies/Generic/cbasicaccount.cpp \
