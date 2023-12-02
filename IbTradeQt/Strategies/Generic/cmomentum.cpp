@@ -30,8 +30,11 @@ bool cMomentum::start()
 //        histConfiguration.symbol = ticker.toStdString().c_str();
 //        reqestHistoricalData(histConfiguration);
 //    }
+    if(!isConnectedTotheServer()) return false;
     CBasicStrategy_V2::start();
-    return m_SelectionModel->start();
+    auto m_pAssetList = createDataList();
+    emit dataProcessed(m_pAssetList);
+    return true;
     //return CBasicStrategy_V2::start();
 }
 

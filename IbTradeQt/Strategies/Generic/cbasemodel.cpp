@@ -312,6 +312,14 @@ void CBaseModel::connectModels()
 
     for (auto &currentModel : models) {
         if (!currentModel.isNull()) {
+            QObject::connect(this, &CBaseModel::dataProcessed,
+                                 currentModel.data(), &CBaseModel::processData);
+            break;
+        }
+    }
+
+    for (auto &currentModel : models) {
+        if (!currentModel.isNull()) {
             if (!previousModel.isNull()) {
                 QObject::connect(previousModel.data(), &CBaseModel::dataProcessed,
                                  currentModel.data(), &CBaseModel::processData);
@@ -330,11 +338,20 @@ void CBaseModel::disconnectModels() {
         m_ExecutionModel.staticCast<CBaseModel>()
     };
 
+    for (auto &currentModel : models) {
+        if (!currentModel.isNull()) {
+            QObject::disconnect(this, &CBaseModel::dataProcessed,
+                             currentModel.data(), &CBaseModel::processData);
+            break;
+        }
+    }
+
     for (int i = 0; i < models.size() - 1; ++i) {
         if (!models[i].isNull() && !models[i + 1].isNull()) {
             QObject::disconnect(models[i].data(), &CBaseModel::dataProcessed,
                                 models[i + 1].data(), &CBaseModel::processData);
         }
     }
+
 }
 

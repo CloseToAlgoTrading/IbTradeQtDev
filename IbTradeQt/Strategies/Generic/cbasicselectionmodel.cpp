@@ -16,13 +16,6 @@ CBasicSelectionModel::CBasicSelectionModel(QObject *parent) : CBasicStrategy_V2(
     m_pAssetList->append(UnifiedModelData("NVDA", 0, 0, 0));
 }
 
-bool CBasicSelectionModel::start()
-{
-    qDebug() << "Selection Start - emit signal: " ;
-    emit dataProcessed(m_pAssetList);
-    return true;
-}
-
 void CBasicSelectionModel::setParameters(const QVariantMap &parametersMap)
 {
     CBaseModel::setParameters(parametersMap);
@@ -34,6 +27,12 @@ void CBasicSelectionModel::setParameters(const QVariantMap &parametersMap)
     {
         m_pAssetList->append(UnifiedModelData(str, 0, 0, 0));
     }
+}
+
+void CBasicSelectionModel::processData(DataListPtr data)
+{
+    qDebug() << "Selection processData - emit signal: " ;
+    emit dataProcessed(m_pAssetList);
 }
 
 

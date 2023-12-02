@@ -15,12 +15,16 @@ public:
     virtual ~CBasicSelectionModel() {};
 
 public:
-    virtual bool start() final;
+    //virtual bool start() final;
     //virtual bool stop() final;
 
     ModelType modelType() const override { return ModelType::STRATEGY_SELECTION_MODEL; }
 
     virtual void setParameters(const QVariantMap& parametersMap) override;
+
+public slots:
+    virtual void processData(DataListPtr data) override;
+
 public:
     DataListPtr m_pAssetList;
 };
