@@ -13,7 +13,7 @@ CApplicationController::CApplicationController(QObject *parent):
    , pMainView(new CIBTradeSystemView)
    , m_pDataRoot(new CBasicRoot())
 {
-    loadTreeFromFile("model_tree_config.json");
+    loadTreeFromFile("model_tree_config.json", pMainPresenter->getDataProvider());
 
     this->pMainPresenter->addView(this->pMainView);
 
@@ -87,7 +87,7 @@ void CApplicationController::setPMainModel(CMainModel *newPMainModel)
     pMainModel = newPMainModel;
 }
 
-void CApplicationController::loadTreeFromFile(const QString &fileName)
+void CApplicationController::loadTreeFromFile(const QString &fileName, QSharedPointer<CBrokerDataProvider> dataProvider)
 {
     QFile file(fileName);
     if (file.exists())
@@ -99,6 +99,7 @@ void CApplicationController::loadTreeFromFile(const QString &fileName)
         QByteArray jsonData = file.readAll();
         QJsonDocument doc = QJsonDocument::fromJson(jsonData);
         QJsonObject rootJson = doc.object();
+        this->m_pDataRoot->setBrokerDataProvider(dataProvider);
         this->m_pDataRoot->fromJson(rootJson);
     }
 }

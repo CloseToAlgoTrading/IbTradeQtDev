@@ -201,6 +201,11 @@ void CPresenter::onClickDBStoreButton()
     }
 }
 
+QSharedPointer<CBrokerDataProvider> CPresenter::getDataProvider() const
+{
+    return m_pDataProvider;
+}
+
 CMainModel *CPresenter::getPGuiModel() const
 {
     return pGuiModel;

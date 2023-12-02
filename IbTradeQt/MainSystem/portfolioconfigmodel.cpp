@@ -126,6 +126,7 @@ void CPortfolioConfigModel::setupModelData(TreeItem * rootItem)
             // Loop through strategies in the portfolio
             for (const auto &strategyModel : portfolioModel->getModels())
             {
+                strategyModel->setBrokerDataProvider(m_brokerInterface);
                 auto strategy_offset = getItem(portfolioIndex)->getFirstModelChildIndexCache();
                 auto correntIndex = createIndex(portfolioIndex.row() + strategy_offset, 0, getItem(portfolioIndex)->child(getItem(portfolioIndex)->childCount() - 1));
                 addWorkingNode(correntIndex, strategyModel, PM_ITEM_STRATEGY);
@@ -232,6 +233,7 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
             {
                 model = QSharedPointer<CBasicAccount>::create();
                 model->setName("Account");
+                //model->setBrokerDataProvider(this->m_brokerInterface);
                 m_pRoot->addModel(model);
             }
             break;
@@ -242,6 +244,7 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
                 {
                     model = QSharedPointer<CBasicPortfolio>::create();
                     model->setName("Portfolio");
+                    //model->setBrokerDataProvider(this->m_brokerInterface);
                     account->addModel(model);
                 }
             }
@@ -254,7 +257,7 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
                 if((nullptr != portfolio) && (nullptr != this->m_brokerInterface))
                 {
                     model = CStrategyFactory::createNewStrategy(ModelType::STRATEGY_MOMENTUM);
-                    model->setBrokerDataProvider(this->m_brokerInterface);
+                    //model->setBrokerDataProvider(this->m_brokerInterface);
                     portfolio->addModel(model);
                 }
             }
@@ -528,6 +531,8 @@ void CPortfolioConfigModel::addWorkingNode(QModelIndex index, const ptrGenericMo
                 };
 
                 for (const auto& [getModel, modelItem, modelName] : modelInfos) {
+                        if(nullptr != pModel)
+                            pModel->setBrokerDataProvider(m_brokerInterface);
                         (void)addWorkingNodeContent(true, getModel(pModel), parent, modelName.c_str(), modelItem);
 
                 }

@@ -19,6 +19,8 @@ public:
 
 public slots:
     virtual void processData(DataListPtr data) override;
+    void slotCbkRecvHistoricalData(const QList<IBDataTypes::CHistoricalData> & _histMap, const QString& _symbol);
+
 };
 
 #endif // CBASICALPHAMODEL_H

@@ -128,7 +128,8 @@ void IBComClientImpl::reqHistoricalDataAPI(const reqHistConfigData_t & _config)
 {
     reqHist_t reqHist;
     // Ending date for the time series
-    reqHist.strEndDate = QDateTime::currentDateTime().toString("yyyyMMdd HH:mm:ss").toStdString().c_str();
+    //reqHist.strEndDate = QDateTime::currentDateTime().toString("yyyyMMdd HH:mm:ss").toStdString().c_str();
+    reqHist.strEndDate = QDateTime::currentDateTime().toUTC().toString("yyyyMMdd-HH:mm:ss").toStdString().c_str();
 
     // Amount of time up to the end date
     reqHist.strDuration = _config.duration;

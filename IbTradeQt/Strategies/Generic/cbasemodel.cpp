@@ -28,7 +28,11 @@ CBaseModel::CBaseModel(QObject *parent): CProcessingBase_v2(parent)
 
 void CBaseModel::addModel(ptrGenericModelType pModel)
 {
-    this->m_Models.append(pModel);
+    if(nullptr != pModel)
+    {
+        pModel->setBrokerDataProvider(getIBrokerDataProvider());
+        this->m_Models.append(pModel);
+    }
 }
 
 void CBaseModel::removeModel(ptrGenericModelType pModel)
@@ -130,7 +134,7 @@ QJsonObject CBaseModel::toJson() const
 void CBaseModel::fromJson(const QJsonObject &json)
 {
     // helper function
-    auto createAndLoadModel = [](const QJsonValue& modelJsonValue) -> std::optional<ptrGenericModelType> {
+    auto createAndLoadModel = [this](const QJsonValue& modelJsonValue) -> std::optional<ptrGenericModelType> {
         if (modelJsonValue == QJsonValue::Undefined) return std::nullopt;
 
         auto modelObject = modelJsonValue.toObject();
@@ -138,6 +142,7 @@ void CBaseModel::fromJson(const QJsonObject &json)
         ptrGenericModelType model = CStrategyFactory::createNewStrategy(modelType);
 
         if (model) {
+            model->setBrokerDataProvider(getIBrokerDataProvider());
             model->fromJson(modelObject);
             return model;
         }
@@ -164,6 +169,30 @@ void CBaseModel::fromJson(const QJsonObject &json)
     if (auto model = createAndLoadModel(json["rebalanceModel"])) m_RebalanceModel = *model;
     if (auto model = createAndLoadModel(json["riskModel"])) m_RiskModel = *model;
     if (auto model = createAndLoadModel(json["executionModel"])) m_ExecutionModel = *model;
+
+/*
+ *     if (auto model = createAndLoadModel(json["selectionModel"])) {
+        m_SelectionModel = *model;
+        m_SelectionModel->setBrokerDataProvider(getIBrokerDataProvider());
+    }
+    if (auto model = createAndLoadModel(json["alphaModel"])) {
+        m_AlphaModel = *model;
+        m_AlphaModel->setBrokerDataProvider(getIBrokerDataProvider());
+    }
+    if (auto model = createAndLoadModel(json["rebalanceModel"])) {
+        m_RebalanceModel = *model;
+        m_RebalanceModel->setBrokerDataProvider(getIBrokerDataProvider());
+    }
+    if (auto model = createAndLoadModel(json["riskModel"])) {
+        m_RiskModel = *model;
+        m_RiskModel->setBrokerDataProvider(getIBrokerDataProvider());
+    }
+    if (auto model = createAndLoadModel(json["executionModel"])) {
+        m_ExecutionModel = *model;
+        m_ExecutionModel->setBrokerDataProvider(getIBrokerDataProvider());
+    }
+
+*/
 }
 
 
@@ -240,6 +269,7 @@ void CBaseModel::processData(DataListPtr data)
 
 void CBaseModel::addSelectionModel(ptrGenericModelType pModel) {
     m_SelectionModel = pModel;
+    m_SelectionModel->setBrokerDataProvider(getIBrokerDataProvider());
 }
 
 void CBaseModel::removeSelectionModel() {
@@ -248,6 +278,7 @@ void CBaseModel::removeSelectionModel() {
 
 void CBaseModel::addAlphaModel(ptrGenericModelType pModel) {
     m_AlphaModel = pModel;
+    m_AlphaModel->setBrokerDataProvider(getIBrokerDataProvider());
 }
 
 void CBaseModel::removeAlphaModel() {
@@ -256,6 +287,7 @@ void CBaseModel::removeAlphaModel() {
 
 void CBaseModel::addRebalanceModel(ptrGenericModelType pModel) {
     m_RebalanceModel = pModel;
+    m_RebalanceModel->setBrokerDataProvider(getIBrokerDataProvider());
 }
 
 void CBaseModel::removeRebalanceModel() {
@@ -264,6 +296,7 @@ void CBaseModel::removeRebalanceModel() {
 
 void CBaseModel::addRiskModel(ptrGenericModelType pModel) {
     m_RiskModel = pModel;
+    m_RiskModel->setBrokerDataProvider(getIBrokerDataProvider());
 }
 
 void CBaseModel::removeRiskModel() {
@@ -272,6 +305,7 @@ void CBaseModel::removeRiskModel() {
 
 void CBaseModel::addExecutionModel(ptrGenericModelType pModel) {
     m_ExecutionModel = pModel;
+    m_ExecutionModel->setBrokerDataProvider(getIBrokerDataProvider());
 }
 
 void CBaseModel::removeExecutionModel() {

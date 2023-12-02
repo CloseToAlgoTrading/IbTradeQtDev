@@ -367,7 +367,7 @@ void CProcessingBase::recvHistoricalData(void* pContext, tEReqType _reqType)
 
     QString retSymbol = getSymbolFromRM(_pHistoricalData->getId(), RT_HISTORICAL_DATA);
 
-    qCDebug(processingBaseLog(), "[%s] tickerId = %ld , date = %d, open = %f, high = %f, low =%f, close = %f, volume = %f, barCount = %d, WAP = %f, hasGaps = %d", retSymbol.toLocal8Bit().data(),
+    qCDebug(processingBaseLog(), "[%s] tickerId = %ld , date = %lld, open = %f, high = %f, low =%f, close = %f, volume = %f, barCount = %d, WAP = %f, hasGaps = %d", retSymbol.toLocal8Bit().data(),
         _pHistoricalData->getId(), _pHistoricalData->getDateTime(), _pHistoricalData->getOpen(), _pHistoricalData->getHigh(), _pHistoricalData->getLow(),
         _pHistoricalData->getClose(), _pHistoricalData->getVolume(), _pHistoricalData->getCount(), _pHistoricalData->getWap(), _pHistoricalData->getHasGaps());
 

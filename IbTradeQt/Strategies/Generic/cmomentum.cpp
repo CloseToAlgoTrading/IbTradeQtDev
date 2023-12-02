@@ -13,9 +13,6 @@ cMomentum::cMomentum(QObject *parent)
 {
     m_Name = "Momentum";
     this->setName("Momentum");
-
-
-    QObject::connect(this, &CProcessingBase_v2::signalCbkRecvHistoricalData, this, &cMomentum::slotCbkRecvHistoricalData, Qt::QueuedConnection);
 }
 
 bool cMomentum::start()
@@ -43,27 +40,4 @@ bool cMomentum::stop()
     return CBasicStrategy_V2::stop();
 }
 
-bool cMomentum::executeModels()
-{
-    QStringList assets;
-    auto p_data = createDataList();
-
-    if(nullptr != this->m_SelectionModel)
-    {
-        QSharedPointer<CBasicSelectionModel> derivedPointer = m_SelectionModel.staticCast<CBasicSelectionModel>();
-    }
-    /* check the type of subscription and if the assets are changed */
-
-
-    if(nullptr != this->m_AlphaModel)
-    {
-        QSharedPointer<CBasicAlphaModel> derivedPointer = m_AlphaModel.staticCast<CBasicAlphaModel>();
-    }
-    return false;
-}
-
-void cMomentum::slotCbkRecvHistoricalData(const QList<CHistoricalData> &_histMap, const QString &_symbol)
-{
-    qCDebug(MomentumPmLog(), "symbol: [%s] - length: [%d]", _symbol.toStdString().c_str(), _histMap.length());
-}
 

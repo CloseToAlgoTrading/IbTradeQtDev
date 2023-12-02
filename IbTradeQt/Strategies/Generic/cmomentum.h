@@ -20,11 +20,6 @@ public:
 
     ModelType modelType() const override { return ModelType::STRATEGY_MOMENTUM; }
 
-private:
-    bool executeModels();
-
-public slots:
-    void slotCbkRecvHistoricalData(const QList<IBDataTypes::CHistoricalData> & _histMap, const QString& _symbol);
 };
 
 #endif // CMOMENTUM_H

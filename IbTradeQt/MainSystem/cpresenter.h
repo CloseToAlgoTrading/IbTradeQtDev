@@ -46,6 +46,8 @@ public:
     CMainModel *getPGuiModel() const;
     void setPGuiModel(CMainModel *newPGuiModel);
 
+    QSharedPointer<CBrokerDataProvider> getDataProvider() const;
+
 signals:
 	void signalTimeReceived(long time);
 	void signalClickConnect(bool isConnect);
