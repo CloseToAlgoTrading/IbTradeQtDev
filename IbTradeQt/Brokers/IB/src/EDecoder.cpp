@@ -887,8 +887,8 @@ const char* EDecoder::processHistoricalDataMsg(const char* ptr, const char* endP
 	for( int ctr = 0; ctr < itemCount; ++ctr) {
 		Bar bar;
 
-		DECODE_FIELD( bar.time);
-		DECODE_FIELD( bar.open);
+        DECODE_FIELD( bar.time);
+        DECODE_FIELD( bar.open);
 		DECODE_FIELD( bar.high);
 		DECODE_FIELD( bar.low);
 		DECODE_FIELD( bar.close);

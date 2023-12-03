@@ -146,7 +146,7 @@ void IBComClientImpl::reqHistoricalDataAPI(const reqHistConfigData_t & _config)
     reqHist.m_contract.strike = 0;
     reqHist.m_contract.currency = "USD";
     reqHist.m_contract.exchange = "SMART";
-    reqHist.m_contract.primaryExchange = "ISLAND";
+    reqHist.m_contract.primaryExchange = "SMART";
 
 	TagValueListSPtr mktDataOptions;
 
@@ -387,7 +387,7 @@ void IBComClientImpl::historicalData(TickerId reqId, const Bar& bar)
     //TODO: Decimal!!
     CHistoricalData _historicalData(reqId, bar.time.c_str(), bar.open, bar.high, bar.low, bar.close, static_cast<int>(decimalToDouble(bar.volume)), bar.count, static_cast<int>(decimalToDouble(bar.wap)), false);
 
-    qCDebug(IBComClientImplLog(), "tickerId = %d , date = %s, open = %f, high = %f, low =%f, close = %f, volume = %d, barCount = %d, WAP = %f, hasGaps = %d",
+    qCDebug(IBComClientImplLog(), "tickerId = %ld , date = %s, open = %f, high = %f, low =%f, close = %f, volume = %f, barCount = %d, WAP = %f, hasGaps = %d",
             _historicalData.getId(), NHelper::convertQTDataTimeToString(_historicalData.getDateTime()).toStdString().c_str(), _historicalData.getOpen(), _historicalData.getHigh(), _historicalData.getLow(),
             _historicalData.getClose(), _historicalData.getVolume(), _historicalData.getCount(), _historicalData.getWap(), _historicalData.getHasGaps());
     m_DispatcherBrokerData.SendMessageToSubscribers(&_historicalData, reqId, RT_HISTORICAL_DATA);
