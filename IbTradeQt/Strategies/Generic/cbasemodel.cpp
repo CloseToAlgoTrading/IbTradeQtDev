@@ -24,6 +24,8 @@ CBaseModel::CBaseModel(QObject *parent): CProcessingBase_v2(parent)
 
 //    QObject::connect(&m_tmpTimer, &QTimer::timeout, this, &CBaseModel::onTimeoutSlot);
 //    m_tmpTimer.start(100);
+    this->m_InfoMap["IsStarted"] = false;
+    this->m_InfoMap["IsParentActivated"] = false;
 }
 
 void CBaseModel::addModel(ptrGenericModelType pModel)
@@ -70,18 +72,60 @@ const QVariantMap &CBaseModel::getParameters()
 
 bool CBaseModel::start()
 {
-    //qDebug() << "Base start";
     connectModels();
-    this->m_InfoMap["IsStarted"] = true;
+    for (auto model : m_Models) {
+        if(true == model->getActiveStatus())
+            model->start();
+    }
+
     return true;
 }
 
 bool CBaseModel::stop()
 {
-    //qDebug() << "Base stop";
     disconnectModels();
-    this->m_InfoMap["IsStarted"] = false;
+    for (auto model : m_Models) {
+        model->stop();
+    }
     return false;
+}
+
+void CBaseModel::setActivationState(bool state)
+{
+    this->m_InfoMap["IsStarted"] = state;
+    for (auto model : m_Models) {
+        if(true == getParentActivatedState())
+        {
+            model->setParentActivationState(state);
+        }
+    }
+
+    if(true == isConnectedTotheServer())
+    {
+        if((true == state) && (true == getParentActivatedState()))
+        {
+            start();
+        }
+        else
+        {
+            stop();
+        }
+    }
+}
+
+void CBaseModel::setParentActivationState(bool state)
+{
+    this->m_InfoMap["IsParentActivated"] = state;
+    for (auto model : m_Models) {
+        if((true == state) && (true == getActiveStatus()))
+        {
+            model->setParentActivationState(true);
+        }
+        else
+        {
+            model->setParentActivationState(false);
+        }
+    }
 }
 
 
@@ -387,5 +431,15 @@ void CBaseModel::disconnectModels() {
         }
     }
 
+}
+
+bool CBaseModel::getActiveStatus() const
+{
+    return m_InfoMap["IsStarted"].toBool();
+}
+
+bool CBaseModel::getParentActivatedState() const
+{
+    return m_InfoMap["IsParentActivated"].toBool();
 }
 

@@ -33,6 +33,9 @@ public:
     virtual bool start() override;
     virtual bool stop() override;
 
+    virtual void setActivationState(bool state) override;
+    virtual void setParentActivationState(bool state) override;
+
     virtual QJsonObject toJson() const override;
     virtual void fromJson(const QJsonObject& json) override;
 
@@ -65,6 +68,10 @@ public:
     virtual ptrGenericModelType getRebalanceModel() override;
     virtual ptrGenericModelType getRiskModel() override;
     virtual ptrGenericModelType getExecutionModel() override;
+
+    virtual bool getActiveStatus() const override;
+
+    bool getParentActivatedState() const;
 
 protected:
     void connectModels();

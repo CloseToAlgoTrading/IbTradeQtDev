@@ -28,6 +28,9 @@ public:
     virtual bool start() override;
     virtual bool stop() override;
 
+    virtual void setActivationState(bool state) override {};
+    virtual void setParentActivationState(bool state) override {};
+
     virtual QJsonObject toJson() const override {QJsonObject tmp; return tmp;};
     virtual void fromJson(const QJsonObject& json) override {Q_UNUSED(json)};
 
@@ -60,6 +63,8 @@ public:
     virtual ptrGenericModelType getRebalanceModel() override{return 0;};
     virtual ptrGenericModelType getRiskModel() override{return 0;};
     virtual ptrGenericModelType getExecutionModel() override{return 0;};
+
+    virtual bool getActiveStatus() const override{return false;};
 protected:
     QList<ptrGenericModelType> m_Models;
     QVariantMap m_ParametersMap;
