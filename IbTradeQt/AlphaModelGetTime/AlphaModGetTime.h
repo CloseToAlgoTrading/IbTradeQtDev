@@ -38,12 +38,12 @@ public slots :
 signals:
 	void signalTimeReceived(long time);
     void signalPlanResetSubscribtion();
+    void signalServerStateChanged(bool isConnected);
 
 
 private:
 	QTimer* timer;
     QTime resetTime;
-
 };
 
 #endif // ALPHAMODGETTIME_H
