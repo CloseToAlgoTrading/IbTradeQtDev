@@ -271,7 +271,6 @@ ModelType CBaseModel::modelType() const
 void CBaseModel::setBrokerDataProvider(QSharedPointer<CBrokerDataProvider> newClient)
 {
     CProcessingBase_v2::setIBrokerDataProvider(newClient);
-    QObject::connect(this->getIBrokerDataProvider()->getClien().data(), &IBrokerAPI::signalServerStateUpdate, this, &CBaseModel::onUpdateServerConnectionStateSlot);
 }
 
 

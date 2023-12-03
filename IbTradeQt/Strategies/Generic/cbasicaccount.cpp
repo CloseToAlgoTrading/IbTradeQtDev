@@ -9,3 +9,15 @@ CBasicAccount::CBasicAccount(QObject *parent) : CBasicStrategy_V2(parent)
     this->m_ParametersMap["Account_Param"] = 11.1;
     this->m_ParametersMap["Account_Param2"] = 2;
 }
+
+void CBasicAccount::setBrokerDataProvider(QSharedPointer<CBrokerDataProvider> newClient)
+{
+    CBaseModel::setBrokerDataProvider(newClient);
+    QObject::disconnect(this->getIBrokerDataProvider()->getClien().data(), &IBrokerAPI::signalServerStateUpdate, this, &CBaseModel::onUpdateServerConnectionStateSlot);
+    QObject::connect(this->getIBrokerDataProvider()->getClien().data(), &IBrokerAPI::signalServerStateUpdate, this, &CBaseModel::onUpdateServerConnectionStateSlot);
+}
+
+void CBasicAccount::onUpdateServerConnectionStateSlot(bool state)
+{
+    qDebug() << "--> server state: " << ((state == true) ? "Connected" : "Disconnected");
+}

@@ -10,6 +10,9 @@ public:
     explicit CBasicAccount(QObject *parent = nullptr);
     virtual ~CBasicAccount() {};
 
+    virtual void setBrokerDataProvider(QSharedPointer<CBrokerDataProvider> newClient) override;
+    virtual void onUpdateServerConnectionStateSlot(bool state);
+
     ModelType modelType() const override { return ModelType::ACCOUNT; }
 };
 
