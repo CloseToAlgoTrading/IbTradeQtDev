@@ -13,19 +13,17 @@
 #include "EReader.h"
 #include <QSharedPointer>
 
-#include <QObject>
 
 Q_DECLARE_LOGGING_CATEGORY(IBComClientImplLog);
 
 class EPosixClientSocket;
 
-class IBComClientImpl : public QObject, public EWrapper, public IBrokerAPI
+class IBComClientImpl : public EWrapper, public IBrokerAPI
 {
-    Q_OBJECT
 public:
     qint32 getNexValidId() { return m_nexValidId++; }
 
-    explicit IBComClientImpl(Observer::CDispatcher & _dispatcher, QObject *parent = nullptr);
+    explicit IBComClientImpl(Observer::CDispatcher & _dispatcher);
     virtual ~IBComClientImpl() override;
 
 	//void setUseV100Plus(const std::string&);
@@ -33,8 +31,8 @@ public:
     void setConnectOptions(const std::string& connectOptions);
     void processMessagesAPI() override;
 
-signals:
-    void signalServerStateUpdate(bool state);
+//signals:
+//    void signalServerStateUpdate(bool state);
 
 public:
 	//IBrokerAPI

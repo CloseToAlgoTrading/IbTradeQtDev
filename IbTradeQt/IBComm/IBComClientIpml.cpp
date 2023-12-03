@@ -37,9 +37,8 @@ using namespace IBDataTypes;
 Q_LOGGING_CATEGORY(IBComClientImplLog, "ibComClientImpl.Callback");
 
 
-IBComClientImpl::IBComClientImpl(Observer::CDispatcher & _dispatcher, QObject *parent)
-    : QObject(parent)
-    , m_osSignal(2000)//2-seconds timeout
+IBComClientImpl::IBComClientImpl(Observer::CDispatcher & _dispatcher)
+    : m_osSignal(2000)//2-seconds timeout
     //: m_osSignal(00)//2-seconds timeout
     , m_pClient(new EClientSocket(this, &m_osSignal))
     , m_pReader(nullptr)
@@ -74,6 +73,7 @@ bool IBComClientImpl::connectAPI(const char *host, unsigned int port, int client
         qCInfo(IBComClientImplLog(), "Connected to %s:%d  clientId:%d\n", m_pClient->host().c_str(), m_pClient->port(), clientId);
         m_pReader = new EReader(m_pClient, &m_osSignal);
         m_pReader->start();
+
 
         emit signalServerStateUpdate(true);
 	}

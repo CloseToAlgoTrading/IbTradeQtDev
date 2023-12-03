@@ -26,6 +26,9 @@ CBaseModel::CBaseModel(QObject *parent): CProcessingBase_v2(parent)
 //    m_tmpTimer.start(100);
     this->m_InfoMap["IsStarted"] = false;
     this->m_InfoMap["IsParentActivated"] = false;
+
+//    this->getIBrokerDataProvider()->getClien().data()
+
 }
 
 void CBaseModel::addModel(ptrGenericModelType pModel)
@@ -268,6 +271,7 @@ ModelType CBaseModel::modelType() const
 void CBaseModel::setBrokerDataProvider(QSharedPointer<CBrokerDataProvider> newClient)
 {
     CProcessingBase_v2::setIBrokerDataProvider(newClient);
+    QObject::connect(this->getIBrokerDataProvider()->getClien().data(), &IBrokerAPI::signalServerStateUpdate, this, &CBaseModel::onUpdateServerConnectionStateSlot);
 }
 
 
@@ -304,6 +308,11 @@ void CBaseModel::onTimeoutSlot()
             this->m_genericInfo.remove("I_New_One");
         }
 
+}
+
+void CBaseModel::onUpdateServerConnectionStateSlot(bool state)
+{
+    qDebug() << "server state: " << ((state == true) ? "Connected" : "Disconnected");
 }
 
 void CBaseModel::processData(DataListPtr data)

@@ -101,6 +101,7 @@ public slots:
     void onTimeoutSlot();
     //public: signals:
     //    void onUpdateParametersSignal(const QVariantMap& parameters);
+    virtual void onUpdateServerConnectionStateSlot(bool state);
 
 signals:
     void dataProcessed(DataListPtr data);

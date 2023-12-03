@@ -48,6 +48,7 @@ public:
 
     bool isConnectedToTheServer();
 
+
 private:
     QSharedPointer<IBrokerAPI> m_pClien;
 

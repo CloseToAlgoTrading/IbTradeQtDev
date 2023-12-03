@@ -2,6 +2,7 @@
 #define IBROKERAPI_H
 
 #include "GlobalDef.h"
+#include <QObject>
 
 enum orderAction
 {
@@ -9,8 +10,9 @@ enum orderAction
     OA_SELL
 };
 
-class IBrokerAPI
+class IBrokerAPI : public QObject
 {
+    Q_OBJECT
 public:
     virtual ~IBrokerAPI() {};
 
@@ -60,6 +62,9 @@ public:
     //virtual void reqAccountSummary(const qint32 _id, const QString _groups, const QString _tags) = 0;
     //virtual void reqAccountUpdates(const bool _subscribe, const QString _accCode) = 0;
     //virtual void reqAccountUpdatesMulti(const qint32 _id, const QString _account, cosnt QString _modelCode, const bool _ledgerAndNLV) = 0;
+
+signals:
+    virtual void signalServerStateUpdate(bool state);
 
 };
 
