@@ -460,9 +460,11 @@ TreeItem* CPortfolioConfigModel::addWorkingNodeContent(const bool _isModelExist,
     {
         auto _vType = _isModelExist ? EVT_RO_TEXT : EVT_TEXT;
         auto _name = pModel == nullptr ? name : pModel->getName();
+        auto _state = pModel == nullptr ? false : pModel->getActiveStatus();
+        auto checkBoxState = (true == _state) ? Qt::Checked : Qt::Unchecked;
         auto secondIdem = _isModelExist ?
                               pItemDataType(new stItemData("<empty>", EVT_RO_TEXT, TVM_UNUSED_ID)) :
-                              pItemDataType(new stItemData(Qt::Unchecked, EVT_CECK_BOX, id + PT_ITEM_ACTIVATION));
+                              pItemDataType(new stItemData(checkBoxState, EVT_CECK_BOX, id + PT_ITEM_ACTIVATION));
         parent = addRootNode(item,
                              pItemDataType(new stItemData(_name, _vType, id)),
                              secondIdem,
