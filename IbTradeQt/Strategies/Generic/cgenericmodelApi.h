@@ -35,7 +35,9 @@ public:
     virtual void fromJson(const QJsonObject& json) = 0;
 
     virtual void setActivationState(bool state) = 0;
+    virtual bool getActiveStatus() const = 0;
     virtual void setParentActivationState(bool state) = 0;
+    virtual bool getParentActivatedState() const = 0;
 
     virtual bool start() = 0;
     virtual bool stop() = 0;
@@ -64,7 +66,7 @@ public:
     virtual ptrGenericModelType getRiskModel() = 0;
     virtual ptrGenericModelType getExecutionModel() = 0;
 
-    virtual bool getActiveStatus() const = 0;
+
 
     //QString m_Name;
 };

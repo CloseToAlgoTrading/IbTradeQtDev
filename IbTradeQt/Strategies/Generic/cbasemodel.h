@@ -71,7 +71,7 @@ public:
 
     virtual bool getActiveStatus() const override;
 
-    bool getParentActivatedState() const;
+    virtual bool getParentActivatedState() const override;;
 
 protected:
     void connectModels();
