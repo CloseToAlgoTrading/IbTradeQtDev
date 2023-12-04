@@ -14,6 +14,8 @@ public:
     virtual ~CBasicExecutionModel() {};
 
     ModelType modelType() const override { return ModelType::STRATEGY_EXECTION_MODEL; }
+public slots:
+    virtual void processData(DataListPtr data) override;
 };
 
 #endif // CBASICEXECUTIONMODEL_H

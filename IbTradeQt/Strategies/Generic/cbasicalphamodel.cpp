@@ -36,5 +36,6 @@ void CBasicAlphaModel::processData(DataListPtr data)
 void CBasicAlphaModel::slotCbkRecvHistoricalData(const QList<CHistoricalData> &_histMap, const QString &_symbol)
 {
     qCDebug(BasicAlphaModelLog(), "symbol: [%s] - length: [%lld]", _symbol.toStdString().c_str(), _histMap.length());
+    emit dataProcessed(createDataList());
 }
 

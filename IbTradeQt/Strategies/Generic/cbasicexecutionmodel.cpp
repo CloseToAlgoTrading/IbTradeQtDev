@@ -10,3 +10,9 @@ CBasicExecutionModel::CBasicExecutionModel(QObject *parent)
     this->setName("Base Execution Model");
 }
 
+void CBasicExecutionModel::processData(DataListPtr data)
+{
+    qCDebug(BasicExecutionModelLog(), "data receveid %lld", data->length());
+
+}
+
