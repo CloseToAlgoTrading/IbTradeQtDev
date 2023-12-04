@@ -92,10 +92,8 @@ bool IBComClientImpl::isConnectedAPI()
 void IBComClientImpl::disconnectAPI()
 {
 	m_pClient->eDisconnect();
-    emit signalServerStateUpdate(false);
-
     qCInfo(IBComClientImplLog(), "Disconnected");
-
+    emit signalServerStateUpdate(false);
 }
 
 

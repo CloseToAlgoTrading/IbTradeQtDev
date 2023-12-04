@@ -17,7 +17,17 @@ void CBasicAccount::setBrokerDataProvider(QSharedPointer<CBrokerDataProvider> ne
     QObject::connect(this->getIBrokerDataProvider()->getClien().data(), &IBrokerAPI::signalServerStateUpdate, this, &CBaseModel::onUpdateServerConnectionStateSlot);
 }
 
+/* Temporary here.. probably need to make a generic in base */
 void CBasicAccount::onUpdateServerConnectionStateSlot(bool state)
 {
     qDebug() << "--> server state: " << ((state == true) ? "Connected" : "Disconnected");
+
+    if((true == state) && (true == getActiveStatus()) && (true == getParentActivatedState()))
+    {
+        start();
+    }
+    else if((false == state) && (true == getActiveStatus()) && (true == getParentActivatedState()))
+    {
+        stop();
+    }
 }
