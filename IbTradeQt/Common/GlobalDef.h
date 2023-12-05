@@ -89,9 +89,10 @@ struct reqPlaceOrder_t
 
 #define BAR_SIZE_1_DAY   "1 day"
 
-#define BAR_SIZE_1_WEEK  "8 week"
+#define BAR_SIZE_1_WEEK  "1 week"
 
-#define BAR_SIZE_1_MONTH "8 month"
+#define BAR_SIZE_1_MONTH "1 month"
+
 
 enum eBarSize_t
 {

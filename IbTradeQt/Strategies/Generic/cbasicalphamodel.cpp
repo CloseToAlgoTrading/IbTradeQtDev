@@ -25,7 +25,7 @@ void CBasicAlphaModel::processData(DataListPtr data)
         tickers.append(item.symbol);
     }
 
-    reqHistConfigData_t histConfiguration(0, BAR_SIZE_1_DAY, "5 D", "");
+    reqHistConfigData_t histConfiguration(0, BAR_SIZE_1_DAY, "1 Y", "");
     for (const QString& ticker : tickers) {
         //auto id = getNextValidId();
         //histConfiguration.id = id;
