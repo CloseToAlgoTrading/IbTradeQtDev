@@ -28,9 +28,9 @@ void CBasicAlphaModel::processData(DataListPtr data)
             //auto id = getNextValidId();
             //histConfiguration.id = id;
             histConfiguration.symbol = ticker.toStdString().c_str();
-            reqestHistoricalData(histConfiguration);
+            //reqestHistoricalData(histConfiguration);
         }
-
+    emit dataProcessed(createDataList());
 }
 
 void CBasicAlphaModel::slotCbkRecvHistoricalData(const QList<CHistoricalData> &_histMap, const QString &_symbol)

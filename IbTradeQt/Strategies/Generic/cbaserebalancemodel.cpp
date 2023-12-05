@@ -11,3 +11,9 @@ CBaseRebalanceModel::CBaseRebalanceModel(QObject *parent)
 
 }
 
+void CBaseRebalanceModel::processData(DataListPtr data)
+{
+    qCDebug(BasicRebalanceModelLog(), "receved and emit ->");
+    emit dataProcessed(createDataList());
+}
+

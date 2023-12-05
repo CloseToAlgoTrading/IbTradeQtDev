@@ -14,6 +14,9 @@ public:
     virtual ~CBaseRebalanceModel() {};
 
     ModelType modelType() const override { return ModelType::STRATEGY_REBALANCE_MODEL; }
+
+public slots:
+    virtual void processData(DataListPtr data) override;
 };
 
 #endif // CBASEREBALANCEMODEL_H

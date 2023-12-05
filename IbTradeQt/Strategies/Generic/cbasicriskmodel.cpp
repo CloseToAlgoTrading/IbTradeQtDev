@@ -10,3 +10,9 @@ CBasicRiskModel::CBasicRiskModel(QObject *parent)
     this->setName("Base Risk Model");
 }
 
+void CBasicRiskModel::processData(DataListPtr data)
+{
+    qCDebug(BasicRiskModelLog(), "receved and emit ->");
+    emit dataProcessed(createDataList());
+}
+
