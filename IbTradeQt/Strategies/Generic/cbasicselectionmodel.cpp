@@ -20,8 +20,10 @@ void CBasicSelectionModel::setParameters(const QVariantMap &parametersMap)
 {
     CBaseModel::setParameters(parametersMap);
     auto assets = this->m_ParametersMap["Selected_Assets"].toString();
+    this->m_genericInfo["Selected_Assets"] = this->m_ParametersMap["Selected_Assets"];
     assets.remove(" ");
     auto assetList = assets.split(",");
+
     m_pAssetList->clear();
     for (const QString &str : assetList)
     {

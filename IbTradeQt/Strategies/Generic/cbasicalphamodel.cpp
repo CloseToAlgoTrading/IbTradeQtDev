@@ -1,6 +1,7 @@
 
 #include "cbasicalphamodel.h"
 //#include <QDateTime>
+#include <QStringList>
 
 Q_LOGGING_CATEGORY(BasicAlphaModelLog, "BasicAlphaModel.PM");
 
@@ -18,19 +19,19 @@ void CBasicAlphaModel::processData(DataListPtr data)
     auto item = data->constLast();
     qCDebug(BasicAlphaModelLog(), "data receveid %lld %s %f", data->length(), item.symbol.toStdString().c_str(), item.amount);
 
-        QList<QString> tickers = {"AAPL", "MSFT", "GOOG"};
-        //QList<QString> tickers = {"AAPL"};
+    QStringList tickers;
+    for (auto &item : *data) {
+//        qCDebug(BasicAlphaModelLog(), "data receveid %s", item.symbol.toStdString().c_str());
+        tickers.append(item.symbol);
+    }
 
-        //QString queryTime = QDateTime::currentDateTime().toUTC().toString("yyyyMMdd-HH:mm:ss");
-
-        reqHistConfigData_t histConfiguration(0, BAR_SIZE_1_DAY, "5 D", "");
-        for (const QString& ticker : tickers) {
-            //auto id = getNextValidId();
-            //histConfiguration.id = id;
-            histConfiguration.symbol = ticker.toStdString().c_str();
-            //reqestHistoricalData(histConfiguration);
-        }
-    emit dataProcessed(createDataList());
+    reqHistConfigData_t histConfiguration(0, BAR_SIZE_1_DAY, "5 D", "");
+    for (const QString& ticker : tickers) {
+        //auto id = getNextValidId();
+        //histConfiguration.id = id;
+        histConfiguration.symbol = ticker.toStdString().c_str();
+        reqestHistoricalData(histConfiguration);
+    }
 }
 
 void CBasicAlphaModel::slotCbkRecvHistoricalData(const QList<CHistoricalData> &_histMap, const QString &_symbol)
