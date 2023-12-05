@@ -362,9 +362,9 @@ void CProcessingBase_v2::recvHistoricalData(void* pContext, tEReqType _reqType)
 
     if (!_pHistoricalData->getIsLast())
     {
-        qCDebug(processingBaseLog(), "[%s] tickerId = %ld , date = %s, open = %f, high = %f, low =%f, close = %f, volume = %f, barCount = %d, WAP = %f, hasGaps = %d", retSymbol.toLocal8Bit().data(),
-                _pHistoricalData->getId(), NHelper::convertQTDataTimeToString(_pHistoricalData->getDateTime()).toStdString().c_str(), _pHistoricalData->getOpen(), _pHistoricalData->getHigh(), _pHistoricalData->getLow(),
-                _pHistoricalData->getClose(), _pHistoricalData->getVolume(), _pHistoricalData->getCount(), _pHistoricalData->getWap(), _pHistoricalData->getHasGaps());
+//        qCDebug(processingBaseLog(), "[%s] tickerId = %ld , date = %s, open = %f, high = %f, low =%f, close = %f, volume = %f, barCount = %d, WAP = %f, hasGaps = %d", retSymbol.toLocal8Bit().data(),
+//                _pHistoricalData->getId(), NHelper::convertQTDataTimeToString(_pHistoricalData->getDateTime()).toStdString().c_str(), _pHistoricalData->getOpen(), _pHistoricalData->getHigh(), _pHistoricalData->getLow(),
+//                _pHistoricalData->getClose(), _pHistoricalData->getVolume(), _pHistoricalData->getCount(), _pHistoricalData->getWap(), _pHistoricalData->getHasGaps());
     }
     else
     {
