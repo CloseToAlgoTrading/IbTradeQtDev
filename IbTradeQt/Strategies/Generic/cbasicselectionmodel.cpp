@@ -10,10 +10,10 @@ CBasicSelectionModel::CBasicSelectionModel(QObject *parent) : CBasicStrategy_V2(
     this->setName("Base Selection Model");
     this->m_genericInfo.clear();
     this->m_ParametersMap.clear();
-    this->m_ParametersMap["Selected_Assets"] = QString("NVDA");
-    this->m_genericInfo["Selected_Assets"] = "NVDA";
+    // this->m_ParametersMap["Selected_Assets"] = QString("NVDA");
+    // this->m_genericInfo["Selected_Assets"] = "NVDA";
     m_pAssetList = createDataList();
-    m_pAssetList->append(UnifiedModelData("NVDA", 0, 0, 0));
+    // m_pAssetList->append(UnifiedModelData("NVDA", 0, 0, 0));
 }
 
 void CBasicSelectionModel::setParameters(const QVariantMap &parametersMap)
@@ -33,7 +33,18 @@ void CBasicSelectionModel::setParameters(const QVariantMap &parametersMap)
 
 void CBasicSelectionModel::processData(DataListPtr data)
 {
+    Q_UNUSED(data);
     qDebug() << "Selection processData - emit signal: " ;
+
+    auto assets = this->m_ParametersMap["Selected_Assets"].toString();
+    assets.remove(" ");
+    auto assetList = assets.split(",");
+    m_pAssetList->clear();
+    for (const QString &str : assetList)
+    {
+        m_pAssetList->append(UnifiedModelData(str, 0, 0, 0));
+    }
+
     emit dataProcessed(m_pAssetList);
 }
 

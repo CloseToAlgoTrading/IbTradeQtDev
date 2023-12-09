@@ -388,38 +388,10 @@ void IBComClientImpl::historicalData(TickerId reqId, const Bar& bar)
     //TODO: Decimal!!
     CHistoricalData _historicalData(reqId, bar.time.c_str(), bar.open, bar.high, bar.low, bar.close, static_cast<int>(decimalToDouble(bar.volume)), bar.count, static_cast<int>(decimalToDouble(bar.wap)), false);
 
-//    qCDebug(IBComClientImplLog(), "tickerId = %ld , date = %s, open = %f, high = %f, low =%f, close = %f, volume = %f, barCount = %d, WAP = %f, hasGaps = %d",
-//            _historicalData.getId(), NHelper::convertQTDataTimeToString(_historicalData.getDateTime()).toStdString().c_str(), _historicalData.getOpen(), _historicalData.getHigh(), _historicalData.getLow(),
-//            _historicalData.getClose(), _historicalData.getVolume(), _historicalData.getCount(), _historicalData.getWap(), _historicalData.getHasGaps());
+   qCDebug(IBComClientImplLog(), "tickerId = %ld , date = %s, open = %f, high = %f, low =%f, close = %f, volume = %f, barCount = %d, WAP = %f, hasGaps = %d",
+           _historicalData.getId(), NHelper::convertQTDataTimeToString(_historicalData.getDateTime()).toStdString().c_str(), _historicalData.getOpen(), _historicalData.getHigh(), _historicalData.getLow(),
+           _historicalData.getClose(), _historicalData.getVolume(), _historicalData.getCount(), _historicalData.getWap(), _historicalData.getHasGaps());
     m_DispatcherBrokerData.SendMessageToSubscribers(&_historicalData, reqId, RT_HISTORICAL_DATA);
-
-/*    QString tmpString(QString::fromLocal8Bit(date.data(), date.size()));
-    
-    
-    if (date.find("finished") != std::string::npos) 
-    {
-        CHistoricalData _historicalData;
-        _historicalData.setId(reqId);
-        _historicalData.setIsLast(true);
-        qCDebug(IBComClientImplLog(), "tickerId = %d : finished", _historicalData.getId());
-
-        m_DispatcherBrokerData.SendMessageToSubscribers(&_historicalData, reqId, RT_HISTORICAL_DATA);
-
-//        qint32 n = date.rfind("-");
-//        tmpString.remove(0, n+1);
-
-    }
-    else
-    {
-        CHistoricalData _historicalData(reqId, tmpString, open, high, low, close, volume, barCount, WAP, hasGaps);
-
-        qCDebug(IBComClientImplLog(), "tickerId = %d , date = %ld [%s], open = %f, high = %f, low =%f, close = %f, volume = %d, barCount = %d, WAP = %f, hasGaps = %d", 
-            _historicalData.getId(), _historicalData.getDateTime(), date.c_str(), _historicalData.getOpen(), _historicalData.getHigh(), _historicalData.getLow(),
-            _historicalData.getClose(), _historicalData.getVolume(), _historicalData.getCount(), _historicalData.getWap(), _historicalData.getHasGaps());
-
-        m_DispatcherBrokerData.SendMessageToSubscribers(&_historicalData, reqId, RT_HISTORICAL_DATA);
-    }
-*/
 
 }
 
@@ -437,7 +409,7 @@ void IBComClientImpl::realtimeBar(TickerId reqId, long time, double open, double
 
     CrealtimeBar _realtimeBar(reqId, static_cast<quint64>(time), open, high, low, close, volume, count, wap);
 
-    qCDebug(IBComClientImplLog(), "tickerId = %ld , date = %d, open = %f, high = %f, low =%f, close = %f, volume = %f, barCount = %d, WAP = %f, ",
+    qCDebug(IBComClientImplLog(), "tickerId = %ld , date = %llu, open = %f, high = %f, low =%f, close = %f, volume = %f, barCount = %d, WAP = %f, ",
 		_realtimeBar.getId(), _realtimeBar.getDateTime(), _realtimeBar.getOpen(), _realtimeBar.getHigh(), _realtimeBar.getLow(),
 		_realtimeBar.getClose(), _realtimeBar.getVolume(), _realtimeBar.getCount(), _realtimeBar.getWap());
 
