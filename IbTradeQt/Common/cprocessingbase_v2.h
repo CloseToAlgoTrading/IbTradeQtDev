@@ -72,6 +72,7 @@ private:
     void recvOptionTickComputation(void* pContext, tEReqType _reqType);
 
     virtual void recvRestartSubscription();
+    virtual void recvErrorNotificationSubscription(int id);
 
 
     //temporary here
@@ -124,6 +125,9 @@ public:
     bool reqestResetSubscription();
     bool cancelResetSubscription();
 
+    bool reqestErrorNotificationSubscription();
+    bool cancelErrorNotificationSubscription();
+
     bool reqestOrderStatusSubscription();
     bool cancelOrderStatusSubscription();
 
@@ -167,6 +171,7 @@ signals:
     void signalEndRecvPosition();
     void signalRecvOrderCommission(const qreal & obj, const qreal & _rpnl);
     void signalRestartSubscription();
+    void signalErrorNotFound(int id);
 
 //    void signalRecvRealTimeBar(const RealTimeBarMap_t & _realTimeBar, const TickerId & _id);
 

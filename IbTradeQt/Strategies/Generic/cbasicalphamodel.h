@@ -22,6 +22,7 @@ public:
 public slots:
     virtual void processData(DataListPtr data) override;
     void slotCbkRecvHistoricalData(const QList<IBDataTypes::CHistoricalData> & _histMap, const QString& _symbol);
+    void slotErrorProcessing(int id);
 
 private:
     // Assuming you have a function to calculate momentum. It could be more complex based on your requirement.
@@ -29,7 +30,8 @@ private:
 
     QMap<QString, QList<CHistoricalData>> m_historicalData;
     DataListPtr m_pProcessingData;
-    qint16 m_receivedDataCounter;
+    DataListPtr m_pProcessedData;
+    qint16 m_errorReceivedCounter;
 
 };
 

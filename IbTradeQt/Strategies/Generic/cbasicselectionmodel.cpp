@@ -27,7 +27,7 @@ void CBasicSelectionModel::setParameters(const QVariantMap &parametersMap)
     m_pAssetList->clear();
     for (const QString &str : assetList)
     {
-        m_pAssetList->append(UnifiedModelData(str, 0, 0, 0));
+        m_pAssetList->append(UnifiedModelData(str, DIRECTION_UNDEFINED, 0, 0));
     }
 }
 
@@ -42,7 +42,7 @@ void CBasicSelectionModel::processData(DataListPtr data)
     m_pAssetList->clear();
     for (const QString &str : assetList)
     {
-        m_pAssetList->append(UnifiedModelData(str, 0, 0, 0));
+        m_pAssetList->append(UnifiedModelData(str, DIRECTION_UNDEFINED, 0, 0));
     }
 
     emit dataProcessed(m_pAssetList);

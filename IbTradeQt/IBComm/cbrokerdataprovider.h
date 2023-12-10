@@ -37,6 +37,9 @@ public:
     bool requestResetSubscription(const CSubscriberPtr _pSubscriber, const QString& _symbol);
     bool cancelResetSubscription(const CSubscriberPtr _pSubscriber, const QString& _symbol);
 
+    bool requestErrorNotificationSubscription(const CSubscriberPtr _pSubscriber, const QString& _symbol);
+    bool cancelErrorNotificationSubscription(const CSubscriberPtr _pSubscriber, const QString& _symbol);
+
     bool requestOrderStatusSubscription(const CSubscriberPtr _pSubscriber, const QString& _symbol);
     bool cancelOrderStatusubscription(const CSubscriberPtr _pSubscriber, const QString& _symbol);
 
@@ -45,6 +48,8 @@ public:
 
     bool requestTickByTickData(const CSubscriberPtr _pSubscriber, const QString& _symbol, reqTickByTickDataConfigData_t & _config);
     bool cancelTickByTickData(const CSubscriberPtr _pSubscriber, const QString& _symbol);
+
+
 
     bool isConnectedToTheServer();
 

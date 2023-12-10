@@ -5,16 +5,35 @@
 
 Q_LOGGING_CATEGORY(BasicAlphaModelLog, "BasicAlphaModel.PM");
 
+#define P_M_PERIOD_STR "Momentum period"
+#define P_M_PERIOD_RES_STR "Momentum period resolution"
+#define P_M_N "Number of elements"
+#define I_ASSETS "Selected asssets"
+
+#define TOP_N (this->m_ParametersMap[P_M_N].toInt())
+
+
 CBasicAlphaModel::CBasicAlphaModel(QObject *parent)
     : CBasicStrategy_V2{parent}
     , m_historicalData()
     , m_pProcessingData()
-    , m_receivedDataCounter(0)
+    , m_errorReceivedCounter(0)
 {
     m_Name = "Base Alpha Model";
     this->setName("Base Alpha Model");
 
+    this->m_ParametersMap.clear();
+    this->m_ParametersMap[P_M_PERIOD_STR] = 1;
+    this->m_ParametersMap[P_M_PERIOD_RES_STR] = "year";
+    this->m_ParametersMap[P_M_N] = 3;
+
+    this->m_genericInfo.clear();
+    this->m_genericInfo[I_ASSETS] = "";
+
+    m_pProcessedData = createDataList();
+
     QObject::connect(this, &CProcessingBase_v2::signalCbkRecvHistoricalData, this, &CBasicAlphaModel::slotCbkRecvHistoricalData, Qt::QueuedConnection);
+    QObject::connect(this, &CProcessingBase_v2::signalErrorNotFound, this, &CBasicAlphaModel::slotErrorProcessing, Qt::QueuedConnection);
 }
 
 void CBasicAlphaModel::processData(DataListPtr data)
@@ -32,13 +51,13 @@ void CBasicAlphaModel::processData(DataListPtr data)
         tickers.append(item.symbol);
     }
 
-    m_receivedDataCounter = 0;
+    m_errorReceivedCounter = 0;
+    m_historicalData.clear();
     reqHistConfigData_t histConfiguration(0, BAR_SIZE_1_MONTH, "1 Y", "");
     for (const QString& ticker : tickers) {
-        //auto id = getNextValidId();
-        //histConfiguration.id = id;
         histConfiguration.symbol = ticker.toStdString().c_str();
         reqestHistoricalData(histConfiguration);
+        qCDebug(BasicAlphaModelLog(), "requested id %d", histConfiguration.id);
     }
 }
 
@@ -48,7 +67,7 @@ void CBasicAlphaModel::slotCbkRecvHistoricalData(const QList<CHistoricalData> &_
 
     m_historicalData.insert(_symbol, _histMap);
 
-    if(m_pProcessingData->length() == m_historicalData.count())
+    if(m_pProcessingData->length() == m_historicalData.count()+m_errorReceivedCounter)
     {
         QMap<QString, double> momentumMap;
         qCInfo(BasicAlphaModelLog(), "Done!");
@@ -68,18 +87,29 @@ void CBasicAlphaModel::slotCbkRecvHistoricalData(const QList<CHistoricalData> &_
         });
 
         // Select top n stocks
-        int n = 3; // Set the value of n as required
+        int n = TOP_N; // Set the value of n as required
         qCInfo(BasicAlphaModelLog(), "Top %d momentums", n);
         QList<QString> topStocks;
+        m_pProcessedData->clear();
+        QString _assets;
         for (int i = 0; i < n && i < sortedMomentum.size(); ++i) {
             topStocks.append(sortedMomentum[i].first);
             qCInfo(BasicAlphaModelLog(), "%s : %f", sortedMomentum[i].first.toStdString().c_str(), sortedMomentum[i].second);
-        }
 
+            m_pProcessedData->append(UnifiedModelData(sortedMomentum[i].first, DIRECTION_UP, 0, 0));
+
+            _assets.append(sortedMomentum[i].first + ", ");
+        }
+        this->m_genericInfo[I_ASSETS] = _assets;
+
+        emit dataProcessed(m_pProcessedData);
     }
 
+}
 
-    emit dataProcessed(createDataList());
+void CBasicAlphaModel::slotErrorProcessing(int id)
+{
+    m_errorReceivedCounter++;
 }
 
 double CBasicAlphaModel::calculateMomentum(const QList<CHistoricalData> &data)

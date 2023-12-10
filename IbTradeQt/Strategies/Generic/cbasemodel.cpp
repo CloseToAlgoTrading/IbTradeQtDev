@@ -270,7 +270,16 @@ ModelType CBaseModel::modelType() const
 
 void CBaseModel::setBrokerDataProvider(QSharedPointer<CBrokerDataProvider> newClient)
 {
-    CProcessingBase_v2::setIBrokerDataProvider(newClient);
+    if(nullptr != newClient)
+    {
+        if(nullptr != getIBrokerDataProvider())
+        {
+            cancelErrorNotificationSubscription();
+        }
+
+        CProcessingBase_v2::setIBrokerDataProvider(newClient);
+        reqestErrorNotificationSubscription();
+    }
 }
 
 

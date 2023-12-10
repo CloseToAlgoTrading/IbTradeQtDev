@@ -417,6 +417,54 @@ bool CBrokerDataProvider::cancelResetSubscription(const CSubscriberPtr _pSubscri
     return ret;
 }
 
+bool CBrokerDataProvider::requestErrorNotificationSubscription(const CSubscriberPtr _pSubscriber, const QString &_symbol)
+{
+    //Q_UNUSED(_symbol)
+    bool ret = true;
+
+    if (nullptr != _pSubscriber)
+    {
+        CDispatcher::CSubscriberItemPtr pSubcrItem = getSubscriberItem(_pSubscriber->GetSubscriberId());
+        //stReqIds r = { E_RQ_ID_ERROR_SUBSCRIPTION, RT_REQ_ERROR_SEQRITY_NOT_FOUND };
+        Subscribe(_pSubscriber, _symbol, { E_RQ_ID_ERROR_SUBSCRIPTION, RT_REQ_ERROR_SUBSRIPTION });
+    }
+    else
+    {
+        ret = false;
+    }
+
+    return ret;
+}
+
+bool CBrokerDataProvider::cancelErrorNotificationSubscription(const CSubscriberPtr _pSubscriber, const QString &_symbol)
+{
+    bool ret = false;
+    if (nullptr != _pSubscriber)
+    {
+        stReqIds retData;
+        CDispatcher::CSubscriberItemPtr pSubcrItem = getSubscriberItem(_pSubscriber->GetSubscriberId());
+
+        if (nullptr != pSubcrItem)
+        {
+            ret = pSubcrItem->ReqMenager()->getReqData(_symbol, RT_REQ_ERROR_SUBSRIPTION, retData);
+            if (ret)
+            {
+                Unsubscribe(_pSubscriber->GetSubscriberId(), retData.id, retData.reqType);
+            }
+        }
+        else
+        {
+            qCWarning(dataProviderLog(), "Error! pSubcrItem: is Empty string");
+            ret = false;
+        }
+    }
+    else
+    {
+        ret = false;
+    }
+    return ret;
+}
+
 bool CBrokerDataProvider::requestOrderStatusSubscription(const CSubscriberPtr _pSubscriber, const QString &_symbol)
 {
     Q_UNUSED(_symbol)

@@ -193,10 +193,13 @@ struct reqCalcOptPriceConfigData_t
 };
 
 
+//Q_GLOBAL_STATIC(QString, TimeSymbol, QStringLiteral("Time"));
 const QString TimeSymbol = "Time";
 const QString PositionSymbol = "Position";
 const QString RestartRequestSymbol = "Restart";
 const QString OrderStatusSymbol = "OrderStatus";
+const QString ErrorSymbol = "Error";
+
 
 /************************************************************************/
 #endif //GLOBALDEF_H

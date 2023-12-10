@@ -66,6 +66,9 @@ void CProcessingBase_v2::MessageHandler(void* pContext, tEReqType _reqType)
     case RT_REQ_RESTART_SUBSCRIPTION:
         recvRestartSubscription();
         break;
+    case RT_REQ_ERROR_SUBSRIPTION:
+        recvErrorNotificationSubscription(*(reinterpret_cast<int*>(pContext)));
+        break;
     case RT_REQ_OPTION_PRICE:
         recvOptionTickComputation(pContext, _reqType);
         break;
@@ -141,6 +144,18 @@ bool CProcessingBase_v2::cancelResetSubscription()
 {
     m_aciveReqestsMap.remove(RestartRequestSymbol, RT_REQ_RESTART_SUBSCRIPTION);
     return m_Client->cancelResetSubscription(this, RestartRequestSymbol);
+}
+
+bool CProcessingBase_v2::reqestErrorNotificationSubscription()
+{
+    m_aciveReqestsMap.insert(ErrorSymbol, RT_REQ_ERROR_SUBSRIPTION);
+    return m_Client->requestErrorNotificationSubscription(this, ErrorSymbol);
+}
+
+bool CProcessingBase_v2::cancelErrorNotificationSubscription()
+{
+    m_aciveReqestsMap.remove(ErrorSymbol, RT_REQ_ERROR_SUBSRIPTION);
+    return m_Client->cancelErrorNotificationSubscription(this, ErrorSymbol);
 }
 
 bool CProcessingBase_v2::reqestOrderStatusSubscription()
@@ -541,6 +556,12 @@ void CProcessingBase_v2::recvRestartSubscription()
     emit signalRestartSubscription();
     //nothing here
     qCDebug(processingBaseLog(), "------->>> recvRestartSubscription emit RESTART SUBSCRIPTION");
+}
+
+void CProcessingBase_v2::recvErrorNotificationSubscription(int id)
+{
+    emit signalErrorNotFound(id);
+    qCDebug(processingBaseLog(), "------->>> recvErrorNotificationSubscription emit Error id = %d", id);
 }
 
 void CProcessingBase_v2::recvOrdersCommission(void* pContext, tEReqType _reqType)

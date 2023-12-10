@@ -520,8 +520,11 @@ void IBComClientImpl::error(int id, int errorCode, const std::string& errorStrin
        //send message to restart command.
        m_DispatcherBrokerData.SendMessageToSubscribers(nullptr, E_RQ_ID_RESTART_SUBSCRIPTION, RT_REQ_RESTART_SUBSCRIPTION);
     }
-
-    
+    else if(200 == errorCode)
+    {
+        //Security is not found
+        m_DispatcherBrokerData.SendMessageToSubscribers(&id, E_RQ_ID_ERROR_SUBSCRIPTION, RT_REQ_ERROR_SUBSRIPTION);
+    }
 }
 
 //---------------------------------------------------------------

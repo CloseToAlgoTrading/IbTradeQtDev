@@ -4,14 +4,21 @@
 #include <QList>
 #include <QSharedPointer>
 
+enum eDirection {
+    DIRECTION_DOWN = 0,
+    DIRECTION_UP = 1,
+    DIRECTION_FLAT = 2,
+    DIRECTION_UNDEFINED = 3
+};
+
 struct UnifiedModelData {
     QString symbol;
-    int direction;
+    eDirection direction;
     double probability;
     double amount;
 
     // Constructor
-    UnifiedModelData(const QString& symbol, int direction, double probability, double amount)
+    UnifiedModelData(const QString& symbol, eDirection direction, double probability, double amount)
         : symbol(symbol), direction(direction), probability(probability), amount(amount) {}
 };
 
