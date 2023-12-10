@@ -67,6 +67,9 @@ public:
     virtual bool getActiveStatus() const override{return false;};
     virtual bool getParentActivatedState() const override{return false;};
 
+    virtual void setParentModel(ptrGenericModelType pModel) override {};
+    virtual ptrGenericModelType getParentModel() override {return nullptr;};
+
 protected:
     QList<ptrGenericModelType> m_Models;
     QVariantMap m_ParametersMap;

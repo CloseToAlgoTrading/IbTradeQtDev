@@ -17,6 +17,7 @@ CBaseModel::CBaseModel(QObject *parent): CProcessingBase_v2(parent)
     , m_RebalanceModel()
     , m_RiskModel()
     , m_ExecutionModel()
+    , m_ParentModel()
 {
     m_Name = "basemodel";
     //this->m_genericInfo["test_pnl"] = 0.2f;
@@ -190,6 +191,7 @@ void CBaseModel::fromJson(const QJsonObject &json)
 
         if (model) {
             model->setBrokerDataProvider(getIBrokerDataProvider());
+            //model->setParentModel(static_cast<ptrGenericModelType>(this));
             model->fromJson(modelObject);
             return model;
         }
@@ -458,5 +460,15 @@ bool CBaseModel::getActiveStatus() const
 bool CBaseModel::getParentActivatedState() const
 {
     return m_InfoMap["IsParentActivated"].toBool();
+}
+
+void CBaseModel::setParentModel(ptrGenericModelType pModel)
+{
+    m_ParentModel = pModel;
+}
+
+ptrGenericModelType CBaseModel::getParentModel()
+{
+    return m_ParentModel;
 }
 

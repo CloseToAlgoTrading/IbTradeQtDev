@@ -66,6 +66,9 @@ public:
     virtual ptrGenericModelType getRiskModel() = 0;
     virtual ptrGenericModelType getExecutionModel() = 0;
 
+    virtual void setParentModel(ptrGenericModelType pModel) = 0;
+    virtual ptrGenericModelType getParentModel() = 0;
+
 
 
     //QString m_Name;

@@ -11,6 +11,8 @@ cMomentum::cMomentum(QObject *parent)
 {
     m_Name = "Momentum";
     this->setName("Momentum");
+
+    this->m_ParametersMap["BP"] = 10000.0f;
 }
 
 bool cMomentum::start()

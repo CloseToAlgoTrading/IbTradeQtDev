@@ -10,8 +10,8 @@ CBasicSelectionModel::CBasicSelectionModel(QObject *parent) : CBasicStrategy_V2(
     this->setName("Base Selection Model");
     this->m_genericInfo.clear();
     this->m_ParametersMap.clear();
-    // this->m_ParametersMap["Selected_Assets"] = QString("NVDA");
-    // this->m_genericInfo["Selected_Assets"] = "NVDA";
+    this->m_ParametersMap["Selected_Assets"] = "";
+     this->m_genericInfo["Selected_Assets"] = "";
     m_pAssetList = createDataList();
     // m_pAssetList->append(UnifiedModelData("NVDA", 0, 0, 0));
 }

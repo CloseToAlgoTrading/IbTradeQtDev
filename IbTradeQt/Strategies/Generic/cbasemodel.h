@@ -73,6 +73,10 @@ public:
 
     virtual bool getParentActivatedState() const override;;
 
+    virtual void setParentModel(ptrGenericModelType pModel) override;
+    virtual ptrGenericModelType getParentModel() override;
+
+
 protected:
     void connectModels();
     void disconnectModels();
@@ -93,6 +97,8 @@ protected:
     ptrGenericModelType m_RebalanceModel;
     ptrGenericModelType m_RiskModel;
     ptrGenericModelType m_ExecutionModel;
+
+    ptrGenericModelType m_ParentModel;
 
 
 public slots:

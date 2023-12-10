@@ -236,6 +236,7 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
                 model->setName("Account");
                 //model->setBrokerDataProvider(this->m_brokerInterface);
                 model->setParentActivationState(true);
+                //model->setParentModel(static_cast<ptrGenericModelType>(m_pRoot));
                 m_pRoot->addModel(model);
             }
             break;
@@ -247,6 +248,7 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
                     model = QSharedPointer<CBasicPortfolio>::create();
                     model->setName("Portfolio");
                     model->setParentActivationState(account->getParentActivatedState());
+                    model->setParentModel(account);
                     account->addModel(model);
                 }
             }
@@ -260,6 +262,7 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
                 {
                     model = CStrategyFactory::createNewStrategy(ModelType::STRATEGY_MOMENTUM);
                     model->setParentActivationState(portfolio->getParentActivatedState());
+                    model->setParentModel(portfolio);
                     portfolio->addModel(model);
                 }
             }
@@ -279,6 +282,7 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
                     }
                     model = CStrategyFactory::createNewStrategy(ModelType::STRATEGY_SELECTION_MODEL);
                     model->setParentActivationState(strategy->getParentActivatedState());
+                    model->setParentModel(strategy);
                     strategy->addSelectionModel(model);
                 }
             }
@@ -298,6 +302,7 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
                     }
                     model = CStrategyFactory::createNewStrategy(ModelType::STRATEGY_ALPHA_MODEL);
                     model->setParentActivationState(strategy->getParentActivatedState());
+                    model->setParentModel(strategy);
                     strategy->addAlphaModel(model);
                 }
 
@@ -318,6 +323,7 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
                     }
                     model = CStrategyFactory::createNewStrategy(ModelType::STRATEGY_REBALANCE_MODEL);
                     model->setParentActivationState(strategy->getParentActivatedState());
+                    model->setParentModel(strategy);
                     strategy->addRebalanceModel(model);
                 }
 
@@ -338,6 +344,7 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
                     }
                     model = CStrategyFactory::createNewStrategy(ModelType::STRATEGY_RISK_MODEL);
                     model->setParentActivationState(strategy->getParentActivatedState());
+                    model->setParentModel(strategy);
                     strategy->addRiskModel(model);
                 }
 
@@ -358,6 +365,7 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
                     }
                     model = CStrategyFactory::createNewStrategy(ModelType::STRATEGY_EXECTION_MODEL);
                     model->setParentActivationState(strategy->getParentActivatedState());
+                    model->setParentModel(strategy);
                     strategy->addExecutionModel(model);
                 }
 
