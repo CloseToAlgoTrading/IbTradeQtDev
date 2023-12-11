@@ -16,10 +16,11 @@ struct UnifiedModelData {
     eDirection direction;
     double probability;
     double amount;
+    double currentPrice;
 
     // Constructor
-    UnifiedModelData(const QString& symbol, eDirection direction, double probability, double amount)
-        : symbol(symbol), direction(direction), probability(probability), amount(amount) {}
+    UnifiedModelData(const QString& symbol, eDirection direction = DIRECTION_UNDEFINED, double probability = 0.0, double amount = 0.0, double currentPrice = 0.0)
+        : symbol(symbol), direction(direction), probability(probability), amount(amount),  currentPrice(currentPrice) {}
 };
 
 

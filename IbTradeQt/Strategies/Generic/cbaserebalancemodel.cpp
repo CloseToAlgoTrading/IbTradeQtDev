@@ -14,18 +14,24 @@ CBaseRebalanceModel::CBaseRebalanceModel(QObject *parent)
 void CBaseRebalanceModel::processData(DataListPtr data)
 {
     qCDebug(BasicRebalanceModelLog(), "receved and emit ->");
-    qreal _bp = 0.0f;
-    if(nullptr != m_ParentModel)
+    if(0 < data->length())
     {
-        auto temp = m_ParentModel->getParameters();
-        _bp = temp["BP"].toReal();
+        qreal _bp = 0.0f;
+        if(nullptr != m_ParentModel)
+        {
+            auto temp = m_ParentModel->getParameters();
+            _bp = temp["BP"].toReal();
+        }
+
+        auto n = _bp / data->length();
+
+        for (auto & item : *data) {
+            auto amount = static_cast<quint32>(n / item.currentPrice);
+            qCDebug(BasicRebalanceModelLog(), "%s : %d : %f --> %.2f -> %f -> %d", item.symbol.toStdString().c_str(), item.direction, item.currentPrice, _bp, n, amount);
+            item.amount = amount;
+        }
+        emit dataProcessed(data);
     }
 
-    for (const auto & item : *data) {
-//        qCDebug(BasicRebalanceModelLog(), "%s : %d", item.symbol.toStdString().c_str(), item.direction);
-        qCDebug(BasicRebalanceModelLog(), "%s : %d --> %.2f", item.symbol.toStdString().c_str(), item.direction, _bp);
-    }
-
-    emit dataProcessed(data);
 }
 

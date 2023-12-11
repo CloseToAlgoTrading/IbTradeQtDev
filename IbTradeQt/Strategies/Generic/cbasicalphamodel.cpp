@@ -96,7 +96,7 @@ void CBasicAlphaModel::slotCbkRecvHistoricalData(const QList<CHistoricalData> &_
             topStocks.append(sortedMomentum[i].first);
             qCInfo(BasicAlphaModelLog(), "%s : %f", sortedMomentum[i].first.toStdString().c_str(), sortedMomentum[i].second);
 
-            m_pProcessedData->append(UnifiedModelData(sortedMomentum[i].first, DIRECTION_UP, 0, 0));
+            m_pProcessedData->append(UnifiedModelData(sortedMomentum[i].first, DIRECTION_UP, 0.0, 0.0, m_historicalData.value(sortedMomentum[i].first).constLast().getClose()));
 
             _assets.append(sortedMomentum[i].first + ", ");
         }
