@@ -191,7 +191,7 @@ void CBaseModel::fromJson(const QJsonObject &json)
 
         if (model) {
             model->setBrokerDataProvider(getIBrokerDataProvider());
-            //model->setParentModel(static_cast<ptrGenericModelType>(this));
+            model->setParentModel(this);
             model->fromJson(modelObject);
             return model;
         }
@@ -462,13 +462,14 @@ bool CBaseModel::getParentActivatedState() const
     return m_InfoMap["IsParentActivated"].toBool();
 }
 
-void CBaseModel::setParentModel(ptrGenericModelType pModel)
+void CBaseModel::setParentModel(CGenericModelApi* pModel)
 {
     m_ParentModel = pModel;
 }
 
 ptrGenericModelType CBaseModel::getParentModel()
 {
-    return m_ParentModel;
+    //return m_ParentModel;
+    return nullptr;
 }
 

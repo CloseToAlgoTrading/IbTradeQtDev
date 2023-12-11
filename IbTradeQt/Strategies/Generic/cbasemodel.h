@@ -18,7 +18,9 @@ class CBaseModel : public CProcessingBase_v2, public CGenericModelApi
 Q_OBJECT
 public:
     explicit CBaseModel(QObject *parent = nullptr);
-    virtual ~CBaseModel() {};
+    virtual ~CBaseModel() {
+
+    };
     // CGenericModelApi interface
 public:
     virtual void addModel(ptrGenericModelType pModel) override;
@@ -73,7 +75,7 @@ public:
 
     virtual bool getParentActivatedState() const override;;
 
-    virtual void setParentModel(ptrGenericModelType pModel) override;
+    virtual void setParentModel(CGenericModelApi* pModel) override;
     virtual ptrGenericModelType getParentModel() override;
 
 
@@ -98,7 +100,7 @@ protected:
     ptrGenericModelType m_RiskModel;
     ptrGenericModelType m_ExecutionModel;
 
-    ptrGenericModelType m_ParentModel;
+    CGenericModelApi* m_ParentModel;
 
 
 public slots:

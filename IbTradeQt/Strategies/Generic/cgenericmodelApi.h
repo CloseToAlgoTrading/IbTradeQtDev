@@ -17,6 +17,8 @@ class CGenericModelApi //: public QEnableSharedFromThis<CGenericModelApi>
 {
 public:
 
+    virtual ~CGenericModelApi(){};
+
     virtual void addModel(ptrGenericModelType pModel) = 0;
     virtual void removeModel(ptrGenericModelType pModel) = 0;
     virtual QList<ptrGenericModelType>& getModels() = 0;
@@ -66,7 +68,7 @@ public:
     virtual ptrGenericModelType getRiskModel() = 0;
     virtual ptrGenericModelType getExecutionModel() = 0;
 
-    virtual void setParentModel(ptrGenericModelType pModel) = 0;
+    virtual void setParentModel(CGenericModelApi* pModel) = 0;
     virtual ptrGenericModelType getParentModel() = 0;
 
 

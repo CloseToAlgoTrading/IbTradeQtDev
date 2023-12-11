@@ -67,7 +67,7 @@ public:
     virtual bool getActiveStatus() const override{return false;};
     virtual bool getParentActivatedState() const override{return false;};
 
-    virtual void setParentModel(ptrGenericModelType pModel) override {};
+    virtual void setParentModel(CGenericModelApi* pModel) override {};
     virtual ptrGenericModelType getParentModel() override {return nullptr;};
 
 protected:
