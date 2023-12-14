@@ -31,6 +31,7 @@
 #include "CommissionReport.h"
 #include "bar.h"
 #include "NHelper.h"
+#include "Decimal.h"
 
 using namespace IBDataTypes;
 
@@ -222,7 +223,7 @@ qint32 IBComClientImpl::reqPlaceOrderAPI(const QString& _symbol, const qint32 _q
 
     orderToPlace.order.orderType = "MKT";
     orderToPlace.order.tif = "DAY";
-    orderToPlace.order.totalQuantity = _quantity;
+    orderToPlace.order.totalQuantity = doubleToDecimal(_quantity);
     orderToPlace.order.transmit = true;
     orderToPlace.order.orderId = retOrderId;
 
@@ -561,7 +562,7 @@ void IBComClientImpl::orderStatus( OrderId orderId, const std::string& status, D
 	//	qint32	_clientId,
 	//	QString _whyHeld
 
-	COrderStatus orderStatusObj((qint32)orderId, QString::fromLocal8Bit(status.data(), status.size()), filled, remaining, avgFillPrice,
+    COrderStatus orderStatusObj((qint32)orderId, QString::fromLocal8Bit(status.data(), status.size()), decimalToDouble(filled), decimalToDouble(remaining), avgFillPrice,
 		permId, parentId, lastFillPrice, clientId, QString::fromLocal8Bit(whyHeld.data(), whyHeld.size()));
 
 
@@ -581,7 +582,7 @@ void IBComClientImpl::orderStatus( OrderId orderId, const std::string& status, D
 void IBComClientImpl::openOrder(OrderId orderId, const Contract& _contract, const Order& _order, const OrderState& _orderState)
 {
     qCDebug(IBComClientImplLog(), "OpenOrder. ID: %ld %s @ %s %s: %s, %s %f %s", orderId, _contract.symbol.c_str(), _contract.secType.c_str(), _contract.exchange.c_str(),
-        _order.action.c_str(), _order.orderType.c_str(), _order.totalQuantity, _orderState.status.c_str());
+            _order.action.c_str(), _order.orderType.c_str(), decimalToDouble(_order.totalQuantity), _orderState.status.c_str());
 }
 
 //---------------------------------------------------------------
@@ -599,14 +600,14 @@ void IBComClientImpl::execDetailsEnd(int reqId)
 
 //---------------------------------------------------------------
 void IBComClientImpl::execDetails(int reqId, const Contract& contract, const Execution& execution) {
-	qCDebug(IBComClientImplLog(), "ReqId: %d - %s, %s, %s - %s, %ld, %g\n", reqId, contract.symbol.c_str(), contract.secType.c_str(), contract.currency.c_str(),
-		execution.execId.c_str(), execution.orderId, execution.shares);
+    qCDebug(IBComClientImplLog(), "ReqId: %d - %s, %s, %s - %s, %ld, %f\n", reqId, contract.symbol.c_str(), contract.secType.c_str(), contract.currency.c_str(),
+            execution.execId.c_str(), execution.orderId, decimalToDouble(execution.shares));
 }
 
 //---------------------------------------------------------------
 void IBComClientImpl::commissionReport(const CommissionReport& commissionReport)
 {
-    qCDebug(IBComClientImplLog(), "%s - %g %s RPNL %g\n", commissionReport.execId.c_str(), commissionReport.commission, commissionReport.currency.c_str(), commissionReport.realizedPNL);
+    qCDebug(IBComClientImplLog(), "%s - %f %s RPNL %f\n", commissionReport.execId.c_str(), commissionReport.commission, commissionReport.currency.c_str(), commissionReport.realizedPNL);
 
     qreal _commiss = commissionReport.commission;
     m_DispatcherBrokerData.SendMessageToSubscribers(&_commiss, E_RQ_ID_ORDER_STATUS, RT_ORDER_COMMISSION);
