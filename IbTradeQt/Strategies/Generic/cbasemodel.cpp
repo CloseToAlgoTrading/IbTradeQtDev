@@ -409,6 +409,7 @@ void CBaseModel::connectModels()
 
     for (auto &currentModel : models) {
         if (!currentModel.isNull()) {
+            qDebug() << "[CONNECT 1] model:" << this->m_Name << "connect to " << currentModel->m_Name;
             QObject::connect(this, &CBaseModel::dataProcessed,
                                  currentModel.data(), &CBaseModel::processData);
             break;
@@ -418,6 +419,7 @@ void CBaseModel::connectModels()
     for (auto &currentModel : models) {
         if (!currentModel.isNull()) {
             if (!previousModel.isNull()) {
+                qDebug() << "[CONNECT 2] model:" << previousModel->m_Name << "connect to " << currentModel->m_Name;
                 QObject::connect(previousModel.data(), &CBaseModel::dataProcessed,
                                  currentModel.data(), &CBaseModel::processData);
             }
@@ -425,6 +427,7 @@ void CBaseModel::connectModels()
         }
     }
 }
+
 
 void CBaseModel::disconnectModels() {
     QList<QSharedPointer<CBaseModel>> models = {
@@ -435,21 +438,28 @@ void CBaseModel::disconnectModels() {
         m_ExecutionModel.staticCast<CBaseModel>()
     };
 
+    // First, disconnect this from each model
     for (auto &currentModel : models) {
         if (!currentModel.isNull()) {
+            qDebug() << "[DISCONNECT 1] model:" << this->m_Name << "disconnect from " << currentModel->m_Name;
             QObject::disconnect(this, &CBaseModel::dataProcessed,
-                             currentModel.data(), &CBaseModel::processData);
+                                currentModel.data(), &CBaseModel::processData);
             break;
         }
     }
 
-    for (int i = 0; i < models.size() - 1; ++i) {
-        if (!models[i].isNull() && !models[i + 1].isNull()) {
-            QObject::disconnect(models[i].data(), &CBaseModel::dataProcessed,
-                                models[i + 1].data(), &CBaseModel::processData);
+    // Next, disconnect each pair of models
+    QSharedPointer<CBaseModel> previousModel = nullptr;
+    for (auto &currentModel : models) {
+        if (!currentModel.isNull()) {
+            if (!previousModel.isNull()) {
+                qDebug() << "[DISCONNECT 2] model:" << previousModel->m_Name << "disconnect from " << currentModel->m_Name;
+                QObject::disconnect(previousModel.data(), &CBaseModel::dataProcessed,
+                                    currentModel.data(), &CBaseModel::processData);
+            }
+            previousModel = currentModel;
         }
     }
-
 }
 
 bool CBaseModel::getActiveStatus() const
