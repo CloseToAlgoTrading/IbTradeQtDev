@@ -43,6 +43,8 @@ UI_DIR = $$PWD/GeneratedIncludes
 SOURCES += \
     CObjects/cdeltaobject.cpp \
     Common/cprocessingbase_v2.cpp \
+    DB/dbhandler.cpp \
+    DB/dbmanager.cpp \
     MainSystem/capplicationcontroller.cpp \
     MainSystem/ciconhandler.cpp \
     MainSystem/cmainmodel.cpp \
@@ -142,6 +144,8 @@ SOURCES += \
 HEADERS += \
     CObjects/cdeltaobject.h \
     Common/cprocessingbase_v2.h \
+    DB/dbhandler.h \
+    DB/dbmanager.h \
     MainSystem/CPortfolioConfigModel.h \
     MainSystem/PortfolioModelDefines.h \
     MainSystem/TreeItemDataTypesDef.h \
