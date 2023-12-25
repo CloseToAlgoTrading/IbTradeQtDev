@@ -144,6 +144,7 @@ SOURCES += \
 HEADERS += \
     CObjects/cdeltaobject.h \
     Common/cprocessingbase_v2.h \
+    DB/dbdatatypes.h \
     DB/dbhandler.h \
     DB/dbmanager.h \
     MainSystem/CPortfolioConfigModel.h \

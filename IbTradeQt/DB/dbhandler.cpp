@@ -42,6 +42,19 @@ bool DBHandler::initializeDatabase() {
     if (!success) {
         qDebug() << "Failed to create table:" << query.lastError();
     }
+    success = query.exec("CREATE TABLE IF NOT EXISTS open_positions ("
+                              "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                              "strategyId INTEGER, "
+                              "symbol VARCHAR(10), "
+                              "quantity INTEGER, "
+                              "price REAL, "
+                              "pnl REAL, "
+                              "fee REAL, "
+                              "date TEXT, "
+                              "status INTEGER)");
+    if (!success) {
+        qDebug() << "Failed to create table:" << query.lastError();
+    }
     return success;
 }
 
