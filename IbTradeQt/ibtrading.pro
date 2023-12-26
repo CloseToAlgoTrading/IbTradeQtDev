@@ -147,6 +147,7 @@ HEADERS += \
     DB/dbdatatypes.h \
     DB/dbhandler.h \
     DB/dbmanager.h \
+    DB/dbquery.h \
     MainSystem/CPortfolioConfigModel.h \
     MainSystem/PortfolioModelDefines.h \
     MainSystem/TreeItemDataTypesDef.h \

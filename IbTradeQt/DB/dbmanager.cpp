@@ -1,5 +1,5 @@
 #include "dbmanager.h"
-#include "qsqlquery.h"
+#include "dbquery.h"
 
 DBManager::DBManager(QObject *parent)
     : QObject{parent}
@@ -9,7 +9,8 @@ DBManager::DBManager(QObject *parent)
 
     m_db->moveToThread(m_dbThread.data());
 
-    connect(this, &DBManager::signalExecuteDatabaseQuery, m_db.get(), &DBHandler::executeQuerySlot);
+    connect(this, &DBManager::signalExecuteDatabaseQuery, m_db.get(), &DBHandler::executeQuerySlot, Qt::QueuedConnection);
+    connect(m_dbThread.data(), &QThread::started, m_db.get(), &DBHandler::initializeConnectionSlot, Qt::QueuedConnection);
 
     m_dbThread->start();
 }
@@ -33,15 +34,5 @@ void DBManager::addTrades(const quint16 stragegyId, const QString& symbol, int q
 
 void DBManager::addCurrentPositionsState(const OpenPosition & position)
 {
-    QString queryStr = QString("INSERT INTO open_positions (strategyId, symbol, quantity, price, pnl, fee, date, status) "
-                               "VALUES (%1, '%2', %3, %4, %5, %6, '%7', %8)")
-                           .arg(position.strategyId)
-                           .arg(position.symbol)
-                           .arg(position.quantity)
-                           .arg(position.price)
-                           .arg(position.pnl)
-                           .arg(position.fee)
-                           .arg(position.date)
-                           .arg(position.status);
-    emit signalExecuteDatabaseQuery(queryStr);
+    emit signalExecuteDatabaseQuery(query_addCurrentPosition(position));
 }

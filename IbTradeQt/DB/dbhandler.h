@@ -16,6 +16,7 @@ public:
 
 public slots:
     void executeQuerySlot(const QString &queryStr);
+    void initializeConnectionSlot();
 
 private:
     QSqlDatabase m_db;

@@ -32,28 +32,32 @@ void DBHandler::disconnectDB() {
 bool DBHandler::initializeDatabase() {
     // Initialize your database tables here
     QSqlQuery query;
-    bool success = query.exec("CREATE TABLE IF NOT EXISTS trades ("
-                              "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-                              "strategyId INTEGER, "
-                              "symbol VARCHAR(10), "
-                              "quantity INTEGER, "
-                              "price REAL, "
-                              "date TEXT)");
-    if (!success) {
-        qDebug() << "Failed to create table:" << query.lastError();
-    }
-    success = query.exec("CREATE TABLE IF NOT EXISTS open_positions ("
-                              "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-                              "strategyId INTEGER, "
-                              "symbol VARCHAR(10), "
-                              "quantity INTEGER, "
-                              "price REAL, "
-                              "pnl REAL, "
-                              "fee REAL, "
-                              "date TEXT, "
-                              "status INTEGER)");
-    if (!success) {
-        qDebug() << "Failed to create table:" << query.lastError();
+    bool success = true;
+    // bool success = query.exec("CREATE TABLE IF NOT EXISTS trades ("
+    //                           "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+    //                           "strategyId INTEGER, "
+    //                           "symbol VARCHAR(10), "
+    //                           "quantity INTEGER, "
+    //                           "price REAL, "
+    //                           "date TEXT)");
+    // if (!success) {
+    //     qDebug() << "Failed to create table:" << query.lastError();
+    // }
+    if ( !m_db.tables().contains( QString("open_positions") ) )
+    {
+        success = query.exec("CREATE TABLE IF NOT EXISTS open_positions ("
+                                  "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                                  "strategyId INTEGER, "
+                                  "symbol VARCHAR(10), "
+                                  "quantity INTEGER, "
+                                  "price REAL, "
+                                  "pnl REAL, "
+                                  "fee REAL, "
+                                  "date TEXT, "
+                                  "status INTEGER)");
+        if (!success) {
+            qDebug() << "Failed to create table:" << query.lastError();
+        }
     }
     return success;
 }
@@ -65,4 +69,10 @@ void DBHandler::executeQuerySlot(const QString& queryStr) {
     } else {
         // Process query results if needed
     }
+}
+
+void DBHandler::initializeConnectionSlot()
+{
+    connectDB("myLocalDb.sqlite");
+    initializeDatabase();
 }

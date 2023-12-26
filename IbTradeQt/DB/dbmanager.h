@@ -15,15 +15,17 @@ class DBManager : public QObject
 public:
     explicit DBManager(QObject *parent = nullptr);
     ~DBManager();
-    private:
-    std::unique_ptr<DBHandler> m_db;
-    QScopedPointer<QThread> m_dbThread;
 
     void addTrades(const quint16 stragegyId, const QString& symbol, int quantity, double price, const QString& date);
     void addCurrentPositionsState(const OpenPosition & position);
+
+private:
+    std::unique_ptr<DBHandler> m_db;
+    QScopedPointer<QThread> m_dbThread;
+
 signals:
     void signalExecuteDatabaseQuery(const QString& queryStr);
-signals:
+
 };
 
 #endif // DBMANAGER_H
