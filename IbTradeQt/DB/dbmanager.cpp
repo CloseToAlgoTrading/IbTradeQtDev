@@ -1,5 +1,6 @@
 #include "dbmanager.h"
 #include "dbquery.h"
+#include "qdebug.h"
 
 DBManager::DBManager(QObject *parent)
     : QObject{parent}
@@ -10,6 +11,8 @@ DBManager::DBManager(QObject *parent)
     m_db->moveToThread(m_dbThread.data());
 
     connect(this, &DBManager::signalExecuteDatabaseQuery, m_db.get(), &DBHandler::executeQuerySlot, Qt::QueuedConnection);
+    connect(this, &DBManager::signalExecuteGetOpenPositionsQuery, m_db.get(), &DBHandler::fetchOpenPositionsSlot, Qt::QueuedConnection);
+    connect(m_db.get(), &DBHandler::openPositionsFetched, this, &DBManager::onOpenPositionsFetched, Qt::QueuedConnection);
     connect(m_dbThread.data(), &QThread::started, m_db.get(), &DBHandler::initializeConnectionSlot, Qt::QueuedConnection);
 
     m_dbThread->start();
@@ -35,4 +38,16 @@ void DBManager::addTrades(const quint16 stragegyId, const QString& symbol, int q
 void DBManager::addCurrentPositionsState(const OpenPosition & position)
 {
     emit signalExecuteDatabaseQuery(query_addCurrentPosition(position));
+}
+
+void DBManager::getOpenPositions(const quint16 strategy_id)
+{
+    emit signalExecuteGetOpenPositionsQuery(strategy_id);
+}
+
+void DBManager::onOpenPositionsFetched(const QList<OpenPosition> &positions)
+{
+    for (auto pos : positions) {
+        qDebug() << pos.symbol.toStdString().c_str() << pos.status << pos.date;
+    }
 }

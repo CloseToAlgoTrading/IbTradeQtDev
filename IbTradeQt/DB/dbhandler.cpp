@@ -1,4 +1,5 @@
 #include "dbhandler.h"
+#include "dbquery.h"
 #include <QtSql/QSqlQuery>
 #include <QtSql/QSqlError>
 #include <QDebug>
@@ -75,4 +76,31 @@ void DBHandler::initializeConnectionSlot()
 {
     connectDB("myLocalDb.sqlite");
     initializeDatabase();
+}
+
+void DBHandler::fetchOpenPositionsSlot(const quint16 strategy_id)
+{
+    QList<OpenPosition> positionsList;
+    QSqlQuery query(query_getOpenPositions());
+    if (!query.exec()) {
+        qDebug() << "Error fetching open positions:" << query.lastError();
+    }
+    else
+    {
+        while (query.next()) {
+            OpenPosition position;
+            position.id = query.value("id").toInt();
+            position.strategyId = query.value("strategyId").toInt();
+            position.symbol = query.value("symbol").toString();
+            position.quantity = query.value("quantity").toInt();
+            position.price = query.value("price").toDouble();
+            position.pnl = query.value("pnl").toDouble();
+            position.fee = query.value("fee").toDouble();
+            position.date = query.value("date").toString();
+            position.status = query.value("status").toInt();
+
+            positionsList.append(position);
+        }
+    }
+    emit openPositionsFetched(positionsList);
 }

@@ -17,4 +17,9 @@ inline const QString query_addCurrentPosition(const OpenPosition & position)
                            .arg(position.status);
 }
 
+inline const QString query_getOpenPositions() {
+    return QString("SELECT * FROM open_positions WHERE status IN (%1, %2)")
+        .arg(PS_INIT_OPEN)
+        .arg(PS_OPEN);
+}
 #endif // DBQUERY_H
