@@ -64,10 +64,24 @@ bool DBHandler::initializeDatabase() {
 }
 
 void DBHandler::executeQuerySlot(const QString& queryStr) {
-    QSqlQuery query(queryStr);
+    qDebug() << "Executing query:" << queryStr;  // Log the query being executed
+    //QSqlQuery query(queryStr);
+    QSqlQuery query;
+    query.prepare("INSERT INTO open_positions (strategyId, symbol, quantity, price, pnl, fee, date, status) VALUES (:strategyId, :symbol, :quantity, :price, :pnl, :fee, :date, :status)");
+
+    // Binding values
+    query.bindValue(":strategyId", 11);
+    query.bindValue(":symbol", "MVDA");
+    query.bindValue(":quantity", 100);
+    query.bindValue(":price", 100.0);
+    query.bindValue(":pnl", 0.0);
+    query.bindValue(":fee", 0.5);
+    query.bindValue(":date", "2023-12-27 12:57:03.401");
+    query.bindValue(":status", 0);
     if (!query.exec()) {
         qDebug() << "Error executing query:" << query.lastError();
     } else {
+        qDebug() << "Query executed successfully";  // Confirm successful execution
         // Process query results if needed
     }
 }
@@ -81,7 +95,7 @@ void DBHandler::initializeConnectionSlot()
 void DBHandler::fetchOpenPositionsSlot(const quint16 strategy_id)
 {
     QList<OpenPosition> positionsList;
-    QSqlQuery query(query_getOpenPositions());
+    QSqlQuery query(query_getOpenPositions(strategy_id));
     if (!query.exec()) {
         qDebug() << "Error fetching open positions:" << query.lastError();
     }
