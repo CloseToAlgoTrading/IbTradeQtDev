@@ -63,21 +63,9 @@ bool DBHandler::initializeDatabase() {
     return success;
 }
 
-void DBHandler::executeQuerySlot(const QString& queryStr) {
-    qDebug() << "Executing query:" << queryStr;  // Log the query being executed
-    //QSqlQuery query(queryStr);
-    QSqlQuery query;
-    query.prepare("INSERT INTO open_positions (strategyId, symbol, quantity, price, pnl, fee, date, status) VALUES (:strategyId, :symbol, :quantity, :price, :pnl, :fee, :date, :status)");
-
-    // Binding values
-    query.bindValue(":strategyId", 11);
-    query.bindValue(":symbol", "MVDA");
-    query.bindValue(":quantity", 100);
-    query.bindValue(":price", 100.0);
-    query.bindValue(":pnl", 0.0);
-    query.bindValue(":fee", 0.5);
-    query.bindValue(":date", "2023-12-27 12:57:03.401");
-    query.bindValue(":status", 0);
+void DBHandler::slotAddPositionQuery(const OpenPosition &position)
+{
+    auto query = query_addCurrentPosition(position);
     if (!query.exec()) {
         qDebug() << "Error executing query:" << query.lastError();
     } else {

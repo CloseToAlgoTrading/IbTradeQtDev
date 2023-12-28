@@ -15,11 +15,10 @@ class DBManager : public QObject
 public:
     explicit DBManager(QObject *parent = nullptr);
     ~DBManager();
-    void addTrades(const quint16 stragegyId, const QString& symbol, int quantity, double price, const QString& date);
     void addCurrentPositionsState(const OpenPosition & position);
     void getOpenPositions(const quint16 strategy_id);
 signals:
-    void signalExecuteDatabaseQuery(const QString& queryStr);
+    void signalAddPositionQuery(const OpenPosition& position);
     void signalExecuteGetOpenPositionsQuery(const quint16 strategy_id);
 private slots:
     void onOpenPositionsFetched(const QList<OpenPosition>& positions);

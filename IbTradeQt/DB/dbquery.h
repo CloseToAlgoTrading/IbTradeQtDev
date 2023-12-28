@@ -2,25 +2,35 @@
 #define DBQUERY_H
 
 #include "dbdatatypes.h"
+#include <QSqlQuery>
 
-inline const QString query_addCurrentPosition(const OpenPosition & position)
-{
-    return QString("INSERT INTO open_positions (strategyId, symbol, quantity, price, pnl, fee, date, status) "
-                               "VALUES (%1, '%2', %3, %4, %5, %6, '%7', %8)")
-                           .arg(position.strategyId)
-                           .arg(position.symbol)
-                           .arg(position.quantity)
-                           .arg(position.price)
-                           .arg(position.pnl)
-                           .arg(position.fee)
-                           .arg(position.date)
-                           .arg(position.status);
+inline QSqlQuery query_addCurrentPosition(const OpenPosition &position) {
+    QSqlQuery query;
+    query.prepare("INSERT INTO open_positions (strategyId, symbol, quantity, price, pnl, fee, date, status) "
+                  "VALUES (:strategyId, :symbol, :quantity, :price, :pnl, :fee, :date, :status)");
+
+    query.bindValue(":strategyId", position.strategyId);
+    query.bindValue(":symbol", position.symbol);
+    query.bindValue(":quantity", position.quantity);
+    query.bindValue(":price", position.price);
+    query.bindValue(":pnl", position.pnl);
+    query.bindValue(":fee", position.fee);
+    query.bindValue(":date", position.date);
+    query.bindValue(":status", position.status);
+
+    return query;
 }
 
-inline const QString query_getOpenPositions(const quint16 strategyId) {
-    return QString("SELECT * FROM open_positions WHERE status IN (%1, %2) AND strategyId = %3")
-        .arg(PS_INIT_OPEN)
-        .arg(PS_OPEN)
-        .arg(strategyId);
+
+inline QSqlQuery query_getOpenPositions(const quint16 strategyId) {
+    QSqlQuery query;
+    query.prepare("SELECT * FROM open_positions WHERE status IN (:status1, :status2) AND strategyId = :strategyId");
+
+    query.bindValue(":status1", PS_INIT_OPEN);
+    query.bindValue(":status2", PS_OPEN);
+    query.bindValue(":strategyId", strategyId);
+
+    return query;
 }
+
 #endif // DBQUERY_H

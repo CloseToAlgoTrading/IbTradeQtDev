@@ -19,7 +19,7 @@ signals:
     void openPositionsFetched(const QList<OpenPosition>& positions);
 
 public slots:
-    void executeQuerySlot(const QString &queryStr);
+    void slotAddPositionQuery(const OpenPosition& position);
     void initializeConnectionSlot();
     void fetchOpenPositionsSlot(const quint16 strategy_id);
 
