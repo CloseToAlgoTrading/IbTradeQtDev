@@ -31,36 +31,79 @@ void DBHandler::disconnectDB() {
 }
 
 bool DBHandler::initializeDatabase() {
-    // Initialize your database tables here
-    QSqlQuery query;
-    bool success = true;
-    // bool success = query.exec("CREATE TABLE IF NOT EXISTS trades ("
-    //                           "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-    //                           "strategyId INTEGER, "
-    //                           "symbol VARCHAR(10), "
-    //                           "quantity INTEGER, "
-    //                           "price REAL, "
-    //                           "date TEXT)");
-    // if (!success) {
-    //     qDebug() << "Failed to create table:" << query.lastError();
-    // }
-    if ( !m_db.tables().contains( QString("open_positions") ) )
-    {
-        success = query.exec("CREATE TABLE IF NOT EXISTS open_positions ("
-                                  "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-                                  "strategyId INTEGER, "
-                                  "symbol VARCHAR(10), "
-                                  "quantity INTEGER, "
-                                  "price REAL, "
-                                  "pnl REAL, "
-                                  "fee REAL, "
-                                  "date TEXT, "
-                                  "status INTEGER)");
-        if (!success) {
-            qDebug() << "Failed to create table:" << query.lastError();
+
+    auto createTableIfNotExists = [this](const QString& tableName, const QString& creationQuery) {
+        bool success = true;
+        QSqlQuery query(m_db);
+
+        if (!m_db.tables().contains(tableName)) {
+            success = query.exec(creationQuery);
+            if (!success) {
+                qDebug() << "Failed to create table:" << query.lastError();
+            }
         }
-    }
-    return success;
+
+        return success;
+    };
+
+
+
+    // Initialize database tables
+    bool success = createTableIfNotExists("Strategies",
+                           "CREATE TABLE IF NOT EXISTS Strategies ("
+                           "strategyId VARCHAR(64) PRIMARY KEY, "
+                           "maxDrawDown DOUBLE, "
+                           "pnlPerc DOUBLE, "
+                           "pnl DOUBLE, "
+                           "fee DOUBLE)"
+                           );
+
+    // Trades Table
+    success |= createTableIfNotExists("Trades",
+                           "CREATE TABLE IF NOT EXISTS Trades ("
+                           "tradeId INT AUTO_INCREMENT PRIMARY KEY, "
+                           "positionId INT, "
+                           "symbol VARCHAR(10), "
+                           "quantity INT, "
+                           "price DOUBLE, "
+                           "pnl DOUBLE, "
+                           "fee DOUBLE, "
+                           "date TEXT, "
+                           "tradeType VARCHAR(10), "
+                           "FOREIGN KEY (positionId) REFERENCES Positions(positionId))"
+                           );
+
+    // Positions Table
+    success |= createTableIfNotExists("Positions",
+                           "CREATE TABLE IF NOT EXISTS Positions ("
+                           "strategyId VARCHAR(64), "
+                           "positionId INT AUTO_INCREMENT PRIMARY KEY, "
+                           "symbol VARCHAR(10), "
+                           "quantity INT, "
+                           "averageOpenPrice DOUBLE, "
+                           "pnl DOUBLE, "
+                           "fee DOUBLE, "
+                           "openDate TEXT, "
+                           "closeDate TEXT, "
+                           "status INT, "
+                           "FOREIGN KEY (strategyId) REFERENCES Strategies(strategyId))"
+                           );
+
+    success |= createTableIfNotExists("open_positions",
+                                     "CREATE TABLE IF NOT EXISTS open_positions ("
+                                           "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                                           "strategyId INTEGER, "
+                                           "symbol VARCHAR(10), "
+                                           "quantity INTEGER, "
+                                           "price REAL, "
+                                           "pnl REAL, "
+                                           "fee REAL, "
+                                           "date TEXT, "
+                                           "status INTEGER"
+                                     ")"
+                                     );
+
+  return success;
 }
 
 void DBHandler::slotAddPositionQuery(const OpenPosition &position)

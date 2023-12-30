@@ -60,6 +60,7 @@ void CBasicExecutionModel::processData(DataListPtr data)
         position.status = PS_PARTIALY_CLOSED;
         position.strategyId = 10;
         position.symbol = "MVDA";
+        m_dbManager.addCurrentPositionsState(position);
 
         position.date = currentDateTime.toString("yyyy-MM-dd HH:mm:ss.zzz");
         position.fee = 0.5;
@@ -68,7 +69,7 @@ void CBasicExecutionModel::processData(DataListPtr data)
         position.status = PS_OPEN;
         position.strategyId = 10;
         position.symbol = "MVDA";
-
+        m_dbManager.addCurrentPositionsState(position);
     }
     if(tmp == 2)
     {
@@ -79,7 +80,8 @@ void CBasicExecutionModel::processData(DataListPtr data)
         position.status = PS_CLOSED;
         position.strategyId = 10;
         position.symbol = "MVDA";
+        m_dbManager.addCurrentPositionsState(position);
     }
-
+    tmp++;
 }
 
