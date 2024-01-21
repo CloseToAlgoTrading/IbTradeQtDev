@@ -15,13 +15,20 @@ public:
     bool connectDB(const QString& dbName);
     void disconnectDB();
 
+    bool createTrigger(QSqlDatabase& db);
+
 signals:
     void openPositionsFetched(const QList<OpenPosition>& positions);
 
 public slots:
     void slotAddPositionQuery(const OpenPosition& position);
+    void slotAddNewTrade(const DbTrade& trade);
     void initializeConnectionSlot();
     void fetchOpenPositionsSlot(const quint16 strategy_id);
+
+
+
+
 
 private:
     QSqlDatabase m_db;

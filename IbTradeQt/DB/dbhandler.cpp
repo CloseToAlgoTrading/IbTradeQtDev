@@ -39,7 +39,7 @@ bool DBHandler::initializeDatabase() {
         if (!m_db.tables().contains(tableName)) {
             success = query.exec(creationQuery);
             if (!success) {
-                qDebug() << "Failed to create table:" << query.lastError();
+                qDebug() << "Failed to create table" << tableName << ":" << query.lastError().text();
             }
         }
 
@@ -62,7 +62,7 @@ bool DBHandler::initializeDatabase() {
     success |= createTableIfNotExists("Trades",
                            "CREATE TABLE IF NOT EXISTS Trades ("
                            "tradeId INT AUTO_INCREMENT PRIMARY KEY, "
-                           "positionId INT, "
+                           "strategyId INT, "
                            "symbol VARCHAR(10), "
                            "quantity INT, "
                            "price DOUBLE, "
@@ -70,23 +70,25 @@ bool DBHandler::initializeDatabase() {
                            "fee DOUBLE, "
                            "date TEXT, "
                            "tradeType VARCHAR(10), "
-                           "FOREIGN KEY (positionId) REFERENCES Positions(positionId))"
+                           "FOREIGN KEY (strategyId) REFERENCES Strategies(strategyId))"
                            );
 
     // Positions Table
     success |= createTableIfNotExists("Positions",
-                           "CREATE TABLE IF NOT EXISTS Positions ("
-                           "strategyId VARCHAR(64), "
-                           "positionId INT AUTO_INCREMENT PRIMARY KEY, "
-                           "symbol VARCHAR(10), "
-                           "quantity INT, "
-                           "averageOpenPrice DOUBLE, "
-                           "pnl DOUBLE, "
-                           "fee DOUBLE, "
-                           "openDate TEXT, "
-                           "closeDate TEXT, "
-                           "status INT, "
-                           "FOREIGN KEY (strategyId) REFERENCES Strategies(strategyId))"
+                           R"(CREATE TABLE IF NOT EXISTS Positions (
+                                    strategyId INT,
+                                    symbol VARCHAR(10),
+                                    quantity INT DEFAULT 0,
+                                    averageOpenPrice DOUBLE DEFAULT 0,
+                                    pnl DOUBLE DEFAULT 0,
+                                    fee DOUBLE DEFAULT 0,
+                                    openDate TEXT,
+                                    closeDate TEXT,
+                                    status INT,
+                                    PRIMARY KEY (strategyId, symbol),
+                                    FOREIGN KEY (strategyId) REFERENCES Strategies(strategyId)
+                                )
+                            )"
                            );
 
     success |= createTableIfNotExists("open_positions",
@@ -103,12 +105,25 @@ bool DBHandler::initializeDatabase() {
                                      ")"
                                      );
 
+    success |= createTrigger(m_db);
+
   return success;
 }
 
 void DBHandler::slotAddPositionQuery(const OpenPosition &position)
 {
     auto query = query_addCurrentPosition(position);
+    if (!query.exec()) {
+        qDebug() << "Error executing query:" << query.lastError();
+    } else {
+        qDebug() << "Query executed successfully";  // Confirm successful execution
+        // Process query results if needed
+    }
+}
+
+void DBHandler::slotAddNewTrade(const DbTrade &trade)
+{
+    auto query = query_addNewTrade(trade);
     if (!query.exec()) {
         qDebug() << "Error executing query:" << query.lastError();
     } else {
@@ -148,4 +163,33 @@ void DBHandler::fetchOpenPositionsSlot(const quint16 strategy_id)
         }
     }
     emit openPositionsFetched(positionsList);
+}
+
+bool DBHandler::createTrigger(QSqlDatabase& db) {
+    QSqlQuery query(db);
+    QString triggerCommand = R"(
+        CREATE TRIGGER IF NOT EXISTS update_or_insert_position
+        AFTER INSERT ON Trades
+        FOR EACH ROW
+        BEGIN
+            INSERT INTO Positions (strategyId, symbol, quantity, averageOpenPrice, pnl, fee, openDate, status)
+            VALUES (NEW.strategyId, NEW.symbol, NEW.quantity, NEW.price, NEW.pnl, NEW.fee, NEW.date, 1)
+            ON CONFLICT (strategyId, symbol)
+            DO
+            UPDATE SET quantity = quantity + NEW.quantity,
+                       pnl = pnl + NEW.pnl,
+                       fee = fee + NEW.fee,
+                       averageOpenPrice = (averageOpenPrice * quantity + NEW.price * NEW.quantity) / (quantity + NEW.quantity),
+                       openDate = CASE WHEN openDate IS NULL THEN NEW.date ELSE openDate END,
+                       status = CASE WHEN quantity + NEW.quantity = 0 THEN 0 ELSE status END,
+                       closeDate = CASE WHEN quantity + NEW.quantity = 0 THEN NEW.date ELSE closeDate END;
+        END;
+    )";
+
+    if (!query.exec(triggerCommand)) {
+        qDebug() << "Error creating trigger:" << query.lastError().text();
+        return false;
+    }
+
+    return true;
 }

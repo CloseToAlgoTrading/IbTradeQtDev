@@ -25,4 +25,21 @@ struct OpenPosition {
     OpenPosition()
         : id(0), strategyId(0), quantity(0), price(0.0), pnl(0.0), fee(0.0), date(""), status(static_cast<int>(PS_INIT_OPEN)) {}
 };
+
+
+struct DbTrade {
+    int tradeId;       // Unique identifier for the trade
+    int strategyId;    // Associated Strategy ID
+    QString symbol;    // Trading symbol
+    int quantity;      // Quantity of the trade
+    double price;      // Price at which the trade was executed
+    double pnl;        // Profit and Loss for the trade
+    double fee;        // Associated fee with the trade
+    QString date;      // Date of the trade
+    QString tradeType; // Type of the trade (e.g., BUY, SELL)
+
+    // Default constructor
+    DbTrade() : tradeId(0), strategyId(0), quantity(0), price(0.0), pnl(0.0), fee(0.0), tradeType("BUY") {}
+};
+
 #endif // DBDATATYPES_H

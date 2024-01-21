@@ -10,6 +10,7 @@ DBManager::DBManager(QObject *parent)
     m_db->moveToThread(m_dbThread.data());
 
     connect(this, &DBManager::signalAddPositionQuery, m_db.get(), &DBHandler::slotAddPositionQuery, Qt::QueuedConnection);
+    connect(this, &DBManager::signalAddNewTrade, m_db.get(), &DBHandler::slotAddNewTrade, Qt::AutoConnection);
     connect(this, &DBManager::signalExecuteGetOpenPositionsQuery, m_db.get(), &DBHandler::fetchOpenPositionsSlot, Qt::QueuedConnection);
     connect(m_db.get(), &DBHandler::openPositionsFetched, this, &DBManager::onOpenPositionsFetched, Qt::QueuedConnection);
     connect(m_dbThread.data(), &QThread::started, m_db.get(), &DBHandler::initializeConnectionSlot, Qt::QueuedConnection);

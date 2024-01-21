@@ -17,9 +17,11 @@ public:
     ~DBManager();
     void addCurrentPositionsState(const OpenPosition & position);
     void getOpenPositions(const quint16 strategy_id);
+
 signals:
     void signalAddPositionQuery(const OpenPosition& position);
     void signalExecuteGetOpenPositionsQuery(const quint16 strategy_id);
+    void signalAddNewTrade(const DbTrade& trade);
 private slots:
     void onOpenPositionsFetched(const QList<OpenPosition>& positions);
 
