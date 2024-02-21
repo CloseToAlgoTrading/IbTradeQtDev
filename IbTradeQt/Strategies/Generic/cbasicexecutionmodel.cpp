@@ -45,7 +45,7 @@ void CBasicExecutionModel::processData(DataListPtr data)
     //     }
     // }
 
-    requestPlaceMarketOrder("NVDA", 6, OA_SELL);
+    requestPlaceMarketOrder("NVDA", 30, OA_BUY);
 
     OpenPosition position;
 

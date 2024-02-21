@@ -42,6 +42,7 @@ UI_DIR = $$PWD/GeneratedIncludes
 
 SOURCES += \
     CObjects/cdeltaobject.cpp \
+    CObjects/cexecutionreport.cpp \
     Common/cprocessingbase_v2.cpp \
     DB/dbhandler.cpp \
     DB/dbmanager.cpp \
@@ -143,6 +144,7 @@ SOURCES += \
 
 HEADERS += \
     CObjects/cdeltaobject.h \
+    CObjects/cexecutionreport.h \
     Common/cprocessingbase_v2.h \
     DB/dbdatatypes.h \
     DB/dbhandler.h \

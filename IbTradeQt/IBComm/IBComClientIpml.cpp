@@ -24,6 +24,7 @@
 #include "cposition.h"
 #include "coptiontickcomputation.h"
 #include "ctickbytickalllast.h"
+#include "cexecutionreport.h"
 
 #include "Order.h"
 #include "OrderState.h"
@@ -599,10 +600,13 @@ void IBComClientImpl::execDetailsEnd(int reqId)
 
 //---------------------------------------------------------------
 void IBComClientImpl::execDetails(int reqId, const Contract& contract, const Execution& execution) {
-    qCDebug(IBComClientImplLog(), "ReqId: %d - %s, %s, %s - %s, %ld, %f\n", reqId, contract.symbol.c_str(), contract.secType.c_str(), contract.currency.c_str(),
-            execution.execId.c_str(), execution.orderId, decimalToDouble(execution.shares));
+    qCDebug(IBComClientImplLog(), "ReqId: %d - %s, %s, %s - %s, %ld, %f, %f, %s, %f \n", reqId, contract.symbol.c_str(), contract.secType.c_str(), contract.currency.c_str(),
+            execution.execId.c_str(), execution.orderId, decimalToDouble(execution.shares), execution.avgPrice, execution.side.c_str(), execution.price);
 
-    //m_DispatcherBrokerData.SendMessageToSubscribers(&_commiss, E_RQ_ID_ORDER_STATUS, RT_ORDER_EXECUTION);
+    CExecutionReport execReport(reqId, "DD", execution.avgPrice, decimalToDouble(execution.shares));
+
+
+    m_DispatcherBrokerData.SendMessageToSubscribers(&execReport, E_RQ_ID_ORDER_STATUS, RT_ORDER_EXECUTION);
 }
 
 //---------------------------------------------------------------
