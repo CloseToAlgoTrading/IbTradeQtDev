@@ -16,6 +16,9 @@ public:
 
     ModelType modelType() const override { return ModelType::STRATEGY_EXECTION_MODEL; }
 
+    virtual bool start() override;
+    virtual bool stop() override;
+
 private:
     DBManager m_dbManager;
 

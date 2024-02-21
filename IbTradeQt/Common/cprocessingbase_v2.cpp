@@ -75,7 +75,12 @@ void CProcessingBase_v2::MessageHandler(void* pContext, tEReqType _reqType)
     case RT_ORDER_COMMISSION:
         recvOrdersCommission(pContext, _reqType);
         break;
-
+    case RT_ORDER_STATUS:
+        recvOrdersCommission(pContext, _reqType);
+        break;
+    case RT_ORDER_EXECUTION:
+        recvOrdersCommission(pContext, _reqType);
+        break;
 
 	}
 }

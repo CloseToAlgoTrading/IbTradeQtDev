@@ -79,7 +79,9 @@ bool CBaseModel::start()
     connectModels();
     for (auto model : m_Models) {
         if(true == model->getActiveStatus())
+        {
             model->start();
+        }
     }
 
     return true;

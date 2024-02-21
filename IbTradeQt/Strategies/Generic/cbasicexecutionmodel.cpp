@@ -16,6 +16,18 @@ CBasicExecutionModel::CBasicExecutionModel(QObject *parent)
 
 }
 
+bool CBasicExecutionModel::start()
+{
+    CBaseModel::start();
+    reqestOrderStatusSubscription();
+}
+
+bool CBasicExecutionModel::stop()
+{
+    CBaseModel::stop();
+    cancelOrderStatusSubscription();
+}
+
 void CBasicExecutionModel::processData(DataListPtr data)
 {
     static int tmp = 0;

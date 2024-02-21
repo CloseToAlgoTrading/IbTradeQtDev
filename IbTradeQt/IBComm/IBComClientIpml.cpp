@@ -571,8 +571,7 @@ void IBComClientImpl::orderStatus( OrderId orderId, const std::string& status, D
 		orderStatusObj.getParentId(), orderStatusObj.getLastFilledPrice(), orderStatusObj.getClientId(), orderStatusObj.getWhyHeld().toLocal8Bit().data());
         
 	
-    //m_DispatcherBrokerData.SendMessageToSubscribers(&orderStatusObj, id, RT_MKT_DEPTH_L2);
-
+    m_DispatcherBrokerData.SendMessageToSubscribers(&orderStatusObj, E_RQ_ID_ORDER_STATUS, RT_ORDER_STATUS);
 
 	return;
 
@@ -602,6 +601,8 @@ void IBComClientImpl::execDetailsEnd(int reqId)
 void IBComClientImpl::execDetails(int reqId, const Contract& contract, const Execution& execution) {
     qCDebug(IBComClientImplLog(), "ReqId: %d - %s, %s, %s - %s, %ld, %f\n", reqId, contract.symbol.c_str(), contract.secType.c_str(), contract.currency.c_str(),
             execution.execId.c_str(), execution.orderId, decimalToDouble(execution.shares));
+
+    //m_DispatcherBrokerData.SendMessageToSubscribers(&_commiss, E_RQ_ID_ORDER_STATUS, RT_ORDER_EXECUTION);
 }
 
 //---------------------------------------------------------------
