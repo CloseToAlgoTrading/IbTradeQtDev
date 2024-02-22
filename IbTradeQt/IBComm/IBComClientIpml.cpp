@@ -574,6 +574,10 @@ void IBComClientImpl::orderStatus( OrderId orderId, const std::string& status, D
 	
     m_DispatcherBrokerData.SendMessageToSubscribers(&orderStatusObj, E_RQ_ID_ORDER_STATUS, RT_ORDER_STATUS);
 
+    CExecutionReport execReport(22, "DD", 10.34, 3);
+    m_DispatcherBrokerData.SendMessageToSubscribers(&execReport, E_RQ_ID_ORDER_STATUS, RT_ORDER_EXECUTION);
+
+
 	return;
 
 
@@ -604,8 +608,6 @@ void IBComClientImpl::execDetails(int reqId, const Contract& contract, const Exe
             execution.execId.c_str(), execution.orderId, decimalToDouble(execution.shares), execution.avgPrice, execution.side.c_str(), execution.price);
 
     CExecutionReport execReport(reqId, "DD", execution.avgPrice, decimalToDouble(execution.shares));
-
-
     m_DispatcherBrokerData.SendMessageToSubscribers(&execReport, E_RQ_ID_ORDER_STATUS, RT_ORDER_EXECUTION);
 }
 

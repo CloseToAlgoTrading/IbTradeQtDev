@@ -16,6 +16,7 @@
 #include <QLoggingCategory>
 #include <QList>
 #include "GlobalDef.h"
+#include "cexecutionreport.h"
 
 #include "cprocessingbase.h"
 
@@ -68,6 +69,7 @@ private:
     void recvPosition(void* pContext, tEReqType _reqType);
     void recvPositionEnd();
     void recvOrdersCommission(void* pContext, tEReqType _reqType);
+    void recvExecutionReport(void* pContext, tEReqType _reqType);
 
     void recvOptionTickComputation(void* pContext, tEReqType _reqType);
 
@@ -170,6 +172,7 @@ signals:
     void signalRecvOptionTickComputation(const COptionTickComputation & obj);
     void signalEndRecvPosition();
     void signalRecvOrderCommission(const qreal & obj, const qreal & _rpnl);
+    void signalRecvExecutionReport(const CExecutionReport & obj);
     void signalRestartSubscription();
     void signalErrorNotFound(int id);
 

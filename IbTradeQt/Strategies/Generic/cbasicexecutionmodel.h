@@ -4,6 +4,7 @@
 
 #include "cbasicstrategy_V2.h"
 #include "dbmanager.h"
+#include "cexecutionreport.h"
 
 Q_DECLARE_LOGGING_CATEGORY(BasicExecutionModelLog);
 
@@ -24,6 +25,7 @@ private:
 
 public slots:
     virtual void processData(DataListPtr data) override;
+    virtual void slotRecvExecutionReport(const CExecutionReport & obj);
 
 
 };

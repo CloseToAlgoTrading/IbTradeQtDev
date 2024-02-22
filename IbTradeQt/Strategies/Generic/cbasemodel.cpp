@@ -84,6 +84,12 @@ bool CBaseModel::start()
         }
     }
 
+    // auto name = getName();
+    // auto _executionModel = getExecutionModel();
+    // if (nullptr != _executionModel)
+    //     _executionModel->start();
+    if (auto _executionModel = getExecutionModel()) _executionModel->start();
+
     return true;
 }
 
@@ -92,8 +98,11 @@ bool CBaseModel::stop()
     disconnectModels();
     for (auto model : m_Models) {
         model->stop();
+
+        if (auto _executionModel = getExecutionModel()) _executionModel->stop();
+
     }
-    return false;
+    return true;
 }
 
 void CBaseModel::setActivationState(bool state)

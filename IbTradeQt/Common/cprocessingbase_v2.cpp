@@ -76,10 +76,10 @@ void CProcessingBase_v2::MessageHandler(void* pContext, tEReqType _reqType)
         recvOrdersCommission(pContext, _reqType);
         break;
     case RT_ORDER_STATUS:
-        recvOrdersCommission(pContext, _reqType);
+        //recvOrdersCommission(pContext, _reqType);
         break;
     case RT_ORDER_EXECUTION:
-        recvOrdersCommission(pContext, _reqType);
+        recvExecutionReport(pContext, _reqType);
         break;
 
 	}
@@ -574,6 +574,12 @@ void CProcessingBase_v2::recvOrdersCommission(void* pContext, tEReqType _reqType
     Q_UNUSED(_reqType);
     //TODO: add normal commission object!
     emit signalRecvOrderCommission(*static_cast<qreal*>(pContext), -1.04);
+}
+
+void CProcessingBase_v2::recvExecutionReport(void *pContext, tEReqType _reqType)
+{
+    Q_UNUSED(_reqType);
+    emit signalRecvExecutionReport(*static_cast<CExecutionReport*>(pContext));
 }
 
 

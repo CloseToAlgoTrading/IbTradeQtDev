@@ -14,18 +14,19 @@ CBasicExecutionModel::CBasicExecutionModel(QObject *parent)
     m_Name = "Base Execution Model";
     this->setName("Base Execution Model");
 
+    QObject::connect(this, &CProcessingBase_v2::signalRecvExecutionReport, this, &CBasicExecutionModel::slotRecvExecutionReport, Qt::AutoConnection);
 }
 
 bool CBasicExecutionModel::start()
 {
-    CBaseModel::start();
     reqestOrderStatusSubscription();
+    return true;
 }
 
 bool CBasicExecutionModel::stop()
 {
-    CBaseModel::stop();
     cancelOrderStatusSubscription();
+    return false;
 }
 
 void CBasicExecutionModel::processData(DataListPtr data)
@@ -96,4 +97,22 @@ void CBasicExecutionModel::processData(DataListPtr data)
     }
     tmp++;
 }
+
+void CBasicExecutionModel::slotRecvExecutionReport(const CExecutionReport &obj)
+{
+    OpenPosition position;
+
+    QDateTime currentDateTime = QDateTime::currentDateTime();
+
+    position.date = currentDateTime.toString("yyyy-MM-dd HH:mm:ss.zzz");
+    position.fee = 0.5;
+    position.price = 100.0;
+    position.quantity = 100;
+    position.status = PS_INIT_OPEN;
+    position.strategyId = obj.getId();
+    position.symbol = "NVDA";
+
+    m_dbManager.addCurrentPositionsState(position);
+}
+
 
