@@ -1,0 +1,27 @@
+@startuml(id=pipeline)
+
+skinparam componentStyle uml2
+
+component Strategy
+
+component "Selection Model" as selection
+component "Alpha Model" as alpha
+component "Rebalance Model" as rebalance
+component "Risk Model" as risk
+component "Execution Model" as execution
+
+database DB
+component IB
+
+selection -d-> alpha : list of tickers
+alpha -d-> rebalance : list of tickers + directions
+rebalance <- DB : open positions
+rebalance -d-> risk : 
+
+'selection <.r. IB : historical data 
+'alpha <.r. IB : hist or realtime data
+'rebalance <.r. IB : hist data
+
+
+
+@enduml
