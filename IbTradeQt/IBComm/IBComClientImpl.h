@@ -127,7 +127,7 @@ public:
     // Parameter: const qint32 _id
     // Parameter: const reqPlaceOrder_t & _reqOrder
     //************************************
-    qint32 reqPlaceOrderAPI(const QString& _symbol, const qint32 _quantity, const orderAction _action) override;
+    qint32 reqPlaceOrderAPI(const QString& _symbol, const qint32 _quantity, const eOrderAction_t _action) override;
 
 
     //************************************

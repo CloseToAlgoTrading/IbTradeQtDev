@@ -53,10 +53,11 @@ inline QSqlQuery query_getOpenPositions(const quint16 strategyId) {
 
 inline QSqlQuery  query_addNewTrade(const DbTrade& trade) {
     QSqlQuery query;
-    query.prepare("INSERT INTO Trades (strategyId, symbol, quantity, price, pnl, fee, date, tradeType) "
-                  "VALUES (:strategyId, :symbol, :quantity, :price, :pnl, :fee, :date, :tradeType)");
+    query.prepare("INSERT INTO Trades (strategyId, execId, symbol, quantity, price, pnl, fee, date, tradeType) "
+                  "VALUES (:strategyId, :execId, :symbol, :quantity, :price, :pnl, :fee, :date, :tradeType)");
 
     query.bindValue(":strategyId", trade.strategyId);
+    query.bindValue(":execId", trade.execId);
     query.bindValue(":symbol", trade.symbol);
     query.bindValue(":quantity", trade.quantity);
     query.bindValue(":price", trade.price);

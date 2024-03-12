@@ -15,6 +15,7 @@ public:
         , m_Ticker("")
         , m_avgPrice(0.0)
         , m_shares(0.0)
+        , m_ExecId("")
     {}
 
     CExecutionReportData(const CExecutionReportData &other) : QSharedData(other)
@@ -22,6 +23,7 @@ public:
         , m_Ticker(other.m_Ticker)
         , m_avgPrice(other.m_avgPrice)
         , m_shares(other.m_shares)
+        , m_ExecId(other.m_ExecId)
     {}
 
     ~CExecutionReportData(){}
@@ -30,6 +32,7 @@ public:
     QString     m_Ticker;
     qreal       m_avgPrice;
     qreal       m_shares;
+    QString     m_ExecId;
 
 
 };
@@ -41,7 +44,8 @@ public:
     CExecutionReport(qint32 _reqId,
                      QString _ticker,
                      qreal   _avgPrice,
-                     qreal   _shares
+                     qreal   _shares,
+                     QString _ExecId
               );
     ~CExecutionReport(){}
 
@@ -56,13 +60,10 @@ private:
 
 public:
     qint32 getId() const { return d->m_reqId; }
-    // void setAccount(QString val) { d->m_account = val; }
-    // Contract getContract() const { return d->m_contract; }
-    // void setContract(Contract val) { d->m_contract = val; }
-    // qreal  getPos() const { return d->m_pos; }
-    // void setPos(qreal  val) { d->m_pos = val; }
-    // qreal getAvgCost() const { return d->m_avgCost; }
-    // void setAvgCost(qreal val) { d->m_avgCost = val; }
+    QString getTicker() const { return d->m_Ticker; }
+    qreal getAvgPrice() const { return d->m_avgPrice; }
+    qreal getAmount() const { return d->m_shares; }
+    QString getExecId() const { return d->m_ExecId; }
 
 };
 }

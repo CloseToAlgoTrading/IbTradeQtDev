@@ -202,7 +202,7 @@ void IBComClientImpl::cancelPositionAPI(const qint32 _id)
 }
 
 //---------------------------------------------------------------
-qint32 IBComClientImpl::reqPlaceOrderAPI(const QString& _symbol, const qint32 _quantity, const orderAction _action)
+qint32 IBComClientImpl::reqPlaceOrderAPI(const QString& _symbol, const qint32 _quantity, const eOrderAction_t _action)
 {
     reqPlaceOrder_t orderToPlace;
     qint32 retOrderId = getNexValidId();
@@ -210,7 +210,7 @@ qint32 IBComClientImpl::reqPlaceOrderAPI(const QString& _symbol, const qint32 _q
     orderToPlace.contract.symbol = _symbol.toLocal8Bit().data();
     orderToPlace.contract.secType = "STK";
     orderToPlace.contract.exchange = "SMART";
-    orderToPlace.contract.primaryExchange = "ISLAND";
+    //orderToPlace.contract.primaryExchange = "ISLAND";
 
     // fill order
     if (OA_BUY == _action)
@@ -564,7 +564,7 @@ void IBComClientImpl::orderStatus( OrderId orderId, const std::string& status, D
 	//	QString _whyHeld
 
     COrderStatus orderStatusObj((qint32)orderId, QString::fromLocal8Bit(status.data(), status.size()), decimalToDouble(filled), decimalToDouble(remaining), avgFillPrice,
-		permId, parentId, lastFillPrice, clientId, QString::fromLocal8Bit(whyHeld.data(), whyHeld.size()));
+        permId, parentId, lastFillPrice, clientId, QString::fromLocal8Bit(whyHeld.data(), whyHeld.size()), "", OA_BUY);
 
 
 	qCDebug(IBComClientImplLog(), "orderId = %d, status %s, filled = %d, remaining = %f, avgFillPrice = %f, permId = %d, parentId = %d, lastFillPrice = %f, clientId = %d, whyHeld =%s", 
@@ -573,10 +573,6 @@ void IBComClientImpl::orderStatus( OrderId orderId, const std::string& status, D
         
 	
     m_DispatcherBrokerData.SendMessageToSubscribers(&orderStatusObj, E_RQ_ID_ORDER_STATUS, RT_ORDER_STATUS);
-
-    CExecutionReport execReport(22, "DD", 10.34, 3);
-    m_DispatcherBrokerData.SendMessageToSubscribers(&execReport, E_RQ_ID_ORDER_STATUS, RT_ORDER_EXECUTION);
-
 
 	return;
 
@@ -607,7 +603,7 @@ void IBComClientImpl::execDetails(int reqId, const Contract& contract, const Exe
     qCDebug(IBComClientImplLog(), "ReqId: %d - %s, %s, %s - %s, %ld, %f, %f, %s, %f \n", reqId, contract.symbol.c_str(), contract.secType.c_str(), contract.currency.c_str(),
             execution.execId.c_str(), execution.orderId, decimalToDouble(execution.shares), execution.avgPrice, execution.side.c_str(), execution.price);
 
-    CExecutionReport execReport(reqId, "DD", execution.avgPrice, decimalToDouble(execution.shares));
+    CExecutionReport execReport(reqId, contract.symbol.c_str(), execution.avgPrice, decimalToDouble(execution.shares), execution.execId.c_str());
     m_DispatcherBrokerData.SendMessageToSubscribers(&execReport, E_RQ_ID_ORDER_STATUS, RT_ORDER_EXECUTION);
 }
 

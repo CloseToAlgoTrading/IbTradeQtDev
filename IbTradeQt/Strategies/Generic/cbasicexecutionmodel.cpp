@@ -10,6 +10,7 @@ Q_LOGGING_CATEGORY(BasicExecutionModelLog, "BasicExecutionModel.PM");
 CBasicExecutionModel::CBasicExecutionModel(QObject *parent)
     : CBasicStrategy_V2{parent}
     , m_dbManager(parent)
+    , m_Oder()
 {
     m_Name = "Base Execution Model";
     this->setName("Base Execution Model");
@@ -46,56 +47,14 @@ void CBasicExecutionModel::processData(DataListPtr data)
     //     }
     // }
 
-    requestPlaceMarketOrder("NVDA", 30, OA_BUY);
+    m_Oder.setRemaining(1500);
+    m_Oder.setDirection(OA_BUY);
 
-    OpenPosition position;
+    auto id = requestPlaceMarketOrder("BMW", 1500, OA_BUY);
 
-    QDateTime currentDateTime = QDateTime::currentDateTime();
+    m_Oder.setId(id);
 
-    if(tmp == 0)
-    {
-        position.date = currentDateTime.toString("yyyy-MM-dd HH:mm:ss.zzz");
-        position.fee = 0.5;
-        position.price = 100.0;
-        position.quantity = 100;
-        position.status = PS_INIT_OPEN;
-        position.strategyId = 10;
-        position.symbol = "MVDA";
 
-        m_dbManager.addCurrentPositionsState(position);
-    }
-    if(tmp == 1)
-    {
-        position.date = currentDateTime.toString("yyyy-MM-dd HH:mm:ss.zzz");
-        position.fee = 0.5;
-        position.price = 101.0;
-        position.quantity = 100;
-        position.status = PS_PARTIALY_CLOSED;
-        position.strategyId = 10;
-        position.symbol = "MVDA";
-        m_dbManager.addCurrentPositionsState(position);
-
-        position.date = currentDateTime.toString("yyyy-MM-dd HH:mm:ss.zzz");
-        position.fee = 0.5;
-        position.price = 100.0;
-        position.quantity = 50;
-        position.status = PS_OPEN;
-        position.strategyId = 10;
-        position.symbol = "MVDA";
-        m_dbManager.addCurrentPositionsState(position);
-    }
-    if(tmp == 2)
-    {
-        position.date = currentDateTime.toString("yyyy-MM-dd HH:mm:ss.zzz");
-        position.fee = 0.5;
-        position.price = 102.0;
-        position.quantity = 50;
-        position.status = PS_CLOSED;
-        position.strategyId = 10;
-        position.symbol = "MVDA";
-        m_dbManager.addCurrentPositionsState(position);
-    }
-    tmp++;
 }
 
 void CBasicExecutionModel::slotRecvExecutionReport(const CExecutionReport &obj)
@@ -104,15 +63,38 @@ void CBasicExecutionModel::slotRecvExecutionReport(const CExecutionReport &obj)
 
     QDateTime currentDateTime = QDateTime::currentDateTime();
 
-    position.date = currentDateTime.toString("yyyy-MM-dd HH:mm:ss.zzz");
-    position.fee = 0.5;
-    position.price = 100.0;
-    position.quantity = 100;
-    position.status = PS_INIT_OPEN;
-    position.strategyId = obj.getId();
-    position.symbol = "NVDA";
+    m_Oder.setExecId(obj.getExecId());
+    m_Oder.setFilled(obj.getAmount());
 
-    m_dbManager.addCurrentPositionsState(position);
+    if(0 >= m_Oder.getRemaining())
+    {
+        qCDebug(BasicExecutionModelLog(), "Done!");
+    }
+    qCDebug(BasicExecutionModelLog(), "%f/%f", m_Oder.getFilled(), m_Oder.getRemaining());
+
+
+    // position.date = currentDateTime.toString("yyyy-MM-dd HH:mm:ss.zzz");
+    // position.fee = 0.0;
+    // position.price = obj.getAvgPrice();
+    // position.quantity = obj.getAmount();
+    // position.status = PS_INIT_OPEN;
+    // position.strategyId = obj.getId();
+    // position.symbol = obj.getTicker();
+
+
+
+    DbTrade newTrade;
+    newTrade.date = currentDateTime.toString("yyyy-MM-dd HH:mm:ss.zzz");
+    newTrade.strategyId = 1;  // Example data
+    newTrade.symbol = obj.getTicker();
+    newTrade.quantity = obj.getAmount();
+    newTrade.price = obj.getAvgPrice();
+    newTrade.execId = obj.getExecId();
+    // newTrade.pnl = 20.0;
+    // newTrade.fee = 0.5;
+    newTrade.tradeType = "BUY";
+
+    m_dbManager.signalAddNewTrade(newTrade);
 }
 
 

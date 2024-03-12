@@ -8,7 +8,7 @@ COrderStatus::COrderStatus()
 
 }
 
-COrderStatus::COrderStatus(qint32 _id, QString _status, qint32 _filled, qreal _remaining, qreal _avgFillPrice, qint32 _permId, qint32 _parentId, qreal _lastFilledPrice, qint32 _clientId, QString _whyHeld )
+COrderStatus::COrderStatus(qint32 _id, QString _status, qreal _filled, qreal _remaining, qreal _avgFillPrice, qint32 _permId, qint32 _parentId, qreal _lastFilledPrice, qint32 _clientId, QString _whyHeld, QString _ExecId, eOrderAction_t _Direction )
     : d(new COrderStatusData)
 {
     setId(_id);
@@ -21,6 +21,8 @@ COrderStatus::COrderStatus(qint32 _id, QString _status, qint32 _filled, qreal _r
     setLastFilledPrice(_lastFilledPrice);
     setClientId(_clientId);
     setWhyHeld(_whyHeld);
+    setExecId(_ExecId);
+    setDirection(_Direction);
 }
 
 COrderStatus & COrderStatus::operator=(const COrderStatus &other)

@@ -28,7 +28,8 @@ struct OpenPosition {
 
 
 struct DbTrade {
-    int tradeId;       // Unique identifier for the trade
+    int tradeId;      // Unique identifier for the trade
+    QString execId;   // Unique identifier for thetrade execution
     int strategyId;    // Associated Strategy ID
     QString symbol;    // Trading symbol
     int quantity;      // Quantity of the trade
@@ -39,7 +40,7 @@ struct DbTrade {
     QString tradeType; // Type of the trade (e.g., BUY, SELL)
 
     // Default constructor
-    DbTrade() : tradeId(0), strategyId(0), quantity(0), price(0.0), pnl(0.0), fee(0.0), tradeType("BUY") {}
+    DbTrade() : tradeId(0), execId(""), strategyId(0), quantity(0), price(0.0), pnl(0.0), fee(0.0), tradeType("BUY") {}
 };
 
 #endif // DBDATATYPES_H

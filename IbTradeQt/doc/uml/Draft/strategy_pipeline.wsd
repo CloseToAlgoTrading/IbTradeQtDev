@@ -2,7 +2,7 @@
 
 skinparam componentStyle uml2
 
-component Strategy
+' component Strategy
 
 component "Selection Model" as selection
 component "Alpha Model" as alpha
@@ -10,13 +10,32 @@ component "Rebalance Model" as rebalance
 component "Risk Model" as risk
 component "Execution Model" as execution
 
-database DB
-component IB
+database DB {
+    rectangle "Execution Table" as DB_ET
+    rectangle "Open Positions" as DB_OP
+}
+'component DataProvider
+'component OrderHandling
 
 selection -d-> alpha : list of tickers
 alpha -d-> rebalance : list of tickers + directions
-rebalance <- DB : open positions
-rebalance -d-> risk : 
+rebalance -d-> risk : list of tickers + direction + amount
+risk -d-> execution : execution order
+
+execution .> DB_ET : execution details
+DB_ET -u-> DB_OP : update positions
+DB_OP .> rebalance : open positions
+DB_OP .> risk : open positions
+
+
+
+' DataProvider -> selection : historical data
+' DataProvider -> alpha : historical data
+' DataProvider -> rebalance : historical data
+' DataProvider -> risk : historical & realtime data
+' DataProvider -> execution : historical & realtime data
+
+
 
 'selection <.r. IB : historical data 
 'alpha <.r. IB : hist or realtime data

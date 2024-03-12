@@ -5,6 +5,7 @@
 #include "cbasicstrategy_V2.h"
 #include "dbmanager.h"
 #include "cexecutionreport.h"
+#include "corderstatus.h"
 
 Q_DECLARE_LOGGING_CATEGORY(BasicExecutionModelLog);
 
@@ -22,6 +23,7 @@ public:
 
 private:
     DBManager m_dbManager;
+    COrderStatus m_Oder;
 
 public slots:
     virtual void processData(DataListPtr data) override;

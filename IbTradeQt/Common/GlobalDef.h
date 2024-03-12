@@ -93,6 +93,11 @@ struct reqPlaceOrder_t
 
 #define BAR_SIZE_1_MONTH "1 month"
 
+enum eOrderAction_t
+{
+    OA_BUY,
+    OA_SELL
+};
 
 enum eBarSize_t
 {

@@ -7,6 +7,7 @@
 
 namespace IBDataTypes
 {
+
     //------------------------------------------------------
     class COrderStatusData : public QSharedData
     {
@@ -21,6 +22,8 @@ namespace IBDataTypes
             , m_lastFilledPrice(0)
             , m_clientId(0)
             , m_whyHeld("")
+            , m_ExecId("")
+            , m_Direction(OA_BUY)
         {}
 
         COrderStatusData(const COrderStatusData &other) : QSharedData(other)
@@ -34,6 +37,8 @@ namespace IBDataTypes
             , m_lastFilledPrice(other.m_lastFilledPrice)
             , m_clientId(other.m_clientId)
             , m_whyHeld(other.m_whyHeld)
+            , m_ExecId(other.m_ExecId)
+            , m_Direction(other.m_Direction)
         {}
 
         ~COrderStatusData(){}
@@ -62,7 +67,7 @@ namespace IBDataTypes
 
         qint32	m_id;
         QString m_status;
-        qint32	m_filled;
+        qreal	m_filled;
         qreal	m_remaining;
         qreal	m_avgFillPrice;
         qint32	m_permId;
@@ -70,6 +75,9 @@ namespace IBDataTypes
         qreal	m_lastFilledPrice;
         qint32	m_clientId;
         QString m_whyHeld;
+
+        QString m_ExecId;
+        eOrderAction_t m_Direction;
 
     };
     //------------------------------------------------------
@@ -79,14 +87,16 @@ namespace IBDataTypes
         COrderStatus();
         COrderStatus(qint32	_id,
             QString _status,
-            qint32	_filled,
+            qreal	_filled,
             qreal	_remaining,
             qreal	_avgFillPrice,
             qint32	_permId,
             qint32	_parentId,
             qreal	_lastFilledPrice,
             qint32	_clientId,
-            QString _whyHeld
+            QString _whyHeld,
+            QString _ExecId,
+            eOrderAction_t _Direction
             );
         ~COrderStatus(){}
 
@@ -104,8 +114,8 @@ namespace IBDataTypes
         void setId(qint32 val) { d->m_id = val; }
         QString getStatus() const { return d->m_status; }
         void setStatus(QString val) { d->m_status = val; }
-        qint32 getFilled() const { return d->m_filled; }
-        void setFilled(qint32 val) { d->m_filled = val; }
+        qreal getFilled() const { return d->m_filled; }
+        void setFilled(qreal val) { d->m_filled += val; d->m_remaining -= val;}
         qreal getRemaining() const { return d->m_remaining; }
         void setRemaining(qreal val) { d->m_remaining = val; }
         qreal getAvgFillPrice() const { return d->m_avgFillPrice; }
@@ -120,6 +130,10 @@ namespace IBDataTypes
         void setClientId(qint32 val) { d->m_clientId = val; }
         QString getWhyHeld() const { return d->m_whyHeld; }
         void setWhyHeld(QString val) { d->m_whyHeld = val; }
+        QString getExecId() const { return d->m_ExecId; }
+        void setExecId(QString val) { d->m_ExecId = val; }
+        eOrderAction_t getDirection() const { return d->m_Direction; }
+        void setDirection(eOrderAction_t val) { d->m_Direction = val; }
 
     };
 }

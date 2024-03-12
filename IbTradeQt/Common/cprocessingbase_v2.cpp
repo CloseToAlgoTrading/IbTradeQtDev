@@ -201,7 +201,7 @@ bool CProcessingBase_v2::cancelCalculateOptionPrice(const QString &_symbol)
 }
 
 //----------------------------------------------------------
-qint32 CProcessingBase_v2::requestPlaceMarketOrder(const QString& _symbol, const qint32 _quantity, const orderAction _action)
+qint32 CProcessingBase_v2::requestPlaceMarketOrder(const QString& _symbol, const qint32 _quantity, const eOrderAction_t _action)
 {
     //send order
     return m_Client->getClien()->reqPlaceOrderAPI(_symbol, _quantity, _action);

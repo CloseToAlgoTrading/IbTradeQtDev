@@ -32,20 +32,20 @@ CApplicationController::CApplicationController(QObject *parent):
     QObject::connect(pMainView->getUi().actionSave, &QAction::triggered, this, &CApplicationController::slotStoreModelTree);
 
     /*** Test Code ***/
-    DBManager m_dbManager;
-    QDateTime currentDateTime = QDateTime::currentDateTime();
+    // DBManager m_dbManager;
+    // QDateTime currentDateTime = QDateTime::currentDateTime();
 
-    DbTrade newTrade;
-    newTrade.strategyId = 1;  // Example data
-    newTrade.symbol = "XXX";
-    newTrade.quantity = -200;
-    newTrade.price = 300.0;
-    newTrade.pnl = 20.0;
-    newTrade.fee = 0.5;
-    newTrade.date = currentDateTime.toString("yyyy-MM-dd HH:mm:ss.zzz");
-    newTrade.tradeType = "SELL";
+    // DbTrade newTrade;
+    // newTrade.strategyId = 1;  // Example data
+    // newTrade.symbol = "XXX";
+    // newTrade.quantity = -200;
+    // newTrade.price = 300.0;
+    // newTrade.pnl = 20.0;
+    // newTrade.fee = 0.5;
+    // newTrade.date = currentDateTime.toString("yyyy-MM-dd HH:mm:ss.zzz");
+    // newTrade.tradeType = "SELL";
 
-    m_dbManager.signalAddNewTrade(newTrade);
+    // m_dbManager.signalAddNewTrade(newTrade);
 
     /******* xxx *********/
 
