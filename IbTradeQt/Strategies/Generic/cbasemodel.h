@@ -35,6 +35,10 @@ public:
     virtual bool start() override;
     virtual bool stop() override;
 
+    virtual QUuid getId() const override;
+    virtual void setId(const QUuid& id) override;
+
+
     virtual void setActivationState(bool state) override;
     virtual void setParentActivationState(bool state) override;
 
@@ -88,6 +92,8 @@ protected:
     QVariantMap m_ParametersMap;
     QVariantMap m_InfoMap;
     QString m_Name;
+    QUuid m_uuid;
+
     //CBrokerDataProvider m_DataProvider;
 
     QVariantMap m_assetList;

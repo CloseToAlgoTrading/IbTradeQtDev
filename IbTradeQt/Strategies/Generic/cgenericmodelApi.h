@@ -8,6 +8,7 @@
 //#include "IBrokerAPI.h"
 #include <QEnableSharedFromThis>
 #include "ModelType.h"
+#include <QUuid>
 
 class CGenericModelApi;
 class CBrokerDataProvider;
@@ -40,6 +41,9 @@ public:
     virtual bool getActiveStatus() const = 0;
     virtual void setParentActivationState(bool state) = 0;
     virtual bool getParentActivatedState() const = 0;
+
+    virtual QUuid getId() const = 0;
+    virtual void setId(const QUuid& id) = 0;
 
     virtual bool start() = 0;
     virtual bool stop() = 0;

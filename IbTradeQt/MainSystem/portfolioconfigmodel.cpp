@@ -12,6 +12,7 @@
 #include "cbasicroot.h"
 
 #include "ModelType.h"
+#include <QUuid>
 
 #define START_OF_WORKING_NODES (3u)
 
@@ -234,6 +235,7 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
             {
                 model = QSharedPointer<CBasicAccount>::create();
                 model->setName("Account");
+                model->setId(QUuid::createUuid());
                 //model->setBrokerDataProvider(this->m_brokerInterface);
                 model->setParentActivationState(true);
                 //model->setParentModel(static_cast<ptrGenericModelType>(m_pRoot));
@@ -247,6 +249,7 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
                 {
                     model = QSharedPointer<CBasicPortfolio>::create();
                     model->setName("Portfolio");
+                    model->setId(QUuid::createUuid());
                     model->setParentActivationState(account->getParentActivatedState());
                     model->setParentModel(account.data());
                     account->addModel(model);
@@ -261,6 +264,7 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
                 if((nullptr != portfolio) && (nullptr != this->m_brokerInterface))
                 {
                     model = CStrategyFactory::createNewStrategy(ModelType::STRATEGY_MOMENTUM);
+                    model->setId(QUuid::createUuid());
                     model->setParentActivationState(portfolio->getParentActivatedState());
                     model->setParentModel(portfolio.data());
                     portfolio->addModel(model);
@@ -281,6 +285,7 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
                         removeModel(this->index(_offset,0,workingIndex));
                     }
                     model = CStrategyFactory::createNewStrategy(ModelType::STRATEGY_SELECTION_MODEL);
+                    model->setId(QUuid::createUuid());
                     model->setParentActivationState(strategy->getParentActivatedState());
                     model->setParentModel(strategy.data());
                     strategy->addSelectionModel(model);
@@ -301,6 +306,7 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
                         removeModel(this->index(_offset+1,0,workingIndex));
                     }
                     model = CStrategyFactory::createNewStrategy(ModelType::STRATEGY_ALPHA_MODEL);
+                    model->setId(QUuid::createUuid());
                     model->setParentActivationState(strategy->getParentActivatedState());
                     model->setParentModel(strategy.data());
                     strategy->addAlphaModel(model);
@@ -322,6 +328,7 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
                         removeModel(this->index(_offset+2,0,workingIndex));
                     }
                     model = CStrategyFactory::createNewStrategy(ModelType::STRATEGY_REBALANCE_MODEL);
+                    model->setId(QUuid::createUuid());
                     model->setParentActivationState(strategy->getParentActivatedState());
                     model->setParentModel(strategy.data());
                     strategy->addRebalanceModel(model);
@@ -343,6 +350,7 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
                         removeModel(this->index(_offset+3,0,workingIndex));
                     }
                     model = CStrategyFactory::createNewStrategy(ModelType::STRATEGY_RISK_MODEL);
+                    model->setId(QUuid::createUuid());
                     model->setParentActivationState(strategy->getParentActivatedState());
                     model->setParentModel(strategy.data());
                     strategy->addRiskModel(model);
@@ -364,6 +372,7 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
                         removeModel(this->index(_offset+4,0,workingIndex));
                     }
                     model = CStrategyFactory::createNewStrategy(ModelType::STRATEGY_EXECTION_MODEL);
+                    model->setId(QUuid::createUuid());
                     model->setParentActivationState(strategy->getParentActivatedState());
                     model->setParentModel(strategy.data());
                     strategy->addExecutionModel(model);

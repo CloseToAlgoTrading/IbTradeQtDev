@@ -62,7 +62,7 @@ bool DBHandler::initializeDatabase() {
     success |= createTableIfNotExists("Trades",
                            "CREATE TABLE IF NOT EXISTS Trades ("
                            "execId VARCHAR(50) PRIMARY KEY, "
-                           "strategyId INT, "
+                           "strategyId VARCHAR(64), "
                            "symbol VARCHAR(10), "
                            "quantity INT, "
                            "price DOUBLE, "
@@ -76,7 +76,7 @@ bool DBHandler::initializeDatabase() {
     // Positions Table
     success |= createTableIfNotExists("Positions",
                            R"(CREATE TABLE IF NOT EXISTS Positions (
-                                    strategyId INT,
+                                    strategyId VARCHAR(64),
                                     symbol VARCHAR(10),
                                     quantity INT DEFAULT 0,
                                     averageOpenPrice DOUBLE DEFAULT 0,
@@ -94,7 +94,7 @@ bool DBHandler::initializeDatabase() {
     success |= createTableIfNotExists("open_positions",
                                      "CREATE TABLE IF NOT EXISTS open_positions ("
                                            "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-                                           "strategyId INTEGER, "
+                                           "strategyId VARCHAR(64), "
                                            "symbol VARCHAR(10), "
                                            "quantity INTEGER, "
                                            "price REAL, "
@@ -162,7 +162,7 @@ void DBHandler::fetchOpenPositionsSlot(const quint16 strategy_id)
         while (query.next()) {
             OpenPosition position;
             position.id = query.value("id").toInt();
-            position.strategyId = query.value("strategyId").toInt();
+            position.strategyId = query.value("strategyId").toString();
             position.symbol = query.value("symbol").toString();
             position.quantity = query.value("quantity").toInt();
             position.price = query.value("price").toDouble();

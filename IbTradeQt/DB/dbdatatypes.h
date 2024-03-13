@@ -12,7 +12,7 @@ enum e_positionStatus {
 
 struct OpenPosition {
     int id;            // Unique identifier, auto-incremented
-    int strategyId;    // Identifier for the strategy
+    QString strategyId;    // Identifier for the strategy
     QString symbol; // Trading symbol, up to 10 characters
     int quantity;      // Quantity of the position
     double price;      // Price of the position
@@ -23,13 +23,13 @@ struct OpenPosition {
 
     // Default constructor
     OpenPosition()
-        : id(0), strategyId(0), quantity(0), price(0.0), pnl(0.0), fee(0.0), date(""), status(static_cast<int>(PS_INIT_OPEN)) {}
+        : id(0), strategyId(""), quantity(0), price(0.0), pnl(0.0), fee(0.0), date(""), status(static_cast<int>(PS_INIT_OPEN)) {}
 };
 
 
 struct DbTrade {
     QString execId;   // Unique identifier for thetrade execution
-    int strategyId;    // Associated Strategy ID
+    QString strategyId;    // Associated Strategy ID
     QString symbol;    // Trading symbol
     int quantity;      // Quantity of the trade
     double price;      // Price at which the trade was executed
@@ -39,7 +39,7 @@ struct DbTrade {
     QString tradeType; // Type of the trade (e.g., BUY, SELL)
 
     // Default constructor
-    DbTrade() : execId(""), strategyId(0), quantity(0), price(0.0), pnl(0.0), fee(0.0), tradeType("BUY") {}
+    DbTrade() : execId(""), strategyId(""), quantity(0), price(0.0), pnl(0.0), fee(0.0), tradeType("BUY") {}
 };
 
 struct DbTradeCommission {

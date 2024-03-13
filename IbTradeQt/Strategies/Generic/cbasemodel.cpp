@@ -105,6 +105,16 @@ bool CBaseModel::stop()
     return true;
 }
 
+QUuid CBaseModel::getId() const
+{
+    return m_uuid;
+}
+
+void CBaseModel::setId(const QUuid &id)
+{
+    this->m_uuid = id;
+}
+
 void CBaseModel::setActivationState(bool state)
 {
     this->m_InfoMap["IsStarted"] = state;
@@ -149,6 +159,9 @@ QJsonObject CBaseModel::toJson() const
     QJsonObject json;
 
     // Serialize m_Name
+    json["m_Name"] = m_Name.toStdString().c_str();
+    json["m_uuid"] = m_uuid.toString(QUuid::WithoutBraces).toStdString().c_str();
+
     json["modelType"] = static_cast<int>(modelType());
 
     // Serialize m_ParametersMap
@@ -210,6 +223,9 @@ void CBaseModel::fromJson(const QJsonObject &json)
     };
 
     // from json
+    m_Name = json["m_Name"].toString();
+    setId(QUuid::fromString(json["m_uuid"].toString()));
+
     m_ParametersMap = json["parameters"].toObject().toVariantMap();
     m_InfoMap = json["info"].toObject().toVariantMap();
     m_assetList = json["assetList"].toObject().toVariantMap();

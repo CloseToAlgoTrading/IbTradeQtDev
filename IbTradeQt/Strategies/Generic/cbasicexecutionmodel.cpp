@@ -76,7 +76,7 @@ void CBasicExecutionModel::slotRecvExecutionReport(const CExecutionReport &obj)
 
     DbTrade newTrade;
     newTrade.date = currentDateTime.toString("yyyy-MM-dd HH:mm:ss.zzz");
-    newTrade.strategyId = 1;  // Example data
+    newTrade.strategyId = this->getId().toString(QUuid::WithoutBraces);  // Example data
     newTrade.symbol = obj.getTicker();
     newTrade.quantity = obj.getAmount();
     newTrade.price = obj.getAvgPrice();
