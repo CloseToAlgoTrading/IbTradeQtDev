@@ -25,6 +25,7 @@
 #include "coptiontickcomputation.h"
 #include "ctickbytickalllast.h"
 #include "cexecutionreport.h"
+#include "ccommissionreport.h"
 
 #include "Order.h"
 #include "OrderState.h"
@@ -612,8 +613,9 @@ void IBComClientImpl::commissionReport(const CommissionReport& commissionReport)
 {
     qCDebug(IBComClientImplLog(), "%s - %f %s RPNL %f\n", commissionReport.execId.c_str(), commissionReport.commission, commissionReport.currency.c_str(), commissionReport.realizedPNL);
 
-    qreal _commiss = commissionReport.commission;
-    m_DispatcherBrokerData.SendMessageToSubscribers(&_commiss, E_RQ_ID_ORDER_STATUS, RT_ORDER_COMMISSION);
+    CCommissionReport _commReport(commissionReport.execId.c_str(), commissionReport.commission, commissionReport.currency.c_str(), commissionReport.realizedPNL, commissionReport.yield, commissionReport.yieldRedemptionDate);
+
+    m_DispatcherBrokerData.SendMessageToSubscribers(&_commReport, E_RQ_ID_ORDER_STATUS, RT_ORDER_COMMISSION);
 }
 
 //---------------------------------------------------------------

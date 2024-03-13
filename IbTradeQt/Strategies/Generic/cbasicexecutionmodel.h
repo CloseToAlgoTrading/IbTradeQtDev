@@ -6,6 +6,7 @@
 #include "dbmanager.h"
 #include "cexecutionreport.h"
 #include "corderstatus.h"
+#include "ccommissionreport.h"
 
 Q_DECLARE_LOGGING_CATEGORY(BasicExecutionModelLog);
 
@@ -28,8 +29,7 @@ private:
 public slots:
     virtual void processData(DataListPtr data) override;
     virtual void slotRecvExecutionReport(const CExecutionReport & obj);
-
-
+    virtual void slotRecvCommissionReport(const CCommissionReport & obj);
 };
 
 #endif // CBASICEXECUTIONMODEL_H

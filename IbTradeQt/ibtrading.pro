@@ -41,6 +41,7 @@ CONFIG += c++17
 UI_DIR = $$PWD/GeneratedIncludes
 
 SOURCES += \
+    CObjects/ccommissionreport.cpp \
     CObjects/cdeltaobject.cpp \
     CObjects/cexecutionreport.cpp \
     Common/cprocessingbase_v2.cpp \
@@ -140,6 +141,7 @@ SOURCES += \
 
 
 HEADERS += \
+    CObjects/ccommissionreport.h \
     CObjects/cdeltaobject.h \
     CObjects/cexecutionreport.h \
     Common/cprocessingbase_v2.h \

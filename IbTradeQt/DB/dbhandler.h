@@ -23,6 +23,7 @@ signals:
 public slots:
     void slotAddPositionQuery(const OpenPosition& position);
     void slotAddNewTrade(const DbTrade& trade);
+    void slotUpdateTradeCommission(const DbTradeCommission& tradeComm);
     void initializeConnectionSlot();
     void fetchOpenPositionsSlot(const quint16 strategy_id);
 

@@ -9,6 +9,7 @@
 #include "dbdatatypes.h"
 
 
+
 class DBManager : public QObject
 {
     Q_OBJECT
@@ -22,6 +23,8 @@ signals:
     void signalAddPositionQuery(const OpenPosition& position);
     void signalExecuteGetOpenPositionsQuery(const quint16 strategy_id);
     void signalAddNewTrade(const DbTrade& trade);
+    void signalUpdateTradeCommision(const DbTradeCommission& trade);
+
 private slots:
     void onOpenPositionsFetched(const QList<OpenPosition>& positions);
 

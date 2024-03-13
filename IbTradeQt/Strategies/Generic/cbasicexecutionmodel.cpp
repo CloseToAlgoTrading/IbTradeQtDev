@@ -16,6 +16,7 @@ CBasicExecutionModel::CBasicExecutionModel(QObject *parent)
     this->setName("Base Execution Model");
 
     QObject::connect(this, &CProcessingBase_v2::signalRecvExecutionReport, this, &CBasicExecutionModel::slotRecvExecutionReport, Qt::AutoConnection);
+    QObject::connect(this, &CProcessingBase_v2::signalRecvCommissionReport, this, &CBasicExecutionModel::slotRecvCommissionReport, Qt::AutoConnection);
 }
 
 bool CBasicExecutionModel::start()
@@ -47,10 +48,10 @@ void CBasicExecutionModel::processData(DataListPtr data)
     //     }
     // }
 
-    m_Oder.setRemaining(1500);
-    m_Oder.setDirection(OA_BUY);
+    m_Oder.setRemaining(1000);
+    m_Oder.setDirection(OA_SELL);
 
-    auto id = requestPlaceMarketOrder("BMW", 1500, OA_BUY);
+    auto id = requestPlaceMarketOrder("BMW", 1000, OA_SELL);
 
     m_Oder.setId(id);
 
@@ -84,7 +85,22 @@ void CBasicExecutionModel::slotRecvExecutionReport(const CExecutionReport &obj)
     // newTrade.fee = 0.5;
     newTrade.tradeType = "BUY";
 
-    m_dbManager.signalAddNewTrade(newTrade);
+    emit m_dbManager.signalAddNewTrade(newTrade);
+}
+
+void CBasicExecutionModel::slotRecvCommissionReport(const CCommissionReport &obj)
+{
+    if(!obj.getId().isEmpty())
+    {
+        DbTradeCommission DBComm;
+        DBComm.execId = obj.getId();
+        DBComm.fee = obj.getCommission();
+        if(10000000000 > obj.getRealizedPNL())
+        {
+            DBComm.pnl = obj.getRealizedPNL();
+        }
+        emit m_dbManager.signalUpdateTradeCommision(DBComm);
+    }
 }
 
 

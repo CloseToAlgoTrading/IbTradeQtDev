@@ -573,7 +573,7 @@ void CProcessingBase_v2::recvOrdersCommission(void* pContext, tEReqType _reqType
 {
     Q_UNUSED(_reqType);
     //TODO: add normal commission object!
-    emit signalRecvOrderCommission(*static_cast<qreal*>(pContext), -1.04);
+    emit signalRecvCommissionReport(*static_cast<CCommissionReport*>(pContext));
 }
 
 void CProcessingBase_v2::recvExecutionReport(void *pContext, tEReqType _reqType)

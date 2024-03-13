@@ -39,7 +39,7 @@
 //       QObject::connect(this, &CProcessingBase::signalRecvOptionTickComputation, this, &autoDeltaAligPM::slotRecvOptionTickComputation, Qt::QueuedConnection);
 //       QObject::connect(this, &CProcessingBase::signalEndRecvPosition, this, &autoDeltaAligPM::slotEndRecvPosition, Qt::QueuedConnection);
 
-//       QObject::connect(this, &CProcessingBase::signalRecvOrderCommission, this, &autoDeltaAligPM::slotOrderCommission, Qt::QueuedConnection);
+//       QObject::connect(this, &CProcessingBase::signalRecvCommissionReport, this, &autoDeltaAligPM::slotOrderCommission, Qt::QueuedConnection);
 
 //       QObject::connect(this, &CProcessingBase::signalRestartSubscription, this, &autoDeltaAligPM::slotRestartSubscription, Qt::QueuedConnection);
 

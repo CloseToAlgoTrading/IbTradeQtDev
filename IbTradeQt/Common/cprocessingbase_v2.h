@@ -17,7 +17,7 @@
 #include <QList>
 #include "GlobalDef.h"
 #include "cexecutionreport.h"
-
+#include "ccommissionreport.h"
 //#include "cprocessingbase.h"
 
 
@@ -171,7 +171,7 @@ signals:
     void signalMessageHandler(void* pContext, tEReqType _reqType);
     void signalRecvOptionTickComputation(const COptionTickComputation & obj);
     void signalEndRecvPosition();
-    void signalRecvOrderCommission(const qreal & obj, const qreal & _rpnl);
+    void signalRecvCommissionReport(const CCommissionReport & obj);
     void signalRecvExecutionReport(const CExecutionReport & obj);
     void signalRestartSubscription();
     void signalErrorNotFound(int id);

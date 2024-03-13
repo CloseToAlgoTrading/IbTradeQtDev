@@ -69,16 +69,16 @@ inline QSqlQuery  query_addNewTrade(const DbTrade& trade) {
     return query;
 }
 
-inline QSqlQuery query_updateTrade(const QString& execId, double fee, double pnl) {
+inline QSqlQuery query_updateTrade(const DbTradeCommission& obj) {
     QSqlQuery query;
     query.prepare("UPDATE Trades "
                   "SET fee = :fee, "
                   "    pnl = :pnl "
                   "WHERE execId = :execId");
 
-    query.bindValue(":fee", fee);
-    query.bindValue(":pnl", pnl);
-    query.bindValue(":execId", execId);
+    query.bindValue(":fee", obj.fee);
+    query.bindValue(":pnl", obj.pnl);
+    query.bindValue(":execId", obj.execId);
 
     return query;
 }

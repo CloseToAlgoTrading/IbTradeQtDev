@@ -132,6 +132,18 @@ void DBHandler::slotAddNewTrade(const DbTrade &trade)
     }
 }
 
+void DBHandler::slotUpdateTradeCommission(const DbTradeCommission &tradeComm)
+{
+    auto query = query_updateTrade(tradeComm);
+    if (!query.exec()) {
+        qDebug() << "Error executing query:" << query.lastError();
+    } else {
+        qDebug() << "Query executed successfully";  // Confirm successful execution
+        // Process query results if needed
+    }
+
+}
+
 void DBHandler::initializeConnectionSlot()
 {
     connectDB("myLocalDb.sqlite");
