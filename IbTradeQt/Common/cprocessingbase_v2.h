@@ -18,32 +18,32 @@
 #include "GlobalDef.h"
 #include "cexecutionreport.h"
 
-#include "cprocessingbase.h"
+//#include "cprocessingbase.h"
 
 
 using namespace IBDataTypes;
 
 Q_DECLARE_LOGGING_CATEGORY(processingBaseV2Log);
 
-//typedef struct
-//{
-//    QList<CHistoricalData> listHistData;
-//    bool isAvaliable;
-//} HistoricalData_st;
+typedef struct
+{
+   QList<CHistoricalData> listHistData;
+   bool isAvaliable;
+} HistoricalData_st;
 
-//typedef QMap<qint64, HistoricalData_st>	HistoricalDataMap_t;
+typedef QMap<qint64, HistoricalData_st>	HistoricalDataMap_t;
 
-//typedef QMultiMap<QString, tEReqType>	ActiveReqestsMap_t;
+typedef QMultiMap<QString, tEReqType>	ActiveReqestsMap_t;
 
-//typedef QMultiMap<qint64, CHistoricalData>	HistMap_t;
-//typedef QMultiMap<qint64, IBDataTypes::CMyTickPrice> TickPriceMap_t;
-//typedef QMultiMap<qint64, CTickSize>		TickSizeMap_t;
-//typedef QMultiMap<qint64, CrealtimeBar>		RealTimeBarMap_t;
-//typedef QMultiMap<qint64, CMktDepth>		MKDepthMap_t;
+typedef QMultiMap<qint64, CHistoricalData>	HistMap_t;
+typedef QMultiMap<qint64, IBDataTypes::CMyTickPrice> TickPriceMap_t;
+typedef QMultiMap<qint64, CTickSize>		TickSizeMap_t;
+typedef QMultiMap<qint64, CrealtimeBar>		RealTimeBarMap_t;
+typedef QMultiMap<qint64, CMktDepth>		MKDepthMap_t;
 
-//typedef QMultiMap<QString, CPosition>	    PositionMap_t;
+typedef QMultiMap<QString, CPosition>	    PositionMap_t;
 
-//Q_DECLARE_METATYPE(HistMap_t);
+Q_DECLARE_METATYPE(HistMap_t);
 
 
 class CProcessingBase_v2 : public QObject, public Observer::CSubscriber

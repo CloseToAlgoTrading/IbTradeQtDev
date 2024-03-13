@@ -1,107 +1,106 @@
 #ifndef AUTODELTAALIGNMEPM_H
 #define AUTODELTAALIGNMEPM_H
 
-#include "./Common/cprocessingbase.h"
-#include "cdeltaobject.h"
-#include "autodeltatypes.h"
-#include <QTimer>
-#include <QSharedPointer>
-#include "CModelInputData.h"
-#include <QNetworkAccessManager>
-#include <QSemaphore>
-#include <QNetworkRequest>
-#include "cbasicstrategy.h"
+// #include "cdeltaobject.h"
+// #include "autodeltatypes.h"
+// #include <QTimer>
+// #include <QSharedPointer>
+// #include "CModelInputData.h"
+// #include <QNetworkAccessManager>
+// #include <QSemaphore>
+// #include <QNetworkRequest>
+// #include "cbasicstrategy.h"
 
-Q_DECLARE_LOGGING_CATEGORY(autoDeltaAligPMLog);
-
+// Q_DECLARE_LOGGING_CATEGORY(autoDeltaAligPMLog);
 
 
-class autoDeltaAligPM :/* public QObject,*/ public CProcessingBase, public CBasicStrategy
-{
-    Q_OBJECT
 
-public:
-    explicit autoDeltaAligPM(QObject *parent, CBrokerDataProvider & _refClient);
-    explicit autoDeltaAligPM(QObject *parent);
-    ~autoDeltaAligPM() override;
+// class autoDeltaAligPM :/* public QObject,*/ public CProcessingBase, public CBasicStrategy
+// {
+//     Q_OBJECT
 
-    void initStrategy(const QString & s1);
+// public:
+//     explicit autoDeltaAligPM(QObject *parent, CBrokerDataProvider & _refClient);
+//     explicit autoDeltaAligPM(QObject *parent);
+//     ~autoDeltaAligPM() override;
 
-    virtual bool start() override;
-    virtual bool stop() override;
+//     void initStrategy(const QString & s1);
 
-    ModelType modelType() const override { return ModelType::STRATEGY; }
+//     virtual bool start() override;
+//     virtual bool stop() override;
 
-private:
-    qint32 Ticker_id;
-    CDeltaObject m_delta;
-    QString m_TicketName;
-    qreal m_commSum;
-    qreal m_rpnlSum;
-    qint32 m_deltaThresold;
-    bool m_IsOrderBusy;
+//     ModelType modelType() const override { return ModelType::STRATEGY; }
 
-    CBrokerDataProvider m_DataProvider;
+// private:
+//     qint32 Ticker_id;
+//     CDeltaObject m_delta;
+//     QString m_TicketName;
+//     qreal m_commSum;
+//     qreal m_rpnlSum;
+//     qint32 m_deltaThresold;
+//     bool m_IsOrderBusy;
 
-    tAutoDeltaOptDataType m_GuiInfo;
-    //QSharedPointer<QTimer> m_pTimer;
+//     CBrokerDataProvider m_DataProvider;
 
-    CModelInputData m_modelInput;
-    QNetworkAccessManager m_networkManager;
+//     tAutoDeltaOptDataType m_GuiInfo;
+//     //QSharedPointer<QTimer> m_pTimer;
 
-    const QTime startWorkingTime;
-    const QTime endWorkingTime;
+//     CModelInputData m_modelInput;
+//     QNetworkAccessManager m_networkManager;
 
-    QSemaphore m_sem;
-    QNetworkRequest request;
+//     const QTime startWorkingTime;
+//     const QTime endWorkingTime;
 
-private:
-    void startStrategy(const tAutoDeltaOptDataType & _opt, const qint32 &_delta);
+//     QSemaphore m_sem;
+//     QNetworkRequest request;
 
-public slots:
-    void slotStartNewDeltaHedge(const tAutoDeltaOptDataType & _opt, const qint32 &_delta);
-    void slotOnStopPressed();
+// private:
+//     void startStrategy(const tAutoDeltaOptDataType & _opt, const qint32 &_delta);
 
-    void slotOnGUIClosed();
-    void slotMessageHandler(void* pContext, tEReqType _reqType) ;
-    void slotRecvOptionTickComputation(const COptionTickComputation & obj);
-    void slotEndRecvPosition();
+// public slots:
+//     void slotStartNewDeltaHedge(const tAutoDeltaOptDataType & _opt, const qint32 &_delta);
+//     void slotOnStopPressed();
 
-    void slotOrderCommission(const qreal _commiss, const qreal _rpnl);
+//     void slotOnGUIClosed();
+//     void slotMessageHandler(void* pContext, tEReqType _reqType) ;
+//     void slotRecvOptionTickComputation(const COptionTickComputation & obj);
+//     void slotEndRecvPosition();
 
-    void slotRestartSubscription();
+//     void slotOrderCommission(const qreal _commiss, const qreal _rpnl);
 
-    void slotTmpSendOrderBuy();
-    void slotTmpSendOrderSell();
+//     void slotRestartSubscription();
 
-    void onManagerFinished(QNetworkReply *reply);
+//     void slotTmpSendOrderBuy();
+//     void slotTmpSendOrderSell();
 
-    //void slotTimerTriggered();
+//     void onManagerFinished(QNetworkReply *reply);
 
-    void slotPostRequest();
+//     //void slotTimerTriggered();
 
-signals:
-    void signalOnRealTimeTickData(const IBDataTypes::CMyTickPrice & _pT, const QString _s2);
-    void signalUpdateOptionDeltaGUI(const qreal _val);
-    void signalUpdateBasisDeltaGUI(const qreal _val);
+//     void slotPostRequest();
 
-    void signalUpdateSumDeltaGUI(const qreal _val);
-    void signalUpdateCommissionGUI(const qreal _val);
-    void signalUpdateRPNLGUI(double _val);
+// signals:
+//     void signalOnRealTimeTickData(const IBDataTypes::CMyTickPrice & _pT, const QString _s2);
+//     void signalUpdateOptionDeltaGUI(const qreal _val);
+//     void signalUpdateBasisDeltaGUI(const qreal _val);
 
-    void signalPostRequest();
+//     void signalUpdateSumDeltaGUI(const qreal _val);
+//     void signalUpdateCommissionGUI(const qreal _val);
+//     void signalUpdateRPNLGUI(double _val);
 
-
-public:
-    void callback_recvTickPrize(const IBDataTypes::CMyTickPrice _tickPrize, const QString& _symbol) override;
-    void calllback_recvHistoricalData(const QList<IBDataTypes::CHistoricalData> & _histMap, const QString& _symbol) override;
-    void callback_recvPositionEnd() override;
-
-    void recvRealtimeBar(void* pContext, tEReqType _reqType) override;
-
-    void TestFunc();
+//     void signalPostRequest();
 
 
-};
+// public:
+//     void callback_recvTickPrize(const IBDataTypes::CMyTickPrice _tickPrize, const QString& _symbol) override;
+//     void calllback_recvHistoricalData(const QList<IBDataTypes::CHistoricalData> & _histMap, const QString& _symbol) override;
+//     void callback_recvPositionEnd() override;
+
+//     void recvRealtimeBar(void* pContext, tEReqType _reqType) override;
+
+//     void TestFunc();
+
+
+// };
 
 #endif // AUTODELTAALIGNMEPM_H

@@ -64,7 +64,6 @@ SOURCES += \
     Strategies/Generic/cbasicriskmodel.cpp \
     Strategies/Generic/cbasicroot.cpp \
     Strategies/Generic/cbasicselectionmodel.cpp \
-    Strategies/Generic/cbasicstrategy.cpp \
     Strategies/Generic/cbasicstrategy_V2.cpp \
     Strategies/Generic/cgenericmodelApi.cpp \
     Strategies/Generic/cgenericmodelApi_V2.cpp \
@@ -92,7 +91,6 @@ SOURCES += \
     CObjects/ctickprice.cpp \
     CObjects/cticksize.cpp \
     CObjects/ctickstring.cpp \
-    Common/cprocessingbase.cpp \
     Common/NHelper.cpp \
     CustomWidgets/ccandlestickqchart.cpp \
     CustomWidgets/clineqchart.cpp \
@@ -173,7 +171,6 @@ HEADERS += \
     Strategies/Generic/cbasicriskmodel.h \
     Strategies/Generic/cbasicroot.h \
     Strategies/Generic/cbasicselectionmodel.h \
-    Strategies/Generic/cbasicstrategy.h \
     Strategies/Generic/cbasicstrategy_V2.h \
     Strategies/Generic/cgenericmodelApi.h \
     Strategies/Generic/cgenericmodelApi_V2.h \
@@ -201,7 +198,6 @@ HEADERS += \
     CObjects/ctickprice.h \
     CObjects/cticksize.h \
     CObjects/ctickstring.h \
-    Common/cprocessingbase.h \
     Common/GlobalDef.h \
     Common/NHelper.h \
     Common/Singleton.h \

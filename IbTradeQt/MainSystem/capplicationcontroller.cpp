@@ -6,6 +6,8 @@
 #include <QStringList>
 #include <QStandardPaths>
 #include <QIcon>
+#include <QFile>
+#include <QJsonDocument>
 
 /******* xxx *********/
 #include "dbmanager.h"

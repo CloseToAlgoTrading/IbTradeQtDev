@@ -58,7 +58,6 @@ public:
     QMenu *menuclear_log;
     QMenu *menuView;
     QMenu *menuConfiguration;
-    QMenu *menuObsolete;
     QToolBar *mainToolBar;
     QStatusBar *statusBar;
     QDockWidget *dockWidget_Logging;
@@ -81,37 +80,19 @@ public:
         actionClear_Log->setObjectName("actionClear_Log");
         actionClear_Log->setCheckable(false);
         actionClear_Log->setChecked(false);
-        QIcon icon;
-        QString iconThemeName = QString::fromUtf8("edit-clear");
-        if (QIcon::hasThemeIcon(iconThemeName)) {
-            icon = QIcon::fromTheme(iconThemeName);
-        } else {
-            icon.addFile(QString::fromUtf8("."), QSize(), QIcon::Normal, QIcon::Off);
-        }
+        QIcon icon(QIcon::fromTheme(QString::fromUtf8("edit-clear")));
         actionClear_Log->setIcon(icon);
         actionShow_Log = new QAction(IBTradeSystemClass);
         actionShow_Log->setObjectName("actionShow_Log");
         actionShow_Log->setCheckable(false);
         actionShow_Log->setChecked(false);
-        QIcon icon1;
-        iconThemeName = QString::fromUtf8("text-x-generic");
-        if (QIcon::hasThemeIcon(iconThemeName)) {
-            icon1 = QIcon::fromTheme(iconThemeName);
-        } else {
-            icon1.addFile(QString::fromUtf8("."), QSize(), QIcon::Normal, QIcon::Off);
-        }
+        QIcon icon1(QIcon::fromTheme(QString::fromUtf8("text-x-generic")));
         actionShow_Log->setIcon(icon1);
         actionSetting = new QAction(IBTradeSystemClass);
         actionSetting->setObjectName("actionSetting");
         actionSetting->setCheckable(false);
         actionSetting->setChecked(false);
-        QIcon icon2;
-        iconThemeName = QString::fromUtf8("preferences-other");
-        if (QIcon::hasThemeIcon(iconThemeName)) {
-            icon2 = QIcon::fromTheme(iconThemeName);
-        } else {
-            icon2.addFile(QString::fromUtf8("."), QSize(), QIcon::Normal, QIcon::Off);
-        }
+        QIcon icon2(QIcon::fromTheme(QString::fromUtf8("preferences-other")));
         actionSetting->setIcon(icon2);
         actionAdd_Model = new QAction(IBTradeSystemClass);
         actionAdd_Model->setObjectName("actionAdd_Model");
@@ -119,33 +100,15 @@ public:
         actionRemove_Model->setObjectName("actionRemove_Model");
         actionLoad = new QAction(IBTradeSystemClass);
         actionLoad->setObjectName("actionLoad");
-        QIcon icon3;
-        iconThemeName = QString::fromUtf8("document-open");
-        if (QIcon::hasThemeIcon(iconThemeName)) {
-            icon3 = QIcon::fromTheme(iconThemeName);
-        } else {
-            icon3.addFile(QString::fromUtf8("."), QSize(), QIcon::Normal, QIcon::Off);
-        }
+        QIcon icon3(QIcon::fromTheme(QString::fromUtf8("document-open")));
         actionLoad->setIcon(icon3);
         actionSave = new QAction(IBTradeSystemClass);
         actionSave->setObjectName("actionSave");
-        QIcon icon4;
-        iconThemeName = QString::fromUtf8("document-save");
-        if (QIcon::hasThemeIcon(iconThemeName)) {
-            icon4 = QIcon::fromTheme(iconThemeName);
-        } else {
-            icon4.addFile(QString::fromUtf8("."), QSize(), QIcon::Normal, QIcon::Off);
-        }
+        QIcon icon4(QIcon::fromTheme(QString::fromUtf8("document-save")));
         actionSave->setIcon(icon4);
         actionConnect = new QAction(IBTradeSystemClass);
         actionConnect->setObjectName("actionConnect");
-        QIcon icon5;
-        iconThemeName = QString::fromUtf8("network-idle");
-        if (QIcon::hasThemeIcon(iconThemeName)) {
-            icon5 = QIcon::fromTheme(iconThemeName);
-        } else {
-            icon5.addFile(QString::fromUtf8("."), QSize(), QIcon::Normal, QIcon::Off);
-        }
+        QIcon icon5(QIcon::fromTheme(QString::fromUtf8("network-idle")));
         actionConnect->setIcon(icon5);
         actionPair_Trader = new QAction(IBTradeSystemClass);
         actionPair_Trader->setObjectName("actionPair_Trader");
@@ -215,8 +178,6 @@ public:
         menuView->setObjectName("menuView");
         menuConfiguration = new QMenu(menuBar);
         menuConfiguration->setObjectName("menuConfiguration");
-        menuObsolete = new QMenu(menuBar);
-        menuObsolete->setObjectName("menuObsolete");
         IBTradeSystemClass->setMenuBar(menuBar);
         mainToolBar = new QToolBar(IBTradeSystemClass);
         mainToolBar->setObjectName("mainToolBar");
@@ -287,7 +248,6 @@ public:
         menuBar->addAction(menuclear_log->menuAction());
         menuBar->addAction(menuView->menuAction());
         menuBar->addAction(menuConfiguration->menuAction());
-        menuBar->addAction(menuObsolete->menuAction());
         menuclear_log->addAction(actionConnect);
         menuclear_log->addSeparator();
         menuclear_log->addAction(actionClear_Log);
@@ -295,9 +255,6 @@ public:
         menuView->addAction(actionSetting);
         menuConfiguration->addAction(actionLoad);
         menuConfiguration->addAction(actionSave);
-        menuObsolete->addAction(actionPair_Trader);
-        menuObsolete->addAction(actionAuto_Delta);
-        menuObsolete->addAction(actionDBStore);
         mainToolBar->addAction(actionConnect);
         mainToolBar->addSeparator();
         mainToolBar->addAction(actionSetting);
@@ -330,7 +287,6 @@ public:
         menuclear_log->setTitle(QCoreApplication::translate("IBTradeSystemClass", "options", nullptr));
         menuView->setTitle(QCoreApplication::translate("IBTradeSystemClass", "View", nullptr));
         menuConfiguration->setTitle(QCoreApplication::translate("IBTradeSystemClass", "Configuration", nullptr));
-        menuObsolete->setTitle(QCoreApplication::translate("IBTradeSystemClass", "Obsolete", nullptr));
         dockWidget_Logging->setWindowTitle(QCoreApplication::translate("IBTradeSystemClass", "Logs", nullptr));
         dockWidget_Settings->setWindowTitle(QCoreApplication::translate("IBTradeSystemClass", "Settings", nullptr));
     } // retranslateUi

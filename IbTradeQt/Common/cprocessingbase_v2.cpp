@@ -358,7 +358,7 @@ void CProcessingBase_v2::callback_recvPositionEnd()
 
 //void CProcessingBase_v2::slotMessageHandler(void *pContext, tEReqType _reqType)
 //{
-//    qCDebug(processingBaseLog(), "PosEnd!! -> execte callback to implementation");
+//    qCDebug(processingBaseV2Log(), "PosEnd!! -> execte callback to implementation");
 //}
 
 //----------------------------------------------------------
@@ -375,20 +375,20 @@ void CProcessingBase_v2::recvHistoricalData(void* pContext, tEReqType _reqType)
     Q_UNUSED(_reqType)
 
     //QString a = QThread::currentThread()->objectName();
-    //qCDebug(processingBaseLog(), "---> %s", a.toLocal8Bit().data());
+    //qCDebug(processingBaseV2Log(), "---> %s", a.toLocal8Bit().data());
     CHistoricalData *_pHistoricalData = (CHistoricalData *)pContext;
 
     QString retSymbol = getSymbolFromRM(_pHistoricalData->getId(), RT_HISTORICAL_DATA);
 
     if (!_pHistoricalData->getIsLast())
     {
-//        qCDebug(processingBaseLog(), "[%s] tickerId = %ld , date = %s, open = %f, high = %f, low =%f, close = %f, volume = %f, barCount = %d, WAP = %f, hasGaps = %d", retSymbol.toLocal8Bit().data(),
+//        qCDebug(processingBaseV2Log(), "[%s] tickerId = %ld , date = %s, open = %f, high = %f, low =%f, close = %f, volume = %f, barCount = %d, WAP = %f, hasGaps = %d", retSymbol.toLocal8Bit().data(),
 //                _pHistoricalData->getId(), NHelper::convertQTDataTimeToString(_pHistoricalData->getDateTime()).toStdString().c_str(), _pHistoricalData->getOpen(), _pHistoricalData->getHigh(), _pHistoricalData->getLow(),
 //                _pHistoricalData->getClose(), _pHistoricalData->getVolume(), _pHistoricalData->getCount(), _pHistoricalData->getWap(), _pHistoricalData->getHasGaps());
     }
     else
     {
-        qCDebug(processingBaseLog(), "[%s] tickerId = %ld , ", retSymbol.toLocal8Bit().data(), _pHistoricalData->getId());
+        qCDebug(processingBaseV2Log(), "[%s] tickerId = %ld , ", retSymbol.toLocal8Bit().data(), _pHistoricalData->getId());
     }
 
     qint64 realtimeDataId = getIdFromRM(retSymbol, RT_HISTORICAL_DATA);
@@ -450,7 +450,7 @@ void CProcessingBase_v2::recvHistoricalData(void* pContext, tEReqType _reqType)
     else
     {
         //m_pLog.AddLogMsg("ignore/remove from RM");
-        qCInfo(processingBaseLog(), "ignore/remove from RM");
+        qCInfo(processingBaseV2Log(), "ignore/remove from RM");
         removeOldHistoricalRequest(retSymbol);
     }
 }
@@ -463,7 +463,7 @@ void CProcessingBase_v2::recvTickSize(void* pContext, tEReqType _reqType)
     CTickSize *_pTickSize = (CTickSize *)pContext;
     m_tickSizeMap.insert(_pTickSize->getId(), *_pTickSize);
 
-    qCDebug(processingBaseLog(), "id = %ld", _pTickSize->getId());
+    qCDebug(processingBaseV2Log(), "id = %ld", _pTickSize->getId());
 
 }
 
@@ -477,7 +477,7 @@ void CProcessingBase_v2::recvTickPrize(void* pContext, tEReqType _reqType)
 
     QString retSymbol = getSymbolFromRM(_pTickPrice->getId());
 
-    qCDebug(processingBaseLog(), "(%s) id = %ld, price = %f", __FUNCTION__, _pTickPrice->getId(), _pTickPrice->getPrice());
+    qCDebug(processingBaseV2Log(), "(%s) id = %ld, price = %f", __FUNCTION__, _pTickPrice->getId(), _pTickPrice->getPrice());
 
     IBDataTypes::CMyTickPrice dd(*_pTickPrice);
     
@@ -495,7 +495,7 @@ void CProcessingBase_v2::recvRealtimeBar(void* pContext, tEReqType _reqType)
     CrealtimeBar *_pRealTimeBar = (CrealtimeBar *)pContext;
     m_realTImeBarMap.insert(_pRealTimeBar->getId(), *_pRealTimeBar);
 
-    qCDebug(processingBaseLog(), "executed");
+    qCDebug(processingBaseV2Log(), "executed");
     calculateOneMinBar(m_realTImeBarMap, _pRealTimeBar->getId());
 
 
@@ -514,7 +514,7 @@ void CProcessingBase_v2::recvMktDepth(void* pContext, tEReqType _reqType)
     CMktDepth *_pMKDepth = static_cast<CMktDepth *>(pContext);
     m_mkDepthMap.insert(_pMKDepth->getId(), *_pMKDepth);
 
-    qCDebug(processingBaseLog(), "id = %ld", _pMKDepth->getId());
+    qCDebug(processingBaseV2Log(), "id = %ld", _pMKDepth->getId());
 }
 
 //----------------------------------------------------------
@@ -530,14 +530,14 @@ void CProcessingBase_v2::recvPosition(void *pContext, tEReqType _reqType)
         CPosition *_pPos = static_cast<CPosition *>(pContext);
         m_positionMap.insert(QString::fromLocal8Bit(_pPos->getContract().symbol.data(), static_cast<qint32>(_pPos->getContract().symbol.size()))
                              , *_pPos);
-        qCDebug(processingBaseLog(), "Pos = %s", _pPos->getContract().symbol.c_str());
+        qCDebug(processingBaseV2Log(), "Pos = %s", _pPos->getContract().symbol.c_str());
     }
 }
 
 //----------------------------------------------------------
 void CProcessingBase_v2::recvPositionEnd()
 {
-    qCDebug(processingBaseLog(), "PosEnd!! -> execte callback to implementation");
+    qCDebug(processingBaseV2Log(), "PosEnd!! -> execte callback to implementation");
     //callback_recvPositionEnd();
     emit signalEndRecvPosition();
 }
@@ -560,13 +560,13 @@ void CProcessingBase_v2::recvRestartSubscription()
 {
     emit signalRestartSubscription();
     //nothing here
-    qCDebug(processingBaseLog(), "------->>> recvRestartSubscription emit RESTART SUBSCRIPTION");
+    qCDebug(processingBaseV2Log(), "------->>> recvRestartSubscription emit RESTART SUBSCRIPTION");
 }
 
 void CProcessingBase_v2::recvErrorNotificationSubscription(int id)
 {
     emit signalErrorNotFound(id);
-    qCDebug(processingBaseLog(), "------->>> recvErrorNotificationSubscription emit Error id = %d", id);
+    qCDebug(processingBaseV2Log(), "------->>> recvErrorNotificationSubscription emit Error id = %d", id);
 }
 
 void CProcessingBase_v2::recvOrdersCommission(void* pContext, tEReqType _reqType)
@@ -595,7 +595,7 @@ bool CProcessingBase_v2::calculateOneMinBar(RealTimeBarMap_t & _realTimeBar, Tic
 
     //--it;
     QDateTime mtime = QDateTime::fromMSecsSinceEpoch(it->getDateTime());
-    qCDebug(processingBaseLog(), "time = %s", mtime.toString("yyyy/MM/dd hh:mm:ss").toLocal8Bit().data());
+    qCDebug(processingBaseV2Log(), "time = %s", mtime.toString("yyyy/MM/dd hh:mm:ss").toLocal8Bit().data());
 
     static QDateTime oldtime;
     //bool isBarFinished = false;
@@ -658,7 +658,7 @@ bool CProcessingBase_v2::calculateOneMinBar(RealTimeBarMap_t & _realTimeBar, Tic
 
     if (localBarState == BS_INIT)
     {
-        qCDebug(processingBaseLog(), "o = %f, c = %f, h = %f, l = %f", o, c, h, l);
+        qCDebug(processingBaseV2Log(), "o = %f, c = %f, h = %f, l = %f", o, c, h, l);
         o = 0;
         h = 0;
         l = 0;
