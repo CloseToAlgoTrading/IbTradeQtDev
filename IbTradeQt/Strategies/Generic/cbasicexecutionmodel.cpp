@@ -48,10 +48,10 @@ void CBasicExecutionModel::processData(DataListPtr data)
     //     }
     // }
 
-    m_Oder.setRemaining(1000);
+    m_Oder.setRemaining(336);
     m_Oder.setDirection(OA_SELL);
 
-    auto id = requestPlaceMarketOrder("BMW", 1000, OA_SELL);
+    auto id = requestPlaceMarketOrder("BMW", m_Oder.getRemaining(), m_Oder.getDirection());
 
     m_Oder.setId(id);
 
@@ -83,7 +83,7 @@ void CBasicExecutionModel::slotRecvExecutionReport(const CExecutionReport &obj)
     newTrade.execId = obj.getExecId();
     // newTrade.pnl = 20.0;
     // newTrade.fee = 0.5;
-    newTrade.tradeType = "BUY";
+    newTrade.tradeType = m_Oder.getDirection() == OA_SELL ? "SELL" : "BUY";
 
     emit m_dbManager.signalAddNewTrade(newTrade);
 }

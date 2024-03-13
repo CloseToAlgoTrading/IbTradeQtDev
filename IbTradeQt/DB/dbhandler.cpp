@@ -184,18 +184,28 @@ bool DBHandler::createTrigger(QSqlDatabase& db) {
         AFTER INSERT ON Trades
         FOR EACH ROW
         BEGIN
+            -- Check if the trade is a "SELL" trade and adjust the new quantity accordingly
             INSERT INTO Positions (strategyId, symbol, quantity, averageOpenPrice, pnl, fee, openDate, status)
-            VALUES (NEW.strategyId, NEW.symbol, NEW.quantity, NEW.price, NEW.pnl, NEW.fee, NEW.date, 1)
+            VALUES (NEW.strategyId, NEW.symbol,
+                    CASE WHEN NEW.tradeType = 'SELL' THEN -NEW.quantity ELSE NEW.quantity END,
+                    NEW.price, NEW.pnl, NEW.fee, NEW.date, 1)
             ON CONFLICT (strategyId, symbol)
             DO
-            UPDATE SET quantity = quantity + NEW.quantity,
-                       pnl = pnl + NEW.pnl,
-                       fee = fee + NEW.fee,
-                       averageOpenPrice = (averageOpenPrice * quantity + NEW.price * NEW.quantity) / (quantity + NEW.quantity),
-                       openDate = CASE WHEN openDate IS NULL THEN NEW.date ELSE openDate END,
-                       status = CASE WHEN quantity + NEW.quantity = 0 THEN 0 ELSE status END,
-                       closeDate = CASE WHEN quantity + NEW.quantity = 0 THEN NEW.date ELSE closeDate END;
+            UPDATE SET quantity = quantity +
+                    CASE WHEN NEW.tradeType = 'SELL' THEN -NEW.quantity ELSE NEW.quantity END,
+                   pnl = pnl + NEW.pnl,
+                   fee = fee + NEW.fee,
+                   averageOpenPrice = (averageOpenPrice * quantity + NEW.price *
+                    CASE WHEN NEW.tradeType = 'SELL' THEN -NEW.quantity ELSE NEW.quantity END) /
+                    (quantity + CASE WHEN NEW.tradeType = 'SELL' THEN -NEW.quantity ELSE NEW.quantity END),
+                   openDate = CASE WHEN openDate IS NULL THEN NEW.date ELSE openDate END,
+                   status = CASE WHEN quantity +
+                    CASE WHEN NEW.tradeType = 'SELL' THEN -NEW.quantity ELSE NEW.quantity END = 0 THEN 0 ELSE status END;
+
+            -- Delete the entry from the Positions table when quantity becomes zero
+            DELETE FROM Positions WHERE strategyId = NEW.strategyId AND symbol = NEW.symbol AND quantity = 0;
         END;
+
     )";
 
     if (!query.exec(triggerCommand)) {
