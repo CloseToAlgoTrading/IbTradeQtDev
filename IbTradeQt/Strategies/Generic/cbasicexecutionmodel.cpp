@@ -3,6 +3,7 @@
 #include "dbdatatypes.h"
 #include <QDateTime>
 #include <QString>
+#include <limits>
 
 
 Q_LOGGING_CATEGORY(BasicExecutionModelLog, "BasicExecutionModel.PM");
@@ -95,7 +96,7 @@ void CBasicExecutionModel::slotRecvCommissionReport(const CCommissionReport &obj
         DbTradeCommission DBComm;
         DBComm.execId = obj.getId();
         DBComm.fee = obj.getCommission();
-        if(10000000000 > obj.getRealizedPNL())
+        if(std::numeric_limits<qreal>::max() > obj.getRealizedPNL())
         {
             DBComm.pnl = obj.getRealizedPNL();
         }
