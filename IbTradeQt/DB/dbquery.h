@@ -21,22 +21,22 @@ inline QSqlQuery query_addCurrentPosition(const OpenPosition &position) {
     return query;
 }
 
-inline QSqlQuery query_addNewTrade(const OpenPosition &position) {
-    QSqlQuery query;
-    query.prepare("INSERT INTO open_positions (strategyId, symbol, quantity, price, pnl, fee, date, status) "
-                  "VALUES (:strategyId, :symbol, :quantity, :price, :pnl, :fee, :date, :status)");
+// inline QSqlQuery query_addNewTrade(const OpenPosition &position) {
+//     QSqlQuery query;
+//     query.prepare("INSERT INTO open_positions (strategyId, symbol, quantity, price, pnl, fee, date, status) "
+//                   "VALUES (:strategyId, :symbol, :quantity, :price, :pnl, :fee, :date, :status)");
 
-    query.bindValue(":strategyId", position.strategyId);
-    query.bindValue(":symbol", position.symbol);
-    query.bindValue(":quantity", position.quantity);
-    query.bindValue(":price", position.price);
-    query.bindValue(":pnl", position.pnl);
-    query.bindValue(":fee", position.fee);
-    query.bindValue(":date", position.date);
-    query.bindValue(":status", position.status);
+//     query.bindValue(":strategyId", position.strategyId);
+//     query.bindValue(":symbol", position.symbol);
+//     query.bindValue(":quantity", position.quantity);
+//     query.bindValue(":price", position.price);
+//     query.bindValue(":pnl", position.pnl);
+//     query.bindValue(":fee", position.fee);
+//     query.bindValue(":date", position.date);
+//     query.bindValue(":status", position.status);
 
-    return query;
-}
+//     return query;
+// }
 
 
 inline QSqlQuery query_getOpenPositions(const quint16 strategyId) {
@@ -65,6 +65,20 @@ inline QSqlQuery  query_addNewTrade(const DbTrade& trade) {
     query.bindValue(":fee", trade.fee);
     query.bindValue(":date", trade.date);
     query.bindValue(":tradeType", trade.tradeType);
+
+    return query;
+}
+
+inline QSqlQuery query_updateTrade(const QString& execId, double fee, double pnl) {
+    QSqlQuery query;
+    query.prepare("UPDATE Trades "
+                  "SET fee = :fee, "
+                  "    pnl = :pnl "
+                  "WHERE execId = :execId");
+
+    query.bindValue(":fee", fee);
+    query.bindValue(":pnl", pnl);
+    query.bindValue(":execId", execId);
 
     return query;
 }

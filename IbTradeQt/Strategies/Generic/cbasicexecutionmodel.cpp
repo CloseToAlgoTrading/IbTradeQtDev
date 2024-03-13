@@ -73,16 +73,6 @@ void CBasicExecutionModel::slotRecvExecutionReport(const CExecutionReport &obj)
     qCDebug(BasicExecutionModelLog(), "%f/%f", m_Oder.getFilled(), m_Oder.getRemaining());
 
 
-    // position.date = currentDateTime.toString("yyyy-MM-dd HH:mm:ss.zzz");
-    // position.fee = 0.0;
-    // position.price = obj.getAvgPrice();
-    // position.quantity = obj.getAmount();
-    // position.status = PS_INIT_OPEN;
-    // position.strategyId = obj.getId();
-    // position.symbol = obj.getTicker();
-
-
-
     DbTrade newTrade;
     newTrade.date = currentDateTime.toString("yyyy-MM-dd HH:mm:ss.zzz");
     newTrade.strategyId = 1;  // Example data

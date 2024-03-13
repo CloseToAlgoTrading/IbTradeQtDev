@@ -61,8 +61,7 @@ bool DBHandler::initializeDatabase() {
     // Trades Table
     success |= createTableIfNotExists("Trades",
                            "CREATE TABLE IF NOT EXISTS Trades ("
-                           "tradeId INT AUTO_INCREMENT PRIMARY KEY, "
-                           "execId VARCHAR(50), "
+                           "execId VARCHAR(50) PRIMARY KEY, "
                            "strategyId INT, "
                            "symbol VARCHAR(10), "
                            "quantity INT, "
