@@ -4,8 +4,8 @@
 #include "dbdatatypes.h"
 #include <QSqlQuery>
 
-inline QSqlQuery query_addCurrentPosition(const OpenPosition &position) {
-    QSqlQuery query;
+inline QSqlQuery query_addCurrentPosition(const OpenPosition &position, const QString& uniqueConnectionName) {
+    QSqlQuery query(QSqlDatabase::database(uniqueConnectionName));
     query.prepare("INSERT INTO open_positions (strategyId, symbol, quantity, price, pnl, fee, date, status) "
                   "VALUES (:strategyId, :symbol, :quantity, :price, :pnl, :fee, :date, :status)");
 
@@ -39,20 +39,18 @@ inline QSqlQuery query_addCurrentPosition(const OpenPosition &position) {
 // }
 
 
-inline QSqlQuery query_getOpenPositions(const quint16 strategyId) {
-    QSqlQuery query;
-    query.prepare("SELECT * FROM open_positions WHERE status IN (:status1, :status2) AND strategyId = :strategyId");
+inline QSqlQuery query_getOpenPositions(const QString& strategyId, const QString& uniqueConnectionName) {
+    QSqlQuery query(QSqlDatabase::database(uniqueConnectionName));
+    query.prepare("SELECT * FROM positions WHERE strategyId = :strategyId");
 
-    query.bindValue(":status1", PS_INIT_OPEN);
-    query.bindValue(":status2", PS_OPEN);
     query.bindValue(":strategyId", strategyId);
 
     return query;
 }
 
 
-inline QSqlQuery  query_addNewTrade(const DbTrade& trade) {
-    QSqlQuery query;
+inline QSqlQuery  query_addNewTrade(const DbTrade& trade, const QString& uniqueConnectionName) {
+    QSqlQuery query(QSqlDatabase::database(uniqueConnectionName));
     query.prepare("INSERT INTO Trades (strategyId, execId, symbol, quantity, price, pnl, fee, date, tradeType) "
                   "VALUES (:strategyId, :execId, :symbol, :quantity, :price, :pnl, :fee, :date, :tradeType)");
 
@@ -69,8 +67,8 @@ inline QSqlQuery  query_addNewTrade(const DbTrade& trade) {
     return query;
 }
 
-inline QSqlQuery query_updateTrade(const DbTradeCommission& obj) {
-    QSqlQuery query;
+inline QSqlQuery query_updateTrade(const DbTradeCommission& obj, const QString& uniqueConnectionName) {
+    QSqlQuery query(QSqlDatabase::database(uniqueConnectionName));
     query.prepare("UPDATE Trades "
                   "SET fee = :fee, "
                   "    pnl = :pnl "

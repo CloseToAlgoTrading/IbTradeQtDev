@@ -3,9 +3,11 @@
 #include <QtSql/QSqlQuery>
 #include <QtSql/QSqlError>
 #include <QDebug>
+#include <QUuid>
 
 DBHandler::DBHandler(QObject *parent) : QObject(parent) {
     // Constructor code
+    m_uniqueConnectionName = QUuid::createUuid().toString();
 }
 
 DBHandler::~DBHandler() {
@@ -13,7 +15,7 @@ DBHandler::~DBHandler() {
 }
 
 bool DBHandler::connectDB(const QString& dbName) {
-    m_db = QSqlDatabase::addDatabase("QSQLITE");
+    m_db = QSqlDatabase::addDatabase("QSQLITE", m_uniqueConnectionName);
     m_db.setDatabaseName(dbName);
 
     if (!m_db.open()) {
@@ -28,6 +30,8 @@ void DBHandler::disconnectDB() {
     if (m_db.isOpen()) {
         m_db.close();
     }
+
+    QSqlDatabase::removeDatabase(m_uniqueConnectionName);
 }
 
 bool DBHandler::initializeDatabase() {
@@ -112,7 +116,7 @@ bool DBHandler::initializeDatabase() {
 
 void DBHandler::slotAddPositionQuery(const OpenPosition &position)
 {
-    auto query = query_addCurrentPosition(position);
+    auto query = query_addCurrentPosition(position, m_uniqueConnectionName);
     if (!query.exec()) {
         qDebug() << "Error executing query:" << query.lastError();
     } else {
@@ -123,7 +127,7 @@ void DBHandler::slotAddPositionQuery(const OpenPosition &position)
 
 void DBHandler::slotAddNewTrade(const DbTrade &trade)
 {
-    auto query = query_addNewTrade(trade);
+    auto query = query_addNewTrade(trade, m_uniqueConnectionName);
     if (!query.exec()) {
         qDebug() << "Error executing query:" << query.lastError();
     } else {
@@ -134,7 +138,7 @@ void DBHandler::slotAddNewTrade(const DbTrade &trade)
 
 void DBHandler::slotUpdateTradeCommission(const DbTradeCommission &tradeComm)
 {
-    auto query = query_updateTrade(tradeComm);
+    auto query = query_updateTrade(tradeComm, m_uniqueConnectionName);
     if (!query.exec()) {
         qDebug() << "Error executing query:" << query.lastError();
     } else {
@@ -150,10 +154,10 @@ void DBHandler::initializeConnectionSlot()
     initializeDatabase();
 }
 
-void DBHandler::fetchOpenPositionsSlot(const quint16 strategy_id)
+void DBHandler::fetchOpenPositionsSlot(const QString& strategy_id)
 {
     QList<OpenPosition> positionsList;
-    QSqlQuery query(query_getOpenPositions(strategy_id));
+    QSqlQuery query(query_getOpenPositions(strategy_id, m_uniqueConnectionName));
     if (!query.exec()) {
         qDebug() << "Error fetching open positions:" << query.lastError();
     }
@@ -161,14 +165,13 @@ void DBHandler::fetchOpenPositionsSlot(const quint16 strategy_id)
     {
         while (query.next()) {
             OpenPosition position;
-            position.id = query.value("id").toInt();
             position.strategyId = query.value("strategyId").toString();
             position.symbol = query.value("symbol").toString();
             position.quantity = query.value("quantity").toInt();
-            position.price = query.value("price").toDouble();
+            position.price = query.value("averageOpenPrice").toDouble();
             position.pnl = query.value("pnl").toDouble();
             position.fee = query.value("fee").toDouble();
-            position.date = query.value("date").toString();
+            position.date = query.value("closeDate").toString();
             position.status = query.value("status").toInt();
 
             positionsList.append(position);

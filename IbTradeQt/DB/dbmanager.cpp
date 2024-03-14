@@ -13,7 +13,7 @@ DBManager::DBManager(QObject *parent)
     connect(this, &DBManager::signalAddNewTrade, m_db.get(), &DBHandler::slotAddNewTrade, Qt::AutoConnection);
     connect(this, &DBManager::signalUpdateTradeCommision, m_db.get(), &DBHandler::slotUpdateTradeCommission, Qt::AutoConnection);
     connect(this, &DBManager::signalExecuteGetOpenPositionsQuery, m_db.get(), &DBHandler::fetchOpenPositionsSlot, Qt::QueuedConnection);
-    connect(m_db.get(), &DBHandler::openPositionsFetched, this, &DBManager::onOpenPositionsFetched, Qt::QueuedConnection);
+    connect(m_db.get(), &DBHandler::openPositionsFetched, this, &DBManager::onOpenPositionsFetched, Qt::AutoConnection);
     connect(m_dbThread.data(), &QThread::started, m_db.get(), &DBHandler::initializeConnectionSlot, Qt::QueuedConnection);
 
     m_dbThread->start();
@@ -30,7 +30,7 @@ void DBManager::addCurrentPositionsState(const OpenPosition & position)
     emit signalAddPositionQuery(position);
 }
 
-void DBManager::getOpenPositions(const quint16 strategy_id)
+void DBManager::getOpenPositions(const QString& strategy_id)
 {
     emit signalExecuteGetOpenPositionsQuery(strategy_id);
 }
@@ -40,4 +40,6 @@ void DBManager::onOpenPositionsFetched(const QList<OpenPosition> &positions)
     for (auto pos : positions) {
         qDebug() << pos.symbol.toStdString().c_str() << pos.status << pos.date;
     }
+    emit signalOpenPositionsFetched(positions);
+
 }

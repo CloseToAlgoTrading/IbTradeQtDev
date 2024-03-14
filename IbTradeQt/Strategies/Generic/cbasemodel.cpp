@@ -504,9 +504,8 @@ void CBaseModel::setParentModel(CGenericModelApi* pModel)
     m_ParentModel = pModel;
 }
 
-ptrGenericModelType CBaseModel::getParentModel()
+CGenericModelApi* CBaseModel::getParentModel()
 {
-    //return m_ParentModel;
-    return nullptr;
+    return m_ParentModel;
 }
 

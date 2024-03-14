@@ -17,6 +17,8 @@ public:
 
     bool createTrigger(QSqlDatabase& db);
 
+private:
+    QString m_uniqueConnectionName;
 signals:
     void openPositionsFetched(const QList<OpenPosition>& positions);
 
@@ -25,7 +27,8 @@ public slots:
     void slotAddNewTrade(const DbTrade& trade);
     void slotUpdateTradeCommission(const DbTradeCommission& tradeComm);
     void initializeConnectionSlot();
-    void fetchOpenPositionsSlot(const quint16 strategy_id);
+    void fetchOpenPositionsSlot(const QString& strategy_id);
+
 
 
 

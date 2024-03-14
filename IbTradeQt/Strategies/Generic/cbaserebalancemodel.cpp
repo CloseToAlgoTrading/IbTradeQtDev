@@ -5,15 +5,19 @@ Q_LOGGING_CATEGORY(BasicRebalanceModelLog, "BasicRebalanceModelLog.PM");
 
 CBaseRebalanceModel::CBaseRebalanceModel(QObject *parent)
     : CBasicStrategy_V2{parent}
+    , m_dbManager(parent)
 {
     m_Name = "Base Rebalance Model";
     this->setName("Base Rebalance Model");
+
+    connect(&m_dbManager, &DBManager::signalOpenPositionsFetched, this, &CBaseRebalanceModel::slotOpenPositionsFetched, Qt::AutoConnection);
 
 }
 
 void CBaseRebalanceModel::processData(DataListPtr data)
 {
     qCDebug(BasicRebalanceModelLog(), "receved and emit ->");
+    m_dbManager.getOpenPositions(m_ParentModel->getId().toString(QUuid::WithoutBraces));
     if(0 < data->length())
     {
         qreal _bp = 0.0f;
@@ -32,6 +36,14 @@ void CBaseRebalanceModel::processData(DataListPtr data)
         }
         emit dataProcessed(data);
     }
+}
 
+void CBaseRebalanceModel::slotOpenPositionsFetched(const QList<OpenPosition> &positions)
+{
+    qDebug() << "-------start---------";
+    for (auto pos : positions) {
+        qDebug() << pos.symbol << pos.quantity << pos.price << pos.date;
+    }
+    qDebug() << "-------stop---------";
 }
 

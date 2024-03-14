@@ -49,10 +49,11 @@ void CBasicExecutionModel::processData(DataListPtr data)
     //     }
     // }
 
-    m_Oder.setRemaining(336);
+    m_Oder.setRemaining(500);
     m_Oder.setDirection(OA_SELL);
+    m_Oder.setTicker("PAH3");
 
-    auto id = requestPlaceMarketOrder("BMW", m_Oder.getRemaining(), m_Oder.getDirection());
+    auto id = requestPlaceMarketOrder(m_Oder.getTicker(), m_Oder.getRemaining(), m_Oder.getDirection());
 
     m_Oder.setId(id);
 
@@ -77,7 +78,7 @@ void CBasicExecutionModel::slotRecvExecutionReport(const CExecutionReport &obj)
 
     DbTrade newTrade;
     newTrade.date = currentDateTime.toString("yyyy-MM-dd HH:mm:ss.zzz");
-    newTrade.strategyId = this->getId().toString(QUuid::WithoutBraces);  // Example data
+    newTrade.strategyId = getParentModel()->getId().toString(QUuid::WithoutBraces);//this->getId().toString(QUuid::WithoutBraces);  // Example data
     newTrade.symbol = obj.getTicker();
     newTrade.quantity = obj.getAmount();
     newTrade.price = obj.getAvgPrice();

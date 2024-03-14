@@ -80,7 +80,7 @@ public:
     virtual bool getParentActivatedState() const override;;
 
     virtual void setParentModel(CGenericModelApi* pModel) override;
-    virtual ptrGenericModelType getParentModel() override;
+    virtual CGenericModelApi* getParentModel() override;
 
 
 protected:

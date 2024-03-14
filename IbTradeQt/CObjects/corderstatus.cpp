@@ -8,10 +8,11 @@ COrderStatus::COrderStatus()
 
 }
 
-COrderStatus::COrderStatus(qint32 _id, QString _status, qreal _filled, qreal _remaining, qreal _avgFillPrice, qint32 _permId, qint32 _parentId, qreal _lastFilledPrice, qint32 _clientId, QString _whyHeld, QString _ExecId, eOrderAction_t _Direction )
+COrderStatus::COrderStatus(qint32 _id, QString _Ticker, QString _status, qreal _filled, qreal _remaining, qreal _avgFillPrice, qint32 _permId, qint32 _parentId, qreal _lastFilledPrice, qint32 _clientId, QString _whyHeld, QString _ExecId, eOrderAction_t _Direction )
     : d(new COrderStatusData)
 {
     setId(_id);
+    setTicker(_Ticker);
     setFilled(_filled);
     setStatus(_status);
     setRemaining(_remaining);

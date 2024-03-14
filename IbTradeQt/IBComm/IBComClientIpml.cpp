@@ -193,12 +193,14 @@ void IBComClientImpl::cancelRealTimeBarsAPI(const qint32 _id)
 //---------------------------------------------------------------
 void IBComClientImpl::reqPositionAPI(const qint32 _id)
 {
+    Q_UNUSED(_id)
     m_pClient->reqPositions();
 }
 
 //---------------------------------------------------------------
 void IBComClientImpl::cancelPositionAPI(const qint32 _id)
 {
+    Q_UNUSED(_id)
     m_pClient->cancelPositions();
 }
 
@@ -564,7 +566,7 @@ void IBComClientImpl::orderStatus( OrderId orderId, const std::string& status, D
 	//	qint32	_clientId,
 	//	QString _whyHeld
 
-    COrderStatus orderStatusObj((qint32)orderId, QString::fromLocal8Bit(status.data(), status.size()), decimalToDouble(filled), decimalToDouble(remaining), avgFillPrice,
+    COrderStatus orderStatusObj((qint32)orderId, "", QString::fromLocal8Bit(status.data(), status.size()), decimalToDouble(filled), decimalToDouble(remaining), avgFillPrice,
         permId, parentId, lastFillPrice, clientId, QString::fromLocal8Bit(whyHeld.data(), whyHeld.size()), "", OA_BUY);
 
 

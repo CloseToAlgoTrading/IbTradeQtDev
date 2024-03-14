@@ -17,13 +17,14 @@ public:
     explicit DBManager(QObject *parent = nullptr);
     ~DBManager();
     void addCurrentPositionsState(const OpenPosition & position);
-    void getOpenPositions(const quint16 strategy_id);
+    void getOpenPositions(const QString &strategy_id);
 
 signals:
     void signalAddPositionQuery(const OpenPosition& position);
-    void signalExecuteGetOpenPositionsQuery(const quint16 strategy_id);
+    void signalExecuteGetOpenPositionsQuery(const QString& strategy_id);
     void signalAddNewTrade(const DbTrade& trade);
     void signalUpdateTradeCommision(const DbTradeCommission& trade);
+    void signalOpenPositionsFetched(const QList<OpenPosition>& positions);
 
 private slots:
     void onOpenPositionsFetched(const QList<OpenPosition>& positions);

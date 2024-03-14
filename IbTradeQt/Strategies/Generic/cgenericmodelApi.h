@@ -73,7 +73,7 @@ public:
     virtual ptrGenericModelType getExecutionModel() = 0;
 
     virtual void setParentModel(CGenericModelApi* pModel) = 0;
-    virtual ptrGenericModelType getParentModel() = 0;
+    virtual CGenericModelApi* getParentModel() = 0;
 
 
 

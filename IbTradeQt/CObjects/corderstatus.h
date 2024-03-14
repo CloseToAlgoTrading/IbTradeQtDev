@@ -66,6 +66,7 @@ namespace IBDataTypes
         // whyHeld			IBString	This field is used to identify an order held when TWS is trying to locate shares for a short sell.The value used to indicate this is 'locate'.
 
         qint32	m_id;
+        QString m_Ticker;
         QString m_status;
         qreal	m_filled;
         qreal	m_remaining;
@@ -86,6 +87,7 @@ namespace IBDataTypes
     public:
         COrderStatus();
         COrderStatus(qint32	_id,
+            QString _Ticker,
             QString _status,
             qreal	_filled,
             qreal	_remaining,
@@ -110,8 +112,11 @@ namespace IBDataTypes
         QSharedDataPointer<COrderStatusData> d;
 
     public:
+
         qint32 getId() const { return d->m_id; }
         void setId(qint32 val) { d->m_id = val; }
+        QString getTicker() const { return d->m_Ticker; }
+        void setTicker(QString val) { d->m_Ticker = val; }
         QString getStatus() const { return d->m_status; }
         void setStatus(QString val) { d->m_status = val; }
         qreal getFilled() const { return d->m_filled; }
