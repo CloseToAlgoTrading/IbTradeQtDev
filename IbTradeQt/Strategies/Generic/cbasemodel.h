@@ -12,6 +12,12 @@
 #include <QJsonObject>
 #include "UnifiedModelData.h"
 #include <QObject>
+#include "dbdatatypes.h"
+#include "dbmanager.h"
+#include "cmodelstate.h"
+#include <memory>  // For std::unique_ptr
+
+
 
 class CBaseModel : public CProcessingBase_v2, public CGenericModelApi
 {
@@ -37,7 +43,6 @@ public:
 
     virtual QUuid getId() const override;
     virtual void setId(const QUuid& id) override;
-
 
     virtual void setActivationState(bool state) override;
     virtual void setParentActivationState(bool state) override;
@@ -82,7 +87,9 @@ public:
     virtual void setParentModel(CGenericModelApi* pModel) override;
     virtual CGenericModelApi* getParentModel() override;
 
-
+    inline auto getStrUuId(){
+        return m_uuid.toString(QUuid::WithoutBraces).toStdString();
+    }
 protected:
     void connectModels();
     void disconnectModels();
@@ -108,17 +115,54 @@ protected:
 
     CGenericModelApi* m_ParentModel;
 
+    DBManager m_dbManager;
+
+
+/* Init Flags */
+public:
+    bool m_isIdSet;
+    bool m_isDbConnected;
+    bool m_isDbInfoFetched;
+    bool m_isDbDataFetched;
+
+    inline void validateModelInit();
+
+/* State Machine */
+public:
+    std::unique_ptr<CModelState> currentState;
+    void handleEvent(const e_modelStateEvent& event);
+    void setState(std::unique_ptr<CModelState> state);
+/*.................*/
 
 public slots:
     virtual void onUpdateParametersSlot(const QVariantMap& parameters);
     virtual void processData(DataListPtr data);
-    void onTimeoutSlot();
-    //public: signals:
-    //    void onUpdateParametersSignal(const QVariantMap& parameters);
+    virtual void onTimeoutSlot();
     virtual void onUpdateServerConnectionStateSlot(bool state);
+
+    virtual void slotDbManagerConnectionState(const bool state);
 
 signals:
     void dataProcessed(DataListPtr data);
+
+
+/* Temp */
+private:
+    qreal m_availableFunds;
+    qreal m_usedFunds;
+    QList<OpenPosition> m_OpenPositionList;
+
+public:
+    virtual qreal getAvailableFunds() const;
+    virtual void setAvailableFunds(const qreal funds);
+    virtual QList<OpenPosition> getOpenPositions() const;
+
+
+    /* temp here */
+    virtual void requestInitData();
+    void setIsIdSet(bool newIsIdSet);
+    void setIsDbConnected(bool newIsDbConnected);
+    void setIsDbInfoFetched(bool newIsDbInfoFetched);
 };
 
 #endif // CBASEMODEL_H

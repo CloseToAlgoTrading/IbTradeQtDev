@@ -179,9 +179,12 @@ HEADERS += \
     Strategies/Generic/csma.h \
     Strategies/Generic/cstrategyfactory.h \
     Strategies/Generic/cteststrategy.h \
+    Strategies/Generic/modelConstants.h \
     Strategies/PairTrader/PairTradingGui.h \
     Strategies/PairTrader/PairTradingPresenter.h \
     Strategies/PairTrader/pairtraderpm.h \
+    Strategies/StateMachine/cmodelstate.h \
+    Strategies/StateMachine/cmodelstateimpl.h \
     baseimpl.h \
     AboutDialog/aboutdialog.h \
     AboutDialog/AboutDlgPresener.h \
@@ -315,6 +318,7 @@ INCLUDEPATH += \
     $$PWD/Strategies/AutoDeltAlignment/header\
     $$PWD/Strategies/PairTrader\
     $$PWD/Strategies/Generic\
+    $$PWD/Strategies/StateMachine\
     $$PWD/GeneratedIncludes \
     $$PWD/DBStore
 

@@ -16,8 +16,8 @@ public:
 
     ModelType modelType() const override { return ModelType::STRATEGY_REBALANCE_MODEL; }
 
-private:
-    DBManager m_dbManager;
+//private:
+    //DBManager m_dbManager;
 
 public slots:
     virtual void processData(DataListPtr data) override;

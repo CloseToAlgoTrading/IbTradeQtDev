@@ -1,8 +1,9 @@
 #include "cbasicaccount.h"
+#include "modelConstants.h"
 
 CBasicAccount::CBasicAccount(QObject *parent) : CBasicStrategy_V2(parent)
 {
-    this->m_InfoMap["IsParentActivated"] = true;
+    this->m_InfoMap[CIM_IsParentActivated] = true;
 
     m_Name = "Account";
     this->m_InfoMap["name"] = "Account";

@@ -21,23 +21,6 @@ inline QSqlQuery query_addCurrentPosition(const OpenPosition &position, const QS
     return query;
 }
 
-// inline QSqlQuery query_addNewTrade(const OpenPosition &position) {
-//     QSqlQuery query;
-//     query.prepare("INSERT INTO open_positions (strategyId, symbol, quantity, price, pnl, fee, date, status) "
-//                   "VALUES (:strategyId, :symbol, :quantity, :price, :pnl, :fee, :date, :status)");
-
-//     query.bindValue(":strategyId", position.strategyId);
-//     query.bindValue(":symbol", position.symbol);
-//     query.bindValue(":quantity", position.quantity);
-//     query.bindValue(":price", position.price);
-//     query.bindValue(":pnl", position.pnl);
-//     query.bindValue(":fee", position.fee);
-//     query.bindValue(":date", position.date);
-//     query.bindValue(":status", position.status);
-
-//     return query;
-// }
-
 
 inline QSqlQuery query_getOpenPositions(const QString& strategyId, const QString& uniqueConnectionName) {
     QSqlQuery query(QSqlDatabase::database(uniqueConnectionName));
@@ -80,5 +63,74 @@ inline QSqlQuery query_updateTrade(const DbTradeCommission& obj, const QString& 
 
     return query;
 }
+
+inline QSqlQuery query_addOrUpdateDbStrategyData(const DbStrategyData& obj, const QString& uniqueConnectionName) {
+    QSqlQuery query(QSqlDatabase::database(uniqueConnectionName));
+    query.prepare("INSERT INTO StrategyData (strategyId, availableBP, usedBP, realizedPnL, unrealizedPnL, pnlPercentage, fees) "
+                  "VALUES (:strategyId, :availableBP, :usedBP, :realizedPnL, :unrealizedPnL, :pnlPercentage, :fees) "
+                  "ON CONFLICT(strategyId) DO UPDATE SET "
+                  "availableBP = excluded.availableBP, "
+                  "usedBP = excluded.usedBP, "
+                  "realizedPnL = excluded.realizedPnL, "
+                  "unrealizedPnL = excluded.unrealizedPnL, "
+                  "pnlPercentage = excluded.pnlPercentage, "
+                  "fees = excluded.fees");
+
+    query.bindValue(":strategyId", obj.strategyId);
+    query.bindValue(":availableBP", obj.availableBP);
+    query.bindValue(":usedBP", obj.usedBP);
+    query.bindValue(":realizedPnL", obj.realizedPnL);
+    query.bindValue(":unrealizedPnL", obj.unrealizedPnL);
+    query.bindValue(":pnlPercentage", obj.pnlPercentage);
+    query.bindValue(":fees", obj.fees);
+
+    return query;
+}
+
+inline QSqlQuery query_getDbStrategyData(const QString& strategyId, const QString& uniqueConnectionName) {
+    QSqlQuery query(QSqlDatabase::database(uniqueConnectionName));
+    query.prepare("SELECT strategyId, availableBP, usedBP, realizedPnL, unrealizedPnL, pnlPercentage, fees "
+                  "FROM StrategyData "
+                  "WHERE strategyId = :strategyId");
+    query.bindValue(":strategyId", strategyId);
+
+    return query;
+}
+
+inline QSqlQuery query_addOrUpdateDbStrategyInfo(const DbStrategyInfo& obj, const QString& uniqueConnectionName) {
+    QSqlQuery query(QSqlDatabase::database(uniqueConnectionName));
+    query.prepare("INSERT INTO StrategyInfo (strategyId, strategyName, strategyDescription, createdAt, updatedAt, status, currency, initialBP) "
+                  "VALUES (:strategyId, :strategyName, :strategyDescription, :createdAt, :updatedAt, :status, :currency, :initialBP) "
+                  "ON CONFLICT(strategyId) DO UPDATE SET "
+                  "strategyName = excluded.strategyName, "
+                  "strategyDescription = excluded.strategyDescription, "
+                  "createdAt = excluded.createdAt, "
+                  "updatedAt = excluded.updatedAt, "
+                  "status = excluded.status, "
+                  "currency = excluded.currency, "
+                  "initialBP = excluded.initialBP");
+
+    query.bindValue(":strategyId", obj.strategyId);
+    query.bindValue(":strategyName", obj.strategyName);
+    query.bindValue(":strategyDescription", obj.strategyDescription);
+    query.bindValue(":createdAt", obj.createdAt);
+    query.bindValue(":updatedAt", obj.updatedAt);
+    query.bindValue(":status", obj.status);
+    query.bindValue(":currency", obj.currency);
+    query.bindValue(":initialBP", obj.initialBP);
+
+    return query;
+}
+
+inline QSqlQuery query_getDbStrategyInfo(const QString& strategyId, const QString& uniqueConnectionName) {
+    QSqlQuery query(QSqlDatabase::database(uniqueConnectionName));
+    query.prepare("SELECT strategyId, strategyName, strategyDescription, createdAt, updatedAt, status, currency, initialBP "
+                  "FROM StrategyInfo "
+                  "WHERE strategyId = :strategyId");
+    query.bindValue(":strategyId", strategyId);
+
+    return query;
+}
+
 
 #endif // DBQUERY_H

@@ -23,7 +23,7 @@ public:
     virtual bool stop() override;
 
 private:
-    DBManager m_dbManager;
+    //DBManager m_dbManager;
     COrderStatus m_Oder;
 
 public slots:

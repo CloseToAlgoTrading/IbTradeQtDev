@@ -1,11 +1,12 @@
 
 #include "cbaserebalancemodel.h"
+#include "modelConstants.h"
 
 Q_LOGGING_CATEGORY(BasicRebalanceModelLog, "BasicRebalanceModelLog.PM");
 
 CBaseRebalanceModel::CBaseRebalanceModel(QObject *parent)
     : CBasicStrategy_V2{parent}
-    , m_dbManager(parent)
+    //, m_dbManager(parent)
 {
     m_Name = "Base Rebalance Model";
     this->setName("Base Rebalance Model");
@@ -24,7 +25,7 @@ void CBaseRebalanceModel::processData(DataListPtr data)
         if(nullptr != m_ParentModel)
         {
             auto temp = m_ParentModel->getParameters();
-            _bp = temp["BP"].toReal();
+            _bp = temp[CPM_BP].toReal();
         }
 
         auto n = _bp / data->length();

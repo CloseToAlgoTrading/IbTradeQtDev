@@ -3,12 +3,13 @@
 #include <QRandomGenerator>
 #include <QJsonArray>
 #include "cstrategyfactory.h"
+#include "modelConstants.h"
+#include "cmodelstateimpl.h"
 
 CBaseModel::CBaseModel(QObject *parent): CProcessingBase_v2(parent)
     , m_Models()
     , m_ParametersMap()
     , m_InfoMap()
-    //    , m_DataProvider()
     , m_assetList()
     , m_genericInfo()
     , m_tmpTimer()
@@ -18,6 +19,10 @@ CBaseModel::CBaseModel(QObject *parent): CProcessingBase_v2(parent)
     , m_RiskModel()
     , m_ExecutionModel()
     , m_ParentModel()
+    , m_dbManager(parent)
+    , m_availableFunds(10000.0)
+    , m_usedFunds(0.0)
+    , m_OpenPositionList()
 {
     m_Name = "basemodel";
     //this->m_genericInfo["test_pnl"] = 0.2f;
@@ -25,11 +30,15 @@ CBaseModel::CBaseModel(QObject *parent): CProcessingBase_v2(parent)
 
 //    QObject::connect(&m_tmpTimer, &QTimer::timeout, this, &CBaseModel::onTimeoutSlot);
 //    m_tmpTimer.start(100);
-    this->m_InfoMap["IsStarted"] = false;
-    this->m_InfoMap["IsParentActivated"] = false;
+    this->m_InfoMap[CIM_IsStarted] = false;
+    this->m_InfoMap[CIM_IsParentActivated] = false;
 
 //    this->getIBrokerDataProvider()->getClien().data()
 
+    //connect(signalDBManagerState)
+    connect(&m_dbManager, &DBManager::signalDBManagerState, this, &CBaseModel::slotDbManagerConnectionState, Qt::AutoConnection);
+
+    setState(std::make_unique<InitState>());
 }
 
 void CBaseModel::addModel(ptrGenericModelType pModel)
@@ -84,10 +93,6 @@ bool CBaseModel::start()
         }
     }
 
-    // auto name = getName();
-    // auto _executionModel = getExecutionModel();
-    // if (nullptr != _executionModel)
-    //     _executionModel->start();
     if (auto _executionModel = getExecutionModel()) _executionModel->start();
 
     return true;
@@ -113,11 +118,12 @@ QUuid CBaseModel::getId() const
 void CBaseModel::setId(const QUuid &id)
 {
     this->m_uuid = id;
+    setIsIdSet(true);
 }
 
 void CBaseModel::setActivationState(bool state)
 {
-    this->m_InfoMap["IsStarted"] = state;
+    this->m_InfoMap[CIM_IsStarted] = state;
     for (auto model : m_Models) {
         if(true == getParentActivatedState())
         {
@@ -140,7 +146,7 @@ void CBaseModel::setActivationState(bool state)
 
 void CBaseModel::setParentActivationState(bool state)
 {
-    this->m_InfoMap["IsParentActivated"] = state;
+    this->m_InfoMap[CIM_IsParentActivated] = state;
     for (auto model : m_Models) {
         if((true == state) && (true == getActiveStatus()))
         {
@@ -246,29 +252,6 @@ void CBaseModel::fromJson(const QJsonObject &json)
     if (auto model = createAndLoadModel(json["riskModel"])) m_RiskModel = *model;
     if (auto model = createAndLoadModel(json["executionModel"])) m_ExecutionModel = *model;
 
-/*
- *     if (auto model = createAndLoadModel(json["selectionModel"])) {
-        m_SelectionModel = *model;
-        m_SelectionModel->setBrokerDataProvider(getIBrokerDataProvider());
-    }
-    if (auto model = createAndLoadModel(json["alphaModel"])) {
-        m_AlphaModel = *model;
-        m_AlphaModel->setBrokerDataProvider(getIBrokerDataProvider());
-    }
-    if (auto model = createAndLoadModel(json["rebalanceModel"])) {
-        m_RebalanceModel = *model;
-        m_RebalanceModel->setBrokerDataProvider(getIBrokerDataProvider());
-    }
-    if (auto model = createAndLoadModel(json["riskModel"])) {
-        m_RiskModel = *model;
-        m_RiskModel->setBrokerDataProvider(getIBrokerDataProvider());
-    }
-    if (auto model = createAndLoadModel(json["executionModel"])) {
-        m_ExecutionModel = *model;
-        m_ExecutionModel->setBrokerDataProvider(getIBrokerDataProvider());
-    }
-
-*/
 }
 
 
@@ -350,6 +333,27 @@ void CBaseModel::onTimeoutSlot()
 void CBaseModel::onUpdateServerConnectionStateSlot(bool state)
 {
     qDebug() << "server state: " << ((state == true) ? "Connected" : "Disconnected");
+}
+
+void CBaseModel::slotDbManagerConnectionState(const bool state)
+{
+    //qDebug() << "DB state: " << ((state == true) ? "Connected" : "Disconnected");
+    if(state == true) setIsDbConnected(true);
+}
+
+qreal CBaseModel::getAvailableFunds() const
+{
+    return this->m_availableFunds;
+}
+
+void CBaseModel::setAvailableFunds(const qreal funds)
+{
+    this->m_availableFunds = funds;
+}
+
+QList<OpenPosition> CBaseModel::getOpenPositions() const
+{
+    return this->m_OpenPositionList;
 }
 
 void CBaseModel::processData(DataListPtr data)
@@ -489,14 +493,62 @@ void CBaseModel::disconnectModels() {
     }
 }
 
+void CBaseModel::setIsDbInfoFetched(bool newIsDbInfoFetched)
+{
+    m_isDbInfoFetched = newIsDbInfoFetched;
+}
+
+void CBaseModel::setIsDbConnected(bool newIsDbConnected)
+{
+    m_isDbConnected = newIsDbConnected;
+    validateModelInit();
+}
+
+void CBaseModel::setIsIdSet(bool newIsIdSet)
+{
+    m_isIdSet = newIsIdSet;
+    validateModelInit();
+}
+
+inline void CBaseModel::validateModelInit()
+{
+    if((m_isIdSet = true) && (m_isDbConnected = true))
+    {
+        handleEvent(e_modelStateEvent::MSE_DBReady);
+    }
+}
+
+void CBaseModel::handleEvent(const e_modelStateEvent &event)
+{
+    if (currentState) {
+        currentState->handleEvent(this, event);
+    }
+}
+
+void CBaseModel::setState(std::unique_ptr<CModelState> state)
+{
+    if (currentState) {
+        currentState->exitState(this);
+    }
+    currentState = std::move(state);  // Transfer ownership to the unique_ptr
+    if (currentState) {
+        currentState->enterState(this);
+    }
+}
+
+void CBaseModel::requestInitData()
+{
+    emit m_dbManager.signalGetStrategyInfo(getStrUuId().c_str());
+}
+
 bool CBaseModel::getActiveStatus() const
 {
-    return m_InfoMap["IsStarted"].toBool();
+    return m_InfoMap[CIM_IsStarted].toBool();
 }
 
 bool CBaseModel::getParentActivatedState() const
 {
-    return m_InfoMap["IsParentActivated"].toBool();
+    return m_InfoMap[CIM_IsParentActivated].toBool();
 }
 
 void CBaseModel::setParentModel(CGenericModelApi* pModel)

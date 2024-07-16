@@ -23,7 +23,8 @@ bool DBHandler::connectDB(const QString& dbName) {
         return false;
     }
 
-    return initializeDatabase();
+    //return initializeDatabase();
+    return true;
 }
 
 void DBHandler::disconnectDB() {
@@ -53,14 +54,30 @@ bool DBHandler::initializeDatabase() {
 
 
     // Initialize database tables
-    bool success = createTableIfNotExists("Strategies",
-                           "CREATE TABLE IF NOT EXISTS Strategies ("
-                           "strategyId VARCHAR(64) PRIMARY KEY, "
-                           "maxDrawDown DOUBLE, "
-                           "pnlPerc DOUBLE, "
-                           "pnl DOUBLE, "
-                           "fee DOUBLE)"
-                           );
+    // StrategyData Table
+    bool success = createTableIfNotExists("StrategyData",
+                                      "CREATE TABLE IF NOT EXISTS StrategyData ("
+                                      "strategyId VARCHAR(64) PRIMARY KEY, "
+                                      "availableBP DOUBLE, "
+                                      "usedBP DOUBLE, "
+                                      "realizedPnL DOUBLE, "
+                                      "unrealizedPnL DOUBLE, "
+                                      "pnlPercentage DOUBLE, "
+                                      "fees DOUBLE)"
+                                      );
+
+    // StrategyInfo Table
+    success |= createTableIfNotExists("StrategyInfo",
+                                      "CREATE TABLE IF NOT EXISTS StrategyInfo ("
+                                      "strategyId VARCHAR(64) PRIMARY KEY, "
+                                      "strategyName VARCHAR(255), "
+                                      "strategyDescription TEXT, "
+                                      "createdAt DATETIME, "
+                                      "updatedAt DATETIME, "
+                                      "status VARCHAR(64), "
+                                      "currency VARCHAR(64), "
+                                      "initialBP DOUBLE)"
+                                      );
 
     // Trades Table
     success |= createTableIfNotExists("Trades",
@@ -74,7 +91,7 @@ bool DBHandler::initializeDatabase() {
                            "fee DOUBLE, "
                            "date TEXT, "
                            "tradeType VARCHAR(10), "
-                           "FOREIGN KEY (strategyId) REFERENCES Strategies(strategyId))"
+                           "FOREIGN KEY (strategyId) REFERENCES StrategyInfo(strategyId))"
                            );
 
     // Positions Table
@@ -90,94 +107,14 @@ bool DBHandler::initializeDatabase() {
                                     closeDate TEXT,
                                     status INT,
                                     PRIMARY KEY (strategyId, symbol),
-                                    FOREIGN KEY (strategyId) REFERENCES Strategies(strategyId)
+                                    FOREIGN KEY (strategyId) REFERENCES StrategyInfo(strategyId)
                                 )
                             )"
                            );
 
-    success |= createTableIfNotExists("open_positions",
-                                     "CREATE TABLE IF NOT EXISTS open_positions ("
-                                           "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-                                           "strategyId VARCHAR(64), "
-                                           "symbol VARCHAR(10), "
-                                           "quantity INTEGER, "
-                                           "price REAL, "
-                                           "pnl REAL, "
-                                           "fee REAL, "
-                                           "date TEXT, "
-                                           "status INTEGER"
-                                     ")"
-                                     );
-
     success |= createTrigger(m_db);
 
   return success;
-}
-
-void DBHandler::slotAddPositionQuery(const OpenPosition &position)
-{
-    auto query = query_addCurrentPosition(position, m_uniqueConnectionName);
-    if (!query.exec()) {
-        qDebug() << "Error executing query:" << query.lastError();
-    } else {
-        qDebug() << "Query executed successfully";  // Confirm successful execution
-        // Process query results if needed
-    }
-}
-
-void DBHandler::slotAddNewTrade(const DbTrade &trade)
-{
-    auto query = query_addNewTrade(trade, m_uniqueConnectionName);
-    if (!query.exec()) {
-        qDebug() << "Error executing query:" << query.lastError();
-    } else {
-        qDebug() << "Query executed successfully";  // Confirm successful execution
-        // Process query results if needed
-    }
-}
-
-void DBHandler::slotUpdateTradeCommission(const DbTradeCommission &tradeComm)
-{
-    auto query = query_updateTrade(tradeComm, m_uniqueConnectionName);
-    if (!query.exec()) {
-        qDebug() << "Error executing query:" << query.lastError();
-    } else {
-        qDebug() << "Query executed successfully";  // Confirm successful execution
-        // Process query results if needed
-    }
-
-}
-
-void DBHandler::initializeConnectionSlot()
-{
-    connectDB("myLocalDb.sqlite");
-    initializeDatabase();
-}
-
-void DBHandler::fetchOpenPositionsSlot(const QString& strategy_id)
-{
-    QList<OpenPosition> positionsList;
-    QSqlQuery query(query_getOpenPositions(strategy_id, m_uniqueConnectionName));
-    if (!query.exec()) {
-        qDebug() << "Error fetching open positions:" << query.lastError();
-    }
-    else
-    {
-        while (query.next()) {
-            OpenPosition position;
-            position.strategyId = query.value("strategyId").toString();
-            position.symbol = query.value("symbol").toString();
-            position.quantity = query.value("quantity").toInt();
-            position.price = query.value("averageOpenPrice").toDouble();
-            position.pnl = query.value("pnl").toDouble();
-            position.fee = query.value("fee").toDouble();
-            position.date = query.value("closeDate").toString();
-            position.status = query.value("status").toInt();
-
-            positionsList.append(position);
-        }
-    }
-    emit openPositionsFetched(positionsList);
 }
 
 bool DBHandler::createTrigger(QSqlDatabase& db) {
@@ -218,3 +155,152 @@ bool DBHandler::createTrigger(QSqlDatabase& db) {
 
     return true;
 }
+
+
+void DBHandler::slotAddPositionQuery(const OpenPosition &position)
+{
+    auto query = query_addCurrentPosition(position, m_uniqueConnectionName);
+    if (!query.exec()) {
+        qDebug() << "Error executing query:" << query.lastError();
+    } else {
+        qDebug() << "Query executed successfully";  // Confirm successful execution
+        // Process query results if needed
+    }
+}
+
+void DBHandler::slotAddNewTrade(const DbTrade &trade)
+{
+    auto query = query_addNewTrade(trade, m_uniqueConnectionName);
+    if (!query.exec()) {
+        qDebug() << "Error executing query:" << query.lastError();
+    } else {
+        qDebug() << "Query executed successfully";  // Confirm successful execution
+        // Process query results if needed
+    }
+}
+
+void DBHandler::slotUpdateTradeCommission(const DbTradeCommission &tradeComm)
+{
+    auto query = query_updateTrade(tradeComm, m_uniqueConnectionName);
+    if (!query.exec()) {
+        qDebug() << "Error executing query:" << query.lastError();
+    } else {
+        qDebug() << "Query executed successfully";  // Confirm successful execution
+        // Process query results if needed
+    }
+
+}
+
+void DBHandler::initializeConnectionSlot()
+{
+    bool isConnected = connectDB("myLocalDb.sqlite");
+    if(isConnected)
+        isConnected = initializeDatabase();
+    emit signalDBConnectionState(isConnected);
+}
+
+void DBHandler::fetchOpenPositionsSlot(const QString& strategy_id)
+{
+    QList<OpenPosition> positionsList;
+    QSqlQuery query(query_getOpenPositions(strategy_id, m_uniqueConnectionName));
+    if (!query.exec()) {
+        qDebug() << "Error fetching open positions:" << query.lastError();
+    }
+    else
+    {
+        while (query.next()) {
+            OpenPosition position;
+            position.strategyId = query.value("strategyId").toString();
+            position.symbol = query.value("symbol").toString();
+            position.quantity = query.value("quantity").toInt();
+            position.price = query.value("averageOpenPrice").toDouble();
+            position.pnl = query.value("pnl").toDouble();
+            position.fee = query.value("fee").toDouble();
+            position.date = query.value("closeDate").toString();
+            position.status = query.value("status").toInt();
+
+            positionsList.append(position);
+        }
+    }
+    emit openPositionsFetched(positionsList);
+}
+
+void DBHandler::slotAddOrUpdateDbStrategyInfo(const DbStrategyInfo &obj)
+{
+    auto query = query_addOrUpdateDbStrategyInfo(obj, m_uniqueConnectionName);
+    if (!query.exec()) {
+        qDebug() << "Error executing query:" << query.lastError();
+    } else {
+        qDebug() << "Query executed successfully";  // Confirm successful execution
+        // Process query results if needed
+    }
+}
+
+void DBHandler::slotGetStrategyInfo(const QString &strategy_id)
+{
+    DbStrategyInfo obj;
+    QSqlQuery query(query_getDbStrategyInfo(strategy_id, m_uniqueConnectionName));
+    if (!query.exec()) {
+        qDebug() << "Error fetching strategy info:" << query.lastError();
+        emit signalStrategyInfoFetched(obj, false);
+    }
+    else
+    {
+        if (query.next()) {  // Assuming only one result per strategy_id
+            obj.strategyId = query.value("strategyId").toString();
+            obj.strategyName = query.value("strategyName").toString();
+            obj.strategyDescription = query.value("strategyDescription").toString();
+            obj.createdAt = query.value("createdAt").toDateTime();
+            obj.updatedAt = query.value("updatedAt").toDateTime();
+            obj.status = query.value("status").toString();
+            obj.currency = query.value("currency").toString();
+            obj.initialBP = query.value("initialBP").toDouble();
+
+            emit signalStrategyInfoFetched(obj, true);
+        } else {
+            qDebug() << "No strategy info found for strategy_id:" << strategy_id;
+            emit signalStrategyInfoFetched(obj, false);
+        }
+    }
+}
+
+
+void DBHandler::slotAddOrUpdateDbStrategyData(const DbStrategyData &obj)
+{
+    auto query = query_addOrUpdateDbStrategyData(obj, m_uniqueConnectionName);
+    if (!query.exec()) {
+        qDebug() << "Error executing query:" << query.lastError();
+    } else {
+        qDebug() << "Query executed successfully";  // Confirm successful execution
+        // Process query results if needed
+    }
+}
+
+void DBHandler::slotGetStrategyData(const QString &strategy_id)
+{
+    DbStrategyData obj;
+    QSqlQuery query(query_getDbStrategyData(strategy_id, m_uniqueConnectionName));
+    if (!query.exec()) {
+        qDebug() << "Error fetching strategy data:" << query.lastError();
+        emit signalStrategyDataFetched(obj, false);
+    }
+    else
+    {
+        if (query.next()) {  // Assuming only one result per strategy_id
+            obj.strategyId = query.value("strategyId").toString();
+            obj.availableBP = query.value("availableBP").toDouble();
+            obj.usedBP = query.value("usedBP").toDouble();
+            obj.realizedPnL = query.value("realizedPnL").toDouble();
+            obj.unrealizedPnL = query.value("unrealizedPnL").toDouble();
+            obj.pnlPercentage = query.value("pnlPercentage").toDouble();
+            obj.fees = query.value("fees").toDouble();
+
+            emit signalStrategyDataFetched(obj, true);
+        } else {
+            qDebug() << "No strategy data found for strategy_id:" << strategy_id;
+            emit signalStrategyDataFetched(obj, false);
+        }
+    }
+}
+
+

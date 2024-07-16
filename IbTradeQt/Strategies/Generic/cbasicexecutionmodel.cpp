@@ -10,7 +10,7 @@ Q_LOGGING_CATEGORY(BasicExecutionModelLog, "BasicExecutionModel.PM");
 
 CBasicExecutionModel::CBasicExecutionModel(QObject *parent)
     : CBasicStrategy_V2{parent}
-    , m_dbManager(parent)
+    //, m_dbManager(parent)
     , m_Oder()
 {
     m_Name = "Base Execution Model";

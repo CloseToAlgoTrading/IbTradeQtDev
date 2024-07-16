@@ -25,9 +25,16 @@ signals:
     void signalAddNewTrade(const DbTrade& trade);
     void signalUpdateTradeCommision(const DbTradeCommission& trade);
     void signalOpenPositionsFetched(const QList<OpenPosition>& positions);
+    void signalAddOrUpdateDbStrategyInfo(const DbStrategyInfo& obj);
+    void signalGetStrategyInfo(const QString& strategy_id);
+    void signalAddOrUpdateDbStrategyData(const DbStrategyData& obj);
+    void signalGetStrategyData(const QString& strategy_id);
+
+    void signalDBManagerState(const bool state);
 
 private slots:
     void onOpenPositionsFetched(const QList<OpenPosition>& positions);
+    void slotDbConnectionState(const bool state);
 
 private:
     std::unique_ptr<DBHandler> m_db;

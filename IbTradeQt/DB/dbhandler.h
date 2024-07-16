@@ -21,6 +21,10 @@ private:
     QString m_uniqueConnectionName;
 signals:
     void openPositionsFetched(const QList<OpenPosition>& positions);
+    void signalStrategyInfoFetched(const DbStrategyInfo& obj, bool isValid);
+    void signalStrategyDataFetched(const DbStrategyData& obj, bool isValid);
+
+    void signalDBConnectionState(const bool state);
 
 public slots:
     void slotAddPositionQuery(const OpenPosition& position);
@@ -29,10 +33,10 @@ public slots:
     void initializeConnectionSlot();
     void fetchOpenPositionsSlot(const QString& strategy_id);
 
-
-
-
-
+    void slotAddOrUpdateDbStrategyInfo(const DbStrategyInfo& obj);
+    void slotGetStrategyInfo(const QString& strategy_id);
+    void slotAddOrUpdateDbStrategyData(const DbStrategyData& obj);
+    void slotGetStrategyData(const QString& strategy_id);
 
 private:
     QSqlDatabase m_db;
