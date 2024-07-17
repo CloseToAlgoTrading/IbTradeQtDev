@@ -20,6 +20,7 @@ CBaseModel::CBaseModel(QObject *parent): CProcessingBase_v2(parent)
     , m_ExecutionModel()
     , m_ParentModel()
     , m_dbManager(parent)
+    , m_ModelInfo()
     , m_availableFunds(10000.0)
     , m_usedFunds(0.0)
     , m_OpenPositionList()
@@ -37,8 +38,9 @@ CBaseModel::CBaseModel(QObject *parent): CProcessingBase_v2(parent)
 
     //connect(signalDBManagerState)
     connect(&m_dbManager, &DBManager::signalDBManagerState, this, &CBaseModel::slotDbManagerConnectionState, Qt::AutoConnection);
-
+    connect(m_dbManager.getDbHandler(), &DBHandler::signalModelInfoFetched, this, &CBaseModel::slotModelInfoFetched, Qt::AutoConnection);
     setState(std::make_unique<InitState>());
+
 }
 
 void CBaseModel::addModel(ptrGenericModelType pModel)
@@ -341,6 +343,17 @@ void CBaseModel::slotDbManagerConnectionState(const bool state)
     if(state == true) setIsDbConnected(true);
 }
 
+void CBaseModel::slotModelInfoFetched(const DbModelInfo &obj, e_queryStatus state)
+{
+    if(e_queryStatus::QS_VALID == state)
+    {
+        m_ModelInfo = obj;
+        qDebug() << "Model Info: " << m_ModelInfo.modelId << m_ModelInfo.modelName;
+    }
+
+    if(getState() == e_modelState::MS_Init2) setIsDbInfoFetched(true);
+}
+
 qreal CBaseModel::getAvailableFunds() const
 {
     return this->m_availableFunds;
@@ -496,6 +509,7 @@ void CBaseModel::disconnectModels() {
 void CBaseModel::setIsDbInfoFetched(bool newIsDbInfoFetched)
 {
     m_isDbInfoFetched = newIsDbInfoFetched;
+    validateModelInit2();
 }
 
 void CBaseModel::setIsDbConnected(bool newIsDbConnected)
@@ -512,10 +526,23 @@ void CBaseModel::setIsIdSet(bool newIsIdSet)
 
 inline void CBaseModel::validateModelInit()
 {
-    if((m_isIdSet = true) && (m_isDbConnected = true))
+    if((getState()== e_modelState::MS_Init) && (m_isIdSet == true) && (m_isDbConnected == true))
     {
         handleEvent(e_modelStateEvent::MSE_DBReady);
     }
+}
+
+void CBaseModel::validateModelInit2()
+{
+    if((getState()== e_modelState::MS_Init2) && (m_isDbInfoFetched == true) && (isInit2AdditionalDataReady() == true))
+    {
+        handleEvent(e_modelStateEvent::MSE_InitCompleted);
+    }
+}
+
+bool CBaseModel::isInit2AdditionalDataReady()
+{
+    return true;
 }
 
 void CBaseModel::handleEvent(const e_modelStateEvent &event)
@@ -536,9 +563,14 @@ void CBaseModel::setState(std::unique_ptr<CModelState> state)
     }
 }
 
+e_modelState CBaseModel::getState()
+{
+    return currentState->getStateID();
+}
+
 void CBaseModel::requestInitData()
 {
-    emit m_dbManager.signalGetStrategyInfo(getStrUuId().c_str());
+    emit m_dbManager.signalGetModelInfo(getStrUuId().c_str());
 }
 
 bool CBaseModel::getActiveStatus() const

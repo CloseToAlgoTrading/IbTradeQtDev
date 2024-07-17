@@ -16,8 +16,8 @@ DBManager::DBManager(QObject *parent)
 
     connect(this, &DBManager::signalAddOrUpdateDbStrategyData, m_db.get(), &DBHandler::slotAddOrUpdateDbStrategyData, Qt::QueuedConnection);
     connect(this, &DBManager::signalGetStrategyData, m_db.get(), &DBHandler::slotGetStrategyData, Qt::QueuedConnection);
-    connect(this, &DBManager::signalAddOrUpdateDbStrategyInfo, m_db.get(), &DBHandler::slotAddOrUpdateDbStrategyInfo, Qt::QueuedConnection);
-    connect(this, &DBManager::signalGetStrategyInfo, m_db.get(), &DBHandler::slotGetStrategyInfo, Qt::QueuedConnection);
+    connect(this, &DBManager::signalAddOrUpdateDbModelInfo, m_db.get(), &DBHandler::slotAddOrUpdateDbModelInfo, Qt::QueuedConnection);
+    connect(this, &DBManager::signalGetModelInfo, m_db.get(), &DBHandler::slotGetModelInfo, Qt::QueuedConnection);
 
 
     connect(m_db.get(), &DBHandler::openPositionsFetched, this, &DBManager::onOpenPositionsFetched, Qt::AutoConnection);
@@ -56,4 +56,9 @@ void DBManager::onOpenPositionsFetched(const QList<OpenPosition> &positions)
 void DBManager::slotDbConnectionState(const bool state)
 {
     emit signalDBManagerState(state);
+}
+
+DBHandler*DBManager::getDbHandler() const
+{
+    return m_db.get();
 }

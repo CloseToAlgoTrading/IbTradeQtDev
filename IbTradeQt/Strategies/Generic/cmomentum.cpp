@@ -8,7 +8,7 @@ Q_LOGGING_CATEGORY(MomentumPmLog, "Momentum.PM");
 
 cMomentum::cMomentum(QObject *parent)
     : CBasicStrategy_V2{parent}
-    , m_strategyInfo()
+//    , m_ModelInfo()
 {
     m_Name = "Momentum";
     this->setName("Momentum");
@@ -17,7 +17,7 @@ cMomentum::cMomentum(QObject *parent)
 
     //connect(&m_dbManager, &DBManager::signalOpenPositionsFetched, this, &CBaseRebalanceModel::slotOpenPositionsFetched, Qt::AutoConnection);
 
-    //emit m_dbManager.signalAddOrUpdateDbStrategyInfo(m_strategyInfo);
+    //emit m_dbManager.signalAddOrUpdateDbModelInfo(m_ModelInfo);
 }
 
 bool cMomentum::start()
@@ -51,17 +51,17 @@ bool cMomentum::stop()
 void cMomentum::slotDbManagerConnectionState(const bool state)
 {
     CBaseModel::slotDbManagerConnectionState(state);
-    /*m_strategyInfo.strategyId = m_uuid.toString(QUuid::WithoutBraces).toStdString().c_str();
-    m_strategyInfo.strategyName = "Momentum";
-    m_strategyInfo.strategyDescription = "A simple momentum strategy";
-    m_strategyInfo.initialBP = 10000.0f;
-    m_strategyInfo.createdAt = QDateTime::currentDateTime();
-    m_strategyInfo.updatedAt = m_strategyInfo.createdAt;
-    m_strategyInfo.currency = "USD";
-    m_strategyInfo.status = "active";
-*/
     qDebug() << "DB state: " << ((state == true) ? "Connected" : "Disconnected");
-    //emit m_dbManager.signalAddOrUpdateDbStrategyInfo(m_strategyInfo);
+
+    // m_ModelInfo.modelId = m_uuid.toString(QUuid::WithoutBraces).toStdString().c_str();
+    // m_ModelInfo.modelName = "Momentum";
+    // m_ModelInfo.modelDescription = "A simple momentum strategy";
+    // m_ModelInfo.createdAt = QDateTime::currentDateTime();
+    // m_ModelInfo.updatedAt = m_ModelInfo.createdAt;
+    // m_ModelInfo.status = "active";
+    // emit m_dbManager.signalAddOrUpdateDbModelInfo(m_ModelInfo);
+
+
 }
 
 

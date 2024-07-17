@@ -19,14 +19,16 @@ public:
     void addCurrentPositionsState(const OpenPosition & position);
     void getOpenPositions(const QString &strategy_id);
 
+    DBHandler*getDbHandler() const;
+
 signals:
     void signalAddPositionQuery(const OpenPosition& position);
     void signalExecuteGetOpenPositionsQuery(const QString& strategy_id);
     void signalAddNewTrade(const DbTrade& trade);
     void signalUpdateTradeCommision(const DbTradeCommission& trade);
     void signalOpenPositionsFetched(const QList<OpenPosition>& positions);
-    void signalAddOrUpdateDbStrategyInfo(const DbStrategyInfo& obj);
-    void signalGetStrategyInfo(const QString& strategy_id);
+    void signalAddOrUpdateDbModelInfo(const DbModelInfo& obj);
+    void signalGetModelInfo(const QString& strategy_id);
     void signalAddOrUpdateDbStrategyData(const DbStrategyData& obj);
     void signalGetStrategyData(const QString& strategy_id);
 

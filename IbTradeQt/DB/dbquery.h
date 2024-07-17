@@ -97,37 +97,33 @@ inline QSqlQuery query_getDbStrategyData(const QString& strategyId, const QStrin
     return query;
 }
 
-inline QSqlQuery query_addOrUpdateDbStrategyInfo(const DbStrategyInfo& obj, const QString& uniqueConnectionName) {
+inline QSqlQuery query_addOrUpdateDbModelInfo(const DbModelInfo& obj, const QString& uniqueConnectionName) {
     QSqlQuery query(QSqlDatabase::database(uniqueConnectionName));
-    query.prepare("INSERT INTO StrategyInfo (strategyId, strategyName, strategyDescription, createdAt, updatedAt, status, currency, initialBP) "
-                  "VALUES (:strategyId, :strategyName, :strategyDescription, :createdAt, :updatedAt, :status, :currency, :initialBP) "
-                  "ON CONFLICT(strategyId) DO UPDATE SET "
-                  "strategyName = excluded.strategyName, "
-                  "strategyDescription = excluded.strategyDescription, "
+    query.prepare("INSERT INTO ModelInfo (modelId, modelName, modelDescription, createdAt, updatedAt, status) "
+                  "VALUES (:modelId, :modelName, :modelDescription, :createdAt, :updatedAt, :status) "
+                  "ON CONFLICT(modelId) DO UPDATE SET "
+                  "modelName = excluded.modelName, "
+                  "modelDescription = excluded.modelDescription, "
                   "createdAt = excluded.createdAt, "
                   "updatedAt = excluded.updatedAt, "
-                  "status = excluded.status, "
-                  "currency = excluded.currency, "
-                  "initialBP = excluded.initialBP");
+                  "status = excluded.status ");
 
-    query.bindValue(":strategyId", obj.strategyId);
-    query.bindValue(":strategyName", obj.strategyName);
-    query.bindValue(":strategyDescription", obj.strategyDescription);
+    query.bindValue(":modelId", obj.modelId);
+    query.bindValue(":modelName", obj.modelName);
+    query.bindValue(":modelDescription", obj.modelDescription);
     query.bindValue(":createdAt", obj.createdAt);
     query.bindValue(":updatedAt", obj.updatedAt);
     query.bindValue(":status", obj.status);
-    query.bindValue(":currency", obj.currency);
-    query.bindValue(":initialBP", obj.initialBP);
 
     return query;
 }
 
-inline QSqlQuery query_getDbStrategyInfo(const QString& strategyId, const QString& uniqueConnectionName) {
+inline QSqlQuery query_getDbModelInfo(const QString& modelId, const QString& uniqueConnectionName) {
     QSqlQuery query(QSqlDatabase::database(uniqueConnectionName));
-    query.prepare("SELECT strategyId, strategyName, strategyDescription, createdAt, updatedAt, status, currency, initialBP "
-                  "FROM StrategyInfo "
-                  "WHERE strategyId = :strategyId");
-    query.bindValue(":strategyId", strategyId);
+    query.prepare("SELECT modelId, modelName, modelDescription, createdAt, updatedAt, status "
+                  "FROM ModelInfo "
+                  "WHERE modelId = :modelId");
+    query.bindValue(":modelId", modelId);
 
     return query;
 }

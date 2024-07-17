@@ -11,6 +11,12 @@ enum e_positionStatus {
     PS_PARTIALY_CLOSED
 };
 
+enum e_queryStatus{
+    QS_VALID = 0,
+    QS_NOT_FOUND,
+    QS_ERROR
+};
+
 struct OpenPosition {
     int id;            // Unique identifier, auto-incremented
     QString strategyId;// Identifier for the strategy
@@ -74,26 +80,22 @@ struct DbStrategyData {
     {}
 };
 
-struct DbStrategyInfo {
-    QString strategyId;          // Strategy ID
-    QString strategyName;        // Strategy Name
-    QString strategyDescription; // Strategy Description
+struct DbModelInfo {
+    QString modelId;          // Strategy ID
+    QString modelName;        // Strategy Name
+    QString modelDescription; // Strategy Description
     QDateTime createdAt;         // Creation Timestamp
     QDateTime updatedAt;         // Last Updated Timestamp
     QString status;              // Status of the Strategy
-    QString currency;            // Currency
-    double initialBP;
 
     // Default constructor
-    DbStrategyInfo()
-        : strategyId(""),
-        strategyName(""),
-        strategyDescription(""),
+    DbModelInfo()
+        : modelId(""),
+        modelName(""),
+        modelDescription(""),
         createdAt(),
         updatedAt(),
-        status(""),
-        currency(""),
-        initialBP(0.0)
+        status("")
     {}
 };
 

@@ -66,17 +66,15 @@ bool DBHandler::initializeDatabase() {
                                       "fees DOUBLE)"
                                       );
 
-    // StrategyInfo Table
-    success |= createTableIfNotExists("StrategyInfo",
-                                      "CREATE TABLE IF NOT EXISTS StrategyInfo ("
-                                      "strategyId VARCHAR(64) PRIMARY KEY, "
-                                      "strategyName VARCHAR(255), "
-                                      "strategyDescription TEXT, "
+    // ModelInfo Table
+    success |= createTableIfNotExists("ModelInfo",
+                                      "CREATE TABLE IF NOT EXISTS ModelInfo ("
+                                      "modelId VARCHAR(64) PRIMARY KEY, "
+                                      "modelName VARCHAR(255), "
+                                      "modelDescription TEXT, "
                                       "createdAt DATETIME, "
                                       "updatedAt DATETIME, "
-                                      "status VARCHAR(64), "
-                                      "currency VARCHAR(64), "
-                                      "initialBP DOUBLE)"
+                                      "status VARCHAR(64)) "
                                       );
 
     // Trades Table
@@ -91,7 +89,7 @@ bool DBHandler::initializeDatabase() {
                            "fee DOUBLE, "
                            "date TEXT, "
                            "tradeType VARCHAR(10), "
-                           "FOREIGN KEY (strategyId) REFERENCES StrategyInfo(strategyId))"
+                           "FOREIGN KEY (strategyId) REFERENCES ModelInfo(strategyId))"
                            );
 
     // Positions Table
@@ -107,7 +105,7 @@ bool DBHandler::initializeDatabase() {
                                     closeDate TEXT,
                                     status INT,
                                     PRIMARY KEY (strategyId, symbol),
-                                    FOREIGN KEY (strategyId) REFERENCES StrategyInfo(strategyId)
+                                    FOREIGN KEY (strategyId) REFERENCES ModelInfo(strategyId)
                                 )
                             )"
                            );
@@ -225,9 +223,9 @@ void DBHandler::fetchOpenPositionsSlot(const QString& strategy_id)
     emit openPositionsFetched(positionsList);
 }
 
-void DBHandler::slotAddOrUpdateDbStrategyInfo(const DbStrategyInfo &obj)
+void DBHandler::slotAddOrUpdateDbModelInfo(const DbModelInfo &obj)
 {
-    auto query = query_addOrUpdateDbStrategyInfo(obj, m_uniqueConnectionName);
+    auto query = query_addOrUpdateDbModelInfo(obj, m_uniqueConnectionName);
     if (!query.exec()) {
         qDebug() << "Error executing query:" << query.lastError();
     } else {
@@ -236,30 +234,28 @@ void DBHandler::slotAddOrUpdateDbStrategyInfo(const DbStrategyInfo &obj)
     }
 }
 
-void DBHandler::slotGetStrategyInfo(const QString &strategy_id)
+void DBHandler::slotGetModelInfo(const QString &modelId)
 {
-    DbStrategyInfo obj;
-    QSqlQuery query(query_getDbStrategyInfo(strategy_id, m_uniqueConnectionName));
+    DbModelInfo obj;
+    QSqlQuery query(query_getDbModelInfo(modelId, m_uniqueConnectionName));
     if (!query.exec()) {
-        qDebug() << "Error fetching strategy info:" << query.lastError();
-        emit signalStrategyInfoFetched(obj, false);
+        qDebug() << "Error fetching model info:" << query.lastError();
+        emit signalModelInfoFetched(obj, e_queryStatus::QS_ERROR);
     }
     else
     {
         if (query.next()) {  // Assuming only one result per strategy_id
-            obj.strategyId = query.value("strategyId").toString();
-            obj.strategyName = query.value("strategyName").toString();
-            obj.strategyDescription = query.value("strategyDescription").toString();
+            obj.modelId = query.value("modelId").toString();
+            obj.modelName = query.value("modelName").toString();
+            obj.modelDescription = query.value("modelDescription").toString();
             obj.createdAt = query.value("createdAt").toDateTime();
             obj.updatedAt = query.value("updatedAt").toDateTime();
             obj.status = query.value("status").toString();
-            obj.currency = query.value("currency").toString();
-            obj.initialBP = query.value("initialBP").toDouble();
 
-            emit signalStrategyInfoFetched(obj, true);
+            emit signalModelInfoFetched(obj, e_queryStatus::QS_VALID);
         } else {
-            qDebug() << "No strategy info found for strategy_id:" << strategy_id;
-            emit signalStrategyInfoFetched(obj, false);
+            //qDebug() << "No model info found for modelId:" << modelId;
+            emit signalModelInfoFetched(obj, e_queryStatus::QS_NOT_FOUND);
         }
     }
 }
@@ -282,7 +278,7 @@ void DBHandler::slotGetStrategyData(const QString &strategy_id)
     QSqlQuery query(query_getDbStrategyData(strategy_id, m_uniqueConnectionName));
     if (!query.exec()) {
         qDebug() << "Error fetching strategy data:" << query.lastError();
-        emit signalStrategyDataFetched(obj, false);
+        emit signalStrategyDataFetched(obj, e_queryStatus::QS_ERROR);
     }
     else
     {
@@ -295,10 +291,10 @@ void DBHandler::slotGetStrategyData(const QString &strategy_id)
             obj.pnlPercentage = query.value("pnlPercentage").toDouble();
             obj.fees = query.value("fees").toDouble();
 
-            emit signalStrategyDataFetched(obj, true);
+            emit signalStrategyDataFetched(obj, e_queryStatus::QS_VALID);
         } else {
             qDebug() << "No strategy data found for strategy_id:" << strategy_id;
-            emit signalStrategyDataFetched(obj, false);
+            emit signalStrategyDataFetched(obj, e_queryStatus::QS_NOT_FOUND);
         }
     }
 }

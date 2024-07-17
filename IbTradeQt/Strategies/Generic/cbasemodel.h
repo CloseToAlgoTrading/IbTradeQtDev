@@ -126,12 +126,16 @@ public:
     bool m_isDbDataFetched;
 
     inline void validateModelInit();
+    inline void validateModelInit2();
+    virtual bool isInit2AdditionalDataReady();
+
 
 /* State Machine */
 public:
     std::unique_ptr<CModelState> currentState;
     void handleEvent(const e_modelStateEvent& event);
     void setState(std::unique_ptr<CModelState> state);
+    e_modelState getState();
 /*.................*/
 
 public slots:
@@ -141,12 +145,16 @@ public slots:
     virtual void onUpdateServerConnectionStateSlot(bool state);
 
     virtual void slotDbManagerConnectionState(const bool state);
+    virtual void slotModelInfoFetched(const DbModelInfo& obj, e_queryStatus state);
 
 signals:
     void dataProcessed(DataListPtr data);
 
 
 /* Temp */
+public:
+    DbModelInfo m_ModelInfo;
+
 private:
     qreal m_availableFunds;
     qreal m_usedFunds;

@@ -5,7 +5,6 @@
 
 #include <QObject>
 #include "cbasicstrategy_V2.h"
-#include "dbdatatypes.h"
 
 Q_DECLARE_LOGGING_CATEGORY(MomentumPmLog);
 
@@ -27,8 +26,8 @@ public:
 public slots:
     virtual void slotDbManagerConnectionState(const bool state) override;
 
-protected:
-    DbStrategyInfo m_strategyInfo;
+//protected:
+//    DbModelInfo m_ModelInfo;
 
 };
 
