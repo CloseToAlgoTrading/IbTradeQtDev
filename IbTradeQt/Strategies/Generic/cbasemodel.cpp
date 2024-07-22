@@ -349,6 +349,9 @@ void CBaseModel::slotModelInfoFetched(const DbModelInfo &obj, e_queryStatus stat
     {
         m_ModelInfo = obj;
         qDebug() << "Model Info: " << m_ModelInfo.modelId << m_ModelInfo.modelName;
+        this->m_genericInfo["Id"] = obj.modelId;
+        this->m_genericInfo["Name"] = obj.modelName;
+        this->m_genericInfo["Description"] = obj.modelDescription;
     }
 
     if(getState() == e_modelState::MS_Init2) setIsDbInfoFetched(true);

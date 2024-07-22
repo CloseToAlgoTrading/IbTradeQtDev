@@ -37,12 +37,12 @@ void DBHandler::disconnectDB() {
 
 bool DBHandler::initializeDatabase() {
 
-    auto createTableIfNotExists = [this](const QString& tableName, const QString& creationQuery) {
+    auto createTableIfNotExists = [this](const QString& tableName, const QString& creationQueryTemplate) {
         bool success = true;
         QSqlQuery query(m_db);
 
         if (!m_db.tables().contains(tableName)) {
-            success = query.exec(creationQuery);
+            success = query.exec(creationQueryTemplate.arg(tableName));
             if (!success) {
                 qDebug() << "Failed to create table" << tableName << ":" << query.lastError().text();
             }
@@ -55,60 +55,13 @@ bool DBHandler::initializeDatabase() {
 
     // Initialize database tables
     // StrategyData Table
-    bool success = createTableIfNotExists("StrategyData",
-                                      "CREATE TABLE IF NOT EXISTS StrategyData ("
-                                      "strategyId VARCHAR(64) PRIMARY KEY, "
-                                      "availableBP DOUBLE, "
-                                      "usedBP DOUBLE, "
-                                      "realizedPnL DOUBLE, "
-                                      "unrealizedPnL DOUBLE, "
-                                      "pnlPercentage DOUBLE, "
-                                      "fees DOUBLE)"
-                                      );
-
+    bool success = createTableIfNotExists(TABLE_STRATEGYDATA, CREATE_TABLE_STRATEGYDATA_TEMPLATE);
     // ModelInfo Table
-    success |= createTableIfNotExists("ModelInfo",
-                                      "CREATE TABLE IF NOT EXISTS ModelInfo ("
-                                      "modelId VARCHAR(64) PRIMARY KEY, "
-                                      "modelName VARCHAR(255), "
-                                      "modelDescription TEXT, "
-                                      "createdAt DATETIME, "
-                                      "updatedAt DATETIME, "
-                                      "status VARCHAR(64)) "
-                                      );
-
+    success |= createTableIfNotExists(TABLE_MODELINFO, CREATE_TABLE_MODELINFO_TEMPLATE);
     // Trades Table
-    success |= createTableIfNotExists("Trades",
-                           "CREATE TABLE IF NOT EXISTS Trades ("
-                           "execId VARCHAR(50) PRIMARY KEY, "
-                           "strategyId VARCHAR(64), "
-                           "symbol VARCHAR(10), "
-                           "quantity INT, "
-                           "price DOUBLE, "
-                           "pnl DOUBLE, "
-                           "fee DOUBLE, "
-                           "date TEXT, "
-                           "tradeType VARCHAR(10), "
-                           "FOREIGN KEY (strategyId) REFERENCES ModelInfo(strategyId))"
-                           );
-
+    success |= createTableIfNotExists(TABLE_TRADES, CREATE_TABLE_TRADES_TEMPLATE);
     // Positions Table
-    success |= createTableIfNotExists("Positions",
-                           R"(CREATE TABLE IF NOT EXISTS Positions (
-                                    strategyId VARCHAR(64),
-                                    symbol VARCHAR(10),
-                                    quantity INT DEFAULT 0,
-                                    averageOpenPrice DOUBLE DEFAULT 0,
-                                    pnl DOUBLE DEFAULT 0,
-                                    fee DOUBLE DEFAULT 0,
-                                    openDate TEXT,
-                                    closeDate TEXT,
-                                    status INT,
-                                    PRIMARY KEY (strategyId, symbol),
-                                    FOREIGN KEY (strategyId) REFERENCES ModelInfo(strategyId)
-                                )
-                            )"
-                           );
+    success |= createTableIfNotExists(TABLE_POSITIONS, CREATE_TABLE_POSITIONS_TEMPLATE);
 
     success |= createTrigger(m_db);
 

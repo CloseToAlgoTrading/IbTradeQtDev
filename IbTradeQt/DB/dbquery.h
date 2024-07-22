@@ -4,6 +4,60 @@
 #include "dbdatatypes.h"
 #include <QSqlQuery>
 
+
+/* Create Tables */
+const char* TABLE_STRATEGYDATA = "StrategyData";
+const char* CREATE_TABLE_STRATEGYDATA_TEMPLATE =
+    "CREATE TABLE IF NOT EXISTS %1 ("
+    "strategyId VARCHAR(64) PRIMARY KEY, "
+    "availableBP DOUBLE, "
+    "usedBP DOUBLE, "
+    "realizedPnL DOUBLE, "
+    "unrealizedPnL DOUBLE, "
+    "pnlPercentage DOUBLE, "
+    "fees DOUBLE)";
+
+const char* TABLE_MODELINFO = "ModelInfo";
+const char* CREATE_TABLE_MODELINFO_TEMPLATE =
+    "CREATE TABLE IF NOT EXISTS %1 ("
+    "modelId VARCHAR(64) PRIMARY KEY, "
+    "modelName VARCHAR(255), "
+    "modelDescription TEXT, "
+    "createdAt DATETIME, "
+    "updatedAt DATETIME, "
+    "status VARCHAR(64)) ";
+
+const char* TABLE_TRADES = "Trades";
+const char* CREATE_TABLE_TRADES_TEMPLATE =
+    "CREATE TABLE IF NOT EXISTS %1 ("
+    "execId VARCHAR(50) PRIMARY KEY, "
+    "strategyId VARCHAR(64), "
+    "symbol VARCHAR(10), "
+    "quantity INT, "
+    "price DOUBLE, "
+    "pnl DOUBLE, "
+    "fee DOUBLE, "
+    "date TEXT, "
+    "tradeType VARCHAR(10), "
+    "FOREIGN KEY (strategyId) REFERENCES ModelInfo(strategyId))";
+
+const char* TABLE_POSITIONS = "Positions";
+const char* CREATE_TABLE_POSITIONS_TEMPLATE =
+    R"(CREATE TABLE IF NOT EXISTS %1 (
+    strategyId VARCHAR(64),
+    symbol VARCHAR(10),
+    quantity INT DEFAULT 0,
+    averageOpenPrice DOUBLE DEFAULT 0,
+    pnl DOUBLE DEFAULT 0,
+    fee DOUBLE DEFAULT 0,
+    openDate TEXT,
+    closeDate TEXT,
+    status INT,
+    PRIMARY KEY (strategyId, symbol),
+    FOREIGN KEY (strategyId) REFERENCES ModelInfo(strategyId)
+    ))";
+
+
 inline QSqlQuery query_addCurrentPosition(const OpenPosition &position, const QString& uniqueConnectionName) {
     QSqlQuery query(QSqlDatabase::database(uniqueConnectionName));
     query.prepare("INSERT INTO open_positions (strategyId, symbol, quantity, price, pnl, fee, date, status) "
