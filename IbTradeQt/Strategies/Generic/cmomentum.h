@@ -18,13 +18,19 @@ public:
     virtual bool start() final;
     virtual bool stop() final;
 
+    virtual void setId(const QUuid& id) override;
+
     ModelType modelType() const override { return ModelType::STRATEGY_MOMENTUM; }
 
     /** override strategy functions **/
-    //virtual void requestInitData() override;
+    virtual void requestInitData() override;
+
+public:
+    DbStrategyData m_StrategyData;
 
 public slots:
     virtual void slotDbManagerConnectionState(const bool state) override;
+    virtual void slotStrategyDataFetched(const DbStrategyData& obj, e_queryStatus state);
 
 //protected:
 //    DbModelInfo m_ModelInfo;

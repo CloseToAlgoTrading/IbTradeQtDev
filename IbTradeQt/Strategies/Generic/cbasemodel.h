@@ -87,7 +87,7 @@ public:
     virtual void setParentModel(CGenericModelApi* pModel) override;
     virtual CGenericModelApi* getParentModel() override;
 
-    inline auto getStrUuId(){
+    inline auto getStrUuId() const{
         return m_uuid.toString(QUuid::WithoutBraces).toStdString();
     }
 protected:
@@ -116,6 +116,7 @@ protected:
     CGenericModelApi* m_ParentModel;
 
     DBManager m_dbManager;
+
 
 
 /* Init Flags */

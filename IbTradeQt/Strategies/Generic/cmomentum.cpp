@@ -8,7 +8,7 @@ Q_LOGGING_CATEGORY(MomentumPmLog, "Momentum.PM");
 
 cMomentum::cMomentum(QObject *parent)
     : CBasicStrategy_V2{parent}
-//    , m_ModelInfo()
+    , m_StrategyData()
 {
     m_Name = "Momentum";
     this->setName("Momentum");
@@ -16,6 +16,7 @@ cMomentum::cMomentum(QObject *parent)
     this->m_ParametersMap[CPM_BP] = 10000.0f;
 
     //connect(&m_dbManager, &DBManager::signalOpenPositionsFetched, this, &CBaseRebalanceModel::slotOpenPositionsFetched, Qt::AutoConnection);
+    connect(m_dbManager.getDbHandler(), &DBHandler::signalStrategyDataFetched, this, &cMomentum::slotStrategyDataFetched, Qt::AutoConnection);
 
     //emit m_dbManager.signalAddOrUpdateDbModelInfo(m_ModelInfo);
 }
@@ -34,19 +35,21 @@ bool cMomentum::stop()
     return CBasicStrategy_V2::stop();
 }
 
-//void cMomentum::requestInitData()
-//{
+void cMomentum::setId(const QUuid &id)
+{
+    CBaseModel::setId(id);
+    m_StrategyData.strategyId = getStrUuId().c_str();
+}
+
+void cMomentum::requestInitData()
+{
+    /* Base Methods */
+    CBaseModel::requestInitData();
     /* request Open Position */
 
     /* request strategy info */
-    /* initial BP */
-    /* available BP */
-    /* used BP */
-    /* realized P&L */
-    /* unrealized P&L */
-    /* P&L % */
-    /* fees */
-//}
+    emit m_dbManager.signalGetStrategyData(getStrUuId().c_str());
+}
 
 void cMomentum::slotDbManagerConnectionState(const bool state)
 {
@@ -62,6 +65,27 @@ void cMomentum::slotDbManagerConnectionState(const bool state)
     // emit m_dbManager.signalAddOrUpdateDbModelInfo(m_ModelInfo);
 
 
+}
+
+void cMomentum::slotStrategyDataFetched(const DbStrategyData &obj, e_queryStatus state)
+{
+    switch (state) {
+    case QS_VALID:
+        m_StrategyData = obj;
+        m_genericInfo["PnL (%)"] = m_StrategyData.pnlPercentage;
+        m_genericInfo["Reilized PnL"] = m_StrategyData.realizedPnL;
+        m_genericInfo["Unreilized PnL"] = m_StrategyData.unrealizedPnL;
+        m_genericInfo["Available BP"] = m_StrategyData.availableBP;
+        m_genericInfo["Used BP"] = m_StrategyData.usedBP;
+        m_genericInfo["Fees"] = m_StrategyData.fees;
+        break;
+    case QS_NOT_FOUND:
+        emit m_dbManager.signalAddOrUpdateDbStrategyData(m_StrategyData);
+        break;
+    default:
+        break;
+    }
+    qDebug() << "Data Fetched: " << ((state == QS_VALID) ? "Valid" : "Not Valid");
 }
 
 

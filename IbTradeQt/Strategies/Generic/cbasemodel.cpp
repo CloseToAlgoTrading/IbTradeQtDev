@@ -36,6 +36,15 @@ CBaseModel::CBaseModel(QObject *parent): CProcessingBase_v2(parent)
 
 //    this->getIBrokerDataProvider()->getClien().data()
 
+    //default info
+    m_ModelInfo.modelId = "";
+    m_ModelInfo.modelName = "default";
+    m_ModelInfo.modelDescription = "strategy";
+    m_ModelInfo.createdAt = QDateTime::currentDateTime();
+    m_ModelInfo.updatedAt = m_ModelInfo.createdAt;
+    m_ModelInfo.status = "not active";
+
+
     //connect(signalDBManagerState)
     connect(&m_dbManager, &DBManager::signalDBManagerState, this, &CBaseModel::slotDbManagerConnectionState, Qt::AutoConnection);
     connect(m_dbManager.getDbHandler(), &DBHandler::signalModelInfoFetched, this, &CBaseModel::slotModelInfoFetched, Qt::AutoConnection);
@@ -120,6 +129,7 @@ QUuid CBaseModel::getId() const
 void CBaseModel::setId(const QUuid &id)
 {
     this->m_uuid = id;
+    m_ModelInfo.modelId = getStrUuId().c_str();
     setIsIdSet(true);
 }
 
@@ -349,9 +359,13 @@ void CBaseModel::slotModelInfoFetched(const DbModelInfo &obj, e_queryStatus stat
     {
         m_ModelInfo = obj;
         qDebug() << "Model Info: " << m_ModelInfo.modelId << m_ModelInfo.modelName;
-        this->m_genericInfo["Id"] = obj.modelId;
-        this->m_genericInfo["Name"] = obj.modelName;
-        this->m_genericInfo["Description"] = obj.modelDescription;
+        this->m_genericInfo["Id"] = m_ModelInfo.modelId;
+        this->m_genericInfo["Name"] = m_ModelInfo.modelName;
+        this->m_genericInfo["Description"] = m_ModelInfo.modelDescription;
+    }
+    else if(e_queryStatus::QS_NOT_FOUND == state)
+    {
+        emit m_dbManager.signalAddOrUpdateDbModelInfo(m_ModelInfo);
     }
 
     if(getState() == e_modelState::MS_Init2) setIsDbInfoFetched(true);
