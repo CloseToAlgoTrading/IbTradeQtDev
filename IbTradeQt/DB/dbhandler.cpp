@@ -152,12 +152,13 @@ void DBHandler::initializeConnectionSlot()
     emit signalDBConnectionState(isConnected);
 }
 
-void DBHandler::fetchOpenPositionsSlot(const QString& strategy_id)
+void DBHandler::slotFetchOpenPositions(const QString& strategy_id)
 {
     QList<OpenPosition> positionsList;
     QSqlQuery query(query_getOpenPositions(strategy_id, m_uniqueConnectionName));
     if (!query.exec()) {
         qDebug() << "Error fetching open positions:" << query.lastError();
+        emit signalOpenPositionsFetched(positionsList, QS_ERROR);
     }
     else
     {
@@ -174,8 +175,14 @@ void DBHandler::fetchOpenPositionsSlot(const QString& strategy_id)
 
             positionsList.append(position);
         }
+        if(positionsList.length() > 0){
+            emit signalOpenPositionsFetched(positionsList, QS_VALID);
+        }
+        else{
+            emit signalOpenPositionsFetched(positionsList, QS_NOT_FOUND);
+        }
     }
-    emit openPositionsFetched(positionsList);
+
 }
 
 void DBHandler::slotAddOrUpdateDbModelInfo(const DbModelInfo &obj)

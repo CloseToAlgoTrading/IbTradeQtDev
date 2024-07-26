@@ -23,7 +23,7 @@ public:
 
 signals:
     void signalAddPositionQuery(const OpenPosition& position);
-    void signalExecuteGetOpenPositionsQuery(const QString& strategy_id);
+    void signalGetOpenPositionsQuery(const QString& strategy_id);
     void signalAddNewTrade(const DbTrade& trade);
     void signalUpdateTradeCommision(const DbTradeCommission& trade);
     void signalOpenPositionsFetched(const QList<OpenPosition>& positions);
@@ -35,7 +35,7 @@ signals:
     void signalDBManagerState(const bool state);
 
 private slots:
-    void onOpenPositionsFetched(const QList<OpenPosition>& positions);
+    void onOpenPositionsFetched(const QList<OpenPosition>& positions,  e_queryStatus state);
     void slotDbConnectionState(const bool state);
 
 private:

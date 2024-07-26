@@ -20,7 +20,7 @@ public:
 private:
     QString m_uniqueConnectionName;
 signals:
-    void openPositionsFetched(const QList<OpenPosition>& positions);
+    void signalOpenPositionsFetched(const QList<OpenPosition>& positions, e_queryStatus state);
     void signalModelInfoFetched(const DbModelInfo& obj, e_queryStatus state);
     void signalStrategyDataFetched(const DbStrategyData& obj, e_queryStatus state);
 
@@ -31,7 +31,7 @@ public slots:
     void slotAddNewTrade(const DbTrade& trade);
     void slotUpdateTradeCommission(const DbTradeCommission& tradeComm);
     void initializeConnectionSlot();
-    void fetchOpenPositionsSlot(const QString& strategy_id);
+    void slotFetchOpenPositions(const QString& strategy_id);
 
     void slotAddOrUpdateDbModelInfo(const DbModelInfo& obj);
     void slotGetModelInfo(const QString& modelId);
