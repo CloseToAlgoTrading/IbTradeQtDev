@@ -297,7 +297,7 @@ public:
 		int useRTH, int formatDate, bool keepUpToDate, const TagValueListSPtr& chartOptions);
 	void exerciseOptions(TickerId tickerId, const Contract& contract,
 		int exerciseAction, int exerciseQuantity,
-		const std::string& account, int override);
+		const std::string& account, int override, const std::string& manualOrderTime);
 	void cancelHistoricalData(TickerId tickerId );
 	void reqRealTimeBars(TickerId id, const Contract& contract, int barSize,
 		const std::string& whatToShow, bool useRTH, const TagValueListSPtr& realTimeBarsOptions);

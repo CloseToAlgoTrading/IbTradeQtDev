@@ -41,6 +41,8 @@ CONFIG += c++17
 UI_DIR = $$PWD/GeneratedIncludes
 
 SOURCES += \
+    Brokers/IB/src/Decimal.cpp \
+    Brokers/IB/src/Utils.cpp \
     CObjects/ccommissionreport.cpp \
     CObjects/cdeltaobject.cpp \
     CObjects/cexecutionreport.cpp \
@@ -141,6 +143,7 @@ SOURCES += \
 
 
 HEADERS += \
+    Brokers/IB/Shared/Utils.h \
     CObjects/ccommissionreport.h \
     CObjects/cdeltaobject.h \
     CObjects/cexecutionreport.h \

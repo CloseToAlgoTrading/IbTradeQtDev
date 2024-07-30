@@ -227,7 +227,7 @@ qint32 IBComClientImpl::reqPlaceOrderAPI(const QString& _symbol, const qint32 _q
 
     orderToPlace.order.orderType = "MKT";
     orderToPlace.order.tif = "DAY";
-    orderToPlace.order.totalQuantity = doubleToDecimal(_quantity);
+    orderToPlace.order.totalQuantity = DecimalFunctions::doubleToDecimal(_quantity);
     orderToPlace.order.transmit = true;
     orderToPlace.order.orderId = retOrderId;
 
@@ -404,7 +404,7 @@ void IBComClientImpl::tickString(TickerId tickerId, TickType tickType, const std
 void IBComClientImpl::historicalData(TickerId reqId, const Bar& bar)
 {
     //TODO: Decimal!!
-    CHistoricalData _historicalData(reqId, bar.time.c_str(), bar.open, bar.high, bar.low, bar.close, static_cast<int>(decimalToDouble(bar.volume)), bar.count, static_cast<int>(decimalToDouble(bar.wap)), false);
+    CHistoricalData _historicalData(reqId, bar.time.c_str(), bar.open, bar.high, bar.low, bar.close, static_cast<int>(DecimalFunctions::decimalToDouble(bar.volume)), bar.count, static_cast<int>(DecimalFunctions::decimalToDouble(bar.wap)), false);
 
    qCDebug(IBComClientImplLog(), "tickerId = %ld , date = %s, open = %f, high = %f, low =%f, close = %f, volume = %f, barCount = %d, WAP = %f, hasGaps = %d",
            _historicalData.getId(), NHelper::convertQTDataTimeToString(_historicalData.getDateTime()).toStdString().c_str(), _historicalData.getOpen(), _historicalData.getHigh(), _historicalData.getLow(),
@@ -579,7 +579,7 @@ void IBComClientImpl::orderStatus( OrderId orderId, const std::string& status, D
 	//	qint32	_clientId,
 	//	QString _whyHeld
 
-    COrderStatus orderStatusObj((qint32)orderId, "", QString::fromLocal8Bit(status.data(), status.size()), decimalToDouble(filled), decimalToDouble(remaining), avgFillPrice,
+    COrderStatus orderStatusObj((qint32)orderId, "", QString::fromLocal8Bit(status.data(), status.size()), DecimalFunctions::decimalToDouble(filled), DecimalFunctions::decimalToDouble(remaining), avgFillPrice,
         permId, parentId, lastFillPrice, clientId, QString::fromLocal8Bit(whyHeld.data(), whyHeld.size()), "", OA_BUY);
 
 
@@ -598,7 +598,7 @@ void IBComClientImpl::orderStatus( OrderId orderId, const std::string& status, D
 void IBComClientImpl::openOrder(OrderId orderId, const Contract& _contract, const Order& _order, const OrderState& _orderState)
 {
     qCDebug(IBComClientImplLog(), "OpenOrder. ID: %ld %s @ %s %s: %s, %s %f %s", orderId, _contract.symbol.c_str(), _contract.secType.c_str(), _contract.exchange.c_str(),
-            _order.action.c_str(), _order.orderType.c_str(), decimalToDouble(_order.totalQuantity), _orderState.status.c_str());
+            _order.action.c_str(), _order.orderType.c_str(), DecimalFunctions::decimalToDouble(_order.totalQuantity), _orderState.status.c_str());
 }
 
 //---------------------------------------------------------------
@@ -617,9 +617,9 @@ void IBComClientImpl::execDetailsEnd(int reqId)
 //---------------------------------------------------------------
 void IBComClientImpl::execDetails(int reqId, const Contract& contract, const Execution& execution) {
     qCDebug(IBComClientImplLog(), "ReqId: %d - %s, %s, %s - %s, %ld, %f, %f, %s, %f \n", reqId, contract.symbol.c_str(), contract.secType.c_str(), contract.currency.c_str(),
-            execution.execId.c_str(), execution.orderId, decimalToDouble(execution.shares), execution.avgPrice, execution.side.c_str(), execution.price);
+            execution.execId.c_str(), execution.orderId, DecimalFunctions::DecimalFunctions::decimalToDouble(execution.shares), execution.avgPrice, execution.side.c_str(), execution.price);
 
-    CExecutionReport execReport(reqId, contract.symbol.c_str(), execution.avgPrice, decimalToDouble(execution.shares), execution.execId.c_str());
+    CExecutionReport execReport(reqId, contract.symbol.c_str(), execution.avgPrice, DecimalFunctions::DecimalFunctions::decimalToDouble(execution.shares), execution.execId.c_str());
     m_DispatcherBrokerData.SendMessageToSubscribers(&execReport, E_RQ_ID_ORDER_STATUS, RT_ORDER_EXECUTION);
 }
 
@@ -636,7 +636,7 @@ void IBComClientImpl::commissionReport(const CommissionReport& commissionReport)
 //---------------------------------------------------------------
 void IBComClientImpl::position(const std::string &account, const Contract &contract, Decimal position, double avgCost)
 {
-    CPosition positionObj(QString::fromLocal8Bit(account.data(), static_cast<qint32>(account.size())), contract, decimalToDouble(position), avgCost);
+    CPosition positionObj(QString::fromLocal8Bit(account.data(), static_cast<qint32>(account.size())), contract, DecimalFunctions::decimalToDouble(position), avgCost);
 
     qCDebug(IBComClientImplLog(), "acc: %s contract: %s, %s, %s - pos: %f, ac: %f n", positionObj.getAccount().toLocal8Bit().data(),
             positionObj.getContract().symbol.c_str(), positionObj.getContract().secType.c_str(), positionObj.getContract().currency.c_str(),
