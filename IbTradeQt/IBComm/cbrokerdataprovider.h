@@ -49,7 +49,9 @@ public:
     bool requestTickByTickData(const CSubscriberPtr _pSubscriber, const QString& _symbol, reqTickByTickDataConfigData_t & _config);
     bool cancelTickByTickData(const CSubscriberPtr _pSubscriber, const QString& _symbol);
 
-
+    /* Account Information */
+    bool bpReqAccountSummary(const CSubscriberPtr _pSubscriber, const QString &_symbol);
+    bool bpCancelAccountSummary(const CSubscriberPtr _pSubscriber, const QString &_symbol);
 
     bool isConnectedToTheServer();
 

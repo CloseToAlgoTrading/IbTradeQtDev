@@ -204,7 +204,7 @@ const QString PositionSymbol = "Position";
 const QString RestartRequestSymbol = "Restart";
 const QString OrderStatusSymbol = "OrderStatus";
 const QString ErrorSymbol = "Error";
-
+const QString AccountSummurySymbol = "AccSum";
 
 /************************************************************************/
 #endif //GLOBALDEF_H

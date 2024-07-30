@@ -326,10 +326,10 @@ INCLUDEPATH += \
     $$PWD/CObjects \
     $$PWD/AlphaModelGetTime \
     $$PWD/AboutDialog \
-    $$PWD/Strategies/AutoDeltAlignment/header\
-    $$PWD/Strategies/PairTrader\
-    $$PWD/Strategies/Generic\
-    $$PWD/Strategies/StateMachine\
+    $$PWD/Strategies/AutoDeltAlignment/header \
+    $$PWD/Strategies/PairTrader \
+    $$PWD/Strategies/Generic \
+    $$PWD/Strategies/StateMachine \
     $$PWD/GeneratedIncludes \
     $$PWD/DBStore
 

@@ -138,6 +138,12 @@ public:
 
     bool requestCalculateOptionPrice(reqCalcOptPriceConfigData_t & _config);
     bool cancelCalculateOptionPrice(const QString& _symbol);
+
+    /* Account Information */
+    bool pbReqAccountSummary();
+    bool pbCancelAccountSummary();
+
+
     //orders
     qint32 requestPlaceMarketOrder(const QString& _symbol, const qint32 _quantity, const eOrderAction_t _action);
 

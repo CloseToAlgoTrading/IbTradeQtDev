@@ -8,6 +8,7 @@
 
 #include "EClientSocket.h"
 #include "EPosixClientSocketPlatform.h"
+#include "AccountSummaryTags.h"
 
 #include "CommonDefs.h"
 #include "GlobalDef.h"
@@ -324,14 +325,14 @@ void IBComClientImpl::cancelTickByTickDataAPI(const qint32 id)
 //---------------------------------------------------------------
 void IBComClientImpl::reqAccountSummary()
 {
-//    m_pClient->reqAccountSummary("9001", "All", accountSummary)
-//    m_pClient->reqAccountSummary(9001, "All", AccountSummaryTags::getAllTags());
+    m_pClient->reqAccountSummary(9001, "All", AccountSummaryTags::getAllTags());
 }
 
 //---------------------------------------------------------------
 void IBComClientImpl::cancelAccountSummary(const qint32 id)
 {
-
+    Q_UNUSED(id)
+    m_pClient->cancelAccountSummary(9001);
 }
 
 //---------------------------------------------------------------

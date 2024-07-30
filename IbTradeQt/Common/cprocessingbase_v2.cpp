@@ -81,6 +81,9 @@ void CProcessingBase_v2::MessageHandler(void* pContext, tEReqType _reqType)
     case RT_ORDER_EXECUTION:
         recvExecutionReport(pContext, _reqType);
         break;
+    case RT_REQ_ACCOUNT_SUMMURY:
+        //Receive Account Summury
+        break;
 
 	}
 }
@@ -200,6 +203,20 @@ bool CProcessingBase_v2::cancelCalculateOptionPrice(const QString &_symbol)
     return m_Client->cancelRealTimeBars(this, _symbol);
 }
 
+bool CProcessingBase_v2::pbReqAccountSummary()
+{
+    m_aciveReqestsMap.insert(AccountSummurySymbol, RT_REQ_ACCOUNT_SUMMURY);
+    return m_Client->cancelOrderStatusubscription(this, AccountSummurySymbol);
+
+}
+
+bool CProcessingBase_v2::pbCancelAccountSummary()
+{
+    m_aciveReqestsMap.remove(AccountSummurySymbol, RT_REQ_ACCOUNT_SUMMURY);
+    return m_Client->cancelOrderStatusubscription(this, AccountSummurySymbol);
+
+}
+
 //----------------------------------------------------------
 qint32 CProcessingBase_v2::requestPlaceMarketOrder(const QString& _symbol, const qint32 _quantity, const eOrderAction_t _action)
 {
@@ -263,8 +280,6 @@ void CProcessingBase_v2::cancelAllActiveRequests()
             case RT_REQ_POSITION:
                 m_Client->cancelResetSubscription(this, PositionSymbol);
                 break;
-            case RT_POSITION:
-                break;
             case RT_REQ_OPTION_PRICE:
                 m_Client->cancelCalculateOptionPrice(this, symbol);
                 break;
@@ -274,9 +289,14 @@ void CProcessingBase_v2::cancelAllActiveRequests()
             case RT_REQ_ORDER_STATUS:
                 m_Client->cancelOrderStatusubscription(this, OrderStatusSymbol);
                 break;
-
-
-
+            case RT_REQ_ACCOUNT_SUMMURY:
+                m_Client->bpCancelAccountSummary(this, AccountSummurySymbol);
+                break;
+            case RT_REQ_ERROR_SUBSRIPTION:
+            case RT_ORDER_STATUS:
+            case RT_ORDER_COMMISSION:
+            case RT_ORDER_EXECUTION:
+                break;
             }
         }
         ++it;
