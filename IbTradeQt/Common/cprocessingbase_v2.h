@@ -5,6 +5,7 @@
 #include "Dispatcher.h"
 
 #include "CHistoricalData.h"
+#include "caccountsummary.h"
 #include "ctickprice.h"
 #include "cticksize.h"
 #include "crealtimebar.h"
@@ -181,6 +182,8 @@ signals:
     void signalRecvExecutionReport(const CExecutionReport & obj);
     void signalRestartSubscription();
     void signalErrorNotFound(int id);
+
+    void signalRecvAccountSummary(const CAccountSummary & obj);
 
 //    void signalRecvRealTimeBar(const RealTimeBarMap_t & _realTimeBar, const TickerId & _id);
 

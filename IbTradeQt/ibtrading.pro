@@ -48,6 +48,7 @@ SOURCES += \
     Brokers/IB/addon/ScannerSubscriptionSamples.cpp \
     Brokers/IB/src/Decimal.cpp \
     Brokers/IB/src/Utils.cpp \
+    CObjects/caccountsummary.cpp \
     CObjects/ccommissionreport.cpp \
     CObjects/cdeltaobject.cpp \
     CObjects/cexecutionreport.cpp \
@@ -153,6 +154,7 @@ HEADERS += \
     Brokers/IB/addon/FAMethodSamples.h \
     Brokers/IB/addon/OrderSamples.h \
     Brokers/IB/addon/ScannerSubscriptionSamples.h \
+    CObjects/caccountsummary.h \
     CObjects/ccommissionreport.h \
     CObjects/cdeltaobject.h \
     CObjects/cexecutionreport.h \

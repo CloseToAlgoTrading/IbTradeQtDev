@@ -82,10 +82,19 @@ void CProcessingBase_v2::MessageHandler(void* pContext, tEReqType _reqType)
         recvExecutionReport(pContext, _reqType);
         break;
     case RT_REQ_ACCOUNT_SUMMURY:
-        //Receive Account Summury
+        emit signalRecvAccountSummary(*static_cast<CAccountSummary*>(pContext));
         break;
 
-	}
+    case RT_REQ_NONE:
+    case RT_REQ_REL_DATA:
+    case RT_REQ_CUR_TIME:
+    case RT_TICK_GENERIC:
+    case RT_TICK_STRING:
+    case RT_HISTORICAL_TICK_DATA:
+    case RT_MKT_DEPTH_L2:
+    case RT_REQ_ORDER_STATUS:
+        break;
+    }
 }
 
 //----------------------------------------------------------
@@ -206,14 +215,14 @@ bool CProcessingBase_v2::cancelCalculateOptionPrice(const QString &_symbol)
 bool CProcessingBase_v2::pbReqAccountSummary()
 {
     m_aciveReqestsMap.insert(AccountSummurySymbol, RT_REQ_ACCOUNT_SUMMURY);
-    return m_Client->cancelOrderStatusubscription(this, AccountSummurySymbol);
+    return m_Client->bpReqAccountSummary(this, AccountSummurySymbol);
 
 }
 
 bool CProcessingBase_v2::pbCancelAccountSummary()
 {
     m_aciveReqestsMap.remove(AccountSummurySymbol, RT_REQ_ACCOUNT_SUMMURY);
-    return m_Client->cancelOrderStatusubscription(this, AccountSummurySymbol);
+    return m_Client->bpCancelAccountSummary(this, AccountSummurySymbol);
 
 }
 

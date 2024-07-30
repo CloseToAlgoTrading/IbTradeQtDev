@@ -50,6 +50,7 @@ IBComClientImpl::IBComClientImpl(Observer::CDispatcher & _dispatcher)
     , m_pLog(LOGGER)
     , m_nexValidId(0)
     , m_DispatcherBrokerData(_dispatcher)
+    , m_accountSummaryData()
 {
 }
 
@@ -652,6 +653,33 @@ void IBComClientImpl::positionEnd()
     qCDebug(IBComClientImplLog(), "Position End\n");
     m_DispatcherBrokerData.SendMessageToSubscribers(nullptr, E_RQ_ID_POSITION, RT_REQ_POSITION);
     qCDebug(IBComClientImplLog(), "Position End TEST!\n");
+}
+
+//---------------------------------------------------------------
+void IBComClientImpl::accountSummary(int reqId, const std::string &account, const std::string &tag, const std::string &value, const std::string &curency)
+{
+    qCDebug(IBComClientImplLog(), "acc sum: id - %d, %s, [%s : %s], %s", reqId, account.c_str(), tag.c_str(), value.c_str(), curency.c_str());
+    if(tag == "AccountType")
+    {
+        m_accountSummaryData.setAccountType(value.c_str());
+    } else if (tag == "BuyingPower") {
+        m_accountSummaryData.setBuyingPower(std::stod(value));
+    } else if (tag == "TotalCashValue") {
+        m_accountSummaryData.setTotalCashValue(std::stod(value));
+    } else if (tag == "NetLiquidation") {
+        m_accountSummaryData.setNetLiquidation(std::stod(value));
+    } else if (tag == "EquityWithLoanValue") {
+        m_accountSummaryData.setEquityWithLoanValue(std::stod(value));
+    }
+    m_accountSummaryData.setAccount(account.c_str());
+    m_accountSummaryData.setCurrency(curency.c_str());
+}
+
+//---------------------------------------------------------------
+void IBComClientImpl::accountSummaryEnd(int reqId)
+{
+    qCDebug(IBComClientImplLog(), "Account Summary End - id [%d] \n", reqId);
+    m_DispatcherBrokerData.SendMessageToSubscribers(&m_accountSummaryData, E_RQ_ID_ACCOUNT_SUMMARY, RT_REQ_ACCOUNT_SUMMURY);
 }
 
 //---------------------------------------------------------------

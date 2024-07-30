@@ -13,6 +13,7 @@
 #include "EReader.h"
 #include <QSharedPointer>
 
+#include "caccountsummary.h"
 
 Q_DECLARE_LOGGING_CATEGORY(IBComClientImplLog);
 
@@ -256,8 +257,8 @@ public:
     void commissionReport( const CommissionReport& commissionReport) override;
     void position( const std::string& account, const Contract& contract, Decimal position, double avgCost) override;
     void positionEnd() override;
-    void accountSummary( int reqId, const std::string& account, const std::string& tag, const std::string& value, const std::string& curency) override {}
-    void accountSummaryEnd( int reqId) override {}
+    void accountSummary( int reqId, const std::string& account, const std::string& tag, const std::string& value, const std::string& curency) override;
+    void accountSummaryEnd( int reqId) override;
     void verifyMessageAPI( const std::string& apiData) override {}
     void verifyCompleted( bool isSuccessful, const std::string& errorText) override {}
     void displayGroupList( int reqId, const std::string& groups) override {}
@@ -326,6 +327,9 @@ private:
 
     Observer::CDispatcher & m_DispatcherBrokerData;
 
+
+private:
+    IBDataTypes::CAccountSummary m_accountSummaryData;
 };
 
 #endif // IBComClientImpl_H_INCLUDED

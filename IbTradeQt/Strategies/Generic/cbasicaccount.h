@@ -16,9 +16,9 @@ public:
 
     ModelType modelType() const override { return ModelType::ACCOUNT; }
 
+public slots:
+    void signalRecvAccountSummary(const CAccountSummary & obj);
 
-private:
-    bool requestAccountInformation();
 };
 
 #endif // CBASICACCOUNT_H
