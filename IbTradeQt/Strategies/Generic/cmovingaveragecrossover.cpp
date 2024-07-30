@@ -1,6 +1,6 @@
 #include "cmovingaveragecrossover.h"
 #include "IBComClientImpl.h"
-#include "contractsdefs.h"
+#include "ContractSamples.h"
 #include "Decimal.h"
 
 Q_LOGGING_CATEGORY(MaCrossoverPmLog, "MovingAverage.PM");

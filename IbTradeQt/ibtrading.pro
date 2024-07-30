@@ -41,6 +41,11 @@ CONFIG += c++17
 UI_DIR = $$PWD/GeneratedIncludes
 
 SOURCES += \
+    Brokers/IB/addon/AccountSummaryTags.cpp \
+    Brokers/IB/addon/AvailableAlgoParams.cpp \
+    Brokers/IB/addon/ContractSamples.cpp \
+    Brokers/IB/addon/OrderSamples.cpp \
+    Brokers/IB/addon/ScannerSubscriptionSamples.cpp \
     Brokers/IB/src/Decimal.cpp \
     Brokers/IB/src/Utils.cpp \
     CObjects/ccommissionreport.cpp \
@@ -136,14 +141,18 @@ SOURCES += \
     CObjects/ctickbytickalllast.cpp \
     CObjects/chistoricalticks.cpp \
     DBStore/dbstoremodel.cpp \
-    Common/contractsdefs.cpp \
-    Common/OrderSamples.cpp \
     #MainSystem/cstandartitemsettings.cpp \
     MainSystem/treeitem.cpp
 
 
 HEADERS += \
     Brokers/IB/Shared/Utils.h \
+    Brokers/IB/addon/AccountSummaryTags.h \
+    Brokers/IB/addon/AvailableAlgoParams.h \
+    Brokers/IB/addon/ContractSamples.h \
+    Brokers/IB/addon/FAMethodSamples.h \
+    Brokers/IB/addon/OrderSamples.h \
+    Brokers/IB/addon/ScannerSubscriptionSamples.h \
     CObjects/ccommissionreport.h \
     CObjects/cdeltaobject.h \
     CObjects/cexecutionreport.h \
@@ -290,8 +299,6 @@ HEADERS += \
     CObjects/ctickbytickalllast.h \
     CObjects/chistoricalticks.h \
     DBStore/dbstoremodel.h \
-    Common/contractsdefs.h \
-    Common/OrderSamples.h \
     #MainSystem/cstandartitemsettings.h \
     MainSystem/treeitem.h
 
@@ -306,6 +313,7 @@ FORMS += \
 
 INCLUDEPATH += \
     $$PWD/Brokers/IB/Shared \
+    $$PWD/Brokers/IB/addon \
     $$PWD/ReqManager \
     $$PWD/QCustomPlot \
     $$PWD/PairTrader \
