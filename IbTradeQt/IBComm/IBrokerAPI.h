@@ -39,6 +39,10 @@ public:
     virtual void cancelTickByTickDataAPI(const qint32 id) = 0;
 
 
+    /* Account Information */
+    virtual void reqAccountSummary() = 0;
+    virtual void cancelAccountSummary(const qint32 id) = 0;
+
 
 
 

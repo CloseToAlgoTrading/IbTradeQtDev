@@ -1,7 +1,7 @@
 #include "cbasicaccount.h"
 #include "modelConstants.h"
 
-CBasicAccount::CBasicAccount(QObject *parent) : CBasicStrategy_V2(parent)
+CBasicAccount::CBasicAccount(QObject *parent) : CBaseModel(parent)
 {
     this->m_InfoMap[CIM_IsParentActivated] = true;
 
@@ -31,4 +31,9 @@ void CBasicAccount::onUpdateServerConnectionStateSlot(bool state)
     {
         stop();
     }
+}
+
+bool CBasicAccount::requestAccountInformation()
+{
+
 }

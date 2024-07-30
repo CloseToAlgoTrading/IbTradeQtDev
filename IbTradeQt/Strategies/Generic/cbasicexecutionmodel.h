@@ -2,7 +2,7 @@
 #ifndef CBASICEXECUTIONMODEL_H
 #define CBASICEXECUTIONMODEL_H
 
-#include "cbasicstrategy_V2.h"
+#include "cbasemodel.h"
 #include "dbmanager.h"
 #include "cexecutionreport.h"
 #include "corderstatus.h"
@@ -10,7 +10,7 @@
 
 Q_DECLARE_LOGGING_CATEGORY(BasicExecutionModelLog);
 
-class CBasicExecutionModel : public CBasicStrategy_V2
+class CBasicExecutionModel : public CBaseModel
 {
     Q_OBJECT
 public:

@@ -2,12 +2,12 @@
 #ifndef CBASICSELECTIONMODEL_H
 #define CBASICSELECTIONMODEL_H
 
-#include "cbasicstrategy_V2.h"
+#include "cbasemodel.h"
 #include <QStringList>
 
 Q_DECLARE_LOGGING_CATEGORY(BasicSelectionModelLog);
 
-class CBasicSelectionModel : public CBasicStrategy_V2
+class CBasicSelectionModel : public CBaseModel
 {
     Q_OBJECT
 public:

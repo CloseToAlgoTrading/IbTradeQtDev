@@ -1,9 +1,9 @@
 #ifndef CBASICPORTFOLIO_H
 #define CBASICPORTFOLIO_H
 
-#include "cbasicstrategy_V2.h"
+#include "cbasemodel.h"
 
-class CBasicPortfolio : public CBasicStrategy_V2
+class CBasicPortfolio : public CBaseModel
 {
 public:
     explicit CBasicPortfolio(QObject *parent = nullptr);

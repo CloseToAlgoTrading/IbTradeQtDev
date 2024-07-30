@@ -14,7 +14,7 @@ Q_LOGGING_CATEGORY(BasicAlphaModelLog, "BasicAlphaModel.PM");
 
 
 CBasicAlphaModel::CBasicAlphaModel(QObject *parent)
-    : CBasicStrategy_V2{parent}
+    : CBaseModel{parent}
     , m_historicalData()
     , m_pProcessingData()
     , m_errorReceivedCounter(0)

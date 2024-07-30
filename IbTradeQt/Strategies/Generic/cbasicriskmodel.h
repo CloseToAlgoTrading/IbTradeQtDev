@@ -2,11 +2,11 @@
 #ifndef CBASICRISKMODEL_H
 #define CBASICRISKMODEL_H
 
-#include "cbasicstrategy_V2.h"
+#include "cbasemodel.h"
 
 Q_DECLARE_LOGGING_CATEGORY(BasicRiskModelLog);
 
-class CBasicRiskModel : public CBasicStrategy_V2
+class CBasicRiskModel : public CBaseModel
 {
     Q_OBJECT
 public:

@@ -4,7 +4,7 @@
 
 Q_LOGGING_CATEGORY(BasicSelectionModelLog, "BasicSelectionModel.PM");
 
-CBasicSelectionModel::CBasicSelectionModel(QObject *parent) : CBasicStrategy_V2(parent)
+CBasicSelectionModel::CBasicSelectionModel(QObject *parent) : CBaseModel(parent)
 {
     m_Name = "Base Selection Model";
     this->setName("Base Selection Model");

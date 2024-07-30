@@ -2,12 +2,12 @@
 #ifndef CBASEREBALANCEMODEL_H
 #define CBASEREBALANCEMODEL_H
 
-#include "cbasicstrategy_V2.h"
+#include "cbasemodel.h"
 #include "dbmanager.h"
 
 Q_DECLARE_LOGGING_CATEGORY(BasicRebalanceModelLog);
 
-class CBaseRebalanceModel : public CBasicStrategy_V2
+class CBaseRebalanceModel : public CBaseModel
 {
     Q_OBJECT
 public:

@@ -322,6 +322,19 @@ void IBComClientImpl::cancelTickByTickDataAPI(const qint32 id)
 }
 
 //---------------------------------------------------------------
+void IBComClientImpl::reqAccountSummary()
+{
+//    m_pClient->reqAccountSummary("9001", "All", accountSummary)
+//    m_pClient->reqAccountSummary(9001, "All", AccountSummaryTags::getAllTags());
+}
+
+//---------------------------------------------------------------
+void IBComClientImpl::cancelAccountSummary(const qint32 id)
+{
+
+}
+
+//---------------------------------------------------------------
 // implementation of API Callbacks
 //---------------------------------------------------------------
 

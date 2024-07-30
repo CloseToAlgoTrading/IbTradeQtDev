@@ -5,7 +5,7 @@
 Q_LOGGING_CATEGORY(BasicRebalanceModelLog, "BasicRebalanceModelLog.PM");
 
 CBaseRebalanceModel::CBaseRebalanceModel(QObject *parent)
-    : CBasicStrategy_V2{parent}
+    : CBaseModel{parent}
     //, m_dbManager(parent)
 {
     m_Name = "Base Rebalance Model";

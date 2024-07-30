@@ -196,6 +196,11 @@ public:
     void reqTickByTickDataAPI(const reqTickByTickDataConfigData_t & _config) override;
     void cancelTickByTickDataAPI(const qint32 id) override;
 
+
+    /* Account Information */
+    virtual void reqAccountSummary() override;
+    virtual void cancelAccountSummary(const qint32 id) override;
+
 public:
 	// events
     void tickPrice( TickerId tickerId, TickType field, double price, const TickAttrib& attrib) override;

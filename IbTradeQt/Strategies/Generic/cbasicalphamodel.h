@@ -2,7 +2,7 @@
 #ifndef CBASICALPHAMODEL_H
 #define CBASICALPHAMODEL_H
 
-#include "cbasicstrategy_V2.h"
+#include "cbasemodel.h"
 #include "UnifiedModelData.h"
 #include <QStringList>
 
@@ -10,7 +10,7 @@
 
 Q_DECLARE_LOGGING_CATEGORY(BasicAlphaModelLog);
 
-class CBasicAlphaModel : public CBasicStrategy_V2
+class CBasicAlphaModel : public CBaseModel
 {
     Q_OBJECT
 public:
