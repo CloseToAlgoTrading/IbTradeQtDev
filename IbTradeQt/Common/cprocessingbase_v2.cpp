@@ -137,7 +137,7 @@ bool CProcessingBase_v2::cancelRealTimeBars(const QString& _symbol)
 }
 
 //----------------------------------------------------------
-bool CProcessingBase_v2::requestPosition()
+bool CProcessingBase_v2::pbRequestPosition()
 {
     m_positionMap.clear();
     //m_aciveReqestsMap.insert(PositionSymbol, RT_REQ_POSITION);
@@ -145,7 +145,7 @@ bool CProcessingBase_v2::requestPosition()
 }
 
 //----------------------------------------------------------
-bool CProcessingBase_v2::cancelPosition()
+bool CProcessingBase_v2::pbCancelPosition()
 {
     //m_aciveReqestsMap.remove(PositionSymbol, RT_REQ_POSITION);
     return m_Client->cancelPosition(this, PositionSymbol);

@@ -17,7 +17,8 @@ public:
     ModelType modelType() const override { return ModelType::ACCOUNT; }
 
 public slots:
-    void signalRecvAccountSummary(const CAccountSummary & obj);
+    void slotRecvAccountSummary(const CAccountSummary & obj) ;
+    void slotEndRecvPosition();
 
 };
 

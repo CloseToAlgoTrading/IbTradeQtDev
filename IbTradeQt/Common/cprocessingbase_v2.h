@@ -122,8 +122,8 @@ public:
     bool requestRealTimeBars(const QString& _symbol);
     bool cancelRealTimeBars(const QString& _symbol);
 
-    bool requestPosition();
-    bool cancelPosition();
+    bool pbRequestPosition();
+    bool pbCancelPosition();
 
     bool reqestResetSubscription();
     bool cancelResetSubscription();

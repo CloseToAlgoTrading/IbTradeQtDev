@@ -22,7 +22,6 @@ public:
 
 public: 
     bool reqestHistoricalData(const CSubscriberPtr _pSubscriber, reqHistConfigData_t & _config);
-
     bool requestHistoricalTicksData(const CSubscriberPtr _pSubscriber, reqHistTicksConfigData_t & _config);
 
     bool reqestRealTimeData(const CSubscriberPtr _pSubscriber, reqReadlTimeDataConfigData_t &_config);
