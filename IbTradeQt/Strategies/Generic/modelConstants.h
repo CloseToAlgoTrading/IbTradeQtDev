@@ -5,5 +5,6 @@
 #define CIM_IsParentActivated "IsParentActivated"
 
 #define CPM_BP "BP"
+
 #endif // MODELCONSTANTS_H
 
