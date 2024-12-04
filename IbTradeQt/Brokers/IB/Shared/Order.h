@@ -90,7 +90,6 @@ struct Order
 
 	// financial advisors only
 	std::string faGroup;
-	std::string faProfile;
 	std::string faMethod;
 	std::string faPercentage;
 

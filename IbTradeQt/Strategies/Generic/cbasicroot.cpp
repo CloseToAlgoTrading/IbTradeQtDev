@@ -1,6 +1,6 @@
 #include "cbasicroot.h"
 
-CBasicRoot::CBasicRoot(QObject *parent): CBasicStrategy_V2(parent)
+CBasicRoot::CBasicRoot(QObject *parent): CBaseModel(parent)
 {
     m_Name = "BasicRoot";
 }

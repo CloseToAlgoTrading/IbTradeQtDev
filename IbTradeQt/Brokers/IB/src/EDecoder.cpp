@@ -16,6 +16,7 @@
 #include "EClientMsgSink.h"
 #include "PriceIncrement.h"
 #include "EOrderDecoder.h"
+#include "Utils.h"
 
 #include <string.h>
 #include <cstdlib>
@@ -607,6 +608,29 @@ const char* EDecoder::processContractDataMsg(const char* ptr, const char* endPtr
 		DECODE_FIELD(contract.sizeIncrement);
 		DECODE_FIELD(contract.suggestedSizeIncrement);
 	}
+	if (m_serverVersion >= MIN_SERVER_VER_FUND_DATA_FIELDS && contract.contract.secType == "FUND")	{
+		DECODE_FIELD(contract.fundName);
+		DECODE_FIELD(contract.fundFamily);
+		DECODE_FIELD(contract.fundType);
+		DECODE_FIELD(contract.fundFrontLoad);
+		DECODE_FIELD(contract.fundBackLoad);
+		DECODE_FIELD(contract.fundBackLoadTimeInterval);
+		DECODE_FIELD(contract.fundManagementFee);
+		DECODE_FIELD(contract.fundClosed);
+		DECODE_FIELD(contract.fundClosedForNewInvestors);
+		DECODE_FIELD(contract.fundClosedForNewMoney);
+		DECODE_FIELD(contract.fundNotifyAmount);
+		DECODE_FIELD(contract.fundMinimumInitialPurchase);
+		DECODE_FIELD(contract.fundSubsequentMinimumPurchase);
+		DECODE_FIELD(contract.fundBlueSkyStates);
+		DECODE_FIELD(contract.fundBlueSkyTerritories);
+		std::string fundDistributionPolicyIndicator;
+		DECODE_FIELD(fundDistributionPolicyIndicator);
+		contract.fundDistributionPolicyIndicator = Utils::getFundDistributionPolicyIndicator(fundDistributionPolicyIndicator);
+		std::string fundAssetType;
+		DECODE_FIELD(fundAssetType);
+		contract.fundAssetType = Utils::getFundAssetType(fundAssetType);
+	}
 
 	m_pEWrapper->contractDetails( reqId, contract);
 
@@ -759,6 +783,10 @@ const char* EDecoder::processExecutionDetailsMsg(const char* ptr, const char* en
 
     if (m_serverVersion >= MIN_SERVER_VER_LAST_LIQUIDITY) {
         DECODE_FIELD(exec.lastLiquidity);
+    }
+
+    if (m_serverVersion >= MIN_SERVER_VER_PENDING_PRICE_REVISION) {
+        DECODE_FIELD(exec.pendingPriceRevision);
     }
 
 	m_pEWrapper->execDetails( reqId, contract, exec);
@@ -2715,7 +2743,7 @@ bool EDecoder::DecodeField(Decimal& decimalValue, const char*& ptr, const char* 
 	const char* fieldEnd = FindFieldEnd(fieldBeg, endPtr);
 	if (!fieldEnd)
 		return false;
-    decimalValue = stringToDecimal(fieldBeg);
+	decimalValue = DecimalFunctions::stringToDecimal(fieldBeg);
 	ptr = ++fieldEnd;
 	return true;
 }

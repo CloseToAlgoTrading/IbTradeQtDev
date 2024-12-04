@@ -2,15 +2,11 @@
 #define IBROKERAPI_H
 
 #include "GlobalDef.h"
+#include <QObject>
 
-enum orderAction
+class IBrokerAPI : public QObject
 {
-    OA_BUY,
-    OA_SELL
-};
-
-class IBrokerAPI
-{
+    Q_OBJECT
 public:
     virtual ~IBrokerAPI() {};
 
@@ -43,11 +39,15 @@ public:
     virtual void cancelTickByTickDataAPI(const qint32 id) = 0;
 
 
+    /* Account Information */
+    virtual void reqAccountSummary() = 0;
+    virtual void cancelAccountSummary(const qint32 id) = 0;
+
 
 
 
     //orders
-    virtual qint32 reqPlaceOrderAPI(const QString& _symbol, const qint32 _quantity, const orderAction _action) = 0;
+    virtual qint32 reqPlaceOrderAPI(const QString& _symbol, const qint32 _quantity, const eOrderAction_t _action) = 0;
     virtual void cancelOrderAPI(const qint32 _id) = 0;
     virtual void reqOpenOrdersAPI() = 0;
     virtual void reqAllOpenOrdersAPI() = 0;
@@ -60,6 +60,9 @@ public:
     //virtual void reqAccountSummary(const qint32 _id, const QString _groups, const QString _tags) = 0;
     //virtual void reqAccountUpdates(const bool _subscribe, const QString _accCode) = 0;
     //virtual void reqAccountUpdatesMulti(const qint32 _id, const QString _account, cosnt QString _modelCode, const bool _ledgerAndNLV) = 0;
+
+signals:
+    virtual void signalServerStateUpdate(bool state);
 
 };
 

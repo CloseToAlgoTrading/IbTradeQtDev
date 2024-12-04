@@ -1,0 +1,49 @@
+#ifndef DBHANDLER_H
+#define DBHANDLER_H
+
+#include "dbdatatypes.h"
+#include <QObject>
+#include <QtSql/QSqlDatabase>
+
+class DBHandler : public QObject {
+    Q_OBJECT
+
+public:
+    explicit DBHandler(QObject *parent = nullptr);
+    ~DBHandler();
+
+    bool connectDB(const QString& dbName);
+    void disconnectDB();
+
+    bool createTrigger(QSqlDatabase& db);
+
+private:
+    QString m_uniqueConnectionName;
+signals:
+    void signalOpenPositionsFetched(const QList<OpenPosition>& positions, e_queryStatus state);
+    void signalModelInfoFetched(const DbModelInfo& obj, e_queryStatus state);
+    void signalStrategyDataFetched(const DbStrategyData& obj, e_queryStatus state);
+
+    void signalDBConnectionState(const bool state);
+
+public slots:
+    void slotAddPositionQuery(const OpenPosition& position);
+    void slotAddNewTrade(const DbTrade& trade);
+    void slotUpdateTradeCommission(const DbTradeCommission& tradeComm);
+    void initializeConnectionSlot();
+    void slotFetchOpenPositions(const QString& strategy_id);
+
+    void slotAddOrUpdateDbModelInfo(const DbModelInfo& obj);
+    void slotGetModelInfo(const QString& modelId);
+    void slotAddOrUpdateDbStrategyData(const DbStrategyData& obj);
+    void slotGetStrategyData(const QString& strategy_id);
+
+private:
+    QSqlDatabase m_db;
+    bool initializeDatabase();
+
+
+
+};
+
+#endif // DBHANDLER_H

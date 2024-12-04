@@ -4,6 +4,7 @@
 //TODO: check
 //#include "StdAfx.h"
 #include "EOrderDecoder.h"
+#include "Utils.h"
 
 #include <string.h>
 #include <cstdlib>
@@ -171,7 +172,10 @@ bool EOrderDecoder::decodeFAParams(const char*& ptr, const char* endPtr) {
     DECODE_FIELD( m_order->faGroup);
     DECODE_FIELD( m_order->faMethod);
     DECODE_FIELD( m_order->faPercentage);
-    DECODE_FIELD( m_order->faProfile);
+    if (m_serverVersion < MIN_SERVER_VER_FA_PROFILE_DESUPPORT) {
+        std::string faProfile;
+        DECODE_FIELD(faProfile); // skip deprecated faProfile field
+    }
 
     return true;
 }
@@ -571,7 +575,7 @@ bool EOrderDecoder::decodeVolRandomizeFlags(const char*& ptr, const char* endPtr
 
 bool EOrderDecoder::decodePegBenchParams(const char*& ptr, const char* endPtr) {
     if (m_serverVersion >= MIN_SERVER_VER_PEGGED_TO_BENCHMARK) {
-        if (m_order->orderType == "PEG BENCH") {
+        if (Utils::isPegBenchOrder(m_order->orderType)) {
             DECODE_FIELD( m_order->referenceContractId);
             DECODE_FIELD( m_order->isPeggedChangeAmountDecrease);
             DECODE_FIELD( m_order->peggedChangeAmount);

@@ -41,16 +41,29 @@ CONFIG += c++17
 UI_DIR = $$PWD/GeneratedIncludes
 
 SOURCES += \
+    Brokers/IB/addon/AccountSummaryTags.cpp \
+    Brokers/IB/addon/AvailableAlgoParams.cpp \
+    Brokers/IB/addon/ContractSamples.cpp \
+    Brokers/IB/addon/OrderSamples.cpp \
+    Brokers/IB/addon/ScannerSubscriptionSamples.cpp \
+    Brokers/IB/src/Decimal.cpp \
+    Brokers/IB/src/Utils.cpp \
+    CObjects/caccountsummary.cpp \
+    CObjects/ccommissionreport.cpp \
     CObjects/cdeltaobject.cpp \
+    CObjects/cexecutionreport.cpp \
     Common/cprocessingbase_v2.cpp \
-    MainSystem/caccount.cpp \
+    DB/dbhandler.cpp \
+    DB/dbmanager.cpp \
     MainSystem/capplicationcontroller.cpp \
+    MainSystem/ciconhandler.cpp \
     MainSystem/cmainmodel.cpp \
     MainSystem/csettinsmodeldata.cpp \
     MainSystem/ctreeviewcustommodel.cpp \
     MainSystem/ibtradesystemview.cpp \
     MainSystem/portfolioconfigmodel.cpp \
     Strategies/AutoDeltAlignment/src/CModelInputData.cpp \
+    Strategies/Generic/UnifiedModelData.cpp \
     Strategies/Generic/cbasemodel.cpp \
     Strategies/Generic/cbaserebalancemodel.cpp \
     Strategies/Generic/cbasicaccount.cpp \
@@ -60,10 +73,8 @@ SOURCES += \
     Strategies/Generic/cbasicriskmodel.cpp \
     Strategies/Generic/cbasicroot.cpp \
     Strategies/Generic/cbasicselectionmodel.cpp \
-    Strategies/Generic/cbasicstrategy.cpp \
     Strategies/Generic/cbasicstrategy_V2.cpp \
     Strategies/Generic/cgenericmodelApi.cpp \
-    Strategies/Generic/cgenericmodelApi_V2.cpp \
     Strategies/Generic/cmomentum.cpp \
     Strategies/Generic/cmovingaveragecrossover.cpp \
     Strategies/Generic/csma.cpp \
@@ -88,7 +99,6 @@ SOURCES += \
     CObjects/ctickprice.cpp \
     CObjects/cticksize.cpp \
     CObjects/ctickstring.cpp \
-    Common/cprocessingbase.cpp \
     Common/NHelper.cpp \
     CustomWidgets/ccandlestickqchart.cpp \
     CustomWidgets/clineqchart.cpp \
@@ -132,20 +142,32 @@ SOURCES += \
     CObjects/ctickbytickalllast.cpp \
     CObjects/chistoricalticks.cpp \
     DBStore/dbstoremodel.cpp \
-    Common/contractsdefs.cpp \
-    Common/OrderSamples.cpp \
     #MainSystem/cstandartitemsettings.cpp \
     MainSystem/treeitem.cpp
 
 
 HEADERS += \
+    Brokers/IB/Shared/Utils.h \
+    Brokers/IB/addon/AccountSummaryTags.h \
+    Brokers/IB/addon/AvailableAlgoParams.h \
+    Brokers/IB/addon/ContractSamples.h \
+    Brokers/IB/addon/FAMethodSamples.h \
+    Brokers/IB/addon/OrderSamples.h \
+    Brokers/IB/addon/ScannerSubscriptionSamples.h \
+    CObjects/caccountsummary.h \
+    CObjects/ccommissionreport.h \
     CObjects/cdeltaobject.h \
+    CObjects/cexecutionreport.h \
     Common/cprocessingbase_v2.h \
+    DB/dbdatatypes.h \
+    DB/dbhandler.h \
+    DB/dbmanager.h \
+    DB/dbquery.h \
     MainSystem/CPortfolioConfigModel.h \
     MainSystem/PortfolioModelDefines.h \
     MainSystem/TreeItemDataTypesDef.h \
-    MainSystem/caccount.h \
     MainSystem/capplicationcontroller.h \
+    MainSystem/ciconhandler.h \
     MainSystem/cmainmodel.h \
     MainSystem/csettinsmodeldata.h \
     MainSystem/ctreeviewcustommodel.h \
@@ -164,18 +186,19 @@ HEADERS += \
     Strategies/Generic/cbasicriskmodel.h \
     Strategies/Generic/cbasicroot.h \
     Strategies/Generic/cbasicselectionmodel.h \
-    Strategies/Generic/cbasicstrategy.h \
     Strategies/Generic/cbasicstrategy_V2.h \
     Strategies/Generic/cgenericmodelApi.h \
-    Strategies/Generic/cgenericmodelApi_V2.h \
     Strategies/Generic/cmomentum.h \
     Strategies/Generic/cmovingaveragecrossover.h \
     Strategies/Generic/csma.h \
     Strategies/Generic/cstrategyfactory.h \
     Strategies/Generic/cteststrategy.h \
+    Strategies/Generic/modelConstants.h \
     Strategies/PairTrader/PairTradingGui.h \
     Strategies/PairTrader/PairTradingPresenter.h \
     Strategies/PairTrader/pairtraderpm.h \
+    Strategies/StateMachine/cmodelstate.h \
+    Strategies/StateMachine/cmodelstateimpl.h \
     baseimpl.h \
     AboutDialog/aboutdialog.h \
     AboutDialog/AboutDlgPresener.h \
@@ -192,7 +215,6 @@ HEADERS += \
     CObjects/ctickprice.h \
     CObjects/cticksize.h \
     CObjects/ctickstring.h \
-    Common/cprocessingbase.h \
     Common/GlobalDef.h \
     Common/NHelper.h \
     Common/Singleton.h \
@@ -279,8 +301,6 @@ HEADERS += \
     CObjects/ctickbytickalllast.h \
     CObjects/chistoricalticks.h \
     DBStore/dbstoremodel.h \
-    Common/contractsdefs.h \
-    Common/OrderSamples.h \
     #MainSystem/cstandartitemsettings.h \
     MainSystem/treeitem.h
 
@@ -295,6 +315,7 @@ FORMS += \
 
 INCLUDEPATH += \
     $$PWD/Brokers/IB/Shared \
+    $$PWD/Brokers/IB/addon \
     $$PWD/ReqManager \
     $$PWD/QCustomPlot \
     $$PWD/PairTrader \
@@ -307,9 +328,10 @@ INCLUDEPATH += \
     $$PWD/CObjects \
     $$PWD/AlphaModelGetTime \
     $$PWD/AboutDialog \
-    $$PWD/Strategies/AutoDeltAlignment/header\
-    $$PWD/Strategies/PairTrader\
-    $$PWD/Strategies/Generic\
+    $$PWD/Strategies/AutoDeltAlignment/header \
+    $$PWD/Strategies/PairTrader \
+    $$PWD/Strategies/Generic \
+    $$PWD/Strategies/StateMachine \
     $$PWD/GeneratedIncludes \
     $$PWD/DBStore
 

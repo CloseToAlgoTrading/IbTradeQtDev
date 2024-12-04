@@ -22,7 +22,7 @@ public:
     void setPMainModel(CMainModel *newPMainModel);
 
 private:
-    void loadTreeFromFile(const QString& fileName);
+    void loadTreeFromFile(const QString& fileName, QSharedPointer<CBrokerDataProvider> dataProvider = nullptr);
 
 
 public slots:

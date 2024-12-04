@@ -15,7 +15,7 @@
 #define CONNECTIONS_REAL_SERVER_PORT 7496
 #define CONNECTIONS_DEMO_SERVER_PORT 7497
 #define CONNECTIONS_DEMO_GW_SERVER_PORT 4002
-#define CONNECTIONS_CLIENT_ID 0
+#define CONNECTIONS_CLIENT_ID 1
 
 //#define CONNECTIONS_SERVER_PORT CONNECTIONS_REAL_SERVER_PORT
 //#define CONNECTIONS_SERVER_PORT CONNECTIONS_DEMO_SERVER_PORT
@@ -89,9 +89,15 @@ struct reqPlaceOrder_t
 
 #define BAR_SIZE_1_DAY   "1 day"
 
-#define BAR_SIZE_1_WEEK  "8 week"
+#define BAR_SIZE_1_WEEK  "1 week"
 
-#define BAR_SIZE_1_MONTH "8 month"
+#define BAR_SIZE_1_MONTH "1 month"
+
+enum eOrderAction_t
+{
+    OA_BUY,
+    OA_SELL
+};
 
 enum eBarSize_t
 {
@@ -192,10 +198,13 @@ struct reqCalcOptPriceConfigData_t
 };
 
 
+//Q_GLOBAL_STATIC(QString, TimeSymbol, QStringLiteral("Time"));
 const QString TimeSymbol = "Time";
 const QString PositionSymbol = "Position";
 const QString RestartRequestSymbol = "Restart";
 const QString OrderStatusSymbol = "OrderStatus";
+const QString ErrorSymbol = "Error";
+const QString AccountSummurySymbol = "AccSum";
 
 /************************************************************************/
 #endif //GLOBALDEF_H

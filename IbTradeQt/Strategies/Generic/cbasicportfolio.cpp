@@ -1,6 +1,6 @@
 #include "cbasicportfolio.h"
 
-CBasicPortfolio::CBasicPortfolio(QObject *parent) : CBasicStrategy_V2(parent)
+CBasicPortfolio::CBasicPortfolio(QObject *parent) : CBaseModel(parent)
 {
     m_Name = "Portfolio";
     this->m_InfoMap["name"] = "Portfolio";

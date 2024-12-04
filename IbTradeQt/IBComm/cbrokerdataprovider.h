@@ -22,7 +22,6 @@ public:
 
 public: 
     bool reqestHistoricalData(const CSubscriberPtr _pSubscriber, reqHistConfigData_t & _config);
-
     bool requestHistoricalTicksData(const CSubscriberPtr _pSubscriber, reqHistTicksConfigData_t & _config);
 
     bool reqestRealTimeData(const CSubscriberPtr _pSubscriber, reqReadlTimeDataConfigData_t &_config);
@@ -37,6 +36,9 @@ public:
     bool requestResetSubscription(const CSubscriberPtr _pSubscriber, const QString& _symbol);
     bool cancelResetSubscription(const CSubscriberPtr _pSubscriber, const QString& _symbol);
 
+    bool requestErrorNotificationSubscription(const CSubscriberPtr _pSubscriber, const QString& _symbol);
+    bool cancelErrorNotificationSubscription(const CSubscriberPtr _pSubscriber, const QString& _symbol);
+
     bool requestOrderStatusSubscription(const CSubscriberPtr _pSubscriber, const QString& _symbol);
     bool cancelOrderStatusubscription(const CSubscriberPtr _pSubscriber, const QString& _symbol);
 
@@ -46,7 +48,12 @@ public:
     bool requestTickByTickData(const CSubscriberPtr _pSubscriber, const QString& _symbol, reqTickByTickDataConfigData_t & _config);
     bool cancelTickByTickData(const CSubscriberPtr _pSubscriber, const QString& _symbol);
 
+    /* Account Information */
+    bool bpReqAccountSummary(const CSubscriberPtr _pSubscriber, const QString &_symbol);
+    bool bpCancelAccountSummary(const CSubscriberPtr _pSubscriber, const QString &_symbol);
+
     bool isConnectedToTheServer();
+
 
 private:
     QSharedPointer<IBrokerAPI> m_pClien;

@@ -8,6 +8,7 @@
 //#include "IBrokerAPI.h"
 #include <QEnableSharedFromThis>
 #include "ModelType.h"
+#include <QUuid>
 
 class CGenericModelApi;
 class CBrokerDataProvider;
@@ -16,6 +17,8 @@ typedef QSharedPointer<CGenericModelApi> ptrGenericModelType;
 class CGenericModelApi //: public QEnableSharedFromThis<CGenericModelApi>
 {
 public:
+
+    virtual ~CGenericModelApi(){};
 
     virtual void addModel(ptrGenericModelType pModel) = 0;
     virtual void removeModel(ptrGenericModelType pModel) = 0;
@@ -33,6 +36,14 @@ public:
 
     virtual QJsonObject toJson() const = 0;
     virtual void fromJson(const QJsonObject& json) = 0;
+
+    virtual void setActivationState(bool state) = 0;
+    virtual bool getActiveStatus() const = 0;
+    virtual void setParentActivationState(bool state) = 0;
+    virtual bool getParentActivatedState() const = 0;
+
+    virtual QUuid getId() const = 0;
+    virtual void setId(const QUuid& id) = 0;
 
     virtual bool start() = 0;
     virtual bool stop() = 0;
@@ -60,6 +71,11 @@ public:
     virtual ptrGenericModelType getRebalanceModel() = 0;
     virtual ptrGenericModelType getRiskModel() = 0;
     virtual ptrGenericModelType getExecutionModel() = 0;
+
+    virtual void setParentModel(CGenericModelApi* pModel) = 0;
+    virtual CGenericModelApi* getParentModel() = 0;
+
+
 
     //QString m_Name;
 };

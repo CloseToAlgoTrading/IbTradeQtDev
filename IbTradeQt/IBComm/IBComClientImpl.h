@@ -12,7 +12,8 @@
 #include "EWrapper.h"
 #include "EReader.h"
 #include <QSharedPointer>
-//#include <QObject>
+
+#include "caccountsummary.h"
 
 Q_DECLARE_LOGGING_CATEGORY(IBComClientImplLog);
 
@@ -20,17 +21,19 @@ class EPosixClientSocket;
 
 class IBComClientImpl : public EWrapper, public IBrokerAPI
 {
-
 public:
     qint32 getNexValidId() { return m_nexValidId++; }
 
-    IBComClientImpl(Observer::CDispatcher & _dispatcher);
-    ~IBComClientImpl() override;
+    explicit IBComClientImpl(Observer::CDispatcher & _dispatcher);
+    virtual ~IBComClientImpl() override;
 
 	//void setUseV100Plus(const std::string&);
 
     void setConnectOptions(const std::string& connectOptions);
     void processMessagesAPI() override;
+
+//signals:
+//    void signalServerStateUpdate(bool state);
 
 public:
 	//IBrokerAPI
@@ -125,7 +128,7 @@ public:
     // Parameter: const qint32 _id
     // Parameter: const reqPlaceOrder_t & _reqOrder
     //************************************
-    qint32 reqPlaceOrderAPI(const QString& _symbol, const qint32 _quantity, const orderAction _action) override;
+    qint32 reqPlaceOrderAPI(const QString& _symbol, const qint32 _quantity, const eOrderAction_t _action) override;
 
 
     //************************************
@@ -194,6 +197,11 @@ public:
     void reqTickByTickDataAPI(const reqTickByTickDataConfigData_t & _config) override;
     void cancelTickByTickDataAPI(const qint32 id) override;
 
+
+    /* Account Information */
+    virtual void reqAccountSummary() override;
+    virtual void cancelAccountSummary(const qint32 id) override;
+
 public:
 	// events
     void tickPrice( TickerId tickerId, TickType field, double price, const TickAttrib& attrib) override;
@@ -249,8 +257,8 @@ public:
     void commissionReport( const CommissionReport& commissionReport) override;
     void position( const std::string& account, const Contract& contract, Decimal position, double avgCost) override;
     void positionEnd() override;
-    void accountSummary( int reqId, const std::string& account, const std::string& tag, const std::string& value, const std::string& curency) override {}
-    void accountSummaryEnd( int reqId) override {}
+    void accountSummary( int reqId, const std::string& account, const std::string& tag, const std::string& value, const std::string& curency) override;
+    void accountSummaryEnd( int reqId) override;
     void verifyMessageAPI( const std::string& apiData) override {}
     void verifyCompleted( bool isSuccessful, const std::string& errorText) override {}
     void displayGroupList( int reqId, const std::string& groups) override {}
@@ -319,6 +327,9 @@ private:
 
     Observer::CDispatcher & m_DispatcherBrokerData;
 
+
+private:
+    IBDataTypes::CAccountSummary m_accountSummaryData;
 };
 
 #endif // IBComClientImpl_H_INCLUDED

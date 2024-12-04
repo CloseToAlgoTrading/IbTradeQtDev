@@ -417,6 +417,54 @@ bool CBrokerDataProvider::cancelResetSubscription(const CSubscriberPtr _pSubscri
     return ret;
 }
 
+bool CBrokerDataProvider::requestErrorNotificationSubscription(const CSubscriberPtr _pSubscriber, const QString &_symbol)
+{
+    //Q_UNUSED(_symbol)
+    bool ret = true;
+
+    if (nullptr != _pSubscriber)
+    {
+        CDispatcher::CSubscriberItemPtr pSubcrItem = getSubscriberItem(_pSubscriber->GetSubscriberId());
+        //stReqIds r = { E_RQ_ID_ERROR_SUBSCRIPTION, RT_REQ_ERROR_SEQRITY_NOT_FOUND };
+        Subscribe(_pSubscriber, _symbol, { E_RQ_ID_ERROR_SUBSCRIPTION, RT_REQ_ERROR_SUBSRIPTION });
+    }
+    else
+    {
+        ret = false;
+    }
+
+    return ret;
+}
+
+bool CBrokerDataProvider::cancelErrorNotificationSubscription(const CSubscriberPtr _pSubscriber, const QString &_symbol)
+{
+    bool ret = false;
+    if (nullptr != _pSubscriber)
+    {
+        stReqIds retData;
+        CDispatcher::CSubscriberItemPtr pSubcrItem = getSubscriberItem(_pSubscriber->GetSubscriberId());
+
+        if (nullptr != pSubcrItem)
+        {
+            ret = pSubcrItem->ReqMenager()->getReqData(_symbol, RT_REQ_ERROR_SUBSRIPTION, retData);
+            if (ret)
+            {
+                Unsubscribe(_pSubscriber->GetSubscriberId(), retData.id, retData.reqType);
+            }
+        }
+        else
+        {
+            qCWarning(dataProviderLog(), "Error! pSubcrItem: is Empty string");
+            ret = false;
+        }
+    }
+    else
+    {
+        ret = false;
+    }
+    return ret;
+}
+
 bool CBrokerDataProvider::requestOrderStatusSubscription(const CSubscriberPtr _pSubscriber, const QString &_symbol)
 {
     Q_UNUSED(_symbol)
@@ -619,6 +667,47 @@ bool CBrokerDataProvider::cancelTickByTickData(const CSubscriberPtr _pSubscriber
     else
     {
         ret = false;
+    }
+    return ret;
+}
+
+bool CBrokerDataProvider::bpReqAccountSummary(const CSubscriberPtr _pSubscriber, const QString &_symbol)
+{
+    bool ret = false;
+    if (nullptr != _pSubscriber)
+    {
+        CDispatcher::CSubscriberItemPtr pSubcrItem = getSubscriberItem(_pSubscriber->GetSubscriberId());
+
+        stReqIds r = { E_RQ_ID_ACCOUNT_SUMMARY, RT_REQ_ACCOUNT_SUMMURY };
+        Subscribe(_pSubscriber, _symbol, r);
+
+        getClien()->reqAccountSummary();
+        ret = true;
+    }
+    return ret;
+}
+
+bool CBrokerDataProvider::bpCancelAccountSummary(const CSubscriberPtr _pSubscriber, const QString &_symbol)
+{
+    bool ret = false;
+    if (nullptr != _pSubscriber)
+    {
+        stReqIds retData;
+        CDispatcher::CSubscriberItemPtr pSubcrItem = getSubscriberItem(_pSubscriber->GetSubscriberId());
+
+        ret = pSubcrItem->ReqMenager()->getReqData(_symbol, RT_REQ_ACCOUNT_SUMMURY, retData);
+        if (ret)
+        {
+            getClien()->cancelAccountSummary(retData.id);
+            Unsubscribe(_pSubscriber->GetSubscriberId(), retData.id, retData.reqType);
+        }
+
+
+        stReqIds r = { E_RQ_ID_ACCOUNT_SUMMARY, RT_REQ_ACCOUNT_SUMMURY };
+        Subscribe(_pSubscriber, AccountSummurySymbol, r);
+
+        getClien()->reqAccountSummary();
+        ret = true;
     }
     return ret;
 }

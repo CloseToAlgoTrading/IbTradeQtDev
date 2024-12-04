@@ -134,18 +134,9 @@
     <addaction name="actionLoad"/>
     <addaction name="actionSave"/>
    </widget>
-   <widget class="QMenu" name="menuObsolete">
-    <property name="title">
-     <string>Obsolete</string>
-    </property>
-    <addaction name="actionPair_Trader"/>
-    <addaction name="actionAuto_Delta"/>
-    <addaction name="actionDBStore"/>
-   </widget>
    <addaction name="menuclear_log"/>
    <addaction name="menuView"/>
    <addaction name="menuConfiguration"/>
-   <addaction name="menuObsolete"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
    <property name="movable">
@@ -263,8 +254,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset theme="edit-clear">
-     <normaloff>.</normaloff>.</iconset>
+    <iconset theme="edit-clear"/>
    </property>
    <property name="text">
     <string>Clear Log</string>
@@ -278,8 +268,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset theme="text-x-generic">
-     <normaloff>.</normaloff>.</iconset>
+    <iconset theme="text-x-generic"/>
    </property>
    <property name="text">
     <string>Log</string>
@@ -293,8 +282,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset theme="preferences-other">
-     <normaloff>.</normaloff>.</iconset>
+    <iconset theme="preferences-other"/>
    </property>
    <property name="text">
     <string>Setting</string>
@@ -312,8 +300,7 @@
   </action>
   <action name="actionLoad">
    <property name="icon">
-    <iconset theme="document-open">
-     <normaloff>.</normaloff>.</iconset>
+    <iconset theme="document-open"/>
    </property>
    <property name="text">
     <string>Load ...</string>
@@ -321,8 +308,7 @@
   </action>
   <action name="actionSave">
    <property name="icon">
-    <iconset theme="document-save">
-     <normaloff>.</normaloff>.</iconset>
+    <iconset theme="document-save"/>
    </property>
    <property name="text">
     <string>Save ...</string>
@@ -330,8 +316,7 @@
   </action>
   <action name="actionConnect">
    <property name="icon">
-    <iconset theme="network-idle">
-     <normaloff>.</normaloff>.</iconset>
+    <iconset theme="network-idle"/>
    </property>
    <property name="text">
     <string>Connect</string>

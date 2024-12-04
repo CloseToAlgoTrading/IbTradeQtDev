@@ -10,12 +10,23 @@
 #include "cprocessingbase_v2.h"
 #include <QTimer>
 #include <QJsonObject>
+#include "UnifiedModelData.h"
+#include <QObject>
+#include "dbdatatypes.h"
+#include "dbmanager.h"
+#include "cmodelstate.h"
+#include <memory>  // For std::unique_ptr
+
+
 
 class CBaseModel : public CProcessingBase_v2, public CGenericModelApi
 {
+Q_OBJECT
 public:
     explicit CBaseModel(QObject *parent = nullptr);
-    virtual ~CBaseModel() {};
+    virtual ~CBaseModel() {
+
+    };
     // CGenericModelApi interface
 public:
     virtual void addModel(ptrGenericModelType pModel) override;
@@ -29,6 +40,12 @@ public:
 
     virtual bool start() override;
     virtual bool stop() override;
+
+    virtual QUuid getId() const override;
+    virtual void setId(const QUuid& id) override;
+
+    virtual void setActivationState(bool state) override;
+    virtual void setParentActivationState(bool state) override;
 
     virtual QJsonObject toJson() const override;
     virtual void fromJson(const QJsonObject& json) override;
@@ -63,11 +80,27 @@ public:
     virtual ptrGenericModelType getRiskModel() override;
     virtual ptrGenericModelType getExecutionModel() override;
 
+    virtual bool getActiveStatus() const override;
+
+    virtual bool getParentActivatedState() const override;;
+
+    virtual void setParentModel(CGenericModelApi* pModel) override;
+    virtual CGenericModelApi* getParentModel() override;
+
+    inline auto getStrUuId() const{
+        return m_uuid.toString(QUuid::WithoutBraces).toStdString();
+    }
+protected:
+    void connectModels();
+    void disconnectModels();
+
 protected:
     QList<ptrGenericModelType> m_Models;
     QVariantMap m_ParametersMap;
     QVariantMap m_InfoMap;
     QString m_Name;
+    QUuid m_uuid;
+
     //CBrokerDataProvider m_DataProvider;
 
     QVariantMap m_assetList;
@@ -80,13 +113,65 @@ protected:
     ptrGenericModelType m_RiskModel;
     ptrGenericModelType m_ExecutionModel;
 
+    CGenericModelApi* m_ParentModel;
+
+    DBManager m_dbManager;
+
+
+
+/* Init Flags */
+public:
+    bool m_isIdSet;
+    bool m_isDbConnected;
+    bool m_isDbInfoFetched;
+    bool m_isDbDataFetched;
+
+    inline void validateModelInit();
+    inline void validateModelInit2();
+    virtual bool isInit2AdditionalDataReady();
+
+
+/* State Machine */
+public:
+    std::unique_ptr<CModelState> currentState;
+    void handleEvent(const e_modelStateEvent& event);
+    void setState(std::unique_ptr<CModelState> state);
+    e_modelState getState();
+/*.................*/
+
 public slots:
-    void onUpdateParametersSlot(const QVariantMap& parameters);
+    virtual void onUpdateParametersSlot(const QVariantMap& parameters);
+    virtual void processData(DataListPtr data);
+    virtual void onTimeoutSlot();
+    virtual void onUpdateServerConnectionStateSlot(bool state);
 
-    void onTimeoutSlot();
-    //public: signals:
-    //    void onUpdateParametersSignal(const QVariantMap& parameters);
+    virtual void slotDbManagerConnectionState(const bool state);
+    virtual void slotModelInfoFetched(const DbModelInfo& obj, e_queryStatus state);
 
+signals:
+    void dataProcessed(DataListPtr data);
+
+
+/* Temp */
+public:
+    DbModelInfo m_ModelInfo;
+
+private:
+    qreal m_availableFunds;
+    qreal m_usedFunds;
+    QList<OpenPosition> m_OpenPositionList;
+
+public:
+    virtual qreal getAvailableFunds() const;
+    virtual void setAvailableFunds(const qreal funds);
+    virtual QList<OpenPosition> getOpenPositions() const;
+
+
+    /* temp here */
+    virtual void requestInitData();
+    void setIsIdSet(bool newIsIdSet);
+    void setIsDbConnected(bool newIsDbConnected);
+    void setIsDbInfoFetched(bool newIsDbInfoFetched);
 };
 
 #endif // CBASEMODEL_H

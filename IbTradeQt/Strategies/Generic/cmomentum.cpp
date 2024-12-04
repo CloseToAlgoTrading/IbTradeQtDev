@@ -1,41 +1,61 @@
 
 #include "cmomentum.h"
+#include "UnifiedModelData.h"
+#include "modelConstants.h"
+#include <QSharedPointer>
 
 Q_LOGGING_CATEGORY(MomentumPmLog, "Momentum.PM");
 
+#define CPM_EXECUTION_CYCLE_TIME "Cycle Time"
+
 cMomentum::cMomentum(QObject *parent)
     : CBasicStrategy_V2{parent}
+    , m_triggerTimer()
 {
     m_Name = "Momentum";
     this->setName("Momentum");
+    this->m_ParametersMap[CPM_BP] = 10000.0f;
+//    this->m_ParametersMap[CPM_EXECUTION_CYCLE_TIME] = 10000;
 
-
-    QObject::connect(this, &CProcessingBase_v2::signalCbkRecvHistoricalData, this, &cMomentum::slotCbkRecvHistoricalData, Qt::QueuedConnection);
+    QObject::connect(&m_triggerTimer, &QTimer::timeout, this, &cMomentum::onTimeoutSlot);
 }
 
 bool cMomentum::start()
 {
-    //QList<QString> tickers = {"AAPL", "MSFT", "GOOG"};
-    QList<QString> tickers = {"AAPL"};
-
-    reqHistConfigData_t histConfiguration(0, BAR_SIZE_1_DAY, "5 D", "");
-    for (const QString& ticker : tickers) {
-//        auto id = getNextValidId();
-//        histConfiguration.id = id;
-        histConfiguration.symbol = ticker.toStdString().c_str();
-        reqestHistoricalData(histConfiguration);
-    }
-
-    return CBasicStrategy_V2::start();
+    if(!isConnectedTotheServer()) return false;
+    this->m_ParametersMap[CPM_EXECUTION_CYCLE_TIME] = 10000;
+    CBasicStrategy_V2::start();
+    auto m_pAssetList = createDataList();
+    emit dataProcessed(m_pAssetList);
+    auto timeValue = this->m_ParametersMap[CPM_EXECUTION_CYCLE_TIME].toInt();
+    m_triggerTimer.start(timeValue);
+    return true;
 }
 
 bool cMomentum::stop()
 {
+    m_triggerTimer.stop();
     return CBasicStrategy_V2::stop();
 }
 
-void cMomentum::slotCbkRecvHistoricalData(const QList<CHistoricalData> &_histMap, const QString &_symbol)
+void cMomentum::setId(const QUuid &id)
 {
-    qCDebug(MomentumPmLog(), "symbol: [%s] - length: [%d]", _symbol.toStdString().c_str(), _histMap.length());
+    CBaseModel::setId(id);
+    m_StrategyData.strategyId = getStrUuId().c_str();
+}
+
+
+void cMomentum::slotDbManagerConnectionState(const bool state)
+{
+    CBaseModel::slotDbManagerConnectionState(state);
+    qDebug() << "DB state: " << ((state == true) ? "Connected" : "Disconnected");
+
+}
+
+void cMomentum::onTimeoutSlot()
+{
+    // Start data processing
+    //emit dataProcessed(nullptr);
+    qDebug() << "Timer Triggered";
 }
 

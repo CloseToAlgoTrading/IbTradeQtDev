@@ -1,4 +1,4 @@
-﻿/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+﻿/* Copyright (C) 2023 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 #pragma once
@@ -8,15 +8,13 @@
 typedef long TickerId;
 typedef long OrderId;
 
-enum faDataType { GROUPS=1, PROFILES, ALIASES } ;
+enum faDataType { GROUPS=1, ALIASES=3 } ;
 
 inline const char* faDataTypeStr ( faDataType pFaDataType )
 {
 	switch (pFaDataType) {
 		case GROUPS:
 			return "GROUPS";
-		case PROFILES:
-			return "PROFILES";
 		case ALIASES:
 			return "ALIASES";
 	}
@@ -32,4 +30,23 @@ enum MarketDataType {
 
 const std::string INFINITY_STR = "Infinity";
 
+// FundAssetType
+enum class FundAssetType {
+    None,
+    Others,
+    MoneyMarket,
+    FixedIncome,
+    MultiAsset,
+    Equity,
+    Sector,
+    Guaranteed,
+    Alternative
+};
+
+// FundDistributionPolicyIndicator
+enum class FundDistributionPolicyIndicator {
+    None,
+    AccumulationFund,
+    IncomeFund
+};
 #endif /* common_defs_h_INCLUDED */

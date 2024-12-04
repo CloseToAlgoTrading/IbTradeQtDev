@@ -7,16 +7,16 @@
 #include "IBworker.h"
 #include "cbrokerdataprovider.h"
 #include "AlphaModGetTime.h"
-#include "AutoDeltAlignmentPresenter.h"
-#include "DBStorePresenter.h"
+//#include "AutoDeltAlignmentPresenter.h"
+//#include "DBStorePresenter.h"
 #include <QScopedPointer>
-//#include "MyLogger.h"
+#include "MyLogger.h"
 
 #include "AboutDlgPresener.h"
-#include "PairTradingPresenter.h"
+//#include "PairTradingPresenter.h"
 
 
-#include "DBConnector.h"
+//#include "DBConnector.h"
 
 class CMainModel;
 
@@ -45,6 +45,8 @@ public:
 
     CMainModel *getPGuiModel() const;
     void setPGuiModel(CMainModel *newPGuiModel);
+
+    QSharedPointer<CBrokerDataProvider> getDataProvider() const;
 
 signals:
 	void signalTimeReceived(long time);
@@ -75,11 +77,11 @@ private:
 private:
 	QScopedPointer<AboutDlgPresener> pAboutDlgPresenter;
 
-	QScopedPointer<PairTradingPresenter> pPairTradingPresenter;
+    // QScopedPointer<PairTradingPresenter> pPairTradingPresenter;
 
-    QScopedPointer<AutoDeltaAligPresenter> pAutoDeltaAligPresenter;
+ //    QScopedPointer<AutoDeltaAligPresenter> pAutoDeltaAligPresenter;
 
-    QScopedPointer<DBStorePresenter> pDBStorePresenter;
+ //    QScopedPointer<DBStorePresenter> pDBStorePresenter;
 
 };
 

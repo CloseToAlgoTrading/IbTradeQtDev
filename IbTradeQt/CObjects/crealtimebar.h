@@ -91,22 +91,22 @@ namespace IBDataTypes
         quint64 getDateTime() const { return d->m_DateTime; }
         void setDateTime(quint64 val) { d->m_DateTime = val; }
 
-        double getOpen() const { return d->m_Open; }
+        qreal getOpen() const { return d->m_Open; }
         void setOpen(double val) { d->m_Open = val; }
 
-        double getClose() const { return d->m_Close; }
+        qreal getClose() const { return d->m_Close; }
         void setClose(double val) { d->m_Close = val; }
 
-        double getHigh() const { return d->m_Higt; }
+        qreal getHigh() const { return d->m_Higt; }
         void setHigh(double val) { d->m_Higt = val; }
 
-        double getLow() const { return d->m_Low; }
+        qreal getLow() const { return d->m_Low; }
         void setLow(double val) { d->m_Low = val; }
 
-        double getVolume() const { return d->m_Volume; }
+        qreal getVolume() const { return d->m_Volume; }
         void setVolume(double val) { d->m_Volume = val; }
 
-        double getWap() const { return d->m_Wap; }
+        qreal getWap() const { return d->m_Wap; }
         void setWap(double val) { d->m_Wap = val; }
 
         qint32 getCount() const { return d->m_Count; }

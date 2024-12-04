@@ -1,13 +1,22 @@
 <RCC>
     <qresource prefix="/IBTradeSystem">
         <file>x_resources/app.png</file>
-        <file>x_resources/Account.png</file>
-        <file>x_resources/Parameter.png</file>
-        <file>x_resources/Parameters.png</file>
-        <file>x_resources/Portfolio.png</file>
-        <file>x_resources/Portfolio_1.png</file>
-        <file>x_resources/Strategy.png</file>
-        <file>x_resources/Accounts.png</file>
-        <file>x_resources/Accounts_1.png</file>
+        <file>x_resources/icons/default/Account.png</file>
+        <file>x_resources/icons/default/Parameter.png</file>
+        <file>x_resources/icons/default/Parameters.png</file>
+        <file>x_resources/icons/default/Portfolio.png</file>
+        <file>x_resources/icons/default/Portfolio_1.png</file>
+        <file>x_resources/icons/default/Strategy.png</file>
+        <file>x_resources/icons/default/Accounts.png</file>
+        <file>x_resources/icons/default/Accounts_1.png</file>
+        <file>x_resources/icons/default/LoadConfiguration.png</file>
+        <file>x_resources/icons/default/SaveConfiguration.png</file>
+        <file>x_resources/icons/default/Settings.png</file>
+        <file>x_resources/icons/default/Log.png</file>
+        <file>x_resources/icons/default/LogClear.png</file>
+        <file>x_resources/icons/default/Connected.png</file>
+        <file>x_resources/icons/default/NotConnected.png</file>
+        <file>x_resources/icons/default/Connect.png</file>
+        <file>x_resources/icons/default/Disconnect.png</file>
     </qresource>
 </RCC>

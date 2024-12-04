@@ -18,10 +18,21 @@ public:
     virtual bool start() final;
     virtual bool stop() final;
 
+    virtual void setId(const QUuid& id) override;
+
     ModelType modelType() const override { return ModelType::STRATEGY_MOMENTUM; }
 
+    /** override strategy functions **/
+    //virtual void requestInitData() override;
+
+
 public slots:
-    void slotCbkRecvHistoricalData(const QList<IBDataTypes::CHistoricalData> & _histMap, const QString& _symbol);
+    virtual void slotDbManagerConnectionState(const bool state) override;
+    virtual void onTimeoutSlot();
+
+private:
+    QTimer m_triggerTimer;
+
 };
 
 #endif // CMOMENTUM_H

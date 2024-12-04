@@ -1,5 +1,7 @@
 #include "capplicationcontroller.h"
 
+#include <clocale>
+
 #define QT_LOGGING_DEBUG 1
 int main(int argc, char *argv[])
 {
@@ -30,8 +32,8 @@ int main(int argc, char *argv[])
 
 
     QApplication a(argc, argv);
+    setlocale(LC_NUMERIC,"C");
     CApplicationController app;
     app.setUpApplication(a);
-//    return app.run(argc, argv);
     return a.exec();
 }

@@ -5,7 +5,15 @@
 #include <QLibraryInfo>
 #include <QStringList>
 #include <QStandardPaths>
-#include<QIcon>
+#include <QIcon>
+#include <QFile>
+#include <QJsonDocument>
+
+/******* xxx *********/
+#include "dbmanager.h"
+#include "dbdatatypes.h"
+#include <QDateTime>
+/******* xxx *********/
 
 CApplicationController::CApplicationController(QObject *parent):
     QObject(parent)
@@ -13,7 +21,7 @@ CApplicationController::CApplicationController(QObject *parent):
    , pMainView(new CIBTradeSystemView)
    , m_pDataRoot(new CBasicRoot())
 {
-    loadTreeFromFile("model_tree_config.json");
+    loadTreeFromFile("model_tree_config.json", pMainPresenter->getDataProvider());
 
     this->pMainPresenter->addView(this->pMainView);
 
@@ -24,6 +32,25 @@ CApplicationController::CApplicationController(QObject *parent):
     this->pMainPresenter->MapSignals();
 
     QObject::connect(pMainView->getUi().actionSave, &QAction::triggered, this, &CApplicationController::slotStoreModelTree);
+
+    /*** Test Code ***/
+    // DBManager m_dbManager;
+    // QDateTime currentDateTime = QDateTime::currentDateTime();
+
+    // DbTrade newTrade;
+    // newTrade.strategyId = 1;  // Example data
+    // newTrade.symbol = "XXX";
+    // newTrade.quantity = -200;
+    // newTrade.price = 300.0;
+    // newTrade.pnl = 20.0;
+    // newTrade.fee = 0.5;
+    // newTrade.date = currentDateTime.toString("yyyy-MM-dd HH:mm:ss.zzz");
+    // newTrade.tradeType = "SELL";
+
+    // m_dbManager.signalAddNewTrade(newTrade);
+
+    /******* xxx *********/
+
 }
 
 CApplicationController::~CApplicationController()
@@ -40,45 +67,9 @@ void CApplicationController::setUpApplication(QApplication &app)
     font.setStyleHint(QFont::Monospace);
     QApplication::setFont(font);
 
-//    QString ss = QCoreApplication::applicationDirPath();
-//    qInstallMessageHandler(MyLogger::myMessageOutput);
-
-//    //Log output template
-//    qSetMessagePattern("%{time [dd.MM.yy hh:mm:ss]}[%{type}][%{function}]: %{message}");
-
-//    //Filter rules (default set in QtProject/qtlogging.ini)
-//    //-----
-//    // processing.Base, customCandleQChart.GUI,customQChart.GUI, dataProvider.General, ibComClient.Callback, ibComClientImpl.Callback
-//    // pairTrader.PM, pairTrader.GUI
-//    //-----
-//    //Comment the following line if you want to use qtlogging.ini settings
-//    QLoggingCategory::setFilterRules(QStringLiteral("\
-//        pairTrader.*      = true  \n\
-//        customQChart.*    = false \n\
-//        ibComClient.*     = true  \n\
-//        dataProviderLog.* = true  \n\
-//        processing.*      = true  \n\
-//        DBStore.*         = true  \n\
-//        ibComClientImpl.* = true  \n"));
-
-//    //MyLogger::setDebugLevelMask(MyLogger::LL_ALL);
-//    MyLogger::setDebugLevelMask(MyLogger::LL_INFO|MyLogger::LL_DEBUG);
-
-//    this->pMainPresenter->addView(this->pMainView);
-//    this->pMainPresenter->MapSignals();
-
-
     auto icon = QIcon(":/IBTradeSystem/x_resources/app.png");
     app.setWindowIcon(icon);
 
-//    QFile file("Combinear.qss");
-//    file.open(QFile::ReadOnly | QFile::Text);
-//    QTextStream stream(&file);
-//    QString styleSheet = stream.readAll();
-
-//    a.setStyleSheet(styleSheet);
-
-//    file.close();
     this->pMainView->show();
 }
 
@@ -87,7 +78,7 @@ void CApplicationController::setPMainModel(CMainModel *newPMainModel)
     pMainModel = newPMainModel;
 }
 
-void CApplicationController::loadTreeFromFile(const QString &fileName)
+void CApplicationController::loadTreeFromFile(const QString &fileName, QSharedPointer<CBrokerDataProvider> dataProvider)
 {
     QFile file(fileName);
     if (file.exists())
@@ -99,6 +90,7 @@ void CApplicationController::loadTreeFromFile(const QString &fileName)
         QByteArray jsonData = file.readAll();
         QJsonDocument doc = QJsonDocument::fromJson(jsonData);
         QJsonObject rootJson = doc.object();
+        this->m_pDataRoot->setBrokerDataProvider(dataProvider);
         this->m_pDataRoot->fromJson(rootJson);
     }
 }

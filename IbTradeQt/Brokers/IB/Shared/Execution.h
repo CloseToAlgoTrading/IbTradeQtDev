@@ -22,6 +22,7 @@ struct Execution
 		avgPrice = 0;
 		evMultiplier = 0;
         lastLiquidity = 0;
+        pendingPriceRevision = false;
 	}
 
 	std::string	execId;
@@ -42,6 +43,7 @@ struct Execution
 	double		evMultiplier;
 	std::string modelCode;
     int         lastLiquidity;
+    bool        pendingPriceRevision;
 };
 
 struct ExecutionFilter

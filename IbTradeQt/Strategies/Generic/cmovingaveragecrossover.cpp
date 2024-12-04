@@ -1,23 +1,12 @@
 #include "cmovingaveragecrossover.h"
 #include "IBComClientImpl.h"
-#include "contractsdefs.h"
+#include "ContractSamples.h"
 #include "Decimal.h"
 
 Q_LOGGING_CATEGORY(MaCrossoverPmLog, "MovingAverage.PM");
 
 CMovingAverageCrossover::CMovingAverageCrossover(QObject *parent) : CBasicStrategy_V2(parent)
 {
-    //TODO: The strategy must have access to the BrokerInbterface!
-
-//    QSharedPointer<IBComClientImpl> pClient = QSharedPointer<IBComClientImpl>::create(m_DataProvider);
-//    m_DataProvider.setClien(pClient);
-
-//    QSharedPointer<CBrokerDataProvider> dataProviderPtr = QSharedPointer<CBrokerDataProvider>::create(m_DataProvider);
-
-
-//    this->setClient(dataProviderPtr);
-    //m_DataProvider.setClien(QSharedPointer<IBComClientImpl>::create(m_DataProvider));
-    //this->setClient(QSharedPointer<CBrokerDataProvider>(&m_DataProvider));
     /***** Init Patameters ******/
     m_Name = "Moving Average Crossover";
     this->setName("Moving Average Crossover");
@@ -48,7 +37,7 @@ bool CMovingAverageCrossover::start()
 //    reqReadlTimeDataConfigData_t optCfg{0, contract, "", false, false};
 //    reqestRealTimeData(optCfg);
 
-    requestPosition();
+    pbRequestPosition();
 
     return CBasicStrategy_V2::start();
 }

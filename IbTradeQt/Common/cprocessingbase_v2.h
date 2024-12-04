@@ -5,6 +5,7 @@
 #include "Dispatcher.h"
 
 #include "CHistoricalData.h"
+#include "caccountsummary.h"
 #include "ctickprice.h"
 #include "cticksize.h"
 #include "crealtimebar.h"
@@ -16,33 +17,34 @@
 #include <QLoggingCategory>
 #include <QList>
 #include "GlobalDef.h"
-
-#include "cprocessingbase.h"
+#include "cexecutionreport.h"
+#include "ccommissionreport.h"
+//#include "cprocessingbase.h"
 
 
 using namespace IBDataTypes;
 
 Q_DECLARE_LOGGING_CATEGORY(processingBaseV2Log);
 
-//typedef struct
-//{
-//    QList<CHistoricalData> listHistData;
-//    bool isAvaliable;
-//} HistoricalData_st;
+typedef struct
+{
+   QList<CHistoricalData> listHistData;
+   bool isAvaliable;
+} HistoricalData_st;
 
-//typedef QMap<qint64, HistoricalData_st>	HistoricalDataMap_t;
+typedef QMap<qint64, HistoricalData_st>	HistoricalDataMap_t;
 
-//typedef QMultiMap<QString, tEReqType>	ActiveReqestsMap_t;
+typedef QMultiMap<QString, tEReqType>	ActiveReqestsMap_t;
 
-//typedef QMultiMap<qint64, CHistoricalData>	HistMap_t;
-//typedef QMultiMap<qint64, IBDataTypes::CMyTickPrice> TickPriceMap_t;
-//typedef QMultiMap<qint64, CTickSize>		TickSizeMap_t;
-//typedef QMultiMap<qint64, CrealtimeBar>		RealTimeBarMap_t;
-//typedef QMultiMap<qint64, CMktDepth>		MKDepthMap_t;
+typedef QMultiMap<qint64, CHistoricalData>	HistMap_t;
+typedef QMultiMap<qint64, IBDataTypes::CMyTickPrice> TickPriceMap_t;
+typedef QMultiMap<qint64, CTickSize>		TickSizeMap_t;
+typedef QMultiMap<qint64, CrealtimeBar>		RealTimeBarMap_t;
+typedef QMultiMap<qint64, CMktDepth>		MKDepthMap_t;
 
-//typedef QMultiMap<QString, CPosition>	    PositionMap_t;
+typedef QMultiMap<QString, CPosition>	    PositionMap_t;
 
-//Q_DECLARE_METATYPE(HistMap_t);
+Q_DECLARE_METATYPE(HistMap_t);
 
 
 class CProcessingBase_v2 : public QObject, public Observer::CSubscriber
@@ -68,10 +70,12 @@ private:
     void recvPosition(void* pContext, tEReqType _reqType);
     void recvPositionEnd();
     void recvOrdersCommission(void* pContext, tEReqType _reqType);
+    void recvExecutionReport(void* pContext, tEReqType _reqType);
 
     void recvOptionTickComputation(void* pContext, tEReqType _reqType);
 
     virtual void recvRestartSubscription();
+    virtual void recvErrorNotificationSubscription(int id);
 
 
     //temporary here
@@ -118,11 +122,14 @@ public:
     bool requestRealTimeBars(const QString& _symbol);
     bool cancelRealTimeBars(const QString& _symbol);
 
-    bool requestPosition();
-    bool cancelPosition();
+    bool pbRequestPosition();
+    bool pbCancelPosition();
 
     bool reqestResetSubscription();
     bool cancelResetSubscription();
+
+    bool reqestErrorNotificationSubscription();
+    bool cancelErrorNotificationSubscription();
 
     bool reqestOrderStatusSubscription();
     bool cancelOrderStatusSubscription();
@@ -132,8 +139,14 @@ public:
 
     bool requestCalculateOptionPrice(reqCalcOptPriceConfigData_t & _config);
     bool cancelCalculateOptionPrice(const QString& _symbol);
+
+    /* Account Information */
+    bool pbReqAccountSummary();
+    bool pbCancelAccountSummary();
+
+
     //orders
-    qint32 requestPlaceMarketOrder(const QString& _symbol, const qint32 _quantity, const orderAction _action);
+    qint32 requestPlaceMarketOrder(const QString& _symbol, const qint32 _quantity, const eOrderAction_t _action);
 
     void requestOpenOrders();
 
@@ -165,8 +178,12 @@ signals:
     void signalMessageHandler(void* pContext, tEReqType _reqType);
     void signalRecvOptionTickComputation(const COptionTickComputation & obj);
     void signalEndRecvPosition();
-    void signalRecvOrderCommission(const qreal & obj, const qreal & _rpnl);
+    void signalRecvCommissionReport(const CCommissionReport & obj);
+    void signalRecvExecutionReport(const CExecutionReport & obj);
     void signalRestartSubscription();
+    void signalErrorNotFound(int id);
+
+    void signalRecvAccountSummary(const CAccountSummary & obj);
 
 //    void signalRecvRealTimeBar(const RealTimeBarMap_t & _realTimeBar, const TickerId & _id);
 

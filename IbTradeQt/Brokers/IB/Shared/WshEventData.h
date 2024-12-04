@@ -18,28 +18,28 @@ struct WshEventData
     std::string endDate;
     int totalLimit;
 
-	WshEventData(int conId, bool fillWatchlist, bool fillPortfolio, bool fillCompetitors, std::string startDate, std::string endDate, int totalLimit)
+	WshEventData(int conId_, bool fillWatchlist_, bool fillPortfolio_, bool fillCompetitors_, std::string startDate_, std::string endDate_, int totalLimit_)
 	{
-        this->conId = conId;
+        this->conId = conId_;
         this->filter = "";
-        this->fillWatchlist = fillWatchlist;
-        this->fillPortfolio = fillPortfolio;
-        this->fillCompetitors = fillCompetitors;
-        this->startDate = startDate;
-        this->endDate = endDate;
-        this->totalLimit = totalLimit;
+        this->fillWatchlist = fillWatchlist_;
+        this->fillPortfolio = fillPortfolio_;
+        this->fillCompetitors = fillCompetitors_;
+        this->startDate = startDate_;
+        this->endDate = endDate_;
+        this->totalLimit = totalLimit_;
     }
 
-    WshEventData(std::string filter, bool fillWatchlist, bool fillPortfolio, bool fillCompetitors, std::string startDate, std::string endDate, int totalLimit)
+    WshEventData(std::string filter_, bool fillWatchlist_, bool fillPortfolio_, bool fillCompetitors_, std::string startDate_, std::string endDate_, int totalLimit_)
     {
         this->conId = INT_MAX;
-        this->filter = filter;
-        this->fillWatchlist = fillWatchlist;
-        this->fillPortfolio = fillPortfolio;
-        this->fillCompetitors = fillCompetitors;
-        this->startDate = startDate;
-        this->endDate = endDate;
-        this->totalLimit = totalLimit;
+        this->filter = filter_;
+        this->fillWatchlist = fillWatchlist_;
+        this->fillPortfolio = fillPortfolio_;
+        this->fillCompetitors = fillCompetitors_;
+        this->startDate = startDate_;
+        this->endDate = endDate_;
+        this->totalLimit = totalLimit_;
     }
 };
 

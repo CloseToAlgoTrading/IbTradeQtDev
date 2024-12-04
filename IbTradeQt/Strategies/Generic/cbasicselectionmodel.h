@@ -2,12 +2,12 @@
 #ifndef CBASICSELECTIONMODEL_H
 #define CBASICSELECTIONMODEL_H
 
-#include "cbasicstrategy_V2.h"
+#include "cbasemodel.h"
 #include <QStringList>
 
 Q_DECLARE_LOGGING_CATEGORY(BasicSelectionModelLog);
 
-class CBasicSelectionModel : public CBasicStrategy_V2
+class CBasicSelectionModel : public CBaseModel
 {
     Q_OBJECT
 public:
@@ -19,8 +19,14 @@ public:
     //virtual bool stop() final;
 
     ModelType modelType() const override { return ModelType::STRATEGY_SELECTION_MODEL; }
-    QStringList getAssets();
 
+    virtual void setParameters(const QVariantMap& parametersMap) override;
+
+public slots:
+    virtual void processData(DataListPtr data) override;
+
+public:
+    DataListPtr m_pAssetList;
 };
 
 #endif // CBASICSELECTIONMODEL_H

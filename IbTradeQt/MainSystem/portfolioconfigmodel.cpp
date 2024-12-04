@@ -12,6 +12,7 @@
 #include "cbasicroot.h"
 
 #include "ModelType.h"
+#include <QUuid>
 
 #define START_OF_WORKING_NODES (3u)
 
@@ -126,6 +127,7 @@ void CPortfolioConfigModel::setupModelData(TreeItem * rootItem)
             // Loop through strategies in the portfolio
             for (const auto &strategyModel : portfolioModel->getModels())
             {
+                strategyModel->setBrokerDataProvider(m_brokerInterface);
                 auto strategy_offset = getItem(portfolioIndex)->getFirstModelChildIndexCache();
                 auto correntIndex = createIndex(portfolioIndex.row() + strategy_offset, 0, getItem(portfolioIndex)->child(getItem(portfolioIndex)->childCount() - 1));
                 addWorkingNode(correntIndex, strategyModel, PM_ITEM_STRATEGY);
@@ -174,18 +176,19 @@ void CPortfolioConfigModel::dataChangeCallback(const QModelIndex &topLeft, const
                 else if (columnIndex == 1)
                 {
                     const auto isActive = itemToUpdate->data(valueIndex.column()).value.toInt() == Qt::Checked;
-                    auto tmp_parent = itemToUpdate->parent();
-                    auto tmp_id = tmp_parent->data(0).id;
-                    bool parents_isActive = true;
-                    while (PM_ITEM_ACCOUNTS != tmp_id) {
-                        parents_isActive &= tmp_parent->data(valueIndex.column()).value.toInt() == Qt::Checked;
-                        tmp_parent = tmp_parent->parent();
-                        tmp_id = tmp_parent->data(0).id;
-                    };
-                    if(true == parents_isActive)
-                    {
-                        isActive ? modelToUpdate->start() : modelToUpdate->stop();
-                    }
+//                    auto tmp_parent = itemToUpdate->parent();
+//                    auto tmp_id = tmp_parent->data(0).id;
+                    //bool parents_isActive = true;
+//                    while (PM_ITEM_ACCOUNTS != tmp_id) {
+//                        parents_isActive &= tmp_parent->data(valueIndex.column()).value.toInt() == Qt::Checked;
+//                        tmp_parent = tmp_parent->parent();
+//                        tmp_id = tmp_parent->data(0).id;
+//                    };
+                    modelToUpdate->setActivationState(isActive);
+//                    if(true == parents_isActive)
+//                    {
+//                        isActive ? modelToUpdate->start() : modelToUpdate->stop();
+//                    }
                 }
             }
         };
@@ -232,6 +235,10 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
             {
                 model = QSharedPointer<CBasicAccount>::create();
                 model->setName("Account");
+                model->setId(QUuid::createUuid());
+                //model->setBrokerDataProvider(this->m_brokerInterface);
+                model->setParentActivationState(true);
+                //model->setParentModel(static_cast<ptrGenericModelType>(m_pRoot));
                 m_pRoot->addModel(model);
             }
             break;
@@ -242,6 +249,9 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
                 {
                     model = QSharedPointer<CBasicPortfolio>::create();
                     model->setName("Portfolio");
+                    model->setId(QUuid::createUuid());
+                    model->setParentActivationState(account->getParentActivatedState());
+                    model->setParentModel(account.data());
                     account->addModel(model);
                 }
             }
@@ -254,7 +264,9 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
                 if((nullptr != portfolio) && (nullptr != this->m_brokerInterface))
                 {
                     model = CStrategyFactory::createNewStrategy(ModelType::STRATEGY_MOMENTUM);
-                    model->setBrokerDataProvider(this->m_brokerInterface);
+                    model->setId(QUuid::createUuid());
+                    model->setParentActivationState(portfolio->getParentActivatedState());
+                    model->setParentModel(portfolio.data());
                     portfolio->addModel(model);
                 }
             }
@@ -273,6 +285,9 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
                         removeModel(this->index(_offset,0,workingIndex));
                     }
                     model = CStrategyFactory::createNewStrategy(ModelType::STRATEGY_SELECTION_MODEL);
+                    model->setId(QUuid::createUuid());
+                    model->setParentActivationState(strategy->getParentActivatedState());
+                    model->setParentModel(strategy.data());
                     strategy->addSelectionModel(model);
                 }
             }
@@ -291,6 +306,9 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
                         removeModel(this->index(_offset+1,0,workingIndex));
                     }
                     model = CStrategyFactory::createNewStrategy(ModelType::STRATEGY_ALPHA_MODEL);
+                    model->setId(QUuid::createUuid());
+                    model->setParentActivationState(strategy->getParentActivatedState());
+                    model->setParentModel(strategy.data());
                     strategy->addAlphaModel(model);
                 }
 
@@ -310,6 +328,9 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
                         removeModel(this->index(_offset+2,0,workingIndex));
                     }
                     model = CStrategyFactory::createNewStrategy(ModelType::STRATEGY_REBALANCE_MODEL);
+                    model->setId(QUuid::createUuid());
+                    model->setParentActivationState(strategy->getParentActivatedState());
+                    model->setParentModel(strategy.data());
                     strategy->addRebalanceModel(model);
                 }
 
@@ -329,6 +350,9 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
                         removeModel(this->index(_offset+3,0,workingIndex));
                     }
                     model = CStrategyFactory::createNewStrategy(ModelType::STRATEGY_RISK_MODEL);
+                    model->setId(QUuid::createUuid());
+                    model->setParentActivationState(strategy->getParentActivatedState());
+                    model->setParentModel(strategy.data());
                     strategy->addRiskModel(model);
                 }
 
@@ -348,6 +372,9 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
                         removeModel(this->index(_offset+4,0,workingIndex));
                     }
                     model = CStrategyFactory::createNewStrategy(ModelType::STRATEGY_EXECTION_MODEL);
+                    model->setId(QUuid::createUuid());
+                    model->setParentActivationState(strategy->getParentActivatedState());
+                    model->setParentModel(strategy.data());
                     strategy->addExecutionModel(model);
                 }
 
@@ -456,9 +483,13 @@ TreeItem* CPortfolioConfigModel::addWorkingNodeContent(const bool _isModelExist,
     {
         auto _vType = _isModelExist ? EVT_RO_TEXT : EVT_TEXT;
         auto _name = pModel == nullptr ? name : pModel->getName();
+        auto _state = pModel == nullptr ? false : pModel->getActiveStatus();
+        auto checkBoxState = (true == _state) ? Qt::Checked : Qt::Unchecked;
+        auto _description = pModel == nullptr ? "<empty>" : "";
+
         auto secondIdem = _isModelExist ?
-                              pItemDataType(new stItemData("<empty>", EVT_RO_TEXT, TVM_UNUSED_ID)) :
-                              pItemDataType(new stItemData(Qt::Unchecked, EVT_CECK_BOX, id + PT_ITEM_ACTIVATION));
+                              pItemDataType(new stItemData(_description, EVT_RO_TEXT, TVM_UNUSED_ID)) :
+                              pItemDataType(new stItemData(checkBoxState, EVT_CECK_BOX, id + PT_ITEM_ACTIVATION));
         parent = addRootNode(item,
                              pItemDataType(new stItemData(_name, _vType, id)),
                              secondIdem,
@@ -472,7 +503,7 @@ TreeItem* CPortfolioConfigModel::addWorkingNodeContent(const bool _isModelExist,
     }
     return parent;
 }
-void CPortfolioConfigModel::addWorkingNode(QModelIndex index, const ptrGenericModelType pModel, const quint16 id, QString modelName)
+void CPortfolioConfigModel::addWorkingNode(QModelIndex index, const ptrGenericModelType pModel, const quint16 id)
 {
     TreeItem * item = getItem(index);
     TreeItem * existingChild = nullptr;
@@ -528,6 +559,8 @@ void CPortfolioConfigModel::addWorkingNode(QModelIndex index, const ptrGenericMo
                 };
 
                 for (const auto& [getModel, modelItem, modelName] : modelInfos) {
+                        if(nullptr != pModel)
+                            pModel->setBrokerDataProvider(m_brokerInterface);
                         (void)addWorkingNodeContent(true, getModel(pModel), parent, modelName.c_str(), modelItem);
 
                 }

@@ -1,9 +1,9 @@
 #ifndef CBASICROOT_H
 #define CBASICROOT_H
 
-#include "cbasicstrategy_V2.h"
+#include "cbasemodel.h"
 
-class CBasicRoot : public CBasicStrategy_V2
+class CBasicRoot : public CBaseModel
 {
 public:
     explicit CBasicRoot(QObject *parent = nullptr);

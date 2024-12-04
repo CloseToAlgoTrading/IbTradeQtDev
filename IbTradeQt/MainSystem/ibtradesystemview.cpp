@@ -4,31 +4,34 @@
 #include "GlobalDef.h"
 #include <QTime>
 #include <QSharedPointer>
+#include "ciconhandler.h"
 
 
 CIBTradeSystemView::CIBTradeSystemView(QWidget *parent)
 	: QMainWindow(parent)
     , m_pTimeLabel(new QLabel(this))
-    , m_pConnectLabel(new QLabel(ui.statusBar))
-    , m_ConnectIcon()
+    , m_pConnectLabel(new QLabel(this))
+    , m_ih()
 {
 	ui.setupUi(this);
 
 
+
     /*** Beggin Create Context Menu **************/
     ui.test_treeView->setContextMenuPolicy(Qt::ActionsContextMenu);
-    ui.test_treeView->addAction(QIcon(":/IBTradeSystem/x_resources/Account.png"), "Add New Account");
-    ui.test_treeView->addAction(QIcon(":/IBTradeSystem/x_resources/Portfolio.png"), "Add New Portfolio");
-    ui.test_treeView->addAction(QIcon(":/IBTradeSystem/x_resources/Strategy.png"), "Add New Strategy");
+    //ui.test_treeView->addAction(QIcon(":/IBTradeSystem/x_resources/Account.png"), "Add New Account");
+    ui.test_treeView->addAction(m_ih.loadIconFromResourceTheme("Account"), "Add New Account");
+    ui.test_treeView->addAction(m_ih.loadIconFromResourceTheme("Portfolio"), "Add New Portfolio");
+    ui.test_treeView->addAction(m_ih.loadIconFromResourceTheme("Strategy"), "Add New Strategy");
     //ui.test_treeView->addAction(QIcon(":/IBTradeSystem/x_resources/Strategy.png"), "Add New SelectionModel");
     QAction *act = new QAction(this);
     act->setSeparator(true);
     ui.test_treeView->addAction(act);
-    ui.test_treeView->addAction(QIcon(":/IBTradeSystem/x_resources/Strategy.png"), "Add Selection Model");
-    ui.test_treeView->addAction(QIcon(":/IBTradeSystem/x_resources/Strategy.png"), "Add Aplha Model");
-    ui.test_treeView->addAction(QIcon(":/IBTradeSystem/x_resources/Strategy.png"), "Add Rebalance Model");
-    ui.test_treeView->addAction(QIcon(":/IBTradeSystem/x_resources/Strategy.png"), "Add Risk Model");
-    ui.test_treeView->addAction(QIcon(":/IBTradeSystem/x_resources/Strategy.png"), "Add Execution Model");
+    ui.test_treeView->addAction(m_ih.loadIconFromResourceTheme("Strategy"), "Add Selection Model");
+    ui.test_treeView->addAction(m_ih.loadIconFromResourceTheme("Strategy"), "Add Aplha Model");
+    ui.test_treeView->addAction(m_ih.loadIconFromResourceTheme("Strategy"), "Add Rebalance Model");
+    ui.test_treeView->addAction(m_ih.loadIconFromResourceTheme("Strategy"), "Add Risk Model");
+    ui.test_treeView->addAction(m_ih.loadIconFromResourceTheme("Strategy"), "Add Execution Model");
     act = new QAction(this);
     act->setSeparator(true);
     ui.test_treeView->addAction(act);
@@ -44,7 +47,7 @@ CIBTradeSystemView::CIBTradeSystemView(QWidget *parent)
 	ui.statusBar->addWidget(m_pTimeLabel);
     ui.statusBar->addPermanentWidget(m_pConnectLabel);
 
-    m_pConnectLabel->setPixmap(QIcon::fromTheme("network-offline").pixmap(16));
+    m_pConnectLabel->setPixmap(m_ih.loadIconFromResourceTheme("NotConnected").pixmap(16));
     m_pConnectLabel->setToolTip("Disconnected");
     //m_pConnectLabel->setText("Disconnected");
 
@@ -58,6 +61,13 @@ CIBTradeSystemView::CIBTradeSystemView(QWidget *parent)
 
 //    QObject::connect(ui.settingsTreeView, &QTreeView::expanded,  [=](const QModelIndex& index) { ui.settingsTreeView->resizeColumnToContents(index.column()); });
 //    QObject::connect(ui.settingsTreeView, &QTreeView::collapsed, [=](const QModelIndex& index) { ui.settingsTreeView->resizeColumnToContents(index.column()); });
+
+    ui.actionLoad->setIcon(m_ih.loadIconFromResourceTheme("LoadConfiguration"));
+    ui.actionSave->setIcon(m_ih.loadIconFromResourceTheme("SaveConfiguration"));
+    ui.actionSetting->setIcon(m_ih.loadIconFromResourceTheme("Settings"));
+    ui.actionClear_Log->setIcon(m_ih.loadIconFromResourceTheme("LogClear"));
+    ui.actionShow_Log->setIcon(m_ih.loadIconFromResourceTheme("Log"));
+    ui.actionConnect->setIcon(m_ih.loadIconFromResourceTheme("Disconnect"));
 
 }
 
@@ -113,18 +123,18 @@ void CIBTradeSystemView::slotRecvConnectButtonState(bool isConnect)
 	if (isConnect)
 	{
         ui.actionConnect->setText("Disconnect");
-        ui.actionConnect->setIcon(QIcon::fromTheme("network-offline"));
+        ui.actionConnect->setIcon(m_ih.loadIconFromResourceTheme("Connect"));
 
-        m_pConnectLabel->setPixmap(QIcon::fromTheme("network-idle").pixmap(16));
+        m_pConnectLabel->setPixmap(m_ih.loadIconFromResourceTheme("Connected").pixmap(16));
         m_pConnectLabel->setToolTip("Connected");
 
 	}
 	else
 	{
         ui.actionConnect->setText("Connect");
-        ui.actionConnect->setIcon(QIcon::fromTheme("network-idle"));
+        ui.actionConnect->setIcon(m_ih.loadIconFromResourceTheme("Disconnect"));
 
-        m_pConnectLabel->setPixmap(QIcon::fromTheme("network-offline").pixmap(16));
+        m_pConnectLabel->setPixmap(m_ih.loadIconFromResourceTheme("NotConnected").pixmap(16));
         m_pConnectLabel->setToolTip("Disconnected");
 
     }
