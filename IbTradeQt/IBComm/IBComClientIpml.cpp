@@ -478,8 +478,6 @@ void IBComClientImpl::historicalData(TickerId reqId, const Bar& bar)
    qCDebug(IBComClientImplLog(), "tickerId = %ld , date = %s, open = %f, high = %f, low =%f, close = %f, volume = %f, barCount = %d, WAP = %f, hasGaps = %d",
            _historicalData.getId(), NHelper::convertQTDataTimeToString(_historicalData.getDateTime()).toStdString().c_str(), _historicalData.getOpen(), _historicalData.getHigh(), _historicalData.getLow(),
            _historicalData.getClose(), _historicalData.getVolume(), _historicalData.getCount(), _historicalData.getWap(), _historicalData.getHasGaps());
-    m_DispatcherBrokerData.SendMessageToSubscribers(&_historicalData, reqId, RT_HISTORICAL_DATA);
-
     if (m_historicalDataRouter) {
         m_historicalDataRouter->onHistoricalBar(
             reqId, QString::fromStdString(bar.time),
@@ -490,9 +488,6 @@ void IBComClientImpl::historicalData(TickerId reqId, const Bar& bar)
 
 void IBComClientImpl::historicalDataEnd(int reqId, const std::string &startDateStr, const std::string &endDateStr)
 {
-    CHistoricalData _historicalData(reqId, "", 0, 0, 0, 0, 0, 0, 0, false, true);
-    m_DispatcherBrokerData.SendMessageToSubscribers(&_historicalData, reqId, RT_HISTORICAL_DATA);
-
     if (m_historicalDataRouter) {
         m_historicalDataRouter->onHistoricalDataEnd(reqId);
     }
@@ -585,8 +580,6 @@ void IBComClientImpl::nextValidId(OrderId orderId)
 {
     qCDebug(IBComClientImplLog(), "nextValidId = %ld \n", orderId);
     m_nexValidId = orderId;
-	
-    m_DispatcherBrokerData.SendMessageToSubscribers(&orderId, orderId, RT_NEXT_VALID_ID);
 
     if (m_orderRouter) {
         m_orderRouter->onNextValidId(static_cast<int>(orderId));
@@ -753,8 +746,6 @@ void IBComClientImpl::position(const std::string &account, const Contract &contr
             positionObj.getContract().symbol.c_str(), positionObj.getContract().secType.c_str(), positionObj.getContract().currency.c_str(),
             positionObj.getPos(), positionObj.getAvgCost());
 
-    m_DispatcherBrokerData.SendMessageToSubscribers(&positionObj, E_RQ_ID_POSITION, RT_REQ_POSITION);
-
     if (m_positionRouter) {
         m_positionRouter->onPosition(
             positionObj.getAccount(),
@@ -768,7 +759,6 @@ void IBComClientImpl::position(const std::string &account, const Contract &contr
 void IBComClientImpl::positionEnd()
 {
     qCDebug(IBComClientImplLog(), "Position End\n");
-    m_DispatcherBrokerData.SendMessageToSubscribers(nullptr, E_RQ_ID_POSITION, RT_REQ_POSITION);
 
     if (m_positionRouter) {
         m_positionRouter->onPositionEnd();
@@ -808,7 +798,6 @@ void IBComClientImpl::accountSummary(int reqId, const std::string &account, cons
 void IBComClientImpl::accountSummaryEnd(int reqId)
 {
     qCDebug(IBComClientImplLog(), "Account Summary End - id [%d] \n", reqId);
-    m_DispatcherBrokerData.SendMessageToSubscribers(&m_accountSummaryData, E_RQ_ID_ACCOUNT_SUMMARY, RT_REQ_ACCOUNT_SUMMURY);
 
     if (m_accountRouter) {
         m_accountRouter->onAccountSummaryEnd(reqId);

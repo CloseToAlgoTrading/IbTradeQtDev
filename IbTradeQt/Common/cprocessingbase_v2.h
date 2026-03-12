@@ -14,6 +14,10 @@
 #include "coptiontickcomputation.h"
 #include "./ReqManager/globalreqmanager.h"
 #include "./IBComm/cbrokerdataprovider.h"
+#include "IBComm/OrderRouter.h"
+#include "IBComm/AccountRouter.h"
+#include "IBComm/PositionRouter.h"
+#include "IBComm/HistoricalDataRouter.h"
 #include <QLoggingCategory>
 #include <QList>
 #include "GlobalDef.h"
@@ -60,6 +64,20 @@ public:
 
     qint32 getNextValidId() const { return m_nextValidId; }
     void setNextValidId(const qint32 val) { m_nextValidId = val; }
+
+    bool useTypedRouters() const { return m_useTypedRouters; }
+
+private:
+    void connectToTypedRouters();
+    void disconnectFromTypedRouters();
+
+private slots:
+    void slotRouterNextValidId(int orderId);
+    void slotRouterAccountSummary(const IBComm::AccountSummaryData& data);
+    void slotRouterPositionChanged(const IBComm::PositionUpdate& update);
+    void slotRouterPositionSnapshotComplete();
+    void slotRouterBarsReceived(int requestId, const QString& symbol, const QVector<IBComm::HistoricalBar>& bars);
+
 private:
     void recvHistoricalData(void* pContext, tEReqType _reqType);
     void recvTickSize(void* pContext, tEReqType _reqType);
@@ -108,6 +126,7 @@ public:
 
     //nextValidID
     qint32 m_nextValidId;
+    bool m_useTypedRouters = false;
 
     qint32 getRequestMapSize() const;
 

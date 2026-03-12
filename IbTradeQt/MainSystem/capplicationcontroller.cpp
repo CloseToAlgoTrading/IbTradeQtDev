@@ -24,7 +24,29 @@ CApplicationController::CApplicationController(QObject *parent):
    , pMainView(new CIBTradeSystemView)
    , m_pDataRoot(new CBasicRoot())
 {
-    loadTreeFromFile("model_tree_config.json", pMainPresenter->getDataProvider());
+    // Create typed routers BEFORE loadTreeFromFile so they propagate via setBrokerDataProvider
+    m_pPositionRouter = new IBComm::PositionRouter(this);
+    m_pHistoricalDataRouter = new IBComm::HistoricalDataRouter(this);
+    m_pOrderRouter = new IBComm::OrderRouter(this);
+    m_pAccountRouter = new IBComm::AccountRouter(this);
+
+    IBrokerAPI* brokerApi = pMainPresenter->getDataProvider()->getClien().data();
+    auto* implClient = dynamic_cast<IBComClientImpl*>(brokerApi);
+
+    if (implClient) {
+        implClient->setPositionRouter(m_pPositionRouter);
+        implClient->setHistoricalDataRouter(m_pHistoricalDataRouter);
+        implClient->setOrderRouter(m_pOrderRouter);
+        implClient->setAccountRouter(m_pAccountRouter);
+    }
+
+    auto dp = pMainPresenter->getDataProvider();
+    dp->setOrderRouter(m_pOrderRouter);
+    dp->setAccountRouter(m_pAccountRouter);
+    dp->setPositionRouter(m_pPositionRouter);
+    dp->setHistoricalDataRouter(m_pHistoricalDataRouter);
+
+    loadTreeFromFile("model_tree_config.json", dp);
 
     this->pMainPresenter->addView(this->pMainView);
 
@@ -36,35 +58,19 @@ CApplicationController::CApplicationController(QObject *parent):
 
     QObject::connect(pMainView->getUi().actionSave, &QAction::triggered, this, &CApplicationController::slotStoreModelTree);
 
-    // Pipeline integration: create Supervisor for LEGO strategy runtimes
     m_pSupervisor = new Supervision::Supervisor(this);
     m_pSupervisor->startMonitoring(10000);
 
     CPipelineStrategyAdapter::setGlobalRouter(pMainPresenter->marketDataRouter());
     CPipelineStrategyAdapter::setGlobalSupervisor(m_pSupervisor);
 
-    IBrokerAPI* brokerApi = pMainPresenter->getDataProvider()->getClien().data();
     m_pExecutionAdapter = new IBOrderExecutionAdapter(brokerApi);
-    auto* implClient = dynamic_cast<IBComClientImpl*>(brokerApi);
-
     CPipelineStrategyAdapter::setGlobalExecutionPort(m_pExecutionAdapter);
 
     m_pPositionRepo = new SqlitePositionRepository("myLocalDb.sqlite", true);
 
-    m_pPositionRouter = new IBComm::PositionRouter(this);
     m_pLivePositionRepo = new IBPositionRepositoryAdapter(this);
     m_pLivePositionRepo->connectToRouter(m_pPositionRouter);
-
-    m_pHistoricalDataRouter = new IBComm::HistoricalDataRouter(this);
-    m_pOrderRouter = new IBComm::OrderRouter(this);
-    m_pAccountRouter = new IBComm::AccountRouter(this);
-
-    if (implClient) {
-        implClient->setPositionRouter(m_pPositionRouter);
-        implClient->setHistoricalDataRouter(m_pHistoricalDataRouter);
-        implClient->setOrderRouter(m_pOrderRouter);
-        implClient->setAccountRouter(m_pAccountRouter);
-    }
 
     connect(m_pOrderRouter, &IBComm::OrderRouter::orderStatusChanged,
             this, [this](const IBComm::OrderStatusUpdate& update) {

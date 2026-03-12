@@ -58,7 +58,12 @@ win32 {
 
 SOURCES += \
     main.cpp \
-    ../Brokers/IB/src/Decimal.cpp
+    ../Brokers/IB/src/Decimal.cpp \
+    ../CObjects/caccountsummary.cpp \
+    ../CObjects/cposition.cpp \
+    ../CObjects/CHistoricalData.cpp \
+    ../CObjects/crealtimebar.cpp \
+    ../Common/NHelper.cpp
 
 HEADERS += \
     ../Pipeline/Contracts.h \
@@ -114,6 +119,7 @@ HEADERS += \
     integration/tst_pipeline_strategy_adapter.h \
     integration/tst_live_execution_wiring.h \
     integration/tst_typed_routers.h \
+    integration/tst_phase_b_migration.h \
     ../Adapters/IBOrderExecutionAdapter.h \
     ../Adapters/IBPositionRepositoryAdapter.h \
     ../Adapters/SqlitePositionRepository.h \
@@ -124,4 +130,8 @@ HEADERS += \
     ../IBComm/PositionRouter.h \
     ../IBComm/HistoricalDataRouter.h \
     ../IBComm/OrderRouter.h \
-    ../IBComm/AccountRouter.h
+    ../IBComm/AccountRouter.h \
+    ../CObjects/caccountsummary.h \
+    ../CObjects/cposition.h \
+    ../CObjects/CHistoricalData.h \
+    ../CObjects/crealtimebar.h

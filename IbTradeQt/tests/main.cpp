@@ -19,6 +19,7 @@
 #include "integration/tst_pipeline_strategy_adapter.h"
 #include "integration/tst_live_execution_wiring.h"
 #include "integration/tst_typed_routers.h"
+#include "integration/tst_phase_b_migration.h"
 
 int main(int argc, char *argv[])
 {
@@ -62,6 +63,9 @@ int main(int argc, char *argv[])
 
     // Integration - Typed Routers
     { TestTypedRouters tc; status |= QTest::qExec(&tc, argc, argv); }
+
+    // Phase B - Legacy subscriber migration
+    { TestPhaseBMigration tc; status |= QTest::qExec(&tc, argc, argv); }
 
     return status;
 }

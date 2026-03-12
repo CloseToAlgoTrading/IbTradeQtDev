@@ -20,8 +20,8 @@ CProcessingBase_v2::CProcessingBase_v2(QObject *parent)
 	, m_mkDepthMap()
     , m_positionMap()
     , m_nextValidId(0)
+    , m_useTypedRouters(false)
 {
-    //QObject::connect(this, &CProcessingBase_v2::signalMessageHandler, this, &CProcessingBase_v2::slotMessageHandler, Qt::QueuedConnection);
 }
 
 //----------------------------------------------------------
@@ -46,7 +46,8 @@ void CProcessingBase_v2::MessageHandler(void* pContext, tEReqType _reqType)
         recvTickPrize(pContext, _reqType);
 		break;
 	case RT_HISTORICAL_DATA:
-        recvHistoricalData(pContext, _reqType);
+        if (!m_useTypedRouters)
+            recvHistoricalData(pContext, _reqType);
 		break;
 	case RT_REALTIME_BAR:
         recvRealtimeBar(pContext, _reqType);
@@ -58,10 +59,12 @@ void CProcessingBase_v2::MessageHandler(void* pContext, tEReqType _reqType)
         recvMktDepth(pContext, _reqType);
         break;
     case RT_NEXT_VALID_ID:
-        setNextValidId(*(reinterpret_cast<qint32*>(pContext)));
+        if (!m_useTypedRouters)
+            setNextValidId(*(reinterpret_cast<qint32*>(pContext)));
         break;
     case RT_REQ_POSITION:
-        recvPosition(pContext, _reqType);
+        if (!m_useTypedRouters)
+            recvPosition(pContext, _reqType);
         break;
     case RT_REQ_RESTART_SUBSCRIPTION:
         recvRestartSubscription();
@@ -82,7 +85,8 @@ void CProcessingBase_v2::MessageHandler(void* pContext, tEReqType _reqType)
         recvExecutionReport(pContext, _reqType);
         break;
     case RT_REQ_ACCOUNT_SUMMURY:
-        emit signalRecvAccountSummary(*static_cast<CAccountSummary*>(pContext));
+        if (!m_useTypedRouters)
+            emit signalRecvAccountSummary(*static_cast<CAccountSummary*>(pContext));
         break;
 
     case RT_REQ_NONE:
@@ -706,7 +710,112 @@ QSharedPointer<CBrokerDataProvider> CProcessingBase_v2::getIBrokerDataProvider()
 
 void CProcessingBase_v2::setIBrokerDataProvider(QSharedPointer<CBrokerDataProvider> newClient)
 {
+    disconnectFromTypedRouters();
     m_Client = newClient;
+    connectToTypedRouters();
+}
+
+//----------------------------------------------------------
+void CProcessingBase_v2::connectToTypedRouters()
+{
+    if (!m_Client) return;
+
+    bool connected = false;
+
+    if (auto* r = m_Client->orderRouter()) {
+        connect(r, &IBComm::OrderRouter::nextValidIdReceived,
+                this, &CProcessingBase_v2::slotRouterNextValidId, Qt::QueuedConnection);
+        connected = true;
+    }
+    if (auto* r = m_Client->accountRouter()) {
+        connect(r, &IBComm::AccountRouter::accountSummaryUpdated,
+                this, &CProcessingBase_v2::slotRouterAccountSummary, Qt::QueuedConnection);
+        connected = true;
+    }
+    if (auto* r = m_Client->positionRouter()) {
+        connect(r, &IBComm::PositionRouter::positionChanged,
+                this, &CProcessingBase_v2::slotRouterPositionChanged, Qt::QueuedConnection);
+        connect(r, &IBComm::PositionRouter::positionSnapshotComplete,
+                this, &CProcessingBase_v2::slotRouterPositionSnapshotComplete, Qt::QueuedConnection);
+        connected = true;
+    }
+    if (auto* r = m_Client->historicalDataRouter()) {
+        connect(r, &IBComm::HistoricalDataRouter::barsReceived,
+                this, &CProcessingBase_v2::slotRouterBarsReceived, Qt::QueuedConnection);
+        connected = true;
+    }
+
+    m_useTypedRouters = connected;
+}
+
+//----------------------------------------------------------
+void CProcessingBase_v2::disconnectFromTypedRouters()
+{
+    if (!m_Client) return;
+
+    if (auto* r = m_Client->orderRouter())
+        disconnect(r, nullptr, this, nullptr);
+    if (auto* r = m_Client->accountRouter())
+        disconnect(r, nullptr, this, nullptr);
+    if (auto* r = m_Client->positionRouter())
+        disconnect(r, nullptr, this, nullptr);
+    if (auto* r = m_Client->historicalDataRouter())
+        disconnect(r, nullptr, this, nullptr);
+
+    m_useTypedRouters = false;
+}
+
+//----------------------------------------------------------
+void CProcessingBase_v2::slotRouterNextValidId(int orderId)
+{
+    setNextValidId(static_cast<qint32>(orderId));
+}
+
+//----------------------------------------------------------
+void CProcessingBase_v2::slotRouterAccountSummary(const IBComm::AccountSummaryData& data)
+{
+    CAccountSummary obj;
+    obj.setAccount(data.account);
+    obj.setAccountType(data.accountType);
+    obj.setCurrency(data.currency);
+    obj.setBuyingPower(data.buyingPower);
+    obj.setTotalCashValue(data.totalCashValue);
+    obj.setNetLiquidation(data.netLiquidation);
+    obj.setEquityWithLoanValue(data.equityWithLoanValue);
+    emit signalRecvAccountSummary(obj);
+}
+
+//----------------------------------------------------------
+void CProcessingBase_v2::slotRouterPositionChanged(const IBComm::PositionUpdate& update)
+{
+    Contract c;
+    c.symbol = update.symbol.toStdString();
+    CPosition pos(update.account, c, update.quantity, update.avgCost);
+    m_positionMap.insert(update.symbol, pos);
+}
+
+//----------------------------------------------------------
+void CProcessingBase_v2::slotRouterPositionSnapshotComplete()
+{
+    emit signalEndRecvPosition();
+}
+
+//----------------------------------------------------------
+void CProcessingBase_v2::slotRouterBarsReceived(int requestId, const QString& symbol,
+                                                 const QVector<IBComm::HistoricalBar>& bars)
+{
+    Q_UNUSED(requestId)
+    QList<CHistoricalData> histList;
+    for (const auto& bar : bars) {
+        CHistoricalData hd(0, "", bar.open, bar.high, bar.low, bar.close,
+                           static_cast<int>(bar.volume), bar.count, 0.0, 0, false);
+        hd.setDateTime(bar.timestamp.toMSecsSinceEpoch());
+        histList.append(hd);
+    }
+    if (!histList.isEmpty()) {
+        histList.last().setIsLast(true);
+    }
+    emit signalCbkRecvHistoricalData(histList, symbol);
 }
 
 qint32 CProcessingBase_v2::getRequestMapSize() const

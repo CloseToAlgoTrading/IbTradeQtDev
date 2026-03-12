@@ -8,6 +8,8 @@
 
 Q_DECLARE_LOGGING_CATEGORY(dataProviderLog);
 
+namespace IBComm { class OrderRouter; class AccountRouter; class PositionRouter; class HistoricalDataRouter; }
+
 using namespace Observer;
 
 class CBrokerDataProvider : public Observer::CDispatcher
@@ -19,6 +21,18 @@ public:
 
     QSharedPointer<IBrokerAPI> getClien() const { return m_pClien; }
     void setClien(QSharedPointer<IBrokerAPI> val) { m_pClien = val;}
+
+    IBComm::OrderRouter* orderRouter() const { return m_orderRouter; }
+    void setOrderRouter(IBComm::OrderRouter* r) { m_orderRouter = r; }
+
+    IBComm::AccountRouter* accountRouter() const { return m_accountRouter; }
+    void setAccountRouter(IBComm::AccountRouter* r) { m_accountRouter = r; }
+
+    IBComm::PositionRouter* positionRouter() const { return m_positionRouter; }
+    void setPositionRouter(IBComm::PositionRouter* r) { m_positionRouter = r; }
+
+    IBComm::HistoricalDataRouter* historicalDataRouter() const { return m_historicalDataRouter; }
+    void setHistoricalDataRouter(IBComm::HistoricalDataRouter* r) { m_historicalDataRouter = r; }
 
 public: 
     bool reqestHistoricalData(const CSubscriberPtr _pSubscriber, reqHistConfigData_t & _config);
@@ -58,7 +72,10 @@ public:
 private:
     QSharedPointer<IBrokerAPI> m_pClien;
 
-    
+    IBComm::OrderRouter* m_orderRouter = nullptr;
+    IBComm::AccountRouter* m_accountRouter = nullptr;
+    IBComm::PositionRouter* m_positionRouter = nullptr;
+    IBComm::HistoricalDataRouter* m_historicalDataRouter = nullptr;
 };
 
 #endif // CBROKERDATAPROVIDER_H

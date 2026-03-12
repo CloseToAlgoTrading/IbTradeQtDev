@@ -1,4 +1,5 @@
 #include "cbrokerdataprovider.h"
+#include "IBComm/HistoricalDataRouter.h"
 
 Q_LOGGING_CATEGORY(dataProviderLog, "dataProvider.General");
 
@@ -51,6 +52,8 @@ bool CBrokerDataProvider::reqestHistoricalData(const CSubscriberPtr _pSubscriber
             _config.id = curReq.id;
             //request historical data
             Subscribe(_pSubscriber, _config.symbol, curReq);
+            if (m_historicalDataRouter)
+                m_historicalDataRouter->setReqIdSymbol(curReq.id, _config.symbol);
             getClien()->reqHistoricalDataAPI(_config);
             //----
         }
