@@ -4,6 +4,7 @@
 #define IBComClientImpl_H_INCLUDED
 
 #include "Dispatcher.h"
+#include "MarketDataRouter.h"
 
 #include "Contract.h"
 #include "MyLogger.h"
@@ -306,6 +307,12 @@ public:
     void wshEventData(int reqId, const std::string& dataJson) override {}
     void historicalSchedule(int reqId, const std::string& startDateTime, const std::string& endDateTime, const std::string& timeZone, const std::vector<HistoricalSession>& sessions) override {}
     void userInfo(int reqId, const std::string& whiteBrandingId) override {}
+    // Phase 2: MarketDataRouter integration (runs parallel with CDispatcher)
+    void setMarketDataRouter(IBComm::MarketDataRouter* router) { m_marketDataRouter = router; }
+    void registerSymbolForReqId(qint32 reqId, const QString& symbol) {
+        m_reqIdToSymbol[reqId] = symbol;
+    }
+
 private:
 
 	/** IB socket client */
@@ -327,6 +334,11 @@ private:
 
     Observer::CDispatcher & m_DispatcherBrokerData;
 
+    // Phase 2: MarketDataRouter for LEGO blocks (runs parallel with CDispatcher)
+    IBComm::MarketDataRouter* m_marketDataRouter = nullptr;
+    QMap<qint32, QString> m_reqIdToSymbol;
+    QMap<qint32, double> m_lastBid;
+    QMap<qint32, double> m_lastAsk;
 
 private:
     IBDataTypes::CAccountSummary m_accountSummaryData;

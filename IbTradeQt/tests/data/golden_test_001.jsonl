@@ -1,0 +1,9 @@
+{"type":"BlockGraphConfig","config":{"alphas":["test-momentum"],"rebalance":"simple","risks":[],"execution":"mock"}}
+{"type":"MarketTick","symbol":"AAPL","bid":148.00,"ask":148.50,"timestamp":"2026-03-04T10:00:00.000Z","reqId":1}
+{"type":"MarketTick","symbol":"AAPL","bid":149.00,"ask":149.50,"timestamp":"2026-03-04T10:01:00.000Z","reqId":1}
+{"type":"MarketTick","symbol":"AAPL","bid":150.00,"ask":150.50,"timestamp":"2026-03-04T10:02:00.000Z","reqId":1}
+{"type":"MarketTick","symbol":"AAPL","bid":151.50,"ask":152.00,"timestamp":"2026-03-04T10:03:00.000Z","reqId":1}
+{"type":"MarketTick","symbol":"AAPL","bid":152.00,"ask":152.50,"timestamp":"2026-03-04T10:04:00.000Z","reqId":1}
+{"type":"MarketTick","symbol":"AAPL","bid":151.00,"ask":151.50,"timestamp":"2026-03-04T10:05:00.000Z","reqId":1}
+{"type":"MarketTick","symbol":"AAPL","bid":150.50,"ask":151.00,"timestamp":"2026-03-04T10:06:00.000Z","reqId":1}
+{"type":"MarketTick","symbol":"AAPL","bid":149.00,"ask":149.50,"timestamp":"2026-03-04T10:07:00.000Z","reqId":1}

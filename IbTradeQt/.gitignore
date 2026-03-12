@@ -1,0 +1,29 @@
+# Build output directories
+debug/
+release/
+build/
+
+# qmake generated
+Makefile
+.qmake.stash
+moc_predefs.h
+
+# Object files
+*.o
+
+# MOC generated
+moc_*.cpp
+moc_*.h
+
+# RCC generated
+qrc_*.cpp
+
+# Binary
+ibtrading
+
+# Qt Creator user files
+*.pro.user*
+
+# OS files
+.DS_Store
+Thumbs.db

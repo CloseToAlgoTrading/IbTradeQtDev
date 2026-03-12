@@ -1,0 +1,10 @@
+# Build output
+debug/
+release/
+Makefile
+.qmake.stash
+moc_predefs.h
+*.o
+moc_*.cpp
+qrc_*.cpp
+ibtrading_tests

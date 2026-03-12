@@ -4,7 +4,7 @@ overview: Pragmatic architectural improvements for IbTradeQt focusing on testabi
 todos:
   - id: phase1-pragmatic
     content: "Phase 1: Implement Expected error handling, Qt-native pipeline contracts + LEGO block interfaces, MarketDataRouter (Qt signals replaces CDispatcher), minimal ports"
-    status: pending
+    status: in_progress
   - id: phase2-adapters-replay
     content: "Phase 2: Create IB/repository adapters, mock adapters, deterministic replay infrastructure, integration test harness"
     status: pending

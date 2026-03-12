@@ -40,6 +40,18 @@ CONFIG += c++17
 
 UI_DIR = $$PWD/GeneratedIncludes
 
+CONFIG(debug, debug|release) {
+    DESTDIR     = $$PWD/debug
+    OBJECTS_DIR = $$PWD/debug/obj
+    MOC_DIR     = $$PWD/debug/moc
+    RCC_DIR     = $$PWD/debug/rcc
+} else {
+    DESTDIR     = $$PWD/release
+    OBJECTS_DIR = $$PWD/release/obj
+    MOC_DIR     = $$PWD/release/moc
+    RCC_DIR     = $$PWD/release/rcc
+}
+
 SOURCES += \
     Brokers/IB/addon/AccountSummaryTags.cpp \
     Brokers/IB/addon/AvailableAlgoParams.cpp \
@@ -147,6 +159,27 @@ SOURCES += \
 
 
 HEADERS += \
+    Common/Expected.h \
+    ThirdParty/expected.hpp \
+    Pipeline/Contracts.h \
+    Pipeline/Scope.h \
+    Pipeline/IAlphaBlock.h \
+    Pipeline/ISelectionBlock.h \
+    Pipeline/IRebalanceBlock.h \
+    Pipeline/IRiskBlock.h \
+    Pipeline/IExecutionBlock.h \
+    Pipeline/ISignalMergePolicy.h \
+    IBComm/MarketDataRouter.h \
+    Ports/IOrderExecutionPort.h \
+    Ports/IPositionRepositoryPort.h \
+    Adapters/IBOrderExecutionAdapter.h \
+    Adapters/SqlitePositionRepository.h \
+    Adapters/MockExecutionAdapter.h \
+    Adapters/MockPositionRepository.h \
+    Testing/MockMarketDataRouter.h \
+    Testing/IntegrationTestHarness.h \
+    Replay/MarketDataRecorder.h \
+    Replay/MarketDataReplayer.h \
     Brokers/IB/Shared/Utils.h \
     Brokers/IB/addon/AccountSummaryTags.h \
     Brokers/IB/addon/AvailableAlgoParams.h \
@@ -314,6 +347,12 @@ FORMS += \
     Strategies/PairTrader/pairtrading.ui
 
 INCLUDEPATH += \
+    $$PWD/Pipeline \
+    $$PWD/Ports \
+    $$PWD/ThirdParty \
+    $$PWD/Adapters \
+    $$PWD/Testing \
+    $$PWD/Replay \
     $$PWD/Brokers/IB/Shared \
     $$PWD/Brokers/IB/addon \
     $$PWD/ReqManager \

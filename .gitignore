@@ -1,3 +1,20 @@
 build-ibtrading-Desktop_*
 IbTradeQt/ibtrading.pro.user*
 
+# Build output
+IbTradeQt/debug/
+IbTradeQt/release/
+IbTradeQt/build/
+IbTradeQt/Makefile
+IbTradeQt/.qmake.stash
+IbTradeQt/moc_predefs.h
+IbTradeQt/*.o
+IbTradeQt/moc_*.cpp
+IbTradeQt/qrc_*.cpp
+
+# Test build output
+IbTradeQt/tests/debug/
+IbTradeQt/tests/release/
+IbTradeQt/tests/Makefile
+IbTradeQt/tests/.qmake.stash
+

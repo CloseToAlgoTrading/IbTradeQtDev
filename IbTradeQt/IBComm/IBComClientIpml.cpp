@@ -348,13 +348,28 @@ void IBComClientImpl::cancelAccountSummary(const qint32 id)
 //---------------------------------------------------------------
 void IBComClientImpl::tickPrice(TickerId tickerId, TickType field, double price, const TickAttrib& attrib)
 {
-    //TODO:Add attrib to the MyTickProce
-    //CTickPrice _tickPrize(tickerId, field, price, canAutoExecute, QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
     IBDataTypes::CMyTickPrice _tickPrize(tickerId, field, price, attrib.canAutoExecute, QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
     qCDebug(IBComClientImplLog(), "tickerId = %ld, field = %d, price = %f, canAutoExecute = %d\n", _tickPrize.getId(), _tickPrize.getTickType(), _tickPrize.getPrice(), _tickPrize.getCanAutoExecute());
 
     m_DispatcherBrokerData.SendMessageToSubscribers(&_tickPrize, tickerId, RT_TICK_PRICE);
-    
+
+    // Phase 2: Route through MarketDataRouter for LEGO blocks
+    if (m_marketDataRouter && m_reqIdToSymbol.contains(tickerId)) {
+        // IB TickType: 1=bid, 2=ask, 4=last
+        if (field == 1) {
+            m_lastBid[tickerId] = price;
+        } else if (field == 2) {
+            m_lastAsk[tickerId] = price;
+        }
+
+        double bid = m_lastBid.value(tickerId, 0.0);
+        double ask = m_lastAsk.value(tickerId, 0.0);
+        if (bid > 0.0 && ask > 0.0) {
+            m_marketDataRouter->onTickPrice(
+                tickerId, m_reqIdToSymbol[tickerId], bid, ask);
+        }
+    }
+
 	return;
 };
 
