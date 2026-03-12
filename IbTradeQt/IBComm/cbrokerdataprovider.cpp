@@ -4,716 +4,251 @@
 Q_LOGGING_CATEGORY(dataProviderLog, "dataProvider.General");
 
 CBrokerDataProvider::CBrokerDataProvider()
-    : CDispatcher()
-    , m_pClien(nullptr)
+    : m_pClien(nullptr)
 {
-
 }
 
 CBrokerDataProvider::CBrokerDataProvider(QSharedPointer<IBrokerAPI> _pClien)
-    : CDispatcher()
-    , m_pClien(_pClien)
+    : m_pClien(_pClien)
 {
-
 }
 
-//CBrokerDataProvider::~CBrokerDataProvider()
-//{
-//    m_pClien.clear();
-//};
-
-//************************************
-// Method:    reqestHistoricalData
-// FullName:  CBrokerDataProvider::reqestHistoricalData
-// Access:    public 
-// Returns:   bool
-// Qualifier:
-// Parameter: const CSubscriberPtr _pSubscriber
-// Parameter: const reqHistConfigData_t & _config
-//************************************
-bool CBrokerDataProvider::reqestHistoricalData(const CSubscriberPtr _pSubscriber, reqHistConfigData_t & _config)
+bool CBrokerDataProvider::reqestHistoricalData(reqHistConfigData_t & _config)
 {
-    bool ret = true;
-    if (nullptr != _pSubscriber)
-    {
-        CDispatcher::CSubscriberItemPtr pSubcrItem = getSubscriberItem(_pSubscriber->GetSubscriberId());
-
-        if (!_config.symbol.isEmpty())
-        {
-            stReqIds curReq = { 1, RT_HISTORICAL_DATA };
-
-            //----
-            if (nullptr != pSubcrItem)
-            {
-                //curReq.id = pSubcrItem->ReqMenager()->getNextFreeId(_config.symbol, curReq.reqType);
-                curReq.id = pSubcrItem->ReqMenager()->getNextFreeId();
-            }
-
-            _config.id = curReq.id;
-            //request historical data
-            Subscribe(_pSubscriber, _config.symbol, curReq);
-            if (m_historicalDataRouter)
-                m_historicalDataRouter->setReqIdSymbol(curReq.id, _config.symbol);
-            getClien()->reqHistoricalDataAPI(_config);
-            //----
-        }
-        else
-        {
-            qCWarning(dataProviderLog(), "Error! _symbol: is Empty string");
-            ret = false;
-        }
+    if (_config.symbol.isEmpty()) {
+        qCWarning(dataProviderLog(), "Error! _symbol: is Empty string");
+        return false;
     }
-    else
-    {
-        ret = false;
-    }
-    
 
-    return ret;
+    stReqIds curReq = { 1, RT_HISTORICAL_DATA };
+    curReq.id = m_reqManager.getNextFreeId();
+    m_reqManager.addReqIdsExt(_config.symbol, curReq);
+
+    _config.id = curReq.id;
+    if (m_historicalDataRouter)
+        m_historicalDataRouter->setReqIdSymbol(curReq.id, _config.symbol);
+    getClien()->reqHistoricalDataAPI(_config);
+    return true;
 }
 
-//************************************
-// Method:    reqestHistoricalTicksData
-// FullName:  CBrokerDataProvider::reqestHistoricalTicksData
-// Access:    public
-// Returns:   bool
-// Qualifier:
-// Parameter: const CSubscriberPtr _pSubscriber
-// Parameter: const reqHistTicksConfigData_t & _config
-//************************************
-bool CBrokerDataProvider::requestHistoricalTicksData(const CSubscriberPtr _pSubscriber, reqHistTicksConfigData_t &_config)
+bool CBrokerDataProvider::requestHistoricalTicksData(reqHistTicksConfigData_t &_config)
 {
-    bool ret = true;
-    if (nullptr != _pSubscriber)
-    {
-        CDispatcher::CSubscriberItemPtr pSubcrItem = getSubscriberItem(_pSubscriber->GetSubscriberId());
-
-        if (!_config.symbol.isEmpty())
-        {
-            stReqIds curReq = { 1, RT_HISTORICAL_TICK_DATA };
-
-            //----
-            if (nullptr != pSubcrItem)
-            {
-                //curReq.id = pSubcrItem->ReqMenager()->getNextFreeId(_config.symbol, curReq.reqType);
-                curReq.id = pSubcrItem->ReqMenager()->getNextFreeId();
-            }
-
-            _config.id = curReq.id;
-            //request historical data
-            Subscribe(_pSubscriber, _config.symbol, curReq);
-            getClien()->reqHistoricalTicksAPI(_config);
-            //----
-        }
-        else
-        {
-            qCWarning(dataProviderLog(), "Error! _symbol: is Empty string");
-            ret = false;
-        }
-    }
-    else
-    {
-        ret = false;
+    if (_config.symbol.isEmpty()) {
+        qCWarning(dataProviderLog(), "Error! _symbol: is Empty string");
+        return false;
     }
 
+    stReqIds curReq = { 1, RT_HISTORICAL_TICK_DATA };
+    curReq.id = m_reqManager.getNextFreeId();
+    m_reqManager.addReqIdsExt(_config.symbol, curReq);
 
-    return ret;
+    _config.id = curReq.id;
+    getClien()->reqHistoricalTicksAPI(_config);
+    return true;
 }
 
-//************************************
-// Method:    reqestRealTimeData
-// FullName:  CBrokerDataProvider::reqestRealTimeData
-// Access:    public 
-// Returns:   bool
-// Qualifier:
-// Parameter: const CSubscriberPtr _pSubscriber
-// Parameter: const QString & _symbol
-//************************************
-bool CBrokerDataProvider::reqestRealTimeData(const CSubscriberPtr _pSubscriber, reqReadlTimeDataConfigData_t &_config)
+bool CBrokerDataProvider::reqestRealTimeData(reqReadlTimeDataConfigData_t &_config)
 {
-    bool ret = true;
-    if (nullptr != _pSubscriber)
-    {
-        CDispatcher::CSubscriberItemPtr pSubcrItem = getSubscriberItem(_pSubscriber->GetSubscriberId());
-        QString lsymbol = QString(_config.contract.symbol.c_str());
-        if (!lsymbol.isEmpty())
-        {
-            stReqIds curReq = { 1, RT_REQ_REL_DATA };
-
-            if (nullptr != pSubcrItem)
-            {
-                curReq.id = pSubcrItem->ReqMenager()->getNextFreeId(lsymbol, curReq.reqType);
-            }
-
-            //request data
-            Subscribe(_pSubscriber, lsymbol, curReq);
-            _config.id = curReq.id;
-            getClien()->registerSymbolForReqId(curReq.id, lsymbol);
-            getClien()->reqRealTimeDataAPI(curReq.id, _config);
-        }
-        else
-        {
-            qCWarning(dataProviderLog(), "Error!_symbol is Empty string");
-            ret = false;
-        }
-    }
-    else
-    {
-        ret = false;
+    QString lsymbol = QString(_config.contract.symbol.c_str());
+    if (lsymbol.isEmpty()) {
+        qCWarning(dataProviderLog(), "Error!_symbol is Empty string");
+        return false;
     }
 
-    return ret;
+    stReqIds curReq = { 1, RT_REQ_REL_DATA };
+    curReq.id = m_reqManager.getNextFreeId(lsymbol, curReq.reqType);
+    m_reqManager.addReqIdsExt(lsymbol, curReq);
+
+    _config.id = curReq.id;
+    getClien()->registerSymbolForReqId(curReq.id, lsymbol);
+    getClien()->reqRealTimeDataAPI(curReq.id, _config);
+    return true;
 }
 
-//************************************
-// Method:    cancelRealTimeData
-// FullName:  CBrokerDataProvider::cancelRealTimeData
-// Access:    public 
-// Returns:   bool
-// Qualifier:
-// Parameter: const CSubscriberPtr _pSubscriber
-// Parameter: const QString & _symbol
-//************************************
-bool CBrokerDataProvider::cancelRealTimeData(const CSubscriberPtr _pSubscriber, const QString& _symbol)
+bool CBrokerDataProvider::cancelRealTimeData(const QString& _symbol)
 {
-    bool ret = false;
-    if (nullptr != _pSubscriber)
-    {
-        stReqIds retData;
-        CDispatcher::CSubscriberItemPtr pSubcrItem = getSubscriberItem(_pSubscriber->GetSubscriberId());
-
-        if (nullptr != pSubcrItem)
-        {
-            ret = pSubcrItem->ReqMenager()->getReqData(_symbol, RT_REQ_REL_DATA, retData);
-            if (ret)
-            {
-                (void) Unsubscribe(_pSubscriber->GetSubscriberId(), retData.id, retData.reqType, _symbol);
-                if (true == isReqIdEmpty(_symbol, retData))
-                {
-                    getClien()->cancelRealTimeDataAPI(retData.id);
-                }
-            }
-        }
-        else
-        {
-            qCWarning(dataProviderLog(), "Error! pSubcrItem is Empty string");
-            ret = false;
-        }
+    stReqIds retData;
+    if (m_reqManager.getReqData(_symbol, RT_REQ_REL_DATA, retData)) {
+        m_reqManager.removeReqIdsExt(_symbol, retData);
+        getClien()->cancelRealTimeDataAPI(retData.id);
+        return true;
     }
-    else
-    {
-        ret = false;
-    }
-
-    return ret;
+    return false;
 }
 
-//************************************
-// Method:    requestRealTimeBars
-// FullName:  CBrokerDataProvider::requestRealTimeBars
-// Access:    public 
-// Returns:   bool
-// Qualifier:
-// Parameter: const CSubscriberPtr _pSubscriber
-// Parameter: const QString & _symbol
-//************************************
-bool CBrokerDataProvider::requestRealTimeBars(const CSubscriberPtr _pSubscriber, const QString& _symbol)
+bool CBrokerDataProvider::requestRealTimeBars(const QString& _symbol)
 {
-    bool ret = true;
-
-    if (nullptr != _pSubscriber)
-    {
-        CDispatcher::CSubscriberItemPtr pSubcrItem = getSubscriberItem(_pSubscriber->GetSubscriberId());
-
-        if (!_symbol.isEmpty())
-        {
-            stReqIds curReq = { 1, RT_REALTIME_BAR };
-
-            //----
-            if (nullptr != pSubcrItem)
-            {
-                curReq.id = pSubcrItem->ReqMenager()->getNextFreeId(_symbol, curReq.reqType);
-            }
-            Subscribe(_pSubscriber, _symbol, curReq);
-            getClien()->registerSymbolForReqId(curReq.id, _symbol);
-            getClien()->reqRealTimeBarsAPI(curReq.id, _symbol);
-            //----
-        }
-        else
-        {
-            qCWarning(dataProviderLog(), "Error! _symbol: is Empty string");
-            ret = false;
-        }
-    }
-    else
-    {
-        ret = false;
+    if (_symbol.isEmpty()) {
+        qCWarning(dataProviderLog(), "Error! _symbol: is Empty string");
+        return false;
     }
 
-    return ret;
+    stReqIds curReq = { 1, RT_REALTIME_BAR };
+    curReq.id = m_reqManager.getNextFreeId(_symbol, curReq.reqType);
+    m_reqManager.addReqIdsExt(_symbol, curReq);
+
+    getClien()->registerSymbolForReqId(curReq.id, _symbol);
+    getClien()->reqRealTimeBarsAPI(curReq.id, _symbol);
+    return true;
 }
 
-//************************************
-// Method:    cancelRealTimeBars
-// FullName:  CBrokerDataProvider::cancelRealTimeBars
-// Access:    public 
-// Returns:   bool
-// Qualifier:
-// Parameter: const CSubscriberPtr _pSubscriber
-// Parameter: const QString & _symbol
-//************************************
-bool CBrokerDataProvider::cancelRealTimeBars(const CSubscriberPtr _pSubscriber, const QString& _symbol)
+bool CBrokerDataProvider::cancelRealTimeBars(const QString& _symbol)
 {
-    bool ret = false;
-    if (nullptr != _pSubscriber)
-    {
-
-        stReqIds retData;
-        CDispatcher::CSubscriberItemPtr pSubcrItem = getSubscriberItem(_pSubscriber->GetSubscriberId());
-
-        if (nullptr != pSubcrItem)
-        {
-            ret = pSubcrItem->ReqMenager()->getReqData(_symbol, RT_REALTIME_BAR, retData);
-            if (ret)
-            {
-                getClien()->cancelRealTimeBarsAPI(retData.id);
-                Unsubscribe(_pSubscriber->GetSubscriberId(), retData.id, retData.reqType);
-            }
-        }
-        else
-        {
-            qCWarning(dataProviderLog(), "Error! pSubcrItem: is Empty string");
-            ret = false;
-        }
+    stReqIds retData;
+    if (m_reqManager.getReqData(_symbol, RT_REALTIME_BAR, retData)) {
+        getClien()->cancelRealTimeBarsAPI(retData.id);
+        m_reqManager.removeReqIdsExt(_symbol, retData);
+        return true;
     }
-    else
-    {
-        ret = false;
-    }
-    return ret;
+    return false;
 }
 
-//************************************
-// Method:    requestPosition
-// FullName:  CBrokerDataProvider::requestPosition
-// Access:    public
-// Returns:   bool
-// Qualifier:
-// Parameter: const CSubscriberPtr _pSubscriber
-// Parameter: const QString & _symbol
-//************************************
-bool CBrokerDataProvider::requestPosition(const CSubscriberPtr _pSubscriber, const QString& _symbol)
+bool CBrokerDataProvider::requestPosition(const QString& _symbol)
 {
-    bool ret = true;
-
-    if (nullptr != _pSubscriber)
-    {
-        CDispatcher::CSubscriberItemPtr pSubcrItem = getSubscriberItem(_pSubscriber->GetSubscriberId());
-        if (!_symbol.isEmpty())
-        {
-            //Subscribe(_pSubscriber, E_RQ_ID_POSITION, RT_REQ_POSITION);
-
-            stReqIds r = { E_RQ_ID_POSITION, RT_REQ_POSITION };
-            Subscribe(_pSubscriber, _symbol, r);
-
-            getClien()->reqPositionAPI(E_RQ_ID_POSITION);
-        }
-        else
-        {
-            qCWarning(dataProviderLog(), "Error! _symbol: is Empty string");
-            ret = false;
-        }
-    }
-    else
-    {
-        ret = false;
+    if (_symbol.isEmpty()) {
+        qCWarning(dataProviderLog(), "Error! _symbol: is Empty string");
+        return false;
     }
 
-    return ret;
+    stReqIds r = { E_RQ_ID_POSITION, RT_REQ_POSITION };
+    m_reqManager.addReqIdsExt(_symbol, r);
+    getClien()->reqPositionAPI(E_RQ_ID_POSITION);
+    return true;
 }
 
-//************************************
-// Method:    cancelPosition
-// FullName:  CBrokerDataProvider::cancelPosition
-// Access:    public
-// Returns:   bool
-// Qualifier:
-// Parameter: const CSubscriberPtr _pSubscriber
-// Parameter: const QString & _symbol
-//************************************
-bool CBrokerDataProvider::cancelPosition(const CSubscriberPtr _pSubscriber, const QString &_symbol)
+bool CBrokerDataProvider::cancelPosition(const QString& _symbol)
 {
-    bool ret = false;
-    if (nullptr != _pSubscriber)
-    {
-
-        stReqIds retData;
-        CDispatcher::CSubscriberItemPtr pSubcrItem = getSubscriberItem(_pSubscriber->GetSubscriberId());
-
-        if (nullptr != pSubcrItem)
-        {
-            ret = pSubcrItem->ReqMenager()->getReqData(_symbol, RT_REQ_POSITION, retData);
-            if (ret)
-            {
-                getClien()->cancelPositionAPI(retData.id);
-                Unsubscribe(_pSubscriber->GetSubscriberId(), retData.id, retData.reqType);
-            }
-        }
-        else
-        {
-            qCWarning(dataProviderLog(), "Error! pSubcrItem: is Empty string");
-            ret = false;
-        }
+    stReqIds retData;
+    if (m_reqManager.getReqData(_symbol, RT_REQ_POSITION, retData)) {
+        getClien()->cancelPositionAPI(retData.id);
+        m_reqManager.removeReqIdsExt(_symbol, retData);
+        return true;
     }
-    else
-    {
-        ret = false;
-    }
-    return ret;
+    return false;
 }
 
-bool CBrokerDataProvider::requestResetSubscription(const CSubscriberPtr _pSubscriber, const QString &_symbol)
+bool CBrokerDataProvider::requestResetSubscription(const QString &_symbol)
 {
-    //Q_UNUSED(_symbol)
-    bool ret = true;
-
-    if (nullptr != _pSubscriber)
-    {
-        CDispatcher::CSubscriberItemPtr pSubcrItem = getSubscriberItem(_pSubscriber->GetSubscriberId());
-        //Subscribe(_pSubscriber, E_RQ_ID_RESTART_SUBSCRIPTION, RT_REQ_RESTART_SUBSCRIPTION);
-        stReqIds r = { E_RQ_ID_RESTART_SUBSCRIPTION, RT_REQ_RESTART_SUBSCRIPTION };
-        Subscribe(_pSubscriber, _symbol, r);
-    }
-    else
-    {
-        ret = false;
-    }
-
-    return ret;
+    stReqIds r = { E_RQ_ID_RESTART_SUBSCRIPTION, RT_REQ_RESTART_SUBSCRIPTION };
+    m_reqManager.addReqIdsExt(_symbol, r);
+    return true;
 }
 
-bool CBrokerDataProvider::cancelResetSubscription(const CSubscriberPtr _pSubscriber, const QString &_symbol)
+bool CBrokerDataProvider::cancelResetSubscription(const QString &_symbol)
 {
-    bool ret = false;
-    if (nullptr != _pSubscriber)
-    {
-        stReqIds retData;
-        CDispatcher::CSubscriberItemPtr pSubcrItem = getSubscriberItem(_pSubscriber->GetSubscriberId());
-
-        if (nullptr != pSubcrItem)
-        {
-            ret = pSubcrItem->ReqMenager()->getReqData(_symbol, RT_REQ_RESTART_SUBSCRIPTION, retData);
-            if (ret)
-            {
-                Unsubscribe(_pSubscriber->GetSubscriberId(), retData.id, retData.reqType);
-            }
-        }
-        else
-        {
-            qCWarning(dataProviderLog(), "Error! pSubcrItem: is Empty string");
-            ret = false;
-        }
+    stReqIds retData;
+    if (m_reqManager.getReqData(_symbol, RT_REQ_RESTART_SUBSCRIPTION, retData)) {
+        m_reqManager.removeReqIdsExt(_symbol, retData);
+        return true;
     }
-    else
-    {
-        ret = false;
-    }
-    return ret;
+    return false;
 }
 
-bool CBrokerDataProvider::requestErrorNotificationSubscription(const CSubscriberPtr _pSubscriber, const QString &_symbol)
+bool CBrokerDataProvider::requestErrorNotificationSubscription(const QString &_symbol)
 {
-    //Q_UNUSED(_symbol)
-    bool ret = true;
-
-    if (nullptr != _pSubscriber)
-    {
-        CDispatcher::CSubscriberItemPtr pSubcrItem = getSubscriberItem(_pSubscriber->GetSubscriberId());
-        //stReqIds r = { E_RQ_ID_ERROR_SUBSCRIPTION, RT_REQ_ERROR_SEQRITY_NOT_FOUND };
-        Subscribe(_pSubscriber, _symbol, { E_RQ_ID_ERROR_SUBSCRIPTION, RT_REQ_ERROR_SUBSRIPTION });
-    }
-    else
-    {
-        ret = false;
-    }
-
-    return ret;
+    stReqIds r = { E_RQ_ID_ERROR_SUBSCRIPTION, RT_REQ_ERROR_SUBSRIPTION };
+    m_reqManager.addReqIdsExt(_symbol, r);
+    return true;
 }
 
-bool CBrokerDataProvider::cancelErrorNotificationSubscription(const CSubscriberPtr _pSubscriber, const QString &_symbol)
+bool CBrokerDataProvider::cancelErrorNotificationSubscription(const QString &_symbol)
 {
-    bool ret = false;
-    if (nullptr != _pSubscriber)
-    {
-        stReqIds retData;
-        CDispatcher::CSubscriberItemPtr pSubcrItem = getSubscriberItem(_pSubscriber->GetSubscriberId());
-
-        if (nullptr != pSubcrItem)
-        {
-            ret = pSubcrItem->ReqMenager()->getReqData(_symbol, RT_REQ_ERROR_SUBSRIPTION, retData);
-            if (ret)
-            {
-                Unsubscribe(_pSubscriber->GetSubscriberId(), retData.id, retData.reqType);
-            }
-        }
-        else
-        {
-            qCWarning(dataProviderLog(), "Error! pSubcrItem: is Empty string");
-            ret = false;
-        }
+    stReqIds retData;
+    if (m_reqManager.getReqData(_symbol, RT_REQ_ERROR_SUBSRIPTION, retData)) {
+        m_reqManager.removeReqIdsExt(_symbol, retData);
+        return true;
     }
-    else
-    {
-        ret = false;
-    }
-    return ret;
+    return false;
 }
 
-bool CBrokerDataProvider::requestOrderStatusSubscription(const CSubscriberPtr _pSubscriber, const QString &_symbol)
+bool CBrokerDataProvider::requestOrderStatusSubscription(const QString &_symbol)
 {
     Q_UNUSED(_symbol)
-    bool ret = true;
-
-    if (nullptr != _pSubscriber)
-    {
-        CDispatcher::CSubscriberItemPtr pSubcrItem = getSubscriberItem(_pSubscriber->GetSubscriberId());
-        //Subscribe(_pSubscriber, E_RQ_ID_ORDER_STATUS, RT_REQ_ORDER_STATUS);
-        stReqIds r = { E_RQ_ID_ORDER_STATUS, RT_REQ_ORDER_STATUS };
-        Subscribe(_pSubscriber, _symbol, r);
-    }
-    else
-    {
-        ret = false;
-    }
-
-    return ret;
+    stReqIds r = { E_RQ_ID_ORDER_STATUS, RT_REQ_ORDER_STATUS };
+    m_reqManager.addReqIdsExt(_symbol, r);
+    return true;
 }
 
-bool CBrokerDataProvider::cancelOrderStatusubscription(const CSubscriberPtr _pSubscriber, const QString &_symbol)
+bool CBrokerDataProvider::cancelOrderStatusubscription(const QString &_symbol)
 {
-    bool ret = false;
-    if (nullptr != _pSubscriber)
-    {
-        stReqIds retData;
-        CDispatcher::CSubscriberItemPtr pSubcrItem = getSubscriberItem(_pSubscriber->GetSubscriberId());
-
-        if (nullptr != pSubcrItem)
-        {
-            ret = pSubcrItem->ReqMenager()->getReqData(_symbol, RT_REQ_ORDER_STATUS, retData);
-            if (ret)
-            {
-                Unsubscribe(_pSubscriber->GetSubscriberId(), retData.id, retData.reqType);
-            }
-        }
-        else
-        {
-            qCWarning(dataProviderLog(), "Error! pSubcrItem: is Empty string");
-            ret = false;
-        }
+    stReqIds retData;
+    if (m_reqManager.getReqData(_symbol, RT_REQ_ORDER_STATUS, retData)) {
+        m_reqManager.removeReqIdsExt(_symbol, retData);
+        return true;
     }
-    else
-    {
-        ret = false;
-    }
-    return ret;
+    return false;
 }
 
-//************************************
-// Method:    requestCalculateOptionPrice
-// FullName:  CBrokerDataProvider::requestCalculateOptionPrice
-// Access:    public
-// Returns:   bool
-// Qualifier:
-// Parameter: const CSubscriberPtr _pSubscriber
-// Parameter: const QString & _symbol
-//************************************
-bool CBrokerDataProvider::requestCalculateOptionPrice(const CSubscriberPtr _pSubscriber,
-                                                      reqCalcOptPriceConfigData_t &_config)
+bool CBrokerDataProvider::requestCalculateOptionPrice(reqCalcOptPriceConfigData_t &_config)
 {
-    bool ret = true;
-    if (nullptr != _pSubscriber)
-    {
-        CDispatcher::CSubscriberItemPtr pSubcrItem = getSubscriberItem(_pSubscriber->GetSubscriberId());
-
-        if (!_config.symbol.isEmpty())
-        {
-            stReqIds curReq = { 1, RT_REQ_OPTION_PRICE };
-
-            if (nullptr != pSubcrItem)
-            {
-                curReq.id = pSubcrItem->ReqMenager()->getNextFreeId(_config.symbol, curReq.reqType);
-            }
-
-            //request data
-            Subscribe(_pSubscriber, _config.symbol, curReq);
-            _config.id = curReq.id;
-            getClien()->reqCalculateOptionPriceAPI(_config);
-        }
-        else
-        {
-            qCWarning(dataProviderLog(), "Error!_symbol is Empty string");
-            ret = false;
-        }
-    }
-    else
-    {
-        ret = false;
+    if (_config.symbol.isEmpty()) {
+        qCWarning(dataProviderLog(), "Error!_symbol is Empty string");
+        return false;
     }
 
-    return ret;
+    stReqIds curReq = { 1, RT_REQ_OPTION_PRICE };
+    curReq.id = m_reqManager.getNextFreeId(_config.symbol, curReq.reqType);
+    m_reqManager.addReqIdsExt(_config.symbol, curReq);
+
+    _config.id = curReq.id;
+    getClien()->reqCalculateOptionPriceAPI(_config);
+    return true;
 }
 
-//************************************
-// Method:    cancelCalculateOptionPrice
-// FullName:  CBrokerDataProvider::cancelCalculateOptionPrice
-// Access:    public
-// Returns:   bool
-// Qualifier:
-// Parameter: const CSubscriberPtr _pSubscriber
-// Parameter: const QString & _symbol
-//************************************
-bool CBrokerDataProvider::cancelCalculateOptionPrice(const CSubscriberPtr _pSubscriber, const QString &_symbol)
+bool CBrokerDataProvider::cancelCalculateOptionPrice(const QString &_symbol)
 {
-    bool ret = false;
-    if (nullptr != _pSubscriber)
-    {
-
-        stReqIds retData;
-        CDispatcher::CSubscriberItemPtr pSubcrItem = getSubscriberItem(_pSubscriber->GetSubscriberId());
-
-        if (nullptr != pSubcrItem)
-        {
-            ret = pSubcrItem->ReqMenager()->getReqData(_symbol, RT_REQ_OPTION_PRICE, retData);
-            if (ret)
-            {
-                getClien()->cancelCalculateOptionPriceAPI(retData.id);
-                Unsubscribe(_pSubscriber->GetSubscriberId(), retData.id, retData.reqType);
-            }
-        }
-        else
-        {
-            qCWarning(dataProviderLog(), "Error! pSubcrItem: is Empty string");
-            ret = false;
-        }
+    stReqIds retData;
+    if (m_reqManager.getReqData(_symbol, RT_REQ_OPTION_PRICE, retData)) {
+        getClien()->cancelCalculateOptionPriceAPI(retData.id);
+        m_reqManager.removeReqIdsExt(_symbol, retData);
+        return true;
     }
-    else
-    {
-        ret = false;
-    }
-    return ret;
+    return false;
 }
 
-//_------------------------------------------------------------------------------------
-bool CBrokerDataProvider::requestTickByTickData(const CSubscriberPtr _pSubscriber,
-                                                const QString& _symbol,
-                                                reqTickByTickDataConfigData_t & _config)
+bool CBrokerDataProvider::requestTickByTickData(const QString& _symbol, reqTickByTickDataConfigData_t & _config)
 {
-    bool ret = true;
-
-    if (nullptr != _pSubscriber)
-    {
-        CDispatcher::CSubscriberItemPtr pSubcrItem = getSubscriberItem(_pSubscriber->GetSubscriberId());
-
-        if (!_symbol.isEmpty())
-        {
-            stReqIds curReq = { 1, RT_TICK_BY_TICK_DATA };
-
-            //----
-            if (nullptr != pSubcrItem)
-            {
-                curReq.id = pSubcrItem->ReqMenager()->getNextFreeId(_symbol, curReq.reqType);
-            }
-            //request historical data
-            Subscribe(_pSubscriber, _symbol, curReq);
-            _config.id = curReq.id;
-            getClien()->reqTickByTickDataAPI(_config);
-            //----
-        }
-        else
-        {
-            qCCritical(dataProviderLog(), "Error! _symbol: is Empty string");
-            ret = false;
-        }
-    }
-    else
-    {
-        ret = false;
-        qCCritical(dataProviderLog(), "Error! subscriber is null");
+    if (_symbol.isEmpty()) {
+        qCCritical(dataProviderLog(), "Error! _symbol: is Empty string");
+        return false;
     }
 
-    return ret;
+    stReqIds curReq = { 1, RT_TICK_BY_TICK_DATA };
+    curReq.id = m_reqManager.getNextFreeId(_symbol, curReq.reqType);
+    m_reqManager.addReqIdsExt(_symbol, curReq);
+
+    _config.id = curReq.id;
+    getClien()->reqTickByTickDataAPI(_config);
+    return true;
 }
 
-bool CBrokerDataProvider::cancelTickByTickData(const CSubscriberPtr _pSubscriber, const QString &_symbol)
+bool CBrokerDataProvider::cancelTickByTickData(const QString &_symbol)
 {
-    bool ret = false;
-    if (nullptr != _pSubscriber)
-    {
-
-        stReqIds retData;
-        CDispatcher::CSubscriberItemPtr pSubcrItem = getSubscriberItem(_pSubscriber->GetSubscriberId());
-
-        if (nullptr != pSubcrItem)
-        {
-            ret = pSubcrItem->ReqMenager()->getReqData(_symbol, RT_TICK_BY_TICK_DATA, retData);
-            if (ret)
-            {
-                getClien()->cancelTickByTickDataAPI(retData.id);
-                Unsubscribe(_pSubscriber->GetSubscriberId(), retData.id, retData.reqType);
-            }
-        }
-        else
-        {
-            qCWarning(dataProviderLog(), "Error! pSubcrItem: is Empty string");
-            ret = false;
-        }
+    stReqIds retData;
+    if (m_reqManager.getReqData(_symbol, RT_TICK_BY_TICK_DATA, retData)) {
+        getClien()->cancelTickByTickDataAPI(retData.id);
+        m_reqManager.removeReqIdsExt(_symbol, retData);
+        return true;
     }
-    else
-    {
-        ret = false;
-    }
-    return ret;
+    return false;
 }
 
-bool CBrokerDataProvider::bpReqAccountSummary(const CSubscriberPtr _pSubscriber, const QString &_symbol)
+bool CBrokerDataProvider::bpReqAccountSummary(const QString &_symbol)
 {
-    bool ret = false;
-    if (nullptr != _pSubscriber)
-    {
-        CDispatcher::CSubscriberItemPtr pSubcrItem = getSubscriberItem(_pSubscriber->GetSubscriberId());
-
-        stReqIds r = { E_RQ_ID_ACCOUNT_SUMMARY, RT_REQ_ACCOUNT_SUMMURY };
-        Subscribe(_pSubscriber, _symbol, r);
-
-        getClien()->reqAccountSummary();
-        ret = true;
-    }
-    return ret;
+    stReqIds r = { E_RQ_ID_ACCOUNT_SUMMARY, RT_REQ_ACCOUNT_SUMMURY };
+    m_reqManager.addReqIdsExt(_symbol, r);
+    getClien()->reqAccountSummary();
+    return true;
 }
 
-bool CBrokerDataProvider::bpCancelAccountSummary(const CSubscriberPtr _pSubscriber, const QString &_symbol)
+bool CBrokerDataProvider::bpCancelAccountSummary(const QString &_symbol)
 {
-    bool ret = false;
-    if (nullptr != _pSubscriber)
-    {
-        stReqIds retData;
-        CDispatcher::CSubscriberItemPtr pSubcrItem = getSubscriberItem(_pSubscriber->GetSubscriberId());
-
-        ret = pSubcrItem->ReqMenager()->getReqData(_symbol, RT_REQ_ACCOUNT_SUMMURY, retData);
-        if (ret)
-        {
-            getClien()->cancelAccountSummary(retData.id);
-            Unsubscribe(_pSubscriber->GetSubscriberId(), retData.id, retData.reqType);
-        }
-
-
-        stReqIds r = { E_RQ_ID_ACCOUNT_SUMMARY, RT_REQ_ACCOUNT_SUMMURY };
-        Subscribe(_pSubscriber, AccountSummurySymbol, r);
-
-        getClien()->reqAccountSummary();
-        ret = true;
+    stReqIds retData;
+    if (m_reqManager.getReqData(_symbol, RT_REQ_ACCOUNT_SUMMURY, retData)) {
+        getClien()->cancelAccountSummary(retData.id);
+        m_reqManager.removeReqIdsExt(_symbol, retData);
     }
-    return ret;
+    return true;
 }
 
 bool CBrokerDataProvider::isConnectedToTheServer()

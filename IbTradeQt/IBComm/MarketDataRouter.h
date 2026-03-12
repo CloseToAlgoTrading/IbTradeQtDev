@@ -92,12 +92,19 @@ public:
         emit tickByTickTrade(trade);
     }
 
+    void onSubscriptionRestarted() { emit subscriptionRestarted(); }
+    void onSubscriptionError(int reqId, int errorCode, const QString& msg) {
+        emit subscriptionError(reqId, errorCode, msg);
+    }
+
 signals:
     void tick(const IBComm::MarketTick& tick);
     void barClose(const QString& symbol, const QDateTime& timestamp);
     void tickSizeUpdate(const QString& symbol, double volume);
     void tickByTickTrade(const IBComm::TickByTickTrade& trade);
     void connectionError(const QString& message);
+    void subscriptionRestarted();
+    void subscriptionError(int reqId, int errorCode, const QString& msg);
 
 private:
     QMap<QString, MarketTick> m_lastPriceCache;

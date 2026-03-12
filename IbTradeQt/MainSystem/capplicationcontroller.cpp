@@ -29,6 +29,7 @@ CApplicationController::CApplicationController(QObject *parent):
     m_pHistoricalDataRouter = new IBComm::HistoricalDataRouter(this);
     m_pOrderRouter = new IBComm::OrderRouter(this);
     m_pAccountRouter = new IBComm::AccountRouter(this);
+    m_pTimeRouter = new IBComm::TimeRouter(this);
 
     IBrokerAPI* brokerApi = pMainPresenter->getDataProvider()->getClien().data();
     auto* implClient = dynamic_cast<IBComClientImpl*>(brokerApi);
@@ -38,6 +39,7 @@ CApplicationController::CApplicationController(QObject *parent):
         implClient->setHistoricalDataRouter(m_pHistoricalDataRouter);
         implClient->setOrderRouter(m_pOrderRouter);
         implClient->setAccountRouter(m_pAccountRouter);
+        implClient->setTimeRouter(m_pTimeRouter);
     }
 
     auto dp = pMainPresenter->getDataProvider();
@@ -45,6 +47,7 @@ CApplicationController::CApplicationController(QObject *parent):
     dp->setAccountRouter(m_pAccountRouter);
     dp->setPositionRouter(m_pPositionRouter);
     dp->setHistoricalDataRouter(m_pHistoricalDataRouter);
+    dp->setTimeRouter(m_pTimeRouter);
 
     loadTreeFromFile("model_tree_config.json", dp);
 
@@ -53,6 +56,13 @@ CApplicationController::CApplicationController(QObject *parent):
     pMainModel =new CMainModel(pMainPresenter, m_pDataRoot, nullptr);
 
     this->pMainPresenter->setPGuiModel(this->pMainModel);
+
+    // Connect AlphaModGetTime to TimeRouter
+    if (m_pTimeRouter) {
+        QObject::connect(m_pTimeRouter, &IBComm::TimeRouter::currentTimeReceived,
+                         pMainPresenter->getWorkerAlfaTime(), &AlphaModGetTime::slotCurrentTimeReceived,
+                         Qt::QueuedConnection);
+    }
 
     this->pMainPresenter->MapSignals();
 

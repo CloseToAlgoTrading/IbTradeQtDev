@@ -74,7 +74,6 @@ SOURCES += \
     MainSystem/ctreeviewcustommodel.cpp \
     MainSystem/ibtradesystemview.cpp \
     MainSystem/portfolioconfigmodel.cpp \
-    Strategies/AutoDeltAlignment/src/CModelInputData.cpp \
     Strategies/Generic/UnifiedModelData.cpp \
     Strategies/Generic/cbasemodel.cpp \
     Strategies/Generic/cbaserebalancemodel.cpp \
@@ -87,14 +86,8 @@ SOURCES += \
     Strategies/Generic/cbasicselectionmodel.cpp \
     Strategies/Generic/cbasicstrategy_V2.cpp \
     Strategies/Generic/cgenericmodelApi.cpp \
-    Strategies/Generic/cmomentum.cpp \
-    Strategies/Generic/cmovingaveragecrossover.cpp \
     Strategies/Generic/csma.cpp \
     Strategies/Generic/cstrategyfactory.cpp \
-    Strategies/Generic/cteststrategy.cpp \
-    Strategies/PairTrader/PairTradingGui.cpp \
-    Strategies/PairTrader/PairTradingPresenter.cpp \
-    Strategies/PairTrader/pairtraderpm.cpp \
     main.cpp \
     AboutDialog/aboutdialog.cpp \
     AboutDialog/AboutDlgPresener.cpp \
@@ -119,7 +112,6 @@ SOURCES += \
     DBStore/DBStorePresenter.cpp \
     DBStore/DBStoreProcessing.cpp \
     IBComm/cbrokerdataprovider.cpp \
-    IBComm/Dispatcher.cpp \
     IBComm/IBComClientIpml.cpp \
     IBComm/IBworker.cpp \
     Logger/MyLogger.cpp \
@@ -146,9 +138,6 @@ SOURCES += \
     Brokers/IB/src/TimeCondition.cpp \
     Brokers/IB/src/VolumeCondition.cpp \
     Brokers/IB/src/EOrderDecoder.cpp \
-    Strategies/AutoDeltAlignment/src/AutoDeltAlignmentGUI.cpp \
-    Strategies/AutoDeltAlignment/src/AutoDeltAlignmentPresenter.cpp \
-    Strategies/AutoDeltAlignment/src/AutoDeltAlignmentProcessing.cpp \
     baseimpl.cpp \
     Common/globalsettings.cpp \
     CObjects/ctickbytickalllast.cpp \
@@ -181,6 +170,7 @@ HEADERS += \
     IBComm/HistoricalDataRouter.h \
     IBComm/OrderRouter.h \
     IBComm/AccountRouter.h \
+    IBComm/TimeRouter.h \
     Testing/MockMarketDataRouter.h \
     Testing/IntegrationTestHarness.h \
     Replay/MarketDataRecorder.h \
@@ -232,8 +222,6 @@ HEADERS += \
     MainSystem/ctreeviewcustommodel.h \
     MainSystem/ctreeviewdatamodel.h \
     MainSystem/ibtradesystemview.h \
-    Strategies/AutoDeltAlignment/header/CModelInputData.h \
-    Strategies/AutoDeltAlignment/header/autodeltatypes.h \
     Strategies/Generic/ModelType.h \
     Strategies/Generic/UnifiedModelData.h \
     Strategies/Generic/cbasemodel.h \
@@ -247,16 +235,10 @@ HEADERS += \
     Strategies/Generic/cbasicselectionmodel.h \
     Strategies/Generic/cbasicstrategy_V2.h \
     Strategies/Generic/cgenericmodelApi.h \
-    Strategies/Generic/cmomentum.h \
-    Strategies/Generic/cmovingaveragecrossover.h \
     Strategies/Generic/csma.h \
     Strategies/Generic/cstrategyfactory.h \
     Strategies/Generic/cpipelinestrategyadapter.h \
-    Strategies/Generic/cteststrategy.h \
     Strategies/Generic/modelConstants.h \
-    Strategies/PairTrader/PairTradingGui.h \
-    Strategies/PairTrader/PairTradingPresenter.h \
-    Strategies/PairTrader/pairtraderpm.h \
     Strategies/StateMachine/cmodelstate.h \
     Strategies/StateMachine/cmodelstateimpl.h \
     baseimpl.h \
@@ -290,7 +272,6 @@ HEADERS += \
     GeneratedIncludes/ui_ibtradesystem.h \
     GeneratedIncludes/ui_pairtrading.h \
     IBComm/cbrokerdataprovider.h \
-    IBComm/Dispatcher.h \
     IBComm/IBComClientImpl.h \
     IBComm/IBrokerAPI.h \
     IBComm/IBworker.h \
@@ -354,9 +335,6 @@ HEADERS += \
     Brokers/IB/Shared/platformspecific.h \
     Brokers/IB/Shared/resource.h \
     Brokers/IB/Shared/WshEventData.h \
-    Strategies/AutoDeltAlignment/header/AutoDeltAlignmentGUI.h \
-    Strategies/AutoDeltAlignment/header/AutoDeltAlignmentPresenter.h \
-    Strategies/AutoDeltAlignment/header/AutoDeltAlignmentProcessing.h \
     Common/globalsettings.h \
     CObjects/ctickbytickalllast.h \
     CObjects/chistoricalticks.h \
@@ -368,10 +346,7 @@ HEADERS += \
 FORMS += \
     AboutDialog/aboutdialog.ui \
     MainSystem/ibtradesystemview.ui \
-    Strategies/PairTrader/pairtrading.ui \
-    Strategies/AutoDeltAlignment/autodeltaaligform.ui \
-    DBStore/dbstroreform.ui \
-    Strategies/PairTrader/pairtrading.ui
+    DBStore/dbstroreform.ui
 
 INCLUDEPATH += \
     $$PWD/Pipeline \
@@ -399,8 +374,6 @@ INCLUDEPATH += \
     $$PWD/CObjects \
     $$PWD/AlphaModelGetTime \
     $$PWD/AboutDialog \
-    $$PWD/Strategies/AutoDeltAlignment/header \
-    $$PWD/Strategies/PairTrader \
     $$PWD/Strategies/Generic \
     $$PWD/Strategies/StateMachine \
     $$PWD/GeneratedIncludes \

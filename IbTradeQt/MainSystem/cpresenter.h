@@ -7,21 +7,16 @@
 #include "IBworker.h"
 #include "cbrokerdataprovider.h"
 #include "AlphaModGetTime.h"
-//#include "AutoDeltAlignmentPresenter.h"
-//#include "DBStorePresenter.h"
 #include <QScopedPointer>
 #include "MyLogger.h"
 
 #include "AboutDlgPresener.h"
-//#include "PairTradingPresenter.h"
 
 #include "MarketDataRouter.h"
 
-//#include "DBConnector.h"
-
 class CMainModel;
 
-class CPresenter : public QObject, public Observer::CSubscriber
+class CPresenter : public QObject
 {
 	Q_OBJECT
 
@@ -30,9 +25,6 @@ public:
 	~CPresenter();
 
     void addView(CIBTradeSystemView * mw);
-
-	void MessageHandler(void* pContext, tEReqType _reqType);
-	void UnsubscribeHandler();
 
 	void MapSignals();
 
@@ -49,6 +41,7 @@ public:
 
     QSharedPointer<CBrokerDataProvider> getDataProvider() const;
     IBComm::MarketDataRouter* marketDataRouter() const { return m_pMarketDataRouter; }
+    AlphaModGetTime* getWorkerAlfaTime() const { return workerAlfaTime; }
 
 signals:
 	void signalTimeReceived(long time);
@@ -62,7 +55,6 @@ private slots:
 
 private:
 
-    //CBrokerDataProvider m_DataProvider;
     QSharedPointer<CBrokerDataProvider> m_pDataProvider;
     IBComm::MarketDataRouter* m_pMarketDataRouter = nullptr;
 
@@ -79,13 +71,6 @@ private:
 
 private:
 	QScopedPointer<AboutDlgPresener> pAboutDlgPresenter;
-
-    // QScopedPointer<PairTradingPresenter> pPairTradingPresenter;
-
- //    QScopedPointer<AutoDeltaAligPresenter> pAutoDeltaAligPresenter;
-
- //    QScopedPointer<DBStorePresenter> pDBStorePresenter;
-
 };
 
 #endif // CPRESENTER_H

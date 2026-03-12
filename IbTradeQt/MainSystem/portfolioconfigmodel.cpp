@@ -436,11 +436,7 @@ void CPortfolioConfigModel::slotOnClickAddPortfolio()
 
 void CPortfolioConfigModel::slotOnClickAddStrategy()
 {
-    QItemSelectionModel *selectionModel = m_treeView->selectionModel();
-
-    if (selectionModel->hasSelection()) {
-        addModel(selectionModel->currentIndex(), {PM_ITEM_PORTFOLIO}, PM_ITEM_STRATEGY);
-    }
+    slotOnClickAddPipelineStrategy();
 }
 
 void CPortfolioConfigModel::slotOnClickAddPipelineStrategy()

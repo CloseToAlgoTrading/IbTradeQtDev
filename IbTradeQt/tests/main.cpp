@@ -20,6 +20,7 @@
 #include "integration/tst_live_execution_wiring.h"
 #include "integration/tst_typed_routers.h"
 #include "integration/tst_phase_b_migration.h"
+#include "integration/tst_phase_d_dispatcher_removal.h"
 
 int main(int argc, char *argv[])
 {
@@ -66,6 +67,9 @@ int main(int argc, char *argv[])
 
     // Phase B - Legacy subscriber migration
     { TestPhaseBMigration tc; status |= QTest::qExec(&tc, argc, argv); }
+
+    // Phase D - CDispatcher removal verification
+    { TestPhaseD_DispatcherRemoval tc; status |= QTest::qExec(&tc, argc, argv); }
 
     return status;
 }

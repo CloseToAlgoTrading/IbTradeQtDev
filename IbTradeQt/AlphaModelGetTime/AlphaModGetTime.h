@@ -2,15 +2,11 @@
 #define ALPHAMODGETTIME_H
 
 #include <QObject>
-#include <memory>
 #include <QTimer>
-//#include ".\IBComm\IBrokerAPI.h"
-#include "Dispatcher.h"
-#include "cbrokerdataprovider.h"
 #include <QTime>
+#include "cbrokerdataprovider.h"
 
-
-class AlphaModGetTime : public QObject, public Observer::CSubscriber
+class AlphaModGetTime : public QObject
 {
 	Q_OBJECT
 
@@ -18,28 +14,19 @@ public:
     AlphaModGetTime(QObject *parent, CBrokerDataProvider & _refClient);
 	~AlphaModGetTime();
 
-	//void SeIBClient(IBrokerAPI& _mClient);
-
-
-	void MessageHandler(void* pContext, tEReqType _reqType);
-	void UnsubscribeHandler();
-
 	void StartGetTimeUpdate(int period);
 	void StopTimeUpdate();
 
-
-	//IBrokerAPI& mClient;
-
     CBrokerDataProvider & m_Client;
 
-public slots :
+public slots:
 	void callbackTimer();
+    void slotCurrentTimeReceived(long time);
 
 signals:
 	void signalTimeReceived(long time);
     void signalPlanResetSubscribtion();
     void signalServerStateChanged(bool isConnected);
-
 
 private:
 	QTimer* timer;

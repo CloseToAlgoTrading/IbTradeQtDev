@@ -3,12 +3,12 @@
 #ifndef IBComClientImpl_H_INCLUDED
 #define IBComClientImpl_H_INCLUDED
 
-#include "Dispatcher.h"
 #include "MarketDataRouter.h"
 #include "PositionRouter.h"
 #include "HistoricalDataRouter.h"
 #include "OrderRouter.h"
 #include "AccountRouter.h"
+#include "TimeRouter.h"
 
 #include "Contract.h"
 #include "MyLogger.h"
@@ -29,7 +29,7 @@ class IBComClientImpl : public EWrapper, public IBrokerAPI
 public:
     qint32 getNexValidId() { return m_nexValidId++; }
 
-    explicit IBComClientImpl(Observer::CDispatcher & _dispatcher);
+    explicit IBComClientImpl();
     virtual ~IBComClientImpl() override;
 
 	//void setUseV100Plus(const std::string&);
@@ -312,12 +312,13 @@ public:
     void wshEventData(int reqId, const std::string& dataJson) override {}
     void historicalSchedule(int reqId, const std::string& startDateTime, const std::string& endDateTime, const std::string& timeZone, const std::vector<HistoricalSession>& sessions) override {}
     void userInfo(int reqId, const std::string& whiteBrandingId) override {}
-    // Phase 2: MarketDataRouter integration (runs parallel with CDispatcher)
+    
     void setMarketDataRouter(IBComm::MarketDataRouter* router) { m_marketDataRouter = router; }
     void setPositionRouter(IBComm::PositionRouter* router) { m_positionRouter = router; }
     void setHistoricalDataRouter(IBComm::HistoricalDataRouter* router) { m_historicalDataRouter = router; }
     void setOrderRouter(IBComm::OrderRouter* router) { m_orderRouter = router; }
     void setAccountRouter(IBComm::AccountRouter* router) { m_accountRouter = router; }
+    void setTimeRouter(IBComm::TimeRouter* router) { m_timeRouter = router; }
     void registerSymbolForReqId(qint32 reqId, const QString& symbol) override {
         m_reqIdToSymbol[reqId] = symbol;
     }
@@ -341,9 +342,6 @@ private:
 
     qint32 m_nexValidId;
 
-    Observer::CDispatcher & m_DispatcherBrokerData;
-
-    // Phase 2: MarketDataRouter for LEGO blocks (runs parallel with CDispatcher)
     IBComm::MarketDataRouter* m_marketDataRouter = nullptr;
     QMap<qint32, QString> m_reqIdToSymbol;
     QMap<qint32, double> m_lastBid;
@@ -352,6 +350,7 @@ private:
     IBComm::HistoricalDataRouter* m_historicalDataRouter = nullptr;
     IBComm::OrderRouter* m_orderRouter = nullptr;
     IBComm::AccountRouter* m_accountRouter = nullptr;
+    IBComm::TimeRouter* m_timeRouter = nullptr;
 
 private:
     IBDataTypes::CAccountSummary m_accountSummaryData;

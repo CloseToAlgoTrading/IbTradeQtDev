@@ -22,8 +22,7 @@ CIBTradeSystemView::CIBTradeSystemView(QWidget *parent)
     //ui.test_treeView->addAction(QIcon(":/IBTradeSystem/x_resources/Account.png"), "Add New Account");
     ui.test_treeView->addAction(m_ih.loadIconFromResourceTheme("Account"), "Add New Account");
     ui.test_treeView->addAction(m_ih.loadIconFromResourceTheme("Portfolio"), "Add New Portfolio");
-    ui.test_treeView->addAction(m_ih.loadIconFromResourceTheme("Strategy"), "Add New Strategy");
-    ui.test_treeView->addAction(m_ih.loadIconFromResourceTheme("Strategy"), "Add Pipeline Strategy (LEGO)");
+    ui.test_treeView->addAction(m_ih.loadIconFromResourceTheme("Strategy"), "Add Strategy");
     QAction *act = new QAction(this);
     act->setSeparator(true);
     ui.test_treeView->addAction(act);

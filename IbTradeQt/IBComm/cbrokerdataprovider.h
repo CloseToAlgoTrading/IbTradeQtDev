@@ -2,17 +2,15 @@
 #define CBROKERDATAPROVIDER_H
 
 #include "./IBComm/IBrokerAPI.h"
-#include "./IBComm/Dispatcher.h"
+#include "./ReqManager/globalreqmanager.h"
 #include <QSharedPointer>
 #include <QLoggingCategory>
 
 Q_DECLARE_LOGGING_CATEGORY(dataProviderLog);
 
-namespace IBComm { class OrderRouter; class AccountRouter; class PositionRouter; class HistoricalDataRouter; }
+namespace IBComm { class OrderRouter; class AccountRouter; class PositionRouter; class HistoricalDataRouter; class TimeRouter; }
 
-using namespace Observer;
-
-class CBrokerDataProvider : public Observer::CDispatcher
+class CBrokerDataProvider
 {
 public:
     CBrokerDataProvider();
@@ -34,48 +32,53 @@ public:
     IBComm::HistoricalDataRouter* historicalDataRouter() const { return m_historicalDataRouter; }
     void setHistoricalDataRouter(IBComm::HistoricalDataRouter* r) { m_historicalDataRouter = r; }
 
-public: 
-    bool reqestHistoricalData(const CSubscriberPtr _pSubscriber, reqHistConfigData_t & _config);
-    bool requestHistoricalTicksData(const CSubscriberPtr _pSubscriber, reqHistTicksConfigData_t & _config);
+    IBComm::TimeRouter* timeRouter() const { return m_timeRouter; }
+    void setTimeRouter(IBComm::TimeRouter* r) { m_timeRouter = r; }
 
-    bool reqestRealTimeData(const CSubscriberPtr _pSubscriber, reqReadlTimeDataConfigData_t &_config);
-    bool cancelRealTimeData(const CSubscriberPtr _pSubscriber, const QString& _symbol);
+    GlobalReqManager& reqManager() { return m_reqManager; }
 
-    bool requestRealTimeBars(const CSubscriberPtr _pSubscriber, const QString& _symbol);
-    bool cancelRealTimeBars(const CSubscriberPtr _pSubscriber, const QString& _symbol);
+public:
+    bool reqestHistoricalData(reqHistConfigData_t & _config);
+    bool requestHistoricalTicksData(reqHistTicksConfigData_t & _config);
 
-    bool requestPosition(const CSubscriberPtr _pSubscriber, const QString& _symbol);
-    bool cancelPosition(const CSubscriberPtr _pSubscriber, const QString& _symbol);
+    bool reqestRealTimeData(reqReadlTimeDataConfigData_t &_config);
+    bool cancelRealTimeData(const QString& _symbol);
 
-    bool requestResetSubscription(const CSubscriberPtr _pSubscriber, const QString& _symbol);
-    bool cancelResetSubscription(const CSubscriberPtr _pSubscriber, const QString& _symbol);
+    bool requestRealTimeBars(const QString& _symbol);
+    bool cancelRealTimeBars(const QString& _symbol);
 
-    bool requestErrorNotificationSubscription(const CSubscriberPtr _pSubscriber, const QString& _symbol);
-    bool cancelErrorNotificationSubscription(const CSubscriberPtr _pSubscriber, const QString& _symbol);
+    bool requestPosition(const QString& _symbol);
+    bool cancelPosition(const QString& _symbol);
 
-    bool requestOrderStatusSubscription(const CSubscriberPtr _pSubscriber, const QString& _symbol);
-    bool cancelOrderStatusubscription(const CSubscriberPtr _pSubscriber, const QString& _symbol);
+    bool requestResetSubscription(const QString& _symbol);
+    bool cancelResetSubscription(const QString& _symbol);
 
-    bool requestCalculateOptionPrice(const CSubscriberPtr _pSubscriber, reqCalcOptPriceConfigData_t &_config);
-    bool cancelCalculateOptionPrice(const CSubscriberPtr _pSubscriber, const QString& _symbol);
+    bool requestErrorNotificationSubscription(const QString& _symbol);
+    bool cancelErrorNotificationSubscription(const QString& _symbol);
 
-    bool requestTickByTickData(const CSubscriberPtr _pSubscriber, const QString& _symbol, reqTickByTickDataConfigData_t & _config);
-    bool cancelTickByTickData(const CSubscriberPtr _pSubscriber, const QString& _symbol);
+    bool requestOrderStatusSubscription(const QString& _symbol);
+    bool cancelOrderStatusubscription(const QString& _symbol);
 
-    /* Account Information */
-    bool bpReqAccountSummary(const CSubscriberPtr _pSubscriber, const QString &_symbol);
-    bool bpCancelAccountSummary(const CSubscriberPtr _pSubscriber, const QString &_symbol);
+    bool requestCalculateOptionPrice(reqCalcOptPriceConfigData_t &_config);
+    bool cancelCalculateOptionPrice(const QString& _symbol);
+
+    bool requestTickByTickData(const QString& _symbol, reqTickByTickDataConfigData_t & _config);
+    bool cancelTickByTickData(const QString& _symbol);
+
+    bool bpReqAccountSummary(const QString &_symbol);
+    bool bpCancelAccountSummary(const QString &_symbol);
 
     bool isConnectedToTheServer();
 
-
 private:
     QSharedPointer<IBrokerAPI> m_pClien;
+    GlobalReqManager m_reqManager;
 
     IBComm::OrderRouter* m_orderRouter = nullptr;
     IBComm::AccountRouter* m_accountRouter = nullptr;
     IBComm::PositionRouter* m_positionRouter = nullptr;
     IBComm::HistoricalDataRouter* m_historicalDataRouter = nullptr;
+    IBComm::TimeRouter* m_timeRouter = nullptr;
 };
 
 #endif // CBROKERDATAPROVIDER_H

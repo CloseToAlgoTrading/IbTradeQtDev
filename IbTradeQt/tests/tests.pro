@@ -63,6 +63,8 @@ SOURCES += \
     ../CObjects/cposition.cpp \
     ../CObjects/CHistoricalData.cpp \
     ../CObjects/crealtimebar.cpp \
+    ../CObjects/cexecutionreport.cpp \
+    ../CObjects/ccommissionreport.cpp \
     ../Common/NHelper.cpp
 
 HEADERS += \
@@ -120,6 +122,7 @@ HEADERS += \
     integration/tst_live_execution_wiring.h \
     integration/tst_typed_routers.h \
     integration/tst_phase_b_migration.h \
+    integration/tst_phase_d_dispatcher_removal.h \
     ../Adapters/IBOrderExecutionAdapter.h \
     ../Adapters/IBPositionRepositoryAdapter.h \
     ../Adapters/SqlitePositionRepository.h \
@@ -131,7 +134,10 @@ HEADERS += \
     ../IBComm/HistoricalDataRouter.h \
     ../IBComm/OrderRouter.h \
     ../IBComm/AccountRouter.h \
+    ../IBComm/TimeRouter.h \
     ../CObjects/caccountsummary.h \
     ../CObjects/cposition.h \
     ../CObjects/CHistoricalData.h \
-    ../CObjects/crealtimebar.h
+    ../CObjects/crealtimebar.h \
+    ../CObjects/cexecutionreport.h \
+    ../CObjects/ccommissionreport.h

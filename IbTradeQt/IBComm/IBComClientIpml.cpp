@@ -41,15 +41,13 @@ using namespace IBDataTypes;
 Q_LOGGING_CATEGORY(IBComClientImplLog, "ibComClientImpl.Callback");
 
 
-IBComClientImpl::IBComClientImpl(Observer::CDispatcher & _dispatcher)
-    : m_osSignal(2000)//2-seconds timeout
-    //: m_osSignal(00)//2-seconds timeout
+IBComClientImpl::IBComClientImpl()
+    : m_osSignal(2000)
     , m_pClient(new EClientSocket(this, &m_osSignal))
     , m_pReader(nullptr)
     , m_extraAuth(false)
     , m_pLog(LOGGER)
     , m_nexValidId(0)
-    , m_DispatcherBrokerData(_dispatcher)
     , m_accountSummaryData()
 {
 }
@@ -395,9 +393,6 @@ void IBComClientImpl::tickPrice(TickerId tickerId, TickType field, double price,
     IBDataTypes::CMyTickPrice _tickPrize(tickerId, field, price, attrib.canAutoExecute, QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
     qCDebug(IBComClientImplLog(), "tickerId = %ld, field = %d, price = %f, canAutoExecute = %d\n", _tickPrize.getId(), _tickPrize.getTickType(), _tickPrize.getPrice(), _tickPrize.getCanAutoExecute());
 
-    m_DispatcherBrokerData.SendMessageToSubscribers(&_tickPrize, tickerId, RT_TICK_PRICE);
-
-    // Phase 2: Route through MarketDataRouter for LEGO blocks
     if (m_marketDataRouter && m_reqIdToSymbol.contains(tickerId)) {
         // IB TickType: 1=bid, 2=ask, 4=last
         if (field == 1) {
@@ -426,8 +421,6 @@ void IBComClientImpl::tickSize(TickerId tickerId, TickType field, Decimal size)
 
     qCDebug(IBComClientImplLog(), "tickerId = %ld, field = %d, size = %d", _tickSize.getId(), _tickSize.getTickType(), _tickSize.getSize());
 
-    m_DispatcherBrokerData.SendMessageToSubscribers(&_tickSize, tickerId, RT_TICK_SIZE);
-
     if (m_marketDataRouter && m_reqIdToSymbol.contains(tickerId)) {
         if (field == 8) {
             m_marketDataRouter->onTickSize(
@@ -443,12 +436,7 @@ void IBComClientImpl::tickSize(TickerId tickerId, TickType field, Decimal size)
 void IBComClientImpl::tickGeneric(TickerId tickerId, TickType tickType, double value)
 {
     //qCDebug(IBComClientImplLog(), "[%s] tickerId = %d, tickType = %d, value = %f", __FUNCTION__, tickerId, tickType, value);
-    CTickGeneric _tickGeneric(tickerId, tickType, value, QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
-    qCDebug(IBComClientImplLog(), "tickerId = %ld, tickType = %d, value = %f", _tickGeneric.getId(), _tickGeneric.getTickType(), _tickGeneric.getValue());
-    
-    m_DispatcherBrokerData.SendMessageToSubscribers(&_tickGeneric, tickerId, RT_TICK_GENERIC);
-
-    return;
+    Q_UNUSED(tickerId); Q_UNUSED(tickType); Q_UNUSED(value);
 };
 
 //---------------------------------------------------------------
@@ -456,13 +444,7 @@ void IBComClientImpl::tickString(TickerId tickerId, TickType tickType, const std
 {
     //qCDebug(IBComClientImplLog(), "tickString : tickerId = %d, tickType = %d, value = %s", tickerId, tickType, value.c_str());
 
-    CTickString _tickString(tickerId, tickType, QString::fromLocal8Bit(value.data(), value.size()), QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
-    qCDebug(IBComClientImplLog(), "tickerId = %ld, tickType = %d, value = %s", _tickString.getId(), _tickString.getTickType(), _tickString.getValue().toLocal8Bit().data());
-
-    
-    m_DispatcherBrokerData.SendMessageToSubscribers(&_tickString, tickerId, RT_TICK_STRING);
-
-    return;
+    Q_UNUSED(tickerId); Q_UNUSED(tickType); Q_UNUSED(value);
 }
 
 
@@ -505,8 +487,6 @@ void IBComClientImpl::realtimeBar(TickerId reqId, long time, double open, double
 		_realtimeBar.getId(), _realtimeBar.getDateTime(), _realtimeBar.getOpen(), _realtimeBar.getHigh(), _realtimeBar.getLow(),
 		_realtimeBar.getClose(), _realtimeBar.getVolume(), _realtimeBar.getCount(), _realtimeBar.getWap());
 
-    m_DispatcherBrokerData.SendMessageToSubscribers(&_realtimeBar, reqId, RT_REALTIME_BAR);
-
     if (m_marketDataRouter && m_reqIdToSymbol.contains(reqId)) {
         QDateTime barTime = QDateTime::fromSecsSinceEpoch(time);
         m_marketDataRouter->onBarComplete(reqId, m_reqIdToSymbol[reqId], barTime);
@@ -524,8 +504,6 @@ void IBComClientImpl::updateMktDepth(TickerId id, int position, int operation, i
     qCDebug(IBComClientImplLog(), "tickerId = %ld , pos = %d, operation = %d, side = %d, double price = %f, int size = %d ",
 		_mkdDepth.getId(), _mkdDepth.getPosition(), _mkdDepth.getOperation(), _mkdDepth.getSide(), _mkdDepth.getPrice(), _mkdDepth.getSize());
 
-    m_DispatcherBrokerData.SendMessageToSubscribers(&_mkdDepth, id, RT_MKT_DEPTH);
-
 	return;
 }
 
@@ -542,8 +520,6 @@ void IBComClientImpl::updateMktDepthL2(TickerId id, int position, const std::str
 //	qCDebug(IBComClientImplLog(), "tickerId = %d , pos = %d, MM = %s, operation = %d, side = , double price, int size ",
 //		_mkdDepthL2.getId(), _mkdDepthL2.getPosition(), _mkdDepthL2.getMarketMaker(), _mkdDepthL2.getOperation(), _mkdDepthL2.getSide(), _mkdDepthL2.getPrice(), _mkdDepthL2.getSize());
 
-    m_DispatcherBrokerData.SendMessageToSubscribers(&_mkdDepthL2, id, RT_MKT_DEPTH_L2);
-
 	return;
 
 }
@@ -558,8 +534,6 @@ void IBComClientImpl::tickOptionComputation(TickerId tickerId, TickType tickType
 
     qDebug("tickOptionComputation : tickerId = %ld , tickType = %d, impliedVol = %f, delta = %f, optPrice = %f, pvDividend = %f, gamma = %f, vega = %f, theta = %f, undPrice = %f",
 		tickerId, tickType, impliedVol, delta, optPrice, pvDividend, gamma, vega, theta, undPrice);
-
-    m_DispatcherBrokerData.SendMessageToSubscribers(&optionTick, tickerId, RT_REQ_OPTION_PRICE);
 
     return;
 };
@@ -591,8 +565,9 @@ void IBComClientImpl::nextValidId(OrderId orderId)
 //---------------------------------------------------------------
 void IBComClientImpl::currentTime(long time)
 {
-    m_DispatcherBrokerData.SendMessageToSubscribers(&time, E_RQ_ID_TIME, RT_REQ_CUR_TIME);
-
+    if (m_timeRouter) {
+        m_timeRouter->onCurrentTime(time);
+    }
 }
 
 //---------------------------------------------------------------
@@ -612,16 +587,15 @@ void IBComClientImpl::error(int id, int errorCode, const std::string& errorStrin
 
     if((1101 == errorCode)
             || (502 == errorCode)
-            //|| (2106 == errorCode)
             || (1102 == errorCode))
     {
-       //send message to restart command.
-       m_DispatcherBrokerData.SendMessageToSubscribers(nullptr, E_RQ_ID_RESTART_SUBSCRIPTION, RT_REQ_RESTART_SUBSCRIPTION);
+        if (m_marketDataRouter)
+            m_marketDataRouter->onSubscriptionRestarted();
     }
     else if(200 == errorCode)
     {
-        //Security is not found
-        m_DispatcherBrokerData.SendMessageToSubscribers(&id, E_RQ_ID_ERROR_SUBSCRIPTION, RT_REQ_ERROR_SUBSRIPTION);
+        if (m_marketDataRouter)
+            m_marketDataRouter->onSubscriptionError(id, errorCode, QString::fromStdString(errorString));
     }
 }
 
@@ -668,8 +642,6 @@ void IBComClientImpl::orderStatus( OrderId orderId, const std::string& status, D
 		orderStatusObj.getParentId(), orderStatusObj.getLastFilledPrice(), orderStatusObj.getClientId(), orderStatusObj.getWhyHeld().toLocal8Bit().data());
         
 	
-    m_DispatcherBrokerData.SendMessageToSubscribers(&orderStatusObj, E_RQ_ID_ORDER_STATUS, RT_ORDER_STATUS);
-
     if (m_orderRouter) {
         m_orderRouter->onOrderStatus(
             static_cast<int>(orderId),
@@ -706,9 +678,6 @@ void IBComClientImpl::execDetails(int reqId, const Contract& contract, const Exe
     qCDebug(IBComClientImplLog(), "ReqId: %d - %s, %s, %s - %s, %ld, %f, %f, %s, %f \n", reqId, contract.symbol.c_str(), contract.secType.c_str(), contract.currency.c_str(),
             execution.execId.c_str(), execution.orderId, DecimalFunctions::DecimalFunctions::decimalToDouble(execution.shares), execution.avgPrice, execution.side.c_str(), execution.price);
 
-    CExecutionReport execReport(reqId, contract.symbol.c_str(), execution.avgPrice, DecimalFunctions::DecimalFunctions::decimalToDouble(execution.shares), execution.execId.c_str());
-    m_DispatcherBrokerData.SendMessageToSubscribers(&execReport, E_RQ_ID_ORDER_STATUS, RT_ORDER_EXECUTION);
-
     if (m_orderRouter) {
         m_orderRouter->onExecDetails(
             static_cast<int>(execution.orderId),
@@ -723,10 +692,6 @@ void IBComClientImpl::execDetails(int reqId, const Contract& contract, const Exe
 void IBComClientImpl::commissionReport(const CommissionReport& commissionReport)
 {
     qCDebug(IBComClientImplLog(), "%s - %f %s RPNL %f\n", commissionReport.execId.c_str(), commissionReport.commission, commissionReport.currency.c_str(), commissionReport.realizedPNL);
-
-    CCommissionReport _commReport(commissionReport.execId.c_str(), commissionReport.commission, commissionReport.currency.c_str(), commissionReport.realizedPNL, commissionReport.yield, commissionReport.yieldRedemptionDate);
-
-    m_DispatcherBrokerData.SendMessageToSubscribers(&_commReport, E_RQ_ID_ORDER_STATUS, RT_ORDER_COMMISSION);
 
     if (m_orderRouter) {
         m_orderRouter->onCommissionReport(
@@ -828,8 +793,6 @@ void IBComClientImpl::historicalTicksLast(int reqId, const std::vector<Historica
                                        QString(tick.exchange.c_str()),
                                        QString(tick.specialConditions.c_str())
                                        );
-        m_DispatcherBrokerData.SendMessageToSubscribers(&_tickbytick, reqId, RT_TICK_BY_TICK_DATA);
-
     }
 }
 //---------------------------------------------------------------
@@ -857,8 +820,6 @@ void IBComClientImpl::tickByTickAllLast(int reqId, int tickType, time_t time, do
             _tickbytick.getTickAttribLast().pastLimit, _tickbytick.getTickAttribLast().unreported,
             _tickbytick.getExchange().toLocal8Bit().data(),
             _tickbytick.getSpecialConditions().toLocal8Bit().data());
-
-    m_DispatcherBrokerData.SendMessageToSubscribers(&_tickbytick, reqId, RT_TICK_BY_TICK_DATA);
 
     if (m_marketDataRouter && m_reqIdToSymbol.contains(reqId)) {
         QDateTime ts;

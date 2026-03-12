@@ -2,7 +2,6 @@
 #define CPROCESSINGBASE_V2_H
 
 #include <QObject>
-#include "Dispatcher.h"
 
 #include "CHistoricalData.h"
 #include "caccountsummary.h"
@@ -18,12 +17,12 @@
 #include "IBComm/AccountRouter.h"
 #include "IBComm/PositionRouter.h"
 #include "IBComm/HistoricalDataRouter.h"
+#include "IBComm/MarketDataRouter.h"
 #include <QLoggingCategory>
 #include <QList>
 #include "GlobalDef.h"
 #include "cexecutionreport.h"
 #include "ccommissionreport.h"
-//#include "cprocessingbase.h"
 
 
 using namespace IBDataTypes;
@@ -51,7 +50,7 @@ typedef QMultiMap<QString, CPosition>	    PositionMap_t;
 Q_DECLARE_METATYPE(HistMap_t);
 
 
-class CProcessingBase_v2 : public QObject, public Observer::CSubscriber
+class CProcessingBase_v2 : public QObject
 {
 	Q_OBJECT
 
@@ -59,13 +58,8 @@ public:
     explicit CProcessingBase_v2(QObject *parent);
     virtual ~CProcessingBase_v2();
 
-	void MessageHandler(void* pContext, tEReqType _reqType);
-	void UnsubscribeHandler();
-
     qint32 getNextValidId() const { return m_nextValidId; }
     void setNextValidId(const qint32 val) { m_nextValidId = val; }
-
-    bool useTypedRouters() const { return m_useTypedRouters; }
 
 private:
     void connectToTypedRouters();
@@ -77,44 +71,14 @@ private slots:
     void slotRouterPositionChanged(const IBComm::PositionUpdate& update);
     void slotRouterPositionSnapshotComplete();
     void slotRouterBarsReceived(int requestId, const QString& symbol, const QVector<IBComm::HistoricalBar>& bars);
+    void slotRouterExecution(const IBComm::ExecutionReport& report);
+    void slotRouterCommission(const IBComm::CommissionUpdate& update);
 
 private:
-    void recvHistoricalData(void* pContext, tEReqType _reqType);
-    void recvTickSize(void* pContext, tEReqType _reqType);
-    void recvTickPrize(void* pContext, tEReqType _reqType);
-    virtual void recvRealtimeBar(void* pContext, tEReqType _reqType);
-    virtual void recvTickByTickAllLastData(void* pContext, tEReqType _reqType);
-    void recvMktDepth(void* pContext, tEReqType _reqType);
-    void recvPosition(void* pContext, tEReqType _reqType);
-    void recvPositionEnd();
-    void recvOrdersCommission(void* pContext, tEReqType _reqType);
-    void recvExecutionReport(void* pContext, tEReqType _reqType);
-
-    void recvOptionTickComputation(void* pContext, tEReqType _reqType);
-
-    virtual void recvRestartSubscription();
-    virtual void recvErrorNotificationSubscription(int id);
-
-
-    //temporary here
-    bool calculateOneMinBar(RealTimeBarMap_t & _realTimeBar, TickerId _id);
-
-
-//signals:
-
-    //Todo: implement??
-    //void signalOnRealTimeTickDataBase(const IBDataTypes::CMyTickPrice & _pT, const QString _s2);
-    //void signalOnFinishHistoricalDataBase(const QList<CHistoricalData> & _pT, const QString _s1);
-
-
-private:
-
     QSharedPointer<CBrokerDataProvider> m_Client;
     ActiveReqestsMap_t m_aciveReqestsMap;
 
 public:
-	//members
-
     HistoricalDataMap_t m_historyMap;
 
 	HistMap_t			m_histMap;
@@ -124,15 +88,11 @@ public:
 	MKDepthMap_t		m_mkDepthMap;
     PositionMap_t       m_positionMap;
 
-    //nextValidID
     qint32 m_nextValidId;
-    bool m_useTypedRouters = false;
 
     qint32 getRequestMapSize() const;
 
-	//functions realized requests to data provider
 	bool reqestHistoricalData(reqHistConfigData_t & _config);
-
     bool requestHistoricalTicksData(reqHistTicksConfigData_t & _config);
 
     bool reqestRealTimeData(reqReadlTimeDataConfigData_t & _config);
@@ -159,55 +119,32 @@ public:
     bool requestCalculateOptionPrice(reqCalcOptPriceConfigData_t & _config);
     bool cancelCalculateOptionPrice(const QString& _symbol);
 
-    /* Account Information */
     bool pbReqAccountSummary();
     bool pbCancelAccountSummary();
 
-
-    //orders
     qint32 requestPlaceMarketOrder(const QString& _symbol, const qint32 _quantity, const eOrderAction_t _action);
-
     void requestOpenOrders();
 
     void cancelAllActiveRequests();
-
     bool isConnectedTotheServer();
-
-
-	//helper functions
-    const QString getSymbolFromRM(const qint64 _Id, const tEReqType _reqType = RT_REQ_REL_DATA);
-    qint64 getIdFromRM(const QString _symbol, const tEReqType _reqType = RT_REQ_REL_DATA);
-
-    void removeOldHistoricalRequest(const QString & _s1);
-
-    void removeOldHistoricalTickRequest(const QString & _s1);
 
     virtual void callback_recvTickPrize(const IBDataTypes::CMyTickPrice _tickPrize, const QString& _symbol);
     virtual void calllback_recvHistoricalData(const QList<IBDataTypes::CHistoricalData> & _histMap, const QString& _symbol);
     virtual void callback_recvPositionEnd();
-
-//public slots:
-//    virtual void slotMessageHandler(void* pContext, tEReqType _reqType);
 
     QSharedPointer<CBrokerDataProvider> getIBrokerDataProvider() const;
     void setIBrokerDataProvider(QSharedPointer<CBrokerDataProvider> newClient);
 
 signals:
     void signalCbkRecvHistoricalData(const QList<IBDataTypes::CHistoricalData> & _histMap, const QString& _symbol);
-    void signalMessageHandler(void* pContext, tEReqType _reqType);
     void signalRecvOptionTickComputation(const COptionTickComputation & obj);
     void signalEndRecvPosition();
     void signalRecvCommissionReport(const CCommissionReport & obj);
     void signalRecvExecutionReport(const CExecutionReport & obj);
     void signalRestartSubscription();
     void signalErrorNotFound(int id);
-
     void signalRecvAccountSummary(const CAccountSummary & obj);
-
-//    void signalRecvRealTimeBar(const RealTimeBarMap_t & _realTimeBar, const TickerId & _id);
-
     void signalTest();
-
 };
 
 #endif // CPROCESSINGBASE_V2_H

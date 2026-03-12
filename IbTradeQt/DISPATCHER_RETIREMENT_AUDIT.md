@@ -1,90 +1,95 @@
 # CDispatcher Retirement Audit
 
 **Date**: 2026-03-04
-**Purpose**: Track migration status of every `CDispatcher`/`CSubscriber` message type to typed Qt signal/slot routers.
+**Status**: **RETIRED** -- CDispatcher has been fully removed. All data flows through typed Qt signal/slot routers.
 
 ## Message Type Migration Status
 
-| Message Type | Description | Typed Router | CDispatcher Forwarding | Status |
-|---|---|---|---|---|
-| `RT_NEXT_VALID_ID` | Next valid order ID | `OrderRouter::nextValidIdReceived` | **REMOVED** | **Phase B** — Legacy models receive via `CProcessingBase_v2::slotRouterNextValidId()` |
-| `RT_REQ_ACCOUNT_SUMMURY` | Account summary data | `AccountRouter::accountSummaryUpdated` | **REMOVED** | **Phase B** — Adapter slot converts `AccountSummaryData` -> `CAccountSummary` |
-| `RT_REQ_POSITION` | Position updates | `PositionRouter::positionChanged` / `positionSnapshotComplete` | **REMOVED** | **Phase B** — Adapter slots populate `m_positionMap`, emit `signalEndRecvPosition` |
-| `RT_HISTORICAL_DATA` | Historical bar data | `HistoricalDataRouter::barsReceived` | **REMOVED** | **Phase B** — Adapter slot converts `HistoricalBar` -> `CHistoricalData`, emits `signalCbkRecvHistoricalData`. `CBrokerDataProvider::reqestHistoricalData()` calls `setReqIdSymbol()` |
-| `RT_TICK_PRICE` | Tick price updates | `MarketDataRouter::tick` | Active (dual-path) | **Phase A** — Both CDispatcher and MarketDataRouter forward |
-| `RT_TICK_SIZE` | Tick size updates | `MarketDataRouter::tickSizeUpdate` | Active (dual-path) | **Phase A** — Both CDispatcher and MarketDataRouter forward |
-| `RT_REALTIME_BAR` | 5-second real-time bars | `MarketDataRouter::barClose` | Active (dual-path) | **Phase A** — Both CDispatcher and MarketDataRouter forward |
-| `RT_TICK_BY_TICK_DATA` | Tick-by-tick trade data | `MarketDataRouter::tickByTickTrade` | Active (dual-path) | **Phase A** — Both CDispatcher and MarketDataRouter forward |
-| `RT_ORDER_STATUS` | Order status changes | `OrderRouter::orderStatusChanged` | Active (dual-path) | **Phase A** — Both CDispatcher and OrderRouter forward |
-| `RT_ORDER_EXECUTION` | Execution details | `OrderRouter::executionReceived` | Active (dual-path) | **Phase A** — Both CDispatcher and OrderRouter forward |
-| `RT_ORDER_COMMISSION` | Commission reports | `OrderRouter::commissionReceived` | Active (dual-path) | **Phase A** — Both CDispatcher and OrderRouter forward |
-| `RT_TICK_GENERIC` | Generic tick data | — | Active | **NOT MIGRATED** — Not used by pipeline blocks |
-| `RT_TICK_STRING` | Tick string data | — | Active | **NOT MIGRATED** — Not used by pipeline blocks |
-| `RT_HISTORICAL_TICK_DATA` | Historical tick data | — | Active | **NOT MIGRATED** — Low priority |
-| `RT_MKT_DEPTH` | Market depth L1 | — | Active | **NOT MIGRATED** — Low priority |
-| `RT_MKT_DEPTH_L2` | Market depth L2 | — | Active | **NOT MIGRATED** — Low priority |
-| `RT_REQ_OPTION_PRICE` | Option price calc | — | Active | **NOT MIGRATED** — Options-specific |
-| `RT_REQ_RESTART_SUBSCRIPTION` | Subscription restart | — | Active | **NOT MIGRATED** — Infrastructure concern |
-| `RT_REQ_ERROR_SUBSRIPTION` | Error notification | — | Active | **NOT MIGRATED** — Infrastructure concern |
-| `RT_REQ_ORDER_STATUS` | Order status subscription | — | Active | **REPLACED** by `OrderRouter` (direct forwarding) |
-| `RT_REQ_CUR_TIME` | Current time | — | Active | **NOT MIGRATED** — Low priority |
-| `RT_REQ_REL_DATA` | Real-time data subscription | — | Active | **REPLACED** by `MarketDataRouter` (direct forwarding) |
 
-## CDispatcher Subscribers
+| Message Type                  | Description             | Typed Router                                                   | Status                                                                                            |
+| ----------------------------- | ----------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `RT_NEXT_VALID_ID`            | Next valid order ID     | `OrderRouter::nextValidIdReceived`                             | **Migrated (Phase B)** -- Legacy models receive via `CProcessingBase_v2::slotRouterNextValidId()` |
+| `RT_REQ_ACCOUNT_SUMMURY`      | Account summary data    | `AccountRouter::accountSummaryUpdated`                         | **Migrated (Phase B)** -- Adapter slot converts `AccountSummaryData` -> `CAccountSummary`         |
+| `RT_REQ_POSITION`             | Position updates        | `PositionRouter::positionChanged` / `positionSnapshotComplete` | **Migrated (Phase B)** -- Adapter slots populate `m_positionMap`, emit `signalEndRecvPosition`    |
+| `RT_HISTORICAL_DATA`          | Historical bar data     | `HistoricalDataRouter::barsReceived`                           | **Migrated (Phase B)** -- Adapter slot converts `HistoricalBar` -> `CHistoricalData`              |
+| `RT_TICK_PRICE`               | Tick price updates      | `MarketDataRouter::tick`                                       | **Migrated (Phase D)** -- CDispatcher forwarding removed                                          |
+| `RT_TICK_SIZE`                | Tick size updates       | `MarketDataRouter::tickSizeUpdate`                             | **Migrated (Phase D)** -- CDispatcher forwarding removed                                          |
+| `RT_REALTIME_BAR`             | 5-second real-time bars | `MarketDataRouter::barClose`                                   | **Migrated (Phase D)** -- CDispatcher forwarding removed                                          |
+| `RT_TICK_BY_TICK_DATA`        | Tick-by-tick trade data | `MarketDataRouter::tickByTickTrade`                            | **Migrated (Phase D)** -- CDispatcher forwarding removed                                          |
+| `RT_ORDER_STATUS`             | Order status changes    | `OrderRouter::orderStatusChanged`                              | **Migrated (Phase D)** -- CDispatcher forwarding removed                                          |
+| `RT_ORDER_EXECUTION`          | Execution details       | `OrderRouter::executionReceived`                               | **Migrated (Phase D)** -- Adapter slot converts to `CExecutionReport`                             |
+| `RT_ORDER_COMMISSION`         | Commission reports      | `OrderRouter::commissionReceived`                              | **Migrated (Phase D)** -- Adapter slot converts to `CCommissionReport`                            |
+| `RT_REQ_CUR_TIME`             | Current time            | `TimeRouter::currentTimeReceived`                              | **Migrated (Phase D)** -- New `TimeRouter`, `AlphaModGetTime` connects directly                   |
+| `RT_REQ_RESTART_SUBSCRIPTION` | Subscription restart    | `MarketDataRouter::subscriptionRestarted`                      | **Migrated (Phase D)** -- Infrastructure signal on `MarketDataRouter`                             |
+| `RT_REQ_ERROR_SUBSRIPTION`    | Error notification      | `MarketDataRouter::subscriptionError`                          | **Migrated (Phase D)** -- Infrastructure signal on `MarketDataRouter`                             |
+| `RT_TICK_GENERIC`             | Generic tick data       | —                                                              | **Retired** -- No active consumers; add typed router signal if needed                             |
+| `RT_TICK_STRING`              | Tick string data        | —                                                              | **Retired** -- No active consumers                                                                |
+| `RT_HISTORICAL_TICK_DATA`     | Historical tick data    | —                                                              | **Retired** -- No active consumers                                                                |
+| `RT_MKT_DEPTH`                | Market depth L1         | —                                                              | **Retired** -- No active consumers                                                                |
+| `RT_MKT_DEPTH_L2`             | Market depth L2         | —                                                              | **Retired** -- No active consumers                                                                |
+| `RT_REQ_OPTION_PRICE`         | Option price calc       | —                                                              | **Retired** -- No active consumers                                                                |
 
-| Subscriber Class | Messages Consumed | Phase B Status |
-|---|---|---|
-| `CProcessingBase_v2` | All `RT_*` types (main message handler) | **MIGRATED** for 4 types — `m_useTypedRouters` guard skips `RT_NEXT_VALID_ID`, `RT_REQ_ACCOUNT_SUMMURY`, `RT_REQ_POSITION`, `RT_HISTORICAL_DATA` when routers are connected |
-| `CBasicRoot` | `RT_NEXT_VALID_ID` (broadcast) | **MIGRATED** — Receives via `OrderRouter::nextValidIdReceived` -> adapter slot |
-| `CBasicAccount` | `RT_REQ_ACCOUNT_SUMMURY`, `RT_REQ_POSITION` | **MIGRATED** — Receives via `AccountRouter` and `PositionRouter` adapter slots |
-| `CBasicAlphaModel` | `RT_HISTORICAL_DATA` | **MIGRATED** — Receives via `HistoricalDataRouter::barsReceived` adapter slot |
-| `CBasicPortfolio` | Inherits from `CProcessingBase_v2` but does not directly subscribe | No migration needed |
-| `AlphaModGetTime` | Timer-based only | No dispatcher dependency |
-| `CBrokerDataProvider` | Subscription management | Carries typed router pointers since Phase B |
 
-## Phase B Implementation Details
+## Former CDispatcher Subscribers
 
-### Router Transport via CBrokerDataProvider
-Typed router pointers (`OrderRouter*`, `AccountRouter*`, `PositionRouter*`, `HistoricalDataRouter*`) are stored in `CBrokerDataProvider` and propagated to all models via `setBrokerDataProvider()`.
+
+| Former Subscriber Class | Migration Status                                                                                                |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `CProcessingBase_v2`    | **Fully migrated** -- `CSubscriber` inheritance removed. Receives all data through typed router adapter slots   |
+| `CBasicRoot`            | **Fully migrated** -- Receives `nextValidId` via `OrderRouter` adapter slot                                     |
+| `CBasicAccount`         | **Fully migrated** -- Receives account summary and positions via `AccountRouter`/`PositionRouter` adapter slots |
+| `CBasicAlphaModel`      | **Fully migrated** -- Receives historical data via `HistoricalDataRouter` adapter slot                          |
+| `AlphaModGetTime`       | **Fully migrated** -- `CSubscriber` removed. Receives time via `TimeRouter::currentTimeReceived`                |
+| `CPresenter`            | **Fully migrated** -- `CSubscriber` inheritance removed                                                         |
+| `BaseImpl`              | **Fully migrated** -- `CSubscriber` inheritance removed                                                         |
+| `CBrokerDataProvider`   | **Fully migrated** -- No longer inherits `CDispatcher`. Uses standalone `GlobalReqManager`                      |
+
+
+## Deleted Files
+
+
+| File                    | Reason                                           |
+| ----------------------- | ------------------------------------------------ |
+| `IBComm/Dispatcher.h`   | CDispatcher class definition -- no longer needed |
+| `IBComm/Dispatcher.cpp` | CDispatcher implementation -- no longer needed   |
+
+
+## Phase D Implementation Details
+
+### TimeRouter
+
+New `IBComm::TimeRouter` class routes `IBComClientImpl::currentTime()` to `AlphaModGetTime::slotCurrentTimeReceived()`. Created in `CApplicationController`, set on `IBComClientImpl` and `CBrokerDataProvider`.
+
+### Infrastructure Signals on MarketDataRouter
+
+`MarketDataRouter` gained `subscriptionRestarted()` and `subscriptionError(int, int, QString)` signals to handle `RT_REQ_RESTART_SUBSCRIPTION` and `RT_REQ_ERROR_SUBSRIPTION` without CDispatcher.
 
 ### Adapter Slots in CProcessingBase_v2
-When `setIBrokerDataProvider()` is called, `connectToTypedRouters()` connects router signals to adapter slots that convert Q_GADGET structs to legacy CObject types:
+
+Phase D added two new adapter slots:
+
+- `slotRouterExecution(ExecutionReport)` -> `CExecutionReport` -> `signalRecvExecutionReport`
+- `slotRouterCommission(CommissionUpdate)` -> `CCommissionReport` -> `signalRecvCommissionReport`
+
+These join the Phase B adapter slots:
+
 - `slotRouterNextValidId(int)` -> `setNextValidId()`
 - `slotRouterAccountSummary(AccountSummaryData)` -> `CAccountSummary` -> `signalRecvAccountSummary`
 - `slotRouterPositionChanged(PositionUpdate)` -> `CPosition` -> `m_positionMap`
 - `slotRouterPositionSnapshotComplete()` -> `signalEndRecvPosition`
 - `slotRouterBarsReceived(int, QString, QVector<HistoricalBar>)` -> `QList<CHistoricalData>` -> `signalCbkRecvHistoricalData`
 
-### Historical Data reqId Mapping
-`CBrokerDataProvider::reqestHistoricalData()` now calls `HistoricalDataRouter::setReqIdSymbol()` so the router knows which symbol each reqId maps to. This ensures `barsReceived()` emits with the correct symbol.
+### CBrokerDataProvider Decoupled
 
-### m_useTypedRouters Guard
-A flag in `CProcessingBase_v2` is set to `true` when router connections are established. `MessageHandler()` skips the 4 migrated message types when the flag is true, preventing duplicate processing.
+- No longer inherits `CDispatcher`
+- `GlobalReqManager` is now a standalone member
+- All request/cancel methods operate without `CSubscriberPtr` parameters
+- Router pointers (`MarketDataRouter`*, `OrderRouter*`, etc.) stored and propagated to models
 
-## Retirement Roadmap
+### Test Coverage
 
-### Phase A: Dual-Forward (Complete)
-All typed routers created and wired. `IBComClientImpl` forwards to both CDispatcher and typed routers.
+302 tests across 20 suites, including:
 
-### Phase B: Legacy Subscriber Migration (Complete)
-4 message types fully migrated: `RT_NEXT_VALID_ID`, `RT_REQ_ACCOUNT_SUMMURY`, `RT_REQ_POSITION`, `RT_HISTORICAL_DATA`. CDispatcher forwarding removed for these types. Legacy models receive data through typed router adapter slots.
+- Phase B integration tests (8 tests): Router-to-legacy-type conversion
+- Phase D integration tests (13 tests): Exclusive typed router flow, TimeRouter, infrastructure signals, legacy type conversion
 
-### Phase C: Migrate All Strategies to LEGO Blocks
-- `cMomentum` -> `MomentumAlphaBlock` (migration config: `legacy_momentum_pipeline.json`)
-- `CMovingAverageCrossover` -> `MovingAverageCrossoverAlphaBlock` (migration config: `ma_crossover_pipeline.json`)
-- `csma` -> Requires new SMA alpha block
-- `cteststrategy` -> Test adapter
-
-### Phase D: Migrate Remaining CDispatcher Message Types
-Remove CDispatcher forwarding for remaining dual-path types:
-- `RT_TICK_PRICE`, `RT_TICK_SIZE`, `RT_REALTIME_BAR`, `RT_TICK_BY_TICK_DATA`
-- `RT_ORDER_STATUS`, `RT_ORDER_EXECUTION`, `RT_ORDER_COMMISSION`
-- Low-priority types on demand
-
-### Phase E: Remove CDispatcher
-Once all subscribers are migrated, remove:
-- `CDispatcher` class and `Dispatcher.h/.cpp`
-- `CSubscriber` base class
-- `CProcessingBase_v2::MessageHandler()` callback
-- Remaining `SendMessageToSubscribers()` calls from `IBComClientImpl`
-- `CBrokerDataProvider` subscription management can be simplified

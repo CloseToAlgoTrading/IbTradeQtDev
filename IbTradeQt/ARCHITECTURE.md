@@ -80,7 +80,7 @@ flowchart TB
     subgraph external [External Communication Layer]
         BrokerProvider[Broker Data Provider]
         IBClient[IB Client Implementation]
-        Dispatcher[Message Dispatcher]
+        TypedRouters[Typed Signal Routers]
     end
     
     subgraph infrastructure [Infrastructure]
@@ -118,9 +118,9 @@ flowchart TB
 
 **External Communication Layer:**
 - Interactive Brokers API integration
-- Market data subscription management
+- Market data subscription management via typed routers
 - Order placement and tracking
-- Observer pattern for data distribution
+- Qt signal/slot-based data distribution
 
 ---
 
@@ -140,8 +140,8 @@ graph TB
     subgraph IBComm
         BrokerProvider[CBrokerDataProvider]
         IBClientImpl[IBComClientImpl]
-        DispatcherComp[CDispatcher]
         IBWorkerComp[IBworker]
+        Routers[Typed Routers<br/>MarketData, Order, Position,<br/>Historical, Account, Time]
     end
     
     subgraph Strategies
@@ -165,7 +165,6 @@ graph TB
     
     subgraph Common
         ProcessingBase[CProcessingBase_v2]
-        Subscriber[CSubscriber Interface]
     end
     
     AppController --> Presenter
@@ -178,11 +177,11 @@ graph TB
     BasicRoot --> Strategies
     
     BrokerProvider --> IBClientImpl
-    BrokerProvider --> DispatcherComp
+    BrokerProvider --> Routers
     
     Strategies --> ProcessingBase
-    ProcessingBase --> Subscriber
-    Subscriber --> DispatcherComp
+    IBClientImpl --> Routers
+    Routers --> ProcessingBase
     
     Strategies --> DBMgr
     DBMgr --> DBHndlr
@@ -206,7 +205,12 @@ IbTradeQt/
 ├── IBComm/              # Interactive Brokers communication
 │   ├── BrokerDataProvider.h/cpp       # Broker API facade
 │   ├── IBComClientImpl.h/cpp          # IB client implementation
-│   ├── Dispatcher.h/cpp               # Observer/publisher
+│   ├── MarketDataRouter.h             # Market tick/bar typed router
+│   ├── OrderRouter.h                  # Order/execution/commission typed router
+│   ├── PositionRouter.h               # Position update typed router
+│   ├── HistoricalDataRouter.h         # Historical bar typed router
+│   ├── AccountRouter.h                # Account summary typed router
+│   ├── TimeRouter.h                   # Current time typed router
 │   └── IBworker.h/cpp                 # Worker thread
 │
 ├── Strategies/          # Trading strategy framework
@@ -216,8 +220,6 @@ IbTradeQt/
 │   │   ├── cstrategyfactory.h/cpp     # Factory
 │   │   ├── UnifiedModelData.h         # Pipeline data structure
 │   │   └── [sub-models]               # Selection, Alpha, Risk, etc.
-│   ├── PairTrader/      # Pair trading strategy
-│   ├── AutoDeltAlignment/ # Delta hedging strategy
 │   └── StateMachine/    # Model state management
 │
 ├── DB/                  # Database abstraction
@@ -269,22 +271,28 @@ The system employs multiple design patterns for flexibility and maintainability:
 - Clear separation of concerns
 - Facilitates parallel UI and logic development
 
-### 2. Observer/Subscriber Pattern
+### 2. Typed Router Pattern (replaced Observer/Subscriber)
 
 **Implementation:**
-- **Observable**: [`CDispatcher`](IBComm/Dispatcher.h) - Publishes market data
-- **Observer**: [`CSubscriber`](Common/cprocessingbase_v2.h) - Receives data callbacks
-- **Facade**: [`CBrokerDataProvider`](IBComm/BrokerDataProvider.h) - Wraps dispatcher
+Six typed routers forward IB callbacks as Qt signals with `Q_GADGET` data contracts:
+- `MarketDataRouter` -- tick prices, tick sizes, bar closes, tick-by-tick
+- `OrderRouter` -- order status, executions, commissions, next valid ID
+- `PositionRouter` -- position updates and snapshots
+- `HistoricalDataRouter` -- historical bar data
+- `AccountRouter` -- account summary
+- `TimeRouter` -- current time
 
-**Key Methods:**
-- `Subscribe(CSubscriber*, TickerId, tEReqType)` - Register observer
-- `Unsubscribe(CSubscriber*, TickerId)` - Deregister observer
-- `SendMessageToSubscribers(void*, TickerId, tEReqType)` - Notify observers
+**Key Pattern:**
+- `IBComClientImpl` EWrapper callbacks call router slots
+- Routers emit typed signals
+- Legacy models receive via adapter slots in `CProcessingBase_v2`
+- Pipeline strategies receive via direct signal connections
 
 **Benefits:**
+- Type-safe data delivery (no `void*` casting)
 - Decouples data producers from consumers
-- Multiple strategies can subscribe to same data
-- Thread-safe notifications via mutex
+- Thread-safe via `Qt::QueuedConnection`
+- Both legacy and pipeline models use the same routers
 
 ### 3. Composite Pattern
 
@@ -430,8 +438,10 @@ classDiagram
     }
     
     class CProcessingBase_v2 {
-        +MessageHandler()*
-        +UnsubscribeHandler()*
+        +connectToTypedRouters()
+        +slotRouterNextValidId()
+        +slotRouterExecution()
+        +slotRouterCommission()
         #m_pBrokerDataProvider
         #m_nextValidId
     }
@@ -465,10 +475,10 @@ classDiagram
         +setSubModels()
     }
     
-    class ConcreteStrategies {
-        cMomentum
-        CMovingAverageCrossover
-        CTestStrategy
+    class CPipelineStrategyAdapter {
+        +modelType() STRATEGY_PIPELINE
+        +start()
+        +stop()
     }
     
     CGenericModelApi <|.. CBaseModel
@@ -477,7 +487,7 @@ classDiagram
     CBaseModel <|-- CBasicAccount
     CBaseModel <|-- CBasicPortfolio
     CBaseModel <|-- CBasicStrategy_V2
-    CBasicStrategy_V2 <|-- ConcreteStrategies
+    CBaseModel <|-- CPipelineStrategyAdapter
 ```
 
 ### Strategy Pipeline Architecture
@@ -528,9 +538,6 @@ struct UnifiedModelData {
 - `ACCOUNT` → `CBasicAccount`
 - `PORTFOLIO` → `CBasicPortfolio`
 - `STRATEGY` → `CBasicStrategy_V2`
-- `STRATEGY_MA` → `CMovingAverageCrossover`
-- `STRATEGY_MOMENTUM` → `cMomentum`
-- `STRATEGY_BASIC_TEST` → `CTestStrategy`
 - `STRATEGY_PIPELINE` → `CPipelineStrategyAdapter` (LEGO pipeline)
 - `STRATEGY_SELECTION_MODEL` → `CBasicSelectionModel`
 - `STRATEGY_ALPHA_MODEL` → `CBasicAlphaModel`
@@ -595,22 +602,20 @@ sequenceDiagram
 sequenceDiagram
     participant Strategy as Strategy Model
     participant Provider as CBrokerDataProvider
-    participant Dispatcher as CDispatcher
+    participant Router as MarketDataRouter
     participant Client as IBComClientImpl
     participant ReqMgr as GlobalReqManager
     participant IB as IB Server
     
     Strategy->>Provider: requestRealTimeBars(symbol)
-    Provider->>Strategy: Subscribe(this, reqId)
-    Provider->>Dispatcher: Register subscriber
     Provider->>ReqMgr: Generate unique reqId
     Provider->>Client: reqRealTimeBarsAPI(reqId, config)
     Client->>IB: Request market data
     
     loop Real-time Updates
         IB-->>Client: realtimeBar callback
-        Client->>Dispatcher: SendMessageToSubscribers(data, reqId)
-        Dispatcher->>Strategy: MessageHandler(data, RT_REALTIME_BAR)
+        Client->>Router: onBarComplete(reqId, symbol, timestamp)
+        Router-->>Strategy: barClose signal (Qt::QueuedConnection)
         Strategy->>Strategy: Process bar data
     end
 ```
@@ -622,12 +627,11 @@ flowchart TB
     subgraph IBThread[IB Worker Thread]
         EReader[EReader<br/>Socket Reader]
         Callbacks[EWrapper Callbacks<br/>tickPrice, realtimeBar]
-        CreateObj[Create Data Objects<br/>CMyTickPrice, etc.]
-        DispatchCall[CDispatcher::Send]
+        RouterCall[Typed Router Slots<br/>MarketDataRouter, OrderRouter]
     end
     
     subgraph MainThread[Main/Strategy Thread]
-        MsgHandler[CSubscriber::MessageHandler]
+        AdapterSlots[Adapter Slots<br/>CProcessingBase_v2]
         StrategyLogic[Strategy Processing<br/>Signal Generation]
         RiskCheck[Risk Management]
         OrderGen[Order Generation]
@@ -639,10 +643,9 @@ flowchart TB
     
     IB[IB Server] -->|TCP| EReader
     EReader --> Callbacks
-    Callbacks --> CreateObj
-    CreateObj --> DispatchCall
-    DispatchCall -->|Thread Sync| MsgHandler
-    MsgHandler --> StrategyLogic
+    Callbacks --> RouterCall
+    RouterCall -->|Qt::QueuedConnection| AdapterSlots
+    AdapterSlots --> StrategyLogic
     StrategyLogic --> RiskCheck
     RiskCheck --> OrderGen
     OrderGen -->|Place Order| IB
@@ -785,7 +788,6 @@ flowchart TB
    - Used for cross-thread communication
 
 2. **std::mutex**
-   - Protects subscriber list in [`CDispatcher`](IBComm/Dispatcher.h)
    - Critical sections for shared data structures
 
 3. **QMutex**
@@ -938,18 +940,17 @@ DBManager::DBManager(QObject *parent) : QObject(parent) {
 sequenceDiagram
     participant Main as Main Thread<br/>Strategy Model
     participant IB as IB Thread<br/>IBComClientImpl
-    participant Disp as CDispatcher<br/>Thread-safe
+    participant Router as Typed Routers<br/>(MarketData, Order, etc.)
     participant DB as DB Thread<br/>DBHandler
     
     Note over Main,IB: Subscription Phase
-    Main->>IB: Subscribe to market data
-    IB->>Disp: Register subscriber
+    Main->>IB: Request market data via CBrokerDataProvider
     
     Note over Main,DB: Market Data Processing
     IB->>IB: Receive price update
-    IB->>Disp: SendMessageToSubscribers
-    Disp->>Main: MessageHandler (queued)
-    Main->>Main: Process signal
+    IB->>Router: onTickPrice / onBarComplete
+    Router->>Main: tick / barClose signal (QueuedConnection)
+    Main->>Main: Process signal via adapter slot
     Main->>Main: Generate order decision
     
     Note over Main,DB: State Persistence
@@ -990,15 +991,11 @@ dbThread->start();
 
 ### Critical Synchronization Points
 
-1. **CDispatcher Subscriber List**
-   - Protected by `std::mutex m_Mutex`
-   - Locked during subscribe/unsubscribe/dispatch operations
-
-2. **Request ID Generation**
+1. **Request ID Generation**
    - [`GlobalReqManager`](ReqManager/globalreqmanager.h) manages ID allocation
    - Thread-safe ID generation for concurrent requests
 
-3. **Qt Signal/Slot Across Threads**
+2. **Qt Signal/Slot Across Threads**
    - `Qt::QueuedConnection` ensures thread-safe delivery
    - Copies data to prevent race conditions
 
@@ -1087,7 +1084,6 @@ flowchart LR
     end
     
     subgraph Provider[Broker Data Provider]
-        Subscribe[Subscribe Method]
         AllocReq[Allocate Request ID]
         StoreMap[Store Symbol Mapping]
     end
@@ -1095,7 +1091,6 @@ flowchart LR
     subgraph ReqMgr[Global Request Manager]
         CheckAvail[Check Available ID]
         MapSymbol[Map Symbol to ReqId]
-        TrackSubscriber[Track Subscriber]
     end
     
     subgraph Broker[IB Client]
@@ -1104,12 +1099,10 @@ flowchart LR
     end
     
     StrategyInit --> StrategyReq
-    StrategyReq --> Subscribe
-    Subscribe --> AllocReq
+    StrategyReq --> AllocReq
     AllocReq --> CheckAvail
     CheckAvail --> MapSymbol
-    MapSymbol --> TrackSubscriber
-    TrackSubscriber --> StoreMap
+    MapSymbol --> StoreMap
     StoreMap --> SendAPI
     SendAPI --> StoreReqType
 ```
@@ -1252,8 +1245,13 @@ flowchart LR
 | Class | File | Responsibility |
 |-------|------|----------------|
 | `IBComClientImpl` | [`IBComm/IBComClientImpl.h`](IBComm/IBComClientImpl.h) | IB TWS API client, implements EWrapper callbacks |
-| `CBrokerDataProvider` | [`IBComm/BrokerDataProvider.h`](IBComm/BrokerDataProvider.h) | Broker API facade, subscription management |
-| `CDispatcher` | [`IBComm/Dispatcher.h`](IBComm/Dispatcher.h) | Observer pattern implementation, message routing |
+| `CBrokerDataProvider` | [`IBComm/cbrokerdataprovider.h`](IBComm/cbrokerdataprovider.h) | Broker API facade, request management, router propagation |
+| `MarketDataRouter` | [`IBComm/MarketDataRouter.h`](IBComm/MarketDataRouter.h) | Typed router for tick prices, sizes, bars, tick-by-tick |
+| `OrderRouter` | [`IBComm/OrderRouter.h`](IBComm/OrderRouter.h) | Typed router for order status, executions, commissions |
+| `PositionRouter` | [`IBComm/PositionRouter.h`](IBComm/PositionRouter.h) | Typed router for position updates |
+| `HistoricalDataRouter` | [`IBComm/HistoricalDataRouter.h`](IBComm/HistoricalDataRouter.h) | Typed router for historical bar data |
+| `AccountRouter` | [`IBComm/AccountRouter.h`](IBComm/AccountRouter.h) | Typed router for account summary |
+| `TimeRouter` | [`IBComm/TimeRouter.h`](IBComm/TimeRouter.h) | Typed router for current time |
 | `IBworker` | [`IBComm/IBworker.h`](IBComm/IBworker.h) | Worker thread for IB message processing |
 | `IBrokerAPI` | [`IBComm/IbrokerAPI.h`](IBComm/IbrokerAPI.h) | Abstract broker interface |
 
@@ -1267,9 +1265,7 @@ flowchart LR
 | `CBasicAccount` | [`Strategies/Generic/cbasicaccount.h`](Strategies/Generic/cbasicaccount.h) | Account-level container |
 | `CBasicPortfolio` | [`Strategies/Generic/cbasicportfolio.h`](Strategies/Generic/cbasicportfolio.h) | Portfolio management |
 | `CBasicStrategy_V2` | [`Strategies/Generic/cbasicstrategy_V2.h`](Strategies/Generic/cbasicstrategy_V2.h) | Base strategy class |
-| `cMomentum` | [`Strategies/Generic/cmomentum.h`](Strategies/Generic/cmomentum.h) | Momentum strategy implementation |
-| `CMovingAverageCrossover` | [`Strategies/Generic/cmovingaveragecrossover.h`](Strategies/Generic/cmovingaveragecrossover.h) | Moving average strategy |
-| `CTestStrategy` | [`Strategies/Generic/cteststrategy.h`](Strategies/Generic/cteststrategy.h) | Test/debugging strategy |
+| `CPipelineStrategyAdapter` | [`Strategies/Generic/cpipelinestrategyadapter.h`](Strategies/Generic/cpipelinestrategyadapter.h) | LEGO pipeline adapter for tree integration |
 | `CStrategyFactory` | [`Strategies/Generic/cstrategyfactory.h`](Strategies/Generic/cstrategyfactory.h) | Factory for creating models |
 
 ### Strategy Sub-Models
@@ -1296,8 +1292,7 @@ flowchart LR
 
 | Class | File | Responsibility |
 |-------|------|----------------|
-| `CProcessingBase_v2` | [`Common/cprocessingbase_v2.h`](Common/cprocessingbase_v2.h) | Base class for data processors, subscriber interface |
-| `CSubscriber` | [`Common/cprocessingbase_v2.h`](Common/cprocessingbase_v2.h) | Observer interface for market data |
+| `CProcessingBase_v2` | [`Common/cprocessingbase_v2.h`](Common/cprocessingbase_v2.h) | Base class for data processors, typed router adapter slots |
 | `GlobalReqManager` | [`ReqManager/globalreqmanager.h`](ReqManager/globalreqmanager.h) | Request ID allocation and tracking |
 | `MyLogger` | [`Logger/mylogger.h`](Logger/mylogger.h) | Application-wide logging |
 
@@ -1532,17 +1527,17 @@ qCritical(logDB) << "Database error:" << errorMessage;
 
 ## Summary
 
-IbTradeQt is a dual-architecture trading system in active transition from a legacy observer-based design to a modern, composable LEGO pipeline:
+IbTradeQt is a Qt-native trading system using composable LEGO pipeline strategies with typed signal/slot data delivery:
 
-1. **Dual Data Path**
-   - Legacy: `CDispatcher` -> `void*` -> `CSubscriber::MessageHandler()` (all 15+ message types)
-   - New: `MarketDataRouter` -> typed Qt signals -> `StrategyPipelineRunner` (tick prices, tick sizes, bar closes)
-   - Both paths run simultaneously from `IBComClientImpl` callbacks
+1. **Single Data Path -- Typed Routers**
+   - All IB TWS callbacks flow through typed routers (`MarketDataRouter`, `OrderRouter`, `PositionRouter`, `HistoricalDataRouter`, `AccountRouter`, `TimeRouter`)
+   - Legacy `CDispatcher` has been fully removed (Phase D complete)
+   - Adapter slots in `CProcessingBase_v2` convert `Q_GADGET` types to legacy `CObject` types for backward compatibility
 
-2. **Two Strategy Models**
-   - Legacy: `CBasicStrategy_V2` with hard-wired sub-models, tightly coupled to `CDispatcher`
-   - New: `CPipelineStrategyAdapter` with composable LEGO blocks, Qt-native signals, and JSON configuration
-   - Both types appear in the same portfolio tree and coexist in the same application
+2. **Pipeline Strategy Model**
+   - `CPipelineStrategyAdapter` with composable LEGO blocks, Qt-native signals, and JSON configuration
+   - Legacy strategy classes (`cMomentum`, `CMovingAverageCrossover`, `CTestStrategy`) have been removed (Phase C complete)
+   - All strategies appear in the portfolio tree and are configured via pipeline JSON configs
 
 3. **Hexagonal Execution**
    - `IOrderExecutionPort` abstracts order placement -- swap between `MockExecutionAdapter` (DryRun) and `IBOrderExecutionAdapter` (Live) without changing pipeline logic
@@ -1555,12 +1550,13 @@ IbTradeQt is a dual-architecture trading system in active transition from a lega
    - `StructuredLogger` provides JSON-line correlation ID tracing
    - `MetricsCollector` tracks throughput, latency p99, and queue depth
 
-5. **264 Tests Across 17 Suites**
+5. **302 Tests Across 20 Suites**
    - Phase 1-6 unit tests for each architectural layer
    - Integration tests for default pipelines, UI adapter, and live execution wiring
+   - Phase B and D integration tests for typed router migration verification
    - Benchmarks validating <100ms p99 latency and zero message drops
 
-The architecture prioritizes incremental migration: the legacy path is untouched, the new path is additive, and both paths are fully tested. See [REMAINING_GAPS.md](REMAINING_GAPS.md) for what remains before the legacy `CDispatcher` can be retired.
+See [REMAINING_GAPS.md](REMAINING_GAPS.md) for remaining minor items.
 
 ---
 
@@ -1580,7 +1576,7 @@ The LEGO pipeline addresses all of these with typed Qt `Q_GADGET` contracts, com
 
 ### Dual-Path Architecture
 
-Both the legacy and new paths coexist. Market data from IB flows to **both** simultaneously:
+All IB callbacks flow exclusively through typed routers:
 
 ```mermaid
 flowchart TD
@@ -1596,50 +1592,46 @@ flowchart TD
         NV["nextValidId()"]
         POS["position()"]
         AS["accountSummary()"]
+        CT["currentTime()"]
     end
 
-    subgraph legacyPath [Legacy Path]
-        CD["CDispatcher"]
-        CS["CSubscriber::MessageHandler()"]
-        BSV2["CBasicStrategy_V2"]
-    end
-
-    subgraph newPath [LEGO Pipeline Path]
+    subgraph typedRouters [Typed Routers]
         MDR["MarketDataRouter<br/>(tick, barClose, tickByTickTrade)"]
         HDR["HistoricalDataRouter<br/>(historicalBar, barsReceived)"]
         OR["OrderRouter<br/>(orderStatus, execution, commission, nextValidId)"]
         PR["PositionRouter<br/>(positionChanged, positionSnapshotComplete)"]
         AR["AccountRouter<br/>(accountSummaryUpdated)"]
+        TR["TimeRouter<br/>(currentTimeReceived)"]
+    end
+
+    subgraph legacyModels [Legacy Models via Adapter Slots]
+        CPB["CProcessingBase_v2<br/>(adapter slots convert to CObject types)"]
+    end
+
+    subgraph pipeline [LEGO Pipeline Path]
         PLSA["CPipelineStrategyAdapter"]
         Runner["StrategyPipelineRunner"]
         SUP["Supervisor"]
     end
 
-    TP --> CD
     TP --> MDR
-    TS --> CD
     TS --> MDR
-    RB --> CD
     RB --> MDR
-    TBT --> CD
     TBT --> MDR
-    HD --> CD
     HD --> HDR
-    OS --> CD
     OS --> OR
-    ED --> CD
     ED --> OR
-    CR --> CD
     CR --> OR
-    NV --> CD
     NV --> OR
-    POS --> CD
     POS --> PR
-    AS --> CD
     AS --> AR
+    CT --> TR
 
-    CD --> CS
-    CS --> BSV2
+    MDR --> CPB
+    HDR --> CPB
+    OR --> CPB
+    PR --> CPB
+    AR --> CPB
 
     MDR --> PLSA
     HDR --> PLSA
@@ -1647,6 +1639,8 @@ flowchart TD
     PR --> PLSA
     PLSA --> Runner
     Runner --> SUP
+
+    TR --> AlphaTime["AlphaModGetTime"]
 ```
 
 ### Data Contracts (`Q_GADGET` Types)
@@ -1869,7 +1863,7 @@ CPipelineStrategyAdapter::setGlobalPositionRepo(&m_positionRepo);
 
 ### UI Integration
 
-The tree view context menu has "Add Pipeline Strategy (LEGO)" alongside the legacy "Add New Strategy". When clicked:
+The tree view context menu has "Add Strategy" for creating pipeline-based strategies. When clicked:
 
 1. `CPortfolioConfigModel::slotOnClickAddPipelineStrategy()` creates a `CPipelineStrategyAdapter` via `CStrategyFactory`
 2. The adapter loads `simple_momentum_pipeline.json` as default config
@@ -1879,7 +1873,7 @@ The tree view context menu has "Add Pipeline Strategy (LEGO)" alongside the lega
 
 ### Test Coverage
 
-The pipeline has **264 tests** across 17 test suites organized by phase:
+The project has **302 tests** across 20 test suites organized by phase:
 
 | Phase | Suite | Tests | Focus |
 |-------|-------|-------|-------|
@@ -1889,7 +1883,8 @@ The pipeline has **264 tests** across 17 test suites organized by phase:
 | 4 | Supervision | 20 | Supervisor, StrategyRuntime, BoundedQueue |
 | 5 | Observability | 27 | StructuredLogger, MetricsCollector |
 | 6 | Benchmark | 14 | Throughput, latency p99, queue depth |
-| Integration | DefaultPipelines, PipelineStrategyAdapter, LiveExecutionWiring | 40 | End-to-end: factory, adapter, execution, UI bridge |
+| Integration | DefaultPipelines, PipelineStrategyAdapter, LiveExecutionWiring, TypedRouters | 40 | End-to-end: factory, adapter, execution, UI bridge |
+| Migration | PhaseBMigration, PhaseD_DispatcherRemoval | 21 | Typed router migration, CDispatcher removal verification |
 
 ### Directory Structure (Pipeline Components)
 
@@ -1978,9 +1973,9 @@ IbTradeQt/
 - Tree view management
 - Icon handling
 
-**IBComm/** - IB Communication (6 files)
+**IBComm/** - IB Communication (10 files)
 - Broker API implementation
-- Message dispatcher
+- Six typed signal routers (MarketData, Order, Position, Historical, Account, Time)
 - Worker thread management
 - Data provider facade
 
@@ -2028,4 +2023,4 @@ IbTradeQt/
 
 ---
 
-*This architecture documentation provides a comprehensive overview of the IbTradeQt trading system. For issues and improvement suggestions, see [ISSUES_AND_IMPROVEMENTS.md](ISSUES_AND_IMPROVEMENTS.md).*
+*This architecture documentation provides a comprehensive overview of the IbTradeQt trading system. See [REMAINING_GAPS.md](REMAINING_GAPS.md) for remaining items and [DISPATCHER_RETIREMENT_AUDIT.md](DISPATCHER_RETIREMENT_AUDIT.md) for the complete CDispatcher migration audit.*

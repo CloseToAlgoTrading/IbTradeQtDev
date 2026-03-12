@@ -1,12 +1,10 @@
 #include "cprocessingbase_v2.h"
-#include "./IBComm/Dispatcher.h"
 #include <QSharedPointer>
 #include <QtConcurrent/QtConcurrentRun>
 #include "NHelper.h"
 
 Q_LOGGING_CATEGORY(processingBaseV2Log, "processing.Base");
 
-using namespace Observer;
 //----------------------------------------------------------
 CProcessingBase_v2::CProcessingBase_v2(QObject *parent)
     : QObject(parent)
@@ -20,220 +18,141 @@ CProcessingBase_v2::CProcessingBase_v2(QObject *parent)
 	, m_mkDepthMap()
     , m_positionMap()
     , m_nextValidId(0)
-    , m_useTypedRouters(false)
 {
 }
 
 //----------------------------------------------------------
 CProcessingBase_v2::~CProcessingBase_v2()
 {
-    if(nullptr != m_Client)
-    {
-        (void)m_Client->UnsubscribeAllItemsOfSubscriber(this->GetSubscriberId());
-    }
-}
-
-//----------------------------------------------------------
-void CProcessingBase_v2::MessageHandler(void* pContext, tEReqType _reqType)
-{
-    emit signalMessageHandler(pContext, _reqType);
-	switch (_reqType)
-	{
-	case RT_TICK_SIZE:
-        recvTickSize(pContext, _reqType);
-		break;
-	case RT_TICK_PRICE:
-        recvTickPrize(pContext, _reqType);
-		break;
-	case RT_HISTORICAL_DATA:
-        if (!m_useTypedRouters)
-            recvHistoricalData(pContext, _reqType);
-		break;
-	case RT_REALTIME_BAR:
-        recvRealtimeBar(pContext, _reqType);
-		break;
-    case RT_TICK_BY_TICK_DATA:
-        recvTickByTickAllLastData(pContext, _reqType);
-        break;
-	case RT_MKT_DEPTH:
-        recvMktDepth(pContext, _reqType);
-        break;
-    case RT_NEXT_VALID_ID:
-        if (!m_useTypedRouters)
-            setNextValidId(*(reinterpret_cast<qint32*>(pContext)));
-        break;
-    case RT_REQ_POSITION:
-        if (!m_useTypedRouters)
-            recvPosition(pContext, _reqType);
-        break;
-    case RT_REQ_RESTART_SUBSCRIPTION:
-        recvRestartSubscription();
-        break;
-    case RT_REQ_ERROR_SUBSRIPTION:
-        recvErrorNotificationSubscription(*(reinterpret_cast<int*>(pContext)));
-        break;
-    case RT_REQ_OPTION_PRICE:
-        recvOptionTickComputation(pContext, _reqType);
-        break;
-    case RT_ORDER_COMMISSION:
-        recvOrdersCommission(pContext, _reqType);
-        break;
-    case RT_ORDER_STATUS:
-        //recvOrdersCommission(pContext, _reqType);
-        break;
-    case RT_ORDER_EXECUTION:
-        recvExecutionReport(pContext, _reqType);
-        break;
-    case RT_REQ_ACCOUNT_SUMMURY:
-        if (!m_useTypedRouters)
-            emit signalRecvAccountSummary(*static_cast<CAccountSummary*>(pContext));
-        break;
-
-    case RT_REQ_NONE:
-    case RT_REQ_REL_DATA:
-    case RT_REQ_CUR_TIME:
-    case RT_TICK_GENERIC:
-    case RT_TICK_STRING:
-    case RT_HISTORICAL_TICK_DATA:
-    case RT_MKT_DEPTH_L2:
-    case RT_REQ_ORDER_STATUS:
-        break;
-    }
 }
 
 //----------------------------------------------------------
 bool CProcessingBase_v2::reqestHistoricalData(reqHistConfigData_t & _config)
 {
-    //m_aciveReqestsMap.insert(_symbol, RT_HISTORICAL_DATA);
-    return m_Client->reqestHistoricalData(this, _config);
+    return m_Client->reqestHistoricalData(_config);
 }
 
 bool CProcessingBase_v2::requestHistoricalTicksData(reqHistTicksConfigData_t &_config)
 {
-    return m_Client->requestHistoricalTicksData(this, _config);
+    return m_Client->requestHistoricalTicksData(_config);
 }
 
 //----------------------------------------------------------
 bool CProcessingBase_v2::reqestRealTimeData(reqReadlTimeDataConfigData_t &_config)
 {
     m_aciveReqestsMap.insert(QString(_config.contract.symbol.c_str()), RT_REQ_REL_DATA);
-    return m_Client->reqestRealTimeData(this, _config);
+    return m_Client->reqestRealTimeData(_config);
 }
 
 //----------------------------------------------------------
 bool CProcessingBase_v2::cancelRealTimeData(const QString& _symbol)
 {
     m_aciveReqestsMap.remove(_symbol, RT_REQ_REL_DATA);
-    return m_Client->cancelRealTimeData(this, _symbol);
+    return m_Client->cancelRealTimeData(_symbol);
 }
 
 bool CProcessingBase_v2::requestRealTimeBars(const QString& _symbol)
 {
     m_aciveReqestsMap.insert(_symbol, RT_REALTIME_BAR);
-    return m_Client->requestRealTimeBars(this, _symbol);
+    return m_Client->requestRealTimeBars(_symbol);
 }
 
 //----------------------------------------------------------
 bool CProcessingBase_v2::cancelRealTimeBars(const QString& _symbol)
 {
     m_aciveReqestsMap.remove(_symbol, RT_REALTIME_BAR);
-    return m_Client->cancelRealTimeBars(this, _symbol);
+    return m_Client->cancelRealTimeBars(_symbol);
 }
 
 //----------------------------------------------------------
 bool CProcessingBase_v2::pbRequestPosition()
 {
     m_positionMap.clear();
-    //m_aciveReqestsMap.insert(PositionSymbol, RT_REQ_POSITION);
-    return m_Client->requestPosition(this, PositionSymbol);
+    return m_Client->requestPosition(PositionSymbol);
 }
 
 //----------------------------------------------------------
 bool CProcessingBase_v2::pbCancelPosition()
 {
-    //m_aciveReqestsMap.remove(PositionSymbol, RT_REQ_POSITION);
-    return m_Client->cancelPosition(this, PositionSymbol);
+    return m_Client->cancelPosition(PositionSymbol);
 }
 
 bool CProcessingBase_v2::reqestResetSubscription()
 {
     m_aciveReqestsMap.insert(RestartRequestSymbol, RT_REQ_RESTART_SUBSCRIPTION);
-    return m_Client->requestResetSubscription(this, RestartRequestSymbol);
+    return m_Client->requestResetSubscription(RestartRequestSymbol);
 }
 
 bool CProcessingBase_v2::cancelResetSubscription()
 {
     m_aciveReqestsMap.remove(RestartRequestSymbol, RT_REQ_RESTART_SUBSCRIPTION);
-    return m_Client->cancelResetSubscription(this, RestartRequestSymbol);
+    return m_Client->cancelResetSubscription(RestartRequestSymbol);
 }
 
 bool CProcessingBase_v2::reqestErrorNotificationSubscription()
 {
     m_aciveReqestsMap.insert(ErrorSymbol, RT_REQ_ERROR_SUBSRIPTION);
-    return m_Client->requestErrorNotificationSubscription(this, ErrorSymbol);
+    return m_Client->requestErrorNotificationSubscription(ErrorSymbol);
 }
 
 bool CProcessingBase_v2::cancelErrorNotificationSubscription()
 {
     m_aciveReqestsMap.remove(ErrorSymbol, RT_REQ_ERROR_SUBSRIPTION);
-    return m_Client->cancelErrorNotificationSubscription(this, ErrorSymbol);
+    return m_Client->cancelErrorNotificationSubscription(ErrorSymbol);
 }
 
 bool CProcessingBase_v2::reqestOrderStatusSubscription()
 {
     m_aciveReqestsMap.insert(OrderStatusSymbol, RT_REQ_ORDER_STATUS);
-    return m_Client->requestOrderStatusSubscription(this, OrderStatusSymbol);
-
+    return m_Client->requestOrderStatusSubscription(OrderStatusSymbol);
 }
 
 bool CProcessingBase_v2::cancelOrderStatusSubscription()
 {
     m_aciveReqestsMap.remove(OrderStatusSymbol, RT_REQ_ORDER_STATUS);
-    return m_Client->cancelOrderStatusubscription(this, OrderStatusSymbol);
+    return m_Client->cancelOrderStatusubscription(OrderStatusSymbol);
 }
 
 bool CProcessingBase_v2::requestTickByTickData(reqTickByTickDataConfigData_t &_config)
 {
-    m_aciveReqestsMap.insert(QString(_config.contract.symbol.c_str()), RT_TICK_BY_TICK_DATA);
-    return m_Client->requestTickByTickData(this, QString(_config.contract.symbol.c_str()), _config);
+    QString sym = QString(_config.contract.symbol.c_str());
+    m_aciveReqestsMap.insert(sym, RT_TICK_BY_TICK_DATA);
+    return m_Client->requestTickByTickData(sym, _config);
 }
 
 bool CProcessingBase_v2::cancelTickByTickData(const QString &_symbol)
 {
     m_aciveReqestsMap.remove(_symbol, RT_TICK_BY_TICK_DATA);
-    return m_Client->cancelRealTimeBars(this, _symbol);
+    return m_Client->cancelTickByTickData(_symbol);
 }
 
 bool CProcessingBase_v2::requestCalculateOptionPrice(reqCalcOptPriceConfigData_t &_config)
 {
     m_aciveReqestsMap.insert(QString(_config.contract.symbol.c_str()), RT_REQ_OPTION_PRICE);
-    return m_Client->requestCalculateOptionPrice(this, _config);
+    return m_Client->requestCalculateOptionPrice(_config);
 }
 
 bool CProcessingBase_v2::cancelCalculateOptionPrice(const QString &_symbol)
 {
     m_aciveReqestsMap.remove(_symbol, RT_REQ_OPTION_PRICE);
-    return m_Client->cancelRealTimeBars(this, _symbol);
+    return m_Client->cancelCalculateOptionPrice(_symbol);
 }
 
 bool CProcessingBase_v2::pbReqAccountSummary()
 {
     m_aciveReqestsMap.insert(AccountSummurySymbol, RT_REQ_ACCOUNT_SUMMURY);
-    return m_Client->bpReqAccountSummary(this, AccountSummurySymbol);
-
+    return m_Client->bpReqAccountSummary(AccountSummurySymbol);
 }
 
 bool CProcessingBase_v2::pbCancelAccountSummary()
 {
     m_aciveReqestsMap.remove(AccountSummurySymbol, RT_REQ_ACCOUNT_SUMMURY);
-    return m_Client->bpCancelAccountSummary(this, AccountSummurySymbol);
-
+    return m_Client->bpCancelAccountSummary(AccountSummurySymbol);
 }
 
 //----------------------------------------------------------
 qint32 CProcessingBase_v2::requestPlaceMarketOrder(const QString& _symbol, const qint32 _quantity, const eOrderAction_t _action)
 {
-    //send order
     return m_Client->getClien()->reqPlaceOrderAPI(_symbol, _quantity, _action);
 }
 
@@ -259,56 +178,31 @@ void CProcessingBase_v2::cancelAllActiveRequests()
         {
             switch (reqest)
             {
-            case RT_REQ_NONE:
-                break;
             case RT_REQ_REL_DATA:
-                m_Client->cancelRealTimeData(this, symbol);
-                break;
-            case RT_REQ_CUR_TIME:
-                break;
-            case RT_TICK_SIZE:
-                break;
-            case RT_TICK_PRICE:
-                break;
-            case RT_TICK_GENERIC:
-                break;
-            case RT_TICK_STRING:
-                break;
-            case RT_HISTORICAL_DATA:
-                break;
-            case RT_HISTORICAL_TICK_DATA:
+                m_Client->cancelRealTimeData(symbol);
                 break;
             case RT_TICK_BY_TICK_DATA:
-                m_Client->cancelTickByTickData(this, symbol);
+                m_Client->cancelTickByTickData(symbol);
                 break;
             case RT_REALTIME_BAR:
-                m_Client->cancelRealTimeBars(this, symbol);
-                break;
-            case RT_MKT_DEPTH:
-                break;
-            case RT_MKT_DEPTH_L2:
-                break;
-            case RT_NEXT_VALID_ID:
+                m_Client->cancelRealTimeBars(symbol);
                 break;
             case RT_REQ_POSITION:
-                m_Client->cancelResetSubscription(this, PositionSymbol);
+                m_Client->cancelPosition(PositionSymbol);
                 break;
             case RT_REQ_OPTION_PRICE:
-                m_Client->cancelCalculateOptionPrice(this, symbol);
+                m_Client->cancelCalculateOptionPrice(symbol);
                 break;
             case RT_REQ_RESTART_SUBSCRIPTION:
-                m_Client->cancelPosition(this, RestartRequestSymbol);
+                m_Client->cancelResetSubscription(RestartRequestSymbol);
                 break;
             case RT_REQ_ORDER_STATUS:
-                m_Client->cancelOrderStatusubscription(this, OrderStatusSymbol);
+                m_Client->cancelOrderStatusubscription(OrderStatusSymbol);
                 break;
             case RT_REQ_ACCOUNT_SUMMURY:
-                m_Client->bpCancelAccountSummary(this, AccountSummurySymbol);
+                m_Client->bpCancelAccountSummary(AccountSummurySymbol);
                 break;
-            case RT_REQ_ERROR_SUBSRIPTION:
-            case RT_ORDER_STATUS:
-            case RT_ORDER_COMMISSION:
-            case RT_ORDER_EXECUTION:
+            default:
                 break;
             }
         }
@@ -321,55 +215,6 @@ void CProcessingBase_v2::cancelAllActiveRequests()
 bool CProcessingBase_v2::isConnectedTotheServer()
 {
     return m_Client->isConnectedToTheServer();
-}
-
-//
-
-//----------------------------------------------------------
-qint64 CProcessingBase_v2::getIdFromRM(const QString _symbol, const tEReqType _reqType /*= RT_REQ_REL_DATA*/)
-{
-    qint64 retId = 0;
-    CDispatcher::CSubscriberItemPtr pSubcrItem = m_Client->getSubscriberItem(this->GetSubscriberId());
-    if (nullptr != pSubcrItem)
-    {
-        retId = pSubcrItem->ReqMenager()->getIdbySymbol(_symbol, _reqType);
-    }
-    return retId;
-}
-
-//----------------------------------------------------------
-const QString CProcessingBase_v2::getSymbolFromRM(const qint64 _Id, const tEReqType _reqType /*= RT_REQ_REL_DATA*/)
-{
-    QString retSymbol = "";
-    CDispatcher::CSubscriberItemPtr pSubcrItem = m_Client->getSubscriberItem(this->GetSubscriberId());
-    if (nullptr != pSubcrItem)
-    {
-        retSymbol = pSubcrItem->ReqMenager()->getSymbolById(_Id, _reqType);
-    }
-    return retSymbol;
-}
-
-
-
-//----------------------------------------------------------
-void CProcessingBase_v2::removeOldHistoricalRequest(const QString & _s1)
-{
-    CDispatcher::CSubscriberItemPtr pSubcrItem = m_Client->getSubscriberItem(this->GetSubscriberId());
-    if (nullptr != pSubcrItem)
-    {
-        pSubcrItem->ReqMenager()->removeReqData(_s1, RT_HISTORICAL_DATA);
-    }
-    return;
-}
-
-void CProcessingBase_v2::removeOldHistoricalTickRequest(const QString &_s1)
-{
-    CDispatcher::CSubscriberItemPtr pSubcrItem = m_Client->getSubscriberItem(this->GetSubscriberId());
-    if (nullptr != pSubcrItem)
-    {
-        pSubcrItem->ReqMenager()->removeReqData(_s1, RT_HISTORICAL_TICK_DATA);
-    }
-    return;
 }
 
 void CProcessingBase_v2::callback_recvTickPrize(const CMyTickPrice _tickPrize, const QString &_symbol)
@@ -386,321 +231,6 @@ void CProcessingBase_v2::calllback_recvHistoricalData(const QList<CHistoricalDat
 
 void CProcessingBase_v2::callback_recvPositionEnd()
 {
-
-}
-
-//void CProcessingBase_v2::slotMessageHandler(void *pContext, tEReqType _reqType)
-//{
-//    qCDebug(processingBaseV2Log(), "PosEnd!! -> execte callback to implementation");
-//}
-
-//----------------------------------------------------------
-void CProcessingBase_v2::UnsubscribeHandler()
-{
-    (void)m_Client->UnsubscribeAllItemsOfSubscriber(this->GetSubscriberId());
-
-   // cancelAllActiveRequests();
-}
-
-//----------------------------------------------------------
-void CProcessingBase_v2::recvHistoricalData(void* pContext, tEReqType _reqType)
-{
-    Q_UNUSED(_reqType)
-
-    //QString a = QThread::currentThread()->objectName();
-    //qCDebug(processingBaseV2Log(), "---> %s", a.toLocal8Bit().data());
-    CHistoricalData *_pHistoricalData = (CHistoricalData *)pContext;
-
-    QString retSymbol = getSymbolFromRM(_pHistoricalData->getId(), RT_HISTORICAL_DATA);
-
-    if (!_pHistoricalData->getIsLast())
-    {
-//        qCDebug(processingBaseV2Log(), "[%s] tickerId = %ld , date = %s, open = %f, high = %f, low =%f, close = %f, volume = %f, barCount = %d, WAP = %f, hasGaps = %d", retSymbol.toLocal8Bit().data(),
-//                _pHistoricalData->getId(), NHelper::convertQTDataTimeToString(_pHistoricalData->getDateTime()).toStdString().c_str(), _pHistoricalData->getOpen(), _pHistoricalData->getHigh(), _pHistoricalData->getLow(),
-//                _pHistoricalData->getClose(), _pHistoricalData->getVolume(), _pHistoricalData->getCount(), _pHistoricalData->getWap(), _pHistoricalData->getHasGaps());
-    }
-    else
-    {
-        qCDebug(processingBaseV2Log(), "[%s] tickerId = %ld , ", retSymbol.toLocal8Bit().data(), _pHistoricalData->getId());
-    }
-
-    qint64 realtimeDataId = getIdFromRM(retSymbol, RT_HISTORICAL_DATA);
-    if (0 != realtimeDataId)
-    {
-        bool isFound = false;
-        HistoricalDataMap_t::iterator it = m_historyMap.find(realtimeDataId);
-        while ((it != m_historyMap.end()) && (it.key() == realtimeDataId) && (!isFound)) {
-            isFound = true;
-        }
-
-        if (_pHistoricalData->getIsLast())
-        {
-            //End of historical data
-            removeOldHistoricalRequest(retSymbol);
-
-            //set data as available
-            it->isAvaliable = true;
-
-            // temp
-            // signalOnFinishHistoricalData(it->listHistData, retSymbol);
-            //calllback_recvHistoricalData(it->listHistData, retSymbol);
-            emit signalCbkRecvHistoricalData(it->listHistData, retSymbol);
-        }
-        else
-        {
-            if (isFound)
-            {
-                //found in map
-                if (!it->isAvaliable)
-                {
-                    // historical data is not fully available
-                    //add to the list of historical data
-                    it->listHistData.append(*_pHistoricalData);
-                }
-                else
-                {
-                    // historical data is fully available
-                    // clear data to avoid double data in map
-                    it->listHistData.clear();
-                    it->isAvaliable = false;
-
-                    it->listHistData.append(*_pHistoricalData);
-                }
-
-            }
-            else
-            {
-                // not found in map
-                //add to the map
-                HistoricalData_st tmpHistStruct;
-                tmpHistStruct.isAvaliable = false;
-                tmpHistStruct.listHistData.append(*_pHistoricalData);
-                m_historyMap.insert(realtimeDataId, tmpHistStruct);
-
-            }
-        }
-    }
-    else
-    {
-        //m_pLog.AddLogMsg("ignore/remove from RM");
-        qCInfo(processingBaseV2Log(), "ignore/remove from RM");
-        removeOldHistoricalRequest(retSymbol);
-    }
-}
-
-//----------------------------------------------------------
-void CProcessingBase_v2::recvTickSize(void* pContext, tEReqType _reqType)
-{
-    Q_UNUSED(_reqType)
-
-    CTickSize *_pTickSize = (CTickSize *)pContext;
-    m_tickSizeMap.insert(_pTickSize->getId(), *_pTickSize);
-
-    qCDebug(processingBaseV2Log(), "id = %ld", _pTickSize->getId());
-
-}
-
-//----------------------------------------------------------
-void CProcessingBase_v2::recvTickPrize(void* pContext, tEReqType _reqType)
-{
-    Q_UNUSED(_reqType)
-
-    IBDataTypes::CMyTickPrice* _pTickPrice = (IBDataTypes::CMyTickPrice *)pContext;
-    m_tickPriceMap.insert(_pTickPrice->getId(), *_pTickPrice);
-
-    QString retSymbol = getSymbolFromRM(_pTickPrice->getId());
-
-    qCDebug(processingBaseV2Log(), "(%s) id = %ld, price = %f", __FUNCTION__, _pTickPrice->getId(), _pTickPrice->getPrice());
-
-    IBDataTypes::CMyTickPrice dd(*_pTickPrice);
-    
-    //temp
-    //emit signalOnRealTimeTickData(dd, retSymbol);
-    callback_recvTickPrize(dd, retSymbol);
-
-}
-
-//----------------------------------------------------------
-void CProcessingBase_v2::recvRealtimeBar(void* pContext, tEReqType _reqType)
-{
-    Q_UNUSED(_reqType)
-
-    CrealtimeBar *_pRealTimeBar = (CrealtimeBar *)pContext;
-    m_realTImeBarMap.insert(_pRealTimeBar->getId(), *_pRealTimeBar);
-
-    qCDebug(processingBaseV2Log(), "executed");
-    calculateOneMinBar(m_realTImeBarMap, _pRealTimeBar->getId());
-
-
-}
-
-//----------------------------------------------------------
-void CProcessingBase_v2::recvTickByTickAllLastData(void *pContext, tEReqType _reqType)
-{
-
-}
-
-//----------------------------------------------------------
-void CProcessingBase_v2::recvMktDepth(void* pContext, tEReqType _reqType)
-{
-    Q_UNUSED(_reqType);
-    CMktDepth *_pMKDepth = static_cast<CMktDepth *>(pContext);
-    m_mkDepthMap.insert(_pMKDepth->getId(), *_pMKDepth);
-
-    qCDebug(processingBaseV2Log(), "id = %ld", _pMKDepth->getId());
-}
-
-//----------------------------------------------------------
-void CProcessingBase_v2::recvPosition(void *pContext, tEReqType _reqType)
-{
-    Q_UNUSED(_reqType);
-    if(nullptr == pContext)
-    {
-        recvPositionEnd();
-    }
-    else
-    {
-        CPosition *_pPos = static_cast<CPosition *>(pContext);
-        m_positionMap.insert(QString::fromLocal8Bit(_pPos->getContract().symbol.data(), static_cast<qint32>(_pPos->getContract().symbol.size()))
-                             , *_pPos);
-        qCDebug(processingBaseV2Log(), "Pos = %s", _pPos->getContract().symbol.c_str());
-    }
-}
-
-//----------------------------------------------------------
-void CProcessingBase_v2::recvPositionEnd()
-{
-    qCDebug(processingBaseV2Log(), "PosEnd!! -> execte callback to implementation");
-    //callback_recvPositionEnd();
-    emit signalEndRecvPosition();
-}
-
-//COptionTickComputation obj;
-//----------------------------------------------------------
-void CProcessingBase_v2::recvOptionTickComputation(void *pContext, tEReqType _reqType)
-{
-    //temp
-    if(RT_REQ_OPTION_PRICE == _reqType)
-    {
-        COptionTickComputation obj(*(static_cast<COptionTickComputation*>(pContext)));
-        emit signalRecvOptionTickComputation(obj);
-    }
-
-}
-
-//----------------------------------------------------------
-void CProcessingBase_v2::recvRestartSubscription()
-{
-    emit signalRestartSubscription();
-    //nothing here
-    qCDebug(processingBaseV2Log(), "------->>> recvRestartSubscription emit RESTART SUBSCRIPTION");
-}
-
-void CProcessingBase_v2::recvErrorNotificationSubscription(int id)
-{
-    emit signalErrorNotFound(id);
-    qCDebug(processingBaseV2Log(), "------->>> recvErrorNotificationSubscription emit Error id = %d", id);
-}
-
-void CProcessingBase_v2::recvOrdersCommission(void* pContext, tEReqType _reqType)
-{
-    Q_UNUSED(_reqType);
-    //TODO: add normal commission object!
-    emit signalRecvCommissionReport(*static_cast<CCommissionReport*>(pContext));
-}
-
-void CProcessingBase_v2::recvExecutionReport(void *pContext, tEReqType _reqType)
-{
-    Q_UNUSED(_reqType);
-    emit signalRecvExecutionReport(*static_cast<CExecutionReport*>(pContext));
-}
-
-
-//-----------------------------------------------------------
-bool CProcessingBase_v2::calculateOneMinBar(RealTimeBarMap_t & _realTimeBar, TickerId _id)
-{
-    bool isFound = false;
-    RealTimeBarMap_t::iterator it = _realTimeBar.begin();
-    
-    while ((it != _realTimeBar.begin()) && (it.key() == _id) && (!isFound)) {
-        isFound = true;
-    }
-
-    //--it;
-    QDateTime mtime = QDateTime::fromMSecsSinceEpoch(it->getDateTime());
-    qCDebug(processingBaseV2Log(), "time = %s", mtime.toString("yyyy/MM/dd hh:mm:ss").toLocal8Bit().data());
-
-    static QDateTime oldtime;
-    //bool isBarFinished = false;
-
-
-    double o, c, h, l = 0.0;
-
-    //--------------------------- 
-    enum tEBarState
-    {
-        BS_INIT = 0,
-        BS_PROCESSING,
-        BS_FINISH
-    };
-
-    //form temporary bar
-    static CrealtimeBar rtBar; 
-    //static bool isFirstBar = true;
-
-    static tEBarState localBarState = BS_INIT;
-
-    switch (localBarState)
-    {
-    case BS_INIT:
-        rtBar.setOpen(it->getOpen());
-        rtBar.setClose(it->getClose());
-        rtBar.setHigh(it->getHigh());
-        rtBar.setLow(it->getLow());
-
-        localBarState = BS_PROCESSING;
-        break;
-    case BS_PROCESSING:
-        if ((oldtime.date() != mtime.date()) || (mtime.time().minute() != oldtime.time().minute()))//(mtime.time().second() < 1))
-        {
-            localBarState = BS_INIT;
-        }
-        rtBar.setClose(it->getClose());
-        if (rtBar.getHigh() < it->getHigh())
-        {
-            rtBar.setHigh(it->getHigh());
-        }
-        if (rtBar.getLow() > it->getLow())
-        {
-            rtBar.setLow(it->getLow());
-        }
-        break;
-    case BS_FINISH:
-        break;
-//    default:
-//        break;
-    }
-
-    oldtime = mtime;
-//    rtBar.setVolume(rtBar.getVolume() + it->getVolume());
-    //quint8 s = static_cast<quint8>(oldtime.time().second());
-    o = rtBar.getOpen();
-    c = rtBar.getClose();
-    l = rtBar.getLow();
-    h = rtBar.getHigh();
-
-    if (localBarState == BS_INIT)
-    {
-        qCDebug(processingBaseV2Log(), "o = %f, c = %f, h = %f, l = %f", o, c, h, l);
-        o = 0;
-        h = 0;
-        l = 0;
-        c = 0;
-    }
-
-
-
-    return true;
 }
 
 QSharedPointer<CBrokerDataProvider> CProcessingBase_v2::getIBrokerDataProvider() const
@@ -720,32 +250,28 @@ void CProcessingBase_v2::connectToTypedRouters()
 {
     if (!m_Client) return;
 
-    bool connected = false;
-
     if (auto* r = m_Client->orderRouter()) {
         connect(r, &IBComm::OrderRouter::nextValidIdReceived,
                 this, &CProcessingBase_v2::slotRouterNextValidId, Qt::QueuedConnection);
-        connected = true;
+        connect(r, &IBComm::OrderRouter::executionReceived,
+                this, &CProcessingBase_v2::slotRouterExecution, Qt::QueuedConnection);
+        connect(r, &IBComm::OrderRouter::commissionReceived,
+                this, &CProcessingBase_v2::slotRouterCommission, Qt::QueuedConnection);
     }
     if (auto* r = m_Client->accountRouter()) {
         connect(r, &IBComm::AccountRouter::accountSummaryUpdated,
                 this, &CProcessingBase_v2::slotRouterAccountSummary, Qt::QueuedConnection);
-        connected = true;
     }
     if (auto* r = m_Client->positionRouter()) {
         connect(r, &IBComm::PositionRouter::positionChanged,
                 this, &CProcessingBase_v2::slotRouterPositionChanged, Qt::QueuedConnection);
         connect(r, &IBComm::PositionRouter::positionSnapshotComplete,
                 this, &CProcessingBase_v2::slotRouterPositionSnapshotComplete, Qt::QueuedConnection);
-        connected = true;
     }
     if (auto* r = m_Client->historicalDataRouter()) {
         connect(r, &IBComm::HistoricalDataRouter::barsReceived,
                 this, &CProcessingBase_v2::slotRouterBarsReceived, Qt::QueuedConnection);
-        connected = true;
     }
-
-    m_useTypedRouters = connected;
 }
 
 //----------------------------------------------------------
@@ -761,8 +287,6 @@ void CProcessingBase_v2::disconnectFromTypedRouters()
         disconnect(r, nullptr, this, nullptr);
     if (auto* r = m_Client->historicalDataRouter())
         disconnect(r, nullptr, this, nullptr);
-
-    m_useTypedRouters = false;
 }
 
 //----------------------------------------------------------
@@ -818,9 +342,21 @@ void CProcessingBase_v2::slotRouterBarsReceived(int requestId, const QString& sy
     emit signalCbkRecvHistoricalData(histList, symbol);
 }
 
+//----------------------------------------------------------
+void CProcessingBase_v2::slotRouterExecution(const IBComm::ExecutionReport& report)
+{
+    CExecutionReport obj(report.orderId, report.symbol, report.avgPrice, report.shares, report.execId);
+    emit signalRecvExecutionReport(obj);
+}
+
+//----------------------------------------------------------
+void CProcessingBase_v2::slotRouterCommission(const IBComm::CommissionUpdate& update)
+{
+    CCommissionReport obj(update.execId, update.commission, update.currency, update.realizedPnL, 0.0, 0);
+    emit signalRecvCommissionReport(obj);
+}
+
 qint32 CProcessingBase_v2::getRequestMapSize() const
 {
     return m_aciveReqestsMap.size();
 }
-
-
