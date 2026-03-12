@@ -15,6 +15,7 @@
 #include "IBComm/OrderRouter.h"
 #include "IBComm/AccountRouter.h"
 #include "IBComm/TimeRouter.h"
+#include "IBComm/MarketDepthRouter.h"
 #include <QSharedPointer>
 #include <QApplication>
 #include <QObject>
@@ -54,6 +55,7 @@ private:
     IBComm::OrderRouter *m_pOrderRouter = nullptr;
     IBComm::AccountRouter *m_pAccountRouter = nullptr;
     IBComm::TimeRouter *m_pTimeRouter = nullptr;
+    IBComm::MarketDepthRouter *m_pMarketDepthRouter = nullptr;
 };
 
 #endif // CAPPLICATIONCONTROLLER_H

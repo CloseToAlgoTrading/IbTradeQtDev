@@ -74,6 +74,7 @@ SOURCES += \
     MainSystem/ctreeviewcustommodel.cpp \
     MainSystem/ibtradesystemview.cpp \
     MainSystem/portfolioconfigmodel.cpp \
+    MainSystem/PipelineDiagramWidget.cpp \
     Strategies/Generic/UnifiedModelData.cpp \
     Strategies/Generic/cbasemodel.cpp \
     Strategies/Generic/cbaserebalancemodel.cpp \
@@ -171,6 +172,7 @@ HEADERS += \
     IBComm/OrderRouter.h \
     IBComm/AccountRouter.h \
     IBComm/TimeRouter.h \
+    IBComm/MarketDepthRouter.h \
     Testing/MockMarketDataRouter.h \
     Testing/IntegrationTestHarness.h \
     Replay/MarketDataRecorder.h \
@@ -213,6 +215,8 @@ HEADERS += \
     DB/dbmanager.h \
     DB/dbquery.h \
     MainSystem/CPortfolioConfigModel.h \
+    MainSystem/PipelineItemDelegate.h \
+    MainSystem/PipelineDiagramWidget.h \
     MainSystem/PortfolioModelDefines.h \
     MainSystem/TreeItemDataTypesDef.h \
     MainSystem/capplicationcontroller.h \

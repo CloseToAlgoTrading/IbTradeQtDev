@@ -9,6 +9,7 @@
 #include "OrderRouter.h"
 #include "AccountRouter.h"
 #include "TimeRouter.h"
+#include "MarketDepthRouter.h"
 
 #include "Contract.h"
 #include "MyLogger.h"
@@ -319,6 +320,7 @@ public:
     void setOrderRouter(IBComm::OrderRouter* router) { m_orderRouter = router; }
     void setAccountRouter(IBComm::AccountRouter* router) { m_accountRouter = router; }
     void setTimeRouter(IBComm::TimeRouter* router) { m_timeRouter = router; }
+    void setMarketDepthRouter(IBComm::MarketDepthRouter* router) { m_marketDepthRouter = router; }
     void registerSymbolForReqId(qint32 reqId, const QString& symbol) override {
         m_reqIdToSymbol[reqId] = symbol;
     }
@@ -351,6 +353,7 @@ private:
     IBComm::OrderRouter* m_orderRouter = nullptr;
     IBComm::AccountRouter* m_accountRouter = nullptr;
     IBComm::TimeRouter* m_timeRouter = nullptr;
+    IBComm::MarketDepthRouter* m_marketDepthRouter = nullptr;
 
 private:
     IBDataTypes::CAccountSummary m_accountSummaryData;

@@ -21,6 +21,7 @@
 #include "integration/tst_typed_routers.h"
 #include "integration/tst_phase_b_migration.h"
 #include "integration/tst_phase_d_dispatcher_removal.h"
+#include "integration/tst_phase_e_remaining_routers.h"
 
 int main(int argc, char *argv[])
 {
@@ -70,6 +71,9 @@ int main(int argc, char *argv[])
 
     // Phase D - CDispatcher removal verification
     { TestPhaseD_DispatcherRemoval tc; status |= QTest::qExec(&tc, argc, argv); }
+
+    // Phase E - Remaining router signals
+    { TestPhaseE_RemainingRouters tc; status |= QTest::qExec(&tc, argc, argv); }
 
     return status;
 }

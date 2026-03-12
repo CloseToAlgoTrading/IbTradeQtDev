@@ -17,6 +17,8 @@
 #include <QInputDialog>
 #include <QJsonDocument>
 #include <QUuid>
+#include <QRegularExpression>
+#include "Pipeline/BlockRegistry.h"
 
 #define START_OF_WORKING_NODES (3u)
 
@@ -36,6 +38,7 @@ void CPortfolioConfigModel::setupModelData()
 {
     this->setupModelData(rootItem);
 }
+
 
 TreeItem * CPortfolioConfigModel::addRootNode(TreeItem * parent, pItemDataType name, pItemDataType value, int columnCount)
 {
@@ -233,7 +236,7 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
     TreeItem* item = getItem(workingIndex);
     ptrGenericModelType model = nullptr;
 
-    if (item->data(0).id == ids.first()) {
+    if (ids.contains(item->data(0).id)) {
         switch (itemType) {
         case PM_ITEM_ACCOUNT:
             {
@@ -483,49 +486,158 @@ void CPortfolioConfigModel::slotOnClickAddPipelineStrategy()
     addModel(selectionModel->currentIndex(), {PM_ITEM_PORTFOLIO}, PM_ITEM_PIPELINE_STRATEGY);
 }
 
+static CPipelineStrategyAdapter* findPipelineAdapterForSelection(CPortfolioConfigModel* self, QTreeView* tv)
+{
+    QItemSelectionModel* sel = tv->selectionModel();
+    if (!sel || !sel->hasSelection()) return nullptr;
+    auto model = self->getTopLevelModelByIdex2(sel->currentIndex()).model;
+    if (!model) return nullptr;
+    return dynamic_cast<CPipelineStrategyAdapter*>(model.data());
+}
+
+static QString showBlockSelectionDialog(QTreeView* parent, const QString& category)
+{
+    auto blocks = Pipeline::BlockRegistry::instance().blocksByCategory(category);
+    if (blocks.isEmpty()) return {};
+
+    QStringList displayNames;
+    QStringList blockIds;
+    for (const auto& desc : blocks) {
+        QString label = desc.name;
+        if (!desc.description.isEmpty())
+            label += " -- " + desc.description;
+        displayNames.append(label);
+        blockIds.append(desc.id);
+    }
+
+    bool ok = false;
+    QString chosen = QInputDialog::getItem(
+        parent, QString("Select %1 Block").arg(category),
+        QString("Available %1 blocks:").arg(category.toLower()),
+        displayNames, 0, false, &ok);
+    if (!ok) return {};
+
+    int idx = displayNames.indexOf(chosen);
+    return (idx >= 0) ? blockIds.at(idx) : QString();
+}
+
 void CPortfolioConfigModel::slotOnClickAddSelectionModel()
 {
     QItemSelectionModel *selectionModel = m_treeView->selectionModel();
+    if (!selectionModel->hasSelection()) return;
 
-    if (selectionModel->hasSelection()) {
-        addModel(selectionModel->currentIndex(), {PM_ITEM_STRATEGY}, PM_ITEM_SELECTION_MODEL);
+    QString blockId = showBlockSelectionDialog(m_treeView, "Selection");
+    if (blockId.isEmpty()) return;
+
+    auto* adapter = findPipelineAdapterForSelection(this, m_treeView);
+    if (adapter) {
+        auto descResult = Pipeline::BlockRegistry::instance().descriptor(blockId);
+        QJsonObject config = adapter->pipelineConfig();
+        QJsonObject sel;
+        sel["blockId"] = blockId;
+        sel["config"] = descResult ? descResult.value().defaultConfig : QJsonObject();
+        config["selection"] = sel;
+        adapter->setPipelineConfig(config);
+        emit pipelineConfigChanged(config);
     }
+
+    addModel(selectionModel->currentIndex(), {PM_ITEM_STRATEGY, PM_ITEM_PIPELINE_STRATEGY}, PM_ITEM_SELECTION_MODEL);
 }
 
 void CPortfolioConfigModel::slotOnClickAddAlphaModel()
 {
     QItemSelectionModel *selectionModel = m_treeView->selectionModel();
+    if (!selectionModel->hasSelection()) return;
 
-    if (selectionModel->hasSelection()) {
-        addModel(selectionModel->currentIndex(), {PM_ITEM_STRATEGY}, PM_ITEM_ALFA_MODEL);
+    QString blockId = showBlockSelectionDialog(m_treeView, "Alpha");
+    if (blockId.isEmpty()) return;
+
+    auto* adapter = findPipelineAdapterForSelection(this, m_treeView);
+    if (adapter) {
+        auto descResult = Pipeline::BlockRegistry::instance().descriptor(blockId);
+        QJsonObject config = adapter->pipelineConfig();
+        QJsonArray alphas = config.value("alphas").toArray();
+        QJsonObject newAlpha;
+        newAlpha["blockId"] = blockId;
+        newAlpha["config"] = descResult ? descResult.value().defaultConfig : QJsonObject();
+        alphas.append(newAlpha);
+        config["alphas"] = alphas;
+        adapter->setPipelineConfig(config);
+        emit pipelineConfigChanged(config);
     }
+
+    addModel(selectionModel->currentIndex(), {PM_ITEM_STRATEGY, PM_ITEM_PIPELINE_STRATEGY}, PM_ITEM_ALFA_MODEL);
 }
 
 void CPortfolioConfigModel::slotOnClickAddRebalanceModel()
 {
     QItemSelectionModel *selectionModel = m_treeView->selectionModel();
+    if (!selectionModel->hasSelection()) return;
 
-    if (selectionModel->hasSelection()) {
-        addModel(selectionModel->currentIndex(), {PM_ITEM_STRATEGY}, PM_ITEM_REBALANCE_MODEL);
+    QString blockId = showBlockSelectionDialog(m_treeView, "Rebalance");
+    if (blockId.isEmpty()) return;
+
+    auto* adapter = findPipelineAdapterForSelection(this, m_treeView);
+    if (adapter) {
+        auto descResult = Pipeline::BlockRegistry::instance().descriptor(blockId);
+        QJsonObject config = adapter->pipelineConfig();
+        QJsonObject reb;
+        reb["blockId"] = blockId;
+        reb["config"] = descResult ? descResult.value().defaultConfig : QJsonObject();
+        config["rebalance"] = reb;
+        adapter->setPipelineConfig(config);
+        emit pipelineConfigChanged(config);
     }
+
+    addModel(selectionModel->currentIndex(), {PM_ITEM_STRATEGY, PM_ITEM_PIPELINE_STRATEGY}, PM_ITEM_REBALANCE_MODEL);
 }
 
 void CPortfolioConfigModel::slotOnClickAddRiskModel()
 {
     QItemSelectionModel *selectionModel = m_treeView->selectionModel();
+    if (!selectionModel->hasSelection()) return;
 
-    if (selectionModel->hasSelection()) {
-        addModel(selectionModel->currentIndex(), {PM_ITEM_STRATEGY}, PM_ITEM_RISK_MODEL);
+    QString blockId = showBlockSelectionDialog(m_treeView, "Risk");
+    if (blockId.isEmpty()) return;
+
+    auto* adapter = findPipelineAdapterForSelection(this, m_treeView);
+    if (adapter) {
+        auto descResult = Pipeline::BlockRegistry::instance().descriptor(blockId);
+        QJsonObject config = adapter->pipelineConfig();
+        QJsonArray risks = config.value("risks").toArray();
+        QJsonObject newRisk;
+        newRisk["blockId"] = blockId;
+        newRisk["config"] = descResult ? descResult.value().defaultConfig : QJsonObject();
+        risks.append(newRisk);
+        config["risks"] = risks;
+        adapter->setPipelineConfig(config);
+        emit pipelineConfigChanged(config);
     }
+
+    addModel(selectionModel->currentIndex(), {PM_ITEM_STRATEGY, PM_ITEM_PIPELINE_STRATEGY}, PM_ITEM_RISK_MODEL);
 }
 
 void CPortfolioConfigModel::slotOnClickAddExecutionModel()
 {
     QItemSelectionModel *selectionModel = m_treeView->selectionModel();
+    if (!selectionModel->hasSelection()) return;
 
-    if (selectionModel->hasSelection()) {
-        addModel(selectionModel->currentIndex(), {PM_ITEM_STRATEGY}, PM_ITEM_EXECUTION_MODEL);
+    QString blockId = showBlockSelectionDialog(m_treeView, "Execution");
+    if (blockId.isEmpty()) return;
+
+    auto* adapter = findPipelineAdapterForSelection(this, m_treeView);
+    if (adapter) {
+        auto descResult = Pipeline::BlockRegistry::instance().descriptor(blockId);
+        QJsonObject config = adapter->pipelineConfig();
+        QJsonObject exec;
+        exec["blockId"] = blockId;
+        exec["config"] = descResult ? descResult.value().defaultConfig : QJsonObject();
+        config["execution"] = exec;
+        adapter->setPipelineConfig(config);
+        emit pipelineConfigChanged(config);
     }
+
+    addModel(selectionModel->currentIndex(), {PM_ITEM_STRATEGY, PM_ITEM_PIPELINE_STRATEGY}, PM_ITEM_EXECUTION_MODEL);
 }
 
 
@@ -859,6 +971,11 @@ const ModelContext CPortfolioConfigModel::getTopLevelModelByIdex2(QModelIndex in
     return ModelContext(retModel, parentModel);
 }
 
+quint16 CPortfolioConfigModel::nodeTypeId(const QModelIndex& index) const
+{
+    TreeItem* item = getItem(index);
+    return item ? item->data(0).id : 0;
+}
 
 const ptrGenericModelType  CPortfolioConfigModel::getTopLevelModelByIdex(QModelIndex index)
 {
@@ -1118,3 +1235,4 @@ void CPortfolioConfigModel::synchronizeModelParameters(const QModelIndex& parent
         treeViewRowCount--;
     }
 }
+

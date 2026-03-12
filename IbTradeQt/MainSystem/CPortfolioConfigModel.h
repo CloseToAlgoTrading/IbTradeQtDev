@@ -4,6 +4,7 @@
 #include "ctreeviewcustommodel.h"
 #include <QList>
 #include <QTimer>
+#include <QJsonObject>
 #include "cgenericmodelApi.h"
 
 class CBasicRoot;
@@ -37,10 +38,9 @@ public:
 
     const ptrGenericModelType getTopLevelModelByIdex(QModelIndex index);
     const ModelContext getTopLevelModelByIdex2(QModelIndex index);
+    quint16 nodeTypeId(const QModelIndex& index) const;
 
     void setBrokerDataProvider(QSharedPointer<CBrokerDataProvider> newBrokerInterface);
-
-
 
 
 private:
@@ -83,6 +83,7 @@ public slots:
 signals:
     void signalUpdateData(const QModelIndex& index);
     void signalUpdateDataAll();
+    void pipelineConfigChanged(const QJsonObject& config);
 };
 
 inline void CPortfolioConfigModel::setBrokerDataProvider(QSharedPointer<CBrokerDataProvider> newBrokerInterface)

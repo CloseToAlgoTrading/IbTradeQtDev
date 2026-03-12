@@ -41,6 +41,52 @@ public:
     double mid() const { return (bid + ask) / 2.0; }
 };
 
+struct GenericTick {
+    Q_GADGET
+    Q_PROPERTY(QString symbol MEMBER symbol)
+    Q_PROPERTY(int tickType MEMBER tickType)
+    Q_PROPERTY(double value MEMBER value)
+public:
+    QString symbol;
+    int tickType = 0;
+    double value = 0.0;
+};
+
+struct StringTick {
+    Q_GADGET
+    Q_PROPERTY(QString symbol MEMBER symbol)
+    Q_PROPERTY(int tickType MEMBER tickType)
+    Q_PROPERTY(QString value MEMBER value)
+public:
+    QString symbol;
+    int tickType = 0;
+    QString value;
+};
+
+struct OptionComputation {
+    Q_GADGET
+    Q_PROPERTY(QString symbol MEMBER symbol)
+    Q_PROPERTY(int tickType MEMBER tickType)
+    Q_PROPERTY(double impliedVol MEMBER impliedVol)
+    Q_PROPERTY(double delta MEMBER delta)
+    Q_PROPERTY(double optPrice MEMBER optPrice)
+    Q_PROPERTY(double gamma MEMBER gamma)
+    Q_PROPERTY(double vega MEMBER vega)
+    Q_PROPERTY(double theta MEMBER theta)
+    Q_PROPERTY(double undPrice MEMBER undPrice)
+public:
+    QString symbol;
+    int tickType = 0;
+    double impliedVol = 0.0;
+    double delta = 0.0;
+    double optPrice = 0.0;
+    double pvDividend = 0.0;
+    double gamma = 0.0;
+    double vega = 0.0;
+    double theta = 0.0;
+    double undPrice = 0.0;
+};
+
 class MarketDataRouter : public QObject {
     Q_OBJECT
 
@@ -92,6 +138,45 @@ public:
         emit tickByTickTrade(trade);
     }
 
+    void onTickGeneric(int reqId, int tickType, double value) {
+        GenericTick gt;
+        QString sym = symbolForReqId(reqId);
+        gt.symbol = sym.isEmpty() ? QString::number(reqId) : sym;
+        gt.tickType = tickType;
+        gt.value = value;
+        emit tickGenericReceived(gt);
+    }
+
+    void onTickString(int reqId, int tickType, const QString& value) {
+        StringTick st;
+        QString sym = symbolForReqId(reqId);
+        st.symbol = sym.isEmpty() ? QString::number(reqId) : sym;
+        st.tickType = tickType;
+        st.value = value;
+        emit tickStringReceived(st);
+    }
+
+    void onTickOptionComputation(int reqId, int tickType, double impliedVol, double delta,
+                                  double optPrice, double pvDividend, double gamma,
+                                  double vega, double theta, double undPrice) {
+        OptionComputation oc;
+        oc.symbol = symbolForReqId(reqId);
+        oc.tickType = tickType;
+        oc.impliedVol = impliedVol;
+        oc.delta = delta;
+        oc.optPrice = optPrice;
+        oc.pvDividend = pvDividend;
+        oc.gamma = gamma;
+        oc.vega = vega;
+        oc.theta = theta;
+        oc.undPrice = undPrice;
+        emit optionComputationReceived(oc);
+    }
+
+    void registerReqIdSymbol(int reqId, const QString& symbol) {
+        m_reqIdToSymbol[reqId] = symbol;
+    }
+
     void onSubscriptionRestarted() { emit subscriptionRestarted(); }
     void onSubscriptionError(int reqId, int errorCode, const QString& msg) {
         emit subscriptionError(reqId, errorCode, msg);
@@ -105,14 +190,22 @@ signals:
     void connectionError(const QString& message);
     void subscriptionRestarted();
     void subscriptionError(int reqId, int errorCode, const QString& msg);
+    void tickGenericReceived(const IBComm::GenericTick& tick);
+    void tickStringReceived(const IBComm::StringTick& tick);
+    void optionComputationReceived(const IBComm::OptionComputation& data);
 
 private:
+    QString symbolForReqId(int reqId) const { return m_reqIdToSymbol.value(reqId); }
     QMap<QString, MarketTick> m_lastPriceCache;
+    QMap<int, QString> m_reqIdToSymbol;
 };
 
 } // namespace IBComm
 
 Q_DECLARE_METATYPE(IBComm::MarketTick)
 Q_DECLARE_METATYPE(IBComm::TickByTickTrade)
+Q_DECLARE_METATYPE(IBComm::GenericTick)
+Q_DECLARE_METATYPE(IBComm::StringTick)
+Q_DECLARE_METATYPE(IBComm::OptionComputation)
 
 #endif // MARKETDATAROUTER_H

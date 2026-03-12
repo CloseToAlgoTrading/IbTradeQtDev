@@ -3,6 +3,11 @@
 #include "IBComClientImpl.h"
 #include "cmainmodel.h"
 #include "CPortfolioConfigModel.h"
+#include "PipelineItemDelegate.h"
+#include "PipelineDiagramWidget.h"
+#include "cpipelinestrategyadapter.h"
+#include "PortfolioModelDefines.h"
+#include <QDockWidget>
 
 
 CPresenter::CPresenter(QObject *parent)
@@ -93,6 +98,20 @@ void CPresenter::MapSignals()
     QObject::connect(pTreeView->actions().at(8), SIGNAL(triggered()), pPConfigModel, SLOT(slotOnClickAddExecutionModel()), Qt::QueuedConnection);
 
     QObject::connect(pTreeView->actions().at(10), SIGNAL(triggered()), pPConfigModel, SLOT(onClickRemoveNodeButton()), Qt::QueuedConnection);
+
+    pTreeView->setItemDelegateForColumn(1, new PipelineItemDelegate(pTreeView));
+
+    m_pDiagramWidget = new PipelineDiagramWidget();
+    m_pDiagramDock = new QDockWidget("Diagram View", this->pIbtsView);
+    m_pDiagramDock->setWidget(m_pDiagramWidget);
+    m_pDiagramDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable);
+    this->pIbtsView->addDockWidget(Qt::BottomDockWidgetArea, m_pDiagramDock);
+
+    QObject::connect(pTreeView->selectionModel(), &QItemSelectionModel::currentChanged,
+                     this, &CPresenter::onTreeSelectionChanged);
+
+    QObject::connect(pPConfigModel, &CPortfolioConfigModel::pipelineConfigChanged,
+                     m_pDiagramWidget, &PipelineDiagramWidget::updateFromConfig);
 
     QObject::connect(pPConfigModel, SIGNAL(signalUpdateData(QModelIndex)), this->pIbtsView, SLOT(slotUpdateTreeView(QModelIndex)));
     QObject::connect(pPConfigModel, &CPortfolioConfigModel::signalUpdateDataAll, this->pIbtsView, &CIBTradeSystemView::slotUpdateTreeViewAll, Qt::QueuedConnection);
@@ -222,6 +241,66 @@ CIBTradeSystemView *CPresenter::getPIbtsView() const
     return pIbtsView;
 }
 
+void CPresenter::onTreeSelectionChanged(const QModelIndex& current, const QModelIndex& /*previous*/)
+{
+    if (!m_pDiagramWidget || !current.isValid()) return;
 
+    auto* configModel = getPGuiModel()->pPortfolioConfigModel();
+    quint16 nodeType = configModel->nodeTypeId(current);
 
+    if (nodeType == PM_ITEM_ACCOUNT) {
+        auto accountModel = configModel->getTopLevelModelByIdex2(current).model;
+        if (!accountModel) { m_pDiagramWidget->clear(); return; }
+
+        QStringList portfolioNames;
+        for (const auto& p : accountModel->getModels())
+            portfolioNames.append(p->getName());
+
+        m_pDiagramWidget->setAccountView(accountModel->getName(), portfolioNames);
+        return;
+    }
+
+    if (nodeType == PM_ITEM_PORTFOLIO) {
+        auto portfolioModel = configModel->getTopLevelModelByIdex2(current).model;
+        if (!portfolioModel) { m_pDiagramWidget->clear(); return; }
+
+        QVector<StrategyDiagramInfo> strategies;
+        for (const auto& s : portfolioModel->getModels()) {
+            StrategyDiagramInfo info;
+            info.name = s->getName();
+            auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(s.data());
+            if (adapter) {
+                info.pipelineConfig = adapter->pipelineConfig();
+                int count = 0;
+                const auto& cfg = info.pipelineConfig;
+                if (cfg.contains("selection")) ++count;
+                count += cfg.value("alphas").toArray().size();
+                if (cfg.contains("rebalance")) ++count;
+                count += cfg.value("risks").toArray().size();
+                if (cfg.contains("execution")) ++count;
+                info.blockCount = count;
+            }
+            strategies.append(info);
+        }
+
+        m_pDiagramWidget->setPortfolioView(portfolioModel->getName(), strategies);
+        return;
+    }
+
+    if (nodeType == PM_ITEM_STRATEGY || nodeType == PM_ITEM_PIPELINE_STRATEGY ||
+        nodeType == PM_ITEM_SELECTION_MODEL || nodeType == PM_ITEM_ALFA_MODEL ||
+        nodeType == PM_ITEM_REBALANCE_MODEL || nodeType == PM_ITEM_RISK_MODEL ||
+        nodeType == PM_ITEM_EXECUTION_MODEL) {
+        auto model = configModel->getTopLevelModelByIdex2(current).model;
+        if (!model) { m_pDiagramWidget->clear(); return; }
+
+        auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(model.data());
+        if (adapter) {
+            m_pDiagramWidget->setPipelineConfig(adapter->pipelineConfig());
+            return;
+        }
+    }
+
+    m_pDiagramWidget->clear();
+}
 

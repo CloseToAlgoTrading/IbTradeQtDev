@@ -29,6 +29,21 @@ public:
     int count = 0;
 };
 
+struct HistoricalTickLast {
+    Q_GADGET
+    Q_PROPERTY(double price MEMBER price)
+    Q_PROPERTY(double size MEMBER size)
+    Q_PROPERTY(qint64 time MEMBER time)
+    Q_PROPERTY(QString exchange MEMBER exchange)
+    Q_PROPERTY(QString specialConditions MEMBER specialConditions)
+public:
+    double price = 0.0;
+    double size = 0.0;
+    qint64 time = 0;
+    QString exchange;
+    QString specialConditions;
+};
+
 class HistoricalDataRouter : public QObject {
     Q_OBJECT
 public:
@@ -67,10 +82,17 @@ public slots:
         emit barsReceived(reqId, symbol, bars);
     }
 
+    void onHistoricalTicksLast(int reqId, const QVector<IBComm::HistoricalTickLast>& ticks, bool done) {
+        QString symbol = m_reqIdToSymbol.value(reqId);
+        emit historicalTicksLastReceived(reqId, symbol, ticks, done);
+    }
+
 signals:
     void historicalBar(int requestId, const IBComm::HistoricalBar& bar);
     void barsReceived(int requestId, const QString& symbol,
                       const QVector<IBComm::HistoricalBar>& bars);
+    void historicalTicksLastReceived(int requestId, const QString& symbol,
+                                     const QVector<IBComm::HistoricalTickLast>& ticks, bool done);
 
 private:
     QMap<int, QVector<HistoricalBar>> m_pendingBars;
@@ -80,5 +102,6 @@ private:
 } // namespace IBComm
 
 Q_DECLARE_METATYPE(IBComm::HistoricalBar)
+Q_DECLARE_METATYPE(IBComm::HistoricalTickLast)
 
 #endif // IBCOMM_HISTORICALDATAROUTER_H

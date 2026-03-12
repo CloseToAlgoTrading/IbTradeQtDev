@@ -123,6 +123,7 @@ HEADERS += \
     integration/tst_typed_routers.h \
     integration/tst_phase_b_migration.h \
     integration/tst_phase_d_dispatcher_removal.h \
+    integration/tst_phase_e_remaining_routers.h \
     ../Adapters/IBOrderExecutionAdapter.h \
     ../Adapters/IBPositionRepositoryAdapter.h \
     ../Adapters/SqlitePositionRepository.h \
@@ -135,6 +136,7 @@ HEADERS += \
     ../IBComm/OrderRouter.h \
     ../IBComm/AccountRouter.h \
     ../IBComm/TimeRouter.h \
+    ../IBComm/MarketDepthRouter.h \
     ../CObjects/caccountsummary.h \
     ../CObjects/cposition.h \
     ../CObjects/CHistoricalData.h \

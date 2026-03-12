@@ -435,16 +435,16 @@ void IBComClientImpl::tickSize(TickerId tickerId, TickType field, Decimal size)
 //---------------------------------------------------------------
 void IBComClientImpl::tickGeneric(TickerId tickerId, TickType tickType, double value)
 {
-    //qCDebug(IBComClientImplLog(), "[%s] tickerId = %d, tickType = %d, value = %f", __FUNCTION__, tickerId, tickType, value);
-    Q_UNUSED(tickerId); Q_UNUSED(tickType); Q_UNUSED(value);
-};
+    if (m_marketDataRouter)
+        m_marketDataRouter->onTickGeneric(static_cast<int>(tickerId), static_cast<int>(tickType), value);
+}
 
 //---------------------------------------------------------------
 void IBComClientImpl::tickString(TickerId tickerId, TickType tickType, const std::string& value)
 {
-    //qCDebug(IBComClientImplLog(), "tickString : tickerId = %d, tickType = %d, value = %s", tickerId, tickType, value.c_str());
-
-    Q_UNUSED(tickerId); Q_UNUSED(tickType); Q_UNUSED(value);
+    if (m_marketDataRouter)
+        m_marketDataRouter->onTickString(static_cast<int>(tickerId), static_cast<int>(tickType),
+                                          QString::fromStdString(value));
 }
 
 
@@ -499,12 +499,9 @@ void IBComClientImpl::realtimeBar(TickerId reqId, long time, double open, double
 void IBComClientImpl::updateMktDepth(TickerId id, int position, int operation, int side,
     double price, Decimal size)
 {
-    CMktDepth _mkdDepth(id, position, operation, side, price, size, QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
-
-    qCDebug(IBComClientImplLog(), "tickerId = %ld , pos = %d, operation = %d, side = %d, double price = %f, int size = %d ",
-		_mkdDepth.getId(), _mkdDepth.getPosition(), _mkdDepth.getOperation(), _mkdDepth.getSide(), _mkdDepth.getPrice(), _mkdDepth.getSize());
-
-	return;
+    if (m_marketDepthRouter)
+        m_marketDepthRouter->onDepthUpdate(static_cast<int>(id), position, operation, side,
+                                            price, DecimalFunctions::decimalToDouble(size));
 }
 
 //---------------------------------------------------------------
@@ -513,15 +510,12 @@ void IBComClientImpl::updateMktDepth(TickerId id, int position, int operation, i
 //	int side, double price, int size)
 void IBComClientImpl::updateMktDepthL2(TickerId id, int position, const std::string& marketMaker, int operation,
     int side, double price, Decimal size, bool isSmartDepth)
-
 {
-    CMktDepthL2 _mkdDepthL2(id, position, QString::fromLocal8Bit(marketMaker.data(), marketMaker.size()), operation, side, price, size, QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
-//TODO:
-//	qCDebug(IBComClientImplLog(), "tickerId = %d , pos = %d, MM = %s, operation = %d, side = , double price, int size ",
-//		_mkdDepthL2.getId(), _mkdDepthL2.getPosition(), _mkdDepthL2.getMarketMaker(), _mkdDepthL2.getOperation(), _mkdDepthL2.getSide(), _mkdDepthL2.getPrice(), _mkdDepthL2.getSize());
-
-	return;
-
+    if (m_marketDepthRouter)
+        m_marketDepthRouter->onDepthL2Update(static_cast<int>(id), position,
+                                              QString::fromStdString(marketMaker),
+                                              operation, side, price,
+                                              DecimalFunctions::decimalToDouble(size), isSmartDepth);
 }
 
 
@@ -530,13 +524,12 @@ void IBComClientImpl::updateMktDepthL2(TickerId id, int position, const std::str
 void IBComClientImpl::tickOptionComputation(TickerId tickerId, TickType tickType, int tickAttrib, double impliedVol, double delta,
                                             double optPrice, double pvDividend, double gamma, double vega, double theta, double undPrice)
 {
-    COptionTickComputation optionTick(tickerId, tickType, impliedVol, delta, optPrice, pvDividend, gamma, vega, theta, undPrice);
-
-    qDebug("tickOptionComputation : tickerId = %ld , tickType = %d, impliedVol = %f, delta = %f, optPrice = %f, pvDividend = %f, gamma = %f, vega = %f, theta = %f, undPrice = %f",
-		tickerId, tickType, impliedVol, delta, optPrice, pvDividend, gamma, vega, theta, undPrice);
-
-    return;
-};
+    Q_UNUSED(tickAttrib)
+    if (m_marketDataRouter)
+        m_marketDataRouter->onTickOptionComputation(static_cast<int>(tickerId), static_cast<int>(tickType),
+                                                     impliedVol, delta, optPrice, pvDividend,
+                                                     gamma, vega, theta, undPrice);
+}
 
 
 //---------------------------------------------------------------
@@ -772,27 +765,19 @@ void IBComClientImpl::accountSummaryEnd(int reqId)
 //---------------------------------------------------------------
 void IBComClientImpl::historicalTicksLast(int reqId, const std::vector<HistoricalTickLast> &ticks, bool done)
 {
-    QDateTime timestamp;
-    Q_UNUSED(done);
-
-    for (HistoricalTickLast tick : ticks) {
-        timestamp.setMSecsSinceEpoch(static_cast<quint32>(tick.time));
-
-        qCDebug(IBComClientImplLog(), "htlast id[%d] t[%s] p[%f] s[%lld] e[%s] sc[%s] unrep[%d] pl[%d] \n",
-                //reqId, timestamp.toString(Qt::SystemLocaleShortDate).toLocal8Bit().data(), tick.price, tick.size, tick.exchange.c_str(),
-                reqId, timestamp.toString(Qt::ISODateWithMs).toLocal8Bit().data(), tick.price, tick.size, tick.exchange.c_str(),
-                tick.specialConditions.c_str(), tick.tickAttribLast.unreported, tick.tickAttribLast.pastLimit);
-
-        /*TODO: What we should do with it?!*/
-        CTickByTickAllLast _tickbytick(reqId,
-                                       999u, /* some special ID for historical tick*/
-                                       tick.time,
-                                       tick.price,
-                                       static_cast<qint32>(tick.size),
-                                       tick.tickAttribLast,
-                                       QString(tick.exchange.c_str()),
-                                       QString(tick.specialConditions.c_str())
-                                       );
+    if (m_historicalDataRouter) {
+        QVector<IBComm::HistoricalTickLast> converted;
+        converted.reserve(static_cast<int>(ticks.size()));
+        for (const auto& tick : ticks) {
+            IBComm::HistoricalTickLast ht;
+            ht.price = tick.price;
+            ht.size = static_cast<double>(tick.size);
+            ht.time = tick.time;
+            ht.exchange = QString::fromStdString(tick.exchange);
+            ht.specialConditions = QString::fromStdString(tick.specialConditions);
+            converted.append(ht);
+        }
+        m_historicalDataRouter->onHistoricalTicksLast(reqId, converted, done);
     }
 }
 //---------------------------------------------------------------

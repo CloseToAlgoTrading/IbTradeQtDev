@@ -17,6 +17,60 @@
 
 #include "cpipelinestrategyadapter.h"
 #include "IBComClientImpl.h"
+#include "Pipeline/BlockRegistry.h"
+#include "Blocks/MomentumAlphaBlock.h"
+#include "Blocks/MeanReversionAlphaBlock.h"
+#include "Blocks/MovingAverageCrossoverAlphaBlock.h"
+#include "Blocks/MaxPositionRiskBlock.h"
+#include "Blocks/MarketOrderExecutionBlock.h"
+#include "Blocks/LimitOrderExecutionBlock.h"
+#include "Blocks/StaticListSelectionBlock.h"
+
+static void registerBuiltinBlocks()
+{
+    auto& reg = Pipeline::BlockRegistry::instance();
+    if (reg.blockCount() > 0) return;
+
+    reg.registerBlock({"momentum-alpha", "Momentum Alpha", "Alpha",
+                       "Momentum-based signal: long when return > threshold",
+                       Pipeline::Scope::Strategy, {{"period", 20}, {"threshold", 0.02}},
+                       []() -> QObject* { return new Blocks::MomentumAlphaBlock(); }});
+
+    reg.registerBlock({"mean-reversion-alpha", "Mean Reversion Alpha", "Alpha",
+                       "Mean reversion: long/short when price deviates from moving average",
+                       Pipeline::Scope::Strategy, {{"period", 20}, {"stdDevThreshold", 2.0}},
+                       []() -> QObject* { return new Blocks::MeanReversionAlphaBlock(); }});
+
+    reg.registerBlock({"ma-crossover-alpha", "MA Crossover Alpha", "Alpha",
+                       "Moving average crossover: long when fast MA > slow MA",
+                       Pipeline::Scope::Strategy, {{"fastPeriod", 10}, {"slowPeriod", 30}},
+                       []() -> QObject* { return new Blocks::MovingAverageCrossoverAlphaBlock(); }});
+
+    reg.registerBlock({"max-position-risk", "Max Position Risk", "Risk",
+                       "Limits position size and total exposure",
+                       Pipeline::Scope::Strategy, {{"maxPositionSize", 500.0}, {"maxTotalExposure", 3000.0}},
+                       []() -> QObject* { return new Blocks::MaxPositionRiskBlock(); }});
+
+    reg.registerBlock({"market-order-execution", "Market Order Execution", "Execution",
+                       "Executes market orders",
+                       Pipeline::Scope::Strategy, {{"minQuantity", 1.0}},
+                       []() -> QObject* { return new Blocks::MarketOrderExecutionBlock(); }});
+
+    reg.registerBlock({"limit-order-execution", "Limit Order Execution", "Execution",
+                       "Executes limit orders with configurable offset",
+                       Pipeline::Scope::Strategy, {{"minQuantity", 1.0}, {"limitOffset", 0.01}},
+                       []() -> QObject* { return new Blocks::LimitOrderExecutionBlock(); }});
+
+    reg.registerBlock({"simple-rebalance", "Simple Rebalance", "Rebalance",
+                       "Fixed-quantity rebalancer",
+                       Pipeline::Scope::Strategy, {{"defaultQuantity", 100.0}},
+                       []() -> QObject* { return new Blocks::SimpleRebalanceBlock(); }});
+
+    reg.registerBlock({"static-list-selection", "Static List Selection", "Selection",
+                       "Selects from a fixed list of symbols",
+                       Pipeline::Scope::Strategy, {{"symbols", "AAPL,MSFT"}},
+                       []() -> QObject* { return new Blocks::StaticListSelectionBlock(); }});
+}
 
 CApplicationController::CApplicationController(QObject *parent):
     QObject(parent)
@@ -24,12 +78,15 @@ CApplicationController::CApplicationController(QObject *parent):
    , pMainView(new CIBTradeSystemView)
    , m_pDataRoot(new CBasicRoot())
 {
+    registerBuiltinBlocks();
+
     // Create typed routers BEFORE loadTreeFromFile so they propagate via setBrokerDataProvider
     m_pPositionRouter = new IBComm::PositionRouter(this);
     m_pHistoricalDataRouter = new IBComm::HistoricalDataRouter(this);
     m_pOrderRouter = new IBComm::OrderRouter(this);
     m_pAccountRouter = new IBComm::AccountRouter(this);
     m_pTimeRouter = new IBComm::TimeRouter(this);
+    m_pMarketDepthRouter = new IBComm::MarketDepthRouter(this);
 
     IBrokerAPI* brokerApi = pMainPresenter->getDataProvider()->getClien().data();
     auto* implClient = dynamic_cast<IBComClientImpl*>(brokerApi);
@@ -40,6 +97,7 @@ CApplicationController::CApplicationController(QObject *parent):
         implClient->setOrderRouter(m_pOrderRouter);
         implClient->setAccountRouter(m_pAccountRouter);
         implClient->setTimeRouter(m_pTimeRouter);
+        implClient->setMarketDepthRouter(m_pMarketDepthRouter);
     }
 
     auto dp = pMainPresenter->getDataProvider();
@@ -48,6 +106,7 @@ CApplicationController::CApplicationController(QObject *parent):
     dp->setPositionRouter(m_pPositionRouter);
     dp->setHistoricalDataRouter(m_pHistoricalDataRouter);
     dp->setTimeRouter(m_pTimeRouter);
+    dp->setMarketDepthRouter(m_pMarketDepthRouter);
 
     loadTreeFromFile("model_tree_config.json", dp);
 

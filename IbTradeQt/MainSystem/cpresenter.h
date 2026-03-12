@@ -15,6 +15,8 @@
 #include "MarketDataRouter.h"
 
 class CMainModel;
+class PipelineDiagramWidget;
+class QDockWidget;
 
 class CPresenter : public QObject
 {
@@ -69,7 +71,12 @@ private:
 	AlphaModGetTime* workerAlfaTime;
 
 
+private slots:
+    void onTreeSelectionChanged(const QModelIndex& current, const QModelIndex& previous);
+
 private:
+    PipelineDiagramWidget* m_pDiagramWidget = nullptr;
+    QDockWidget* m_pDiagramDock = nullptr;
 	QScopedPointer<AboutDlgPresener> pAboutDlgPresenter;
 };
 

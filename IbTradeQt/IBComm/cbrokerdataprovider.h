@@ -8,7 +8,7 @@
 
 Q_DECLARE_LOGGING_CATEGORY(dataProviderLog);
 
-namespace IBComm { class OrderRouter; class AccountRouter; class PositionRouter; class HistoricalDataRouter; class TimeRouter; }
+namespace IBComm { class OrderRouter; class AccountRouter; class PositionRouter; class HistoricalDataRouter; class TimeRouter; class MarketDepthRouter; }
 
 class CBrokerDataProvider
 {
@@ -34,6 +34,9 @@ public:
 
     IBComm::TimeRouter* timeRouter() const { return m_timeRouter; }
     void setTimeRouter(IBComm::TimeRouter* r) { m_timeRouter = r; }
+
+    IBComm::MarketDepthRouter* marketDepthRouter() const { return m_marketDepthRouter; }
+    void setMarketDepthRouter(IBComm::MarketDepthRouter* r) { m_marketDepthRouter = r; }
 
     GlobalReqManager& reqManager() { return m_reqManager; }
 
@@ -79,6 +82,7 @@ private:
     IBComm::PositionRouter* m_positionRouter = nullptr;
     IBComm::HistoricalDataRouter* m_historicalDataRouter = nullptr;
     IBComm::TimeRouter* m_timeRouter = nullptr;
+    IBComm::MarketDepthRouter* m_marketDepthRouter = nullptr;
 };
 
 #endif // CBROKERDATAPROVIDER_H

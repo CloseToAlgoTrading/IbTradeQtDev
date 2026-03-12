@@ -22,12 +22,12 @@
 | `RT_REQ_CUR_TIME`             | Current time            | `TimeRouter::currentTimeReceived`                              | **Migrated (Phase D)** -- New `TimeRouter`, `AlphaModGetTime` connects directly                   |
 | `RT_REQ_RESTART_SUBSCRIPTION` | Subscription restart    | `MarketDataRouter::subscriptionRestarted`                      | **Migrated (Phase D)** -- Infrastructure signal on `MarketDataRouter`                             |
 | `RT_REQ_ERROR_SUBSRIPTION`    | Error notification      | `MarketDataRouter::subscriptionError`                          | **Migrated (Phase D)** -- Infrastructure signal on `MarketDataRouter`                             |
-| `RT_TICK_GENERIC`             | Generic tick data       | —                                                              | **Retired** -- No active consumers; add typed router signal if needed                             |
-| `RT_TICK_STRING`              | Tick string data        | —                                                              | **Retired** -- No active consumers                                                                |
-| `RT_HISTORICAL_TICK_DATA`     | Historical tick data    | —                                                              | **Retired** -- No active consumers                                                                |
-| `RT_MKT_DEPTH`                | Market depth L1         | —                                                              | **Retired** -- No active consumers                                                                |
-| `RT_MKT_DEPTH_L2`             | Market depth L2         | —                                                              | **Retired** -- No active consumers                                                                |
-| `RT_REQ_OPTION_PRICE`         | Option price calc       | —                                                              | **Retired** -- No active consumers                                                                |
+| `RT_TICK_GENERIC`             | Generic tick data       | `MarketDataRouter::tickGenericReceived`                        | **Migrated (Phase E)** -- `GenericTick` Q_GADGET struct via `onTickGeneric()`                     |
+| `RT_TICK_STRING`              | Tick string data        | `MarketDataRouter::tickStringReceived`                         | **Migrated (Phase E)** -- `StringTick` Q_GADGET struct via `onTickString()`                       |
+| `RT_HISTORICAL_TICK_DATA`     | Historical tick data    | `HistoricalDataRouter::historicalTicksLastReceived`             | **Migrated (Phase E)** -- `HistoricalTickLast` Q_GADGET struct via `onHistoricalTicksLast()`      |
+| `RT_MKT_DEPTH`                | Market depth L1         | `MarketDepthRouter::depthUpdated`                              | **Migrated (Phase E)** -- `DepthUpdate` Q_GADGET struct via new `MarketDepthRouter`               |
+| `RT_MKT_DEPTH_L2`             | Market depth L2         | `MarketDepthRouter::depthL2Updated`                            | **Migrated (Phase E)** -- `DepthL2Update` Q_GADGET struct via new `MarketDepthRouter`             |
+| `RT_REQ_OPTION_PRICE`         | Option price calc       | `MarketDataRouter::optionComputationReceived`                  | **Migrated (Phase E)** -- `OptionComputation` Q_GADGET struct via `onTickOptionComputation()`     |
 
 
 ## Former CDispatcher Subscribers
@@ -86,10 +86,21 @@ These join the Phase B adapter slots:
 - All request/cancel methods operate without `CSubscriberPtr` parameters
 - Router pointers (`MarketDataRouter`*, `OrderRouter*`, etc.) stored and propagated to models
 
+### Phase E: Full Typed Router Coverage
+
+All 6 previously-unused message types now have Q_GADGET structs and typed router signals:
+
+- `MarketDataRouter` extended with `GenericTick`, `StringTick`, `OptionComputation` structs and corresponding signals
+- New `MarketDepthRouter` created with `DepthUpdate`, `DepthL2Update` structs for L1/L2 order book data
+- `HistoricalDataRouter` extended with `HistoricalTickLast` struct for historical tick data
+- `IBComClientImpl` callbacks wired to emit through typed routers (replacing no-op stubs)
+- `MarketDepthRouter` stored on `IBComClientImpl`, `CBrokerDataProvider`, created in `CApplicationController`
+
 ### Test Coverage
 
-302 tests across 20 suites, including:
+309 tests across 21 suites, including:
 
 - Phase B integration tests (8 tests): Router-to-legacy-type conversion
 - Phase D integration tests (13 tests): Exclusive typed router flow, TimeRouter, infrastructure signals, legacy type conversion
+- Phase E integration tests (7 tests): All 6 new typed router signals, field mapping, fallback symbol resolution
 
