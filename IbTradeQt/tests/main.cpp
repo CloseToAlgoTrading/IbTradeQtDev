@@ -14,6 +14,7 @@
 #include "phase3/tst_pipeline_runner.h"
 #include "phase4/tst_supervision.h"
 #include "phase5/tst_observability.h"
+#include "phase6/tst_benchmark.h"
 
 int main(int argc, char *argv[])
 {
@@ -42,6 +43,9 @@ int main(int argc, char *argv[])
 
     // Phase 5
     { TestObservability tc;    status |= QTest::qExec(&tc, argc, argv); }
+
+    // Phase 6 - Benchmarks
+    { TestBenchmark tc;        status |= QTest::qExec(&tc, argc, argv); }
 
     return status;
 }

@@ -85,4 +85,5 @@ HEADERS += \
     phase3/tst_block_registry.h \
     phase3/tst_pipeline_runner.h \
     phase4/tst_supervision.h \
-    phase5/tst_observability.h
+    phase5/tst_observability.h \
+    phase6/tst_benchmark.h
