@@ -194,6 +194,8 @@ HEADERS += \
     Supervision/BoundedQueue.h \
     Supervision/StrategyRuntime.h \
     Supervision/Supervisor.h \
+    Logging/StructuredLogger.h \
+    Metrics/MetricsCollector.h \
     Brokers/IB/Shared/Utils.h \
     Brokers/IB/addon/AccountSummaryTags.h \
     Brokers/IB/addon/AvailableAlgoParams.h \
@@ -370,6 +372,8 @@ INCLUDEPATH += \
     $$PWD/Blocks \
     $$PWD/Plugin \
     $$PWD/Supervision \
+    $$PWD/Logging \
+    $$PWD/Metrics \
     $$PWD/Brokers/IB/Shared \
     $$PWD/Brokers/IB/addon \
     $$PWD/ReqManager \

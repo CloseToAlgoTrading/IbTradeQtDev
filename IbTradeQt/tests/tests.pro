@@ -33,6 +33,8 @@ INCLUDEPATH += \
     $$PWD/../Blocks \
     $$PWD/../Plugin \
     $$PWD/../Supervision \
+    $$PWD/../Logging \
+    $$PWD/../Metrics \
     $$MOC_DIR
 
 SOURCES += \
@@ -69,6 +71,8 @@ HEADERS += \
     ../Supervision/BoundedQueue.h \
     ../Supervision/StrategyRuntime.h \
     ../Supervision/Supervisor.h \
+    ../Logging/StructuredLogger.h \
+    ../Metrics/MetricsCollector.h \
     phase1/tst_contracts.h \
     phase1/tst_merge_policies.h \
     phase1/tst_market_data_router.h \
