@@ -30,6 +30,8 @@ INCLUDEPATH += \
     $$PWD/../Adapters \
     $$PWD/../Testing \
     $$PWD/../Replay \
+    $$PWD/../Blocks \
+    $$PWD/../Plugin \
     $$MOC_DIR
 
 SOURCES += \
@@ -55,6 +57,14 @@ HEADERS += \
     ../Testing/IntegrationTestHarness.h \
     ../Replay/MarketDataRecorder.h \
     ../Replay/MarketDataReplayer.h \
+    ../Pipeline/BlockRegistry.h \
+    ../Pipeline/StrategyPipelineRunner.h \
+    ../Pipeline/BlockGraphSerializer.h \
+    ../Blocks/MomentumAlphaBlock.h \
+    ../Blocks/MaxPositionRiskBlock.h \
+    ../Blocks/MarketOrderExecutionBlock.h \
+    ../Plugin/BlockPlugin.h \
+    ../Plugin/PluginLoader.h \
     phase1/tst_contracts.h \
     phase1/tst_merge_policies.h \
     phase1/tst_market_data_router.h \

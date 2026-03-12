@@ -180,6 +180,17 @@ HEADERS += \
     Testing/IntegrationTestHarness.h \
     Replay/MarketDataRecorder.h \
     Replay/MarketDataReplayer.h \
+    Pipeline/BlockRegistry.h \
+    Pipeline/StrategyPipelineRunner.h \
+    Pipeline/BlockGraphSerializer.h \
+    Blocks/MomentumAlphaBlock.h \
+    Blocks/MaxPositionRiskBlock.h \
+    Blocks/MarketOrderExecutionBlock.h \
+    Plugin/BlockPlugin.h \
+    Plugin/PluginLoader.h \
+    Adapters/AlphaModelAdapter.h \
+    Adapters/RiskModelAdapter.h \
+    Adapters/ExecutionModelAdapter.h \
     Brokers/IB/Shared/Utils.h \
     Brokers/IB/addon/AccountSummaryTags.h \
     Brokers/IB/addon/AvailableAlgoParams.h \
@@ -353,6 +364,8 @@ INCLUDEPATH += \
     $$PWD/Adapters \
     $$PWD/Testing \
     $$PWD/Replay \
+    $$PWD/Blocks \
+    $$PWD/Plugin \
     $$PWD/Brokers/IB/Shared \
     $$PWD/Brokers/IB/addon \
     $$PWD/ReqManager \
