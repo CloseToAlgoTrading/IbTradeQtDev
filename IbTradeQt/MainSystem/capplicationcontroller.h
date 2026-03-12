@@ -8,8 +8,12 @@
 #include "cmainmodel.h"
 #include "Supervision/Supervisor.h"
 #include "Adapters/IBOrderExecutionAdapter.h"
-#include "Adapters/OrderEventBridge.h"
-#include "Adapters/MockPositionRepository.h"
+#include "Adapters/SqlitePositionRepository.h"
+#include "Adapters/IBPositionRepositoryAdapter.h"
+#include "IBComm/PositionRouter.h"
+#include "IBComm/HistoricalDataRouter.h"
+#include "IBComm/OrderRouter.h"
+#include "IBComm/AccountRouter.h"
 #include <QSharedPointer>
 #include <QApplication>
 #include <QObject>
@@ -42,8 +46,12 @@ private:
 
     Supervision::Supervisor *m_pSupervisor = nullptr;
     IBOrderExecutionAdapter *m_pExecutionAdapter = nullptr;
-    Adapters::OrderEventBridge *m_pOrderEventBridge = nullptr;
-    MockPositionRepository m_positionRepo;
+    SqlitePositionRepository *m_pPositionRepo = nullptr;
+    IBComm::PositionRouter *m_pPositionRouter = nullptr;
+    IBPositionRepositoryAdapter *m_pLivePositionRepo = nullptr;
+    IBComm::HistoricalDataRouter *m_pHistoricalDataRouter = nullptr;
+    IBComm::OrderRouter *m_pOrderRouter = nullptr;
+    IBComm::AccountRouter *m_pAccountRouter = nullptr;
 };
 
 #endif // CAPPLICATIONCONTROLLER_H

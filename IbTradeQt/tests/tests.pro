@@ -1,4 +1,4 @@
-QT += core testlib
+QT += core testlib sql
 QT -= gui
 
 TARGET = ibtrading_tests
@@ -113,6 +113,15 @@ HEADERS += \
     integration/tst_default_pipelines.h \
     integration/tst_pipeline_strategy_adapter.h \
     integration/tst_live_execution_wiring.h \
+    integration/tst_typed_routers.h \
     ../Adapters/IBOrderExecutionAdapter.h \
-    ../Adapters/OrderEventBridge.h \
-    ../IBComm/IBrokerAPI.h
+    ../Adapters/IBPositionRepositoryAdapter.h \
+    ../Adapters/SqlitePositionRepository.h \
+    ../Blocks/StaticListSelectionBlock.h \
+    ../Blocks/LimitOrderExecutionBlock.h \
+    ../Blocks/MovingAverageCrossoverAlphaBlock.h \
+    ../IBComm/IBrokerAPI.h \
+    ../IBComm/PositionRouter.h \
+    ../IBComm/HistoricalDataRouter.h \
+    ../IBComm/OrderRouter.h \
+    ../IBComm/AccountRouter.h

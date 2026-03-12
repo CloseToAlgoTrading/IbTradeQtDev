@@ -45,15 +45,40 @@ CApplicationController::CApplicationController(QObject *parent):
 
     IBrokerAPI* brokerApi = pMainPresenter->getDataProvider()->getClien().data();
     m_pExecutionAdapter = new IBOrderExecutionAdapter(brokerApi);
-    m_pOrderEventBridge = new Adapters::OrderEventBridge(m_pExecutionAdapter, this);
-
     auto* implClient = dynamic_cast<IBComClientImpl*>(brokerApi);
-    if (implClient) {
-        implClient->setOrderEventBridge(m_pOrderEventBridge);
-    }
 
     CPipelineStrategyAdapter::setGlobalExecutionPort(m_pExecutionAdapter);
-    CPipelineStrategyAdapter::setGlobalPositionRepo(&m_positionRepo);
+
+    m_pPositionRepo = new SqlitePositionRepository("myLocalDb.sqlite", true);
+
+    m_pPositionRouter = new IBComm::PositionRouter(this);
+    m_pLivePositionRepo = new IBPositionRepositoryAdapter(this);
+    m_pLivePositionRepo->connectToRouter(m_pPositionRouter);
+
+    m_pHistoricalDataRouter = new IBComm::HistoricalDataRouter(this);
+    m_pOrderRouter = new IBComm::OrderRouter(this);
+    m_pAccountRouter = new IBComm::AccountRouter(this);
+
+    if (implClient) {
+        implClient->setPositionRouter(m_pPositionRouter);
+        implClient->setHistoricalDataRouter(m_pHistoricalDataRouter);
+        implClient->setOrderRouter(m_pOrderRouter);
+        implClient->setAccountRouter(m_pAccountRouter);
+    }
+
+    connect(m_pOrderRouter, &IBComm::OrderRouter::orderStatusChanged,
+            this, [this](const IBComm::OrderStatusUpdate& update) {
+        if (m_pExecutionAdapter)
+            m_pExecutionAdapter->updateOrderStatus(update.orderId, update.status);
+    });
+    connect(m_pOrderRouter, &IBComm::OrderRouter::executionReceived,
+            this, [this](const IBComm::ExecutionReport& report) {
+        if (m_pExecutionAdapter)
+            m_pExecutionAdapter->updateOrderStatus(report.orderId, "Filled");
+    });
+
+    CPipelineStrategyAdapter::setGlobalPositionRepo(m_pLivePositionRepo);
+    CPipelineStrategyAdapter::setGlobalPersistentPositionRepo(m_pPositionRepo);
 
     /*** Test Code ***/
     // DBManager m_dbManager;
@@ -81,6 +106,7 @@ CApplicationController::~CApplicationController()
         m_pSupervisor->stopAll();
     }
     delete m_pExecutionAdapter;
+    delete m_pPositionRepo;
     delete this->pMainView;
     delete this->pMainPresenter;
     delete this->pMainModel;

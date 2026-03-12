@@ -62,6 +62,9 @@ public:
             connect(router, &IBComm::MarketDataRouter::tick,
                     alpha, &Pipeline::IAlphaBlock::onTick,
                     Qt::QueuedConnection);
+            connect(router, &IBComm::MarketDataRouter::tickByTickTrade,
+                    alpha, &Pipeline::IAlphaBlock::onTickByTick,
+                    Qt::QueuedConnection);
         }
         connect(router, &IBComm::MarketDataRouter::barClose,
                 m_runner, &Pipeline::StrategyPipelineRunner::onBarClose,

@@ -5,7 +5,10 @@
 
 #include "Dispatcher.h"
 #include "MarketDataRouter.h"
-#include "Adapters/OrderEventBridge.h"
+#include "PositionRouter.h"
+#include "HistoricalDataRouter.h"
+#include "OrderRouter.h"
+#include "AccountRouter.h"
 
 #include "Contract.h"
 #include "MyLogger.h"
@@ -131,7 +134,8 @@ public:
     // Parameter: const reqPlaceOrder_t & _reqOrder
     //************************************
     qint32 reqPlaceOrderAPI(const QString& _symbol, const qint32 _quantity, const eOrderAction_t _action) override;
-
+    qint32 reqPlaceLimitOrderAPI(const QString& _symbol, const qint32 _quantity, const eOrderAction_t _action, double limitPrice) override;
+    qint32 reqPlaceStopOrderAPI(const QString& _symbol, const qint32 _quantity, const eOrderAction_t _action, double stopPrice) override;
 
     //************************************
     // Method:    cancelOrderAPI
@@ -310,7 +314,10 @@ public:
     void userInfo(int reqId, const std::string& whiteBrandingId) override {}
     // Phase 2: MarketDataRouter integration (runs parallel with CDispatcher)
     void setMarketDataRouter(IBComm::MarketDataRouter* router) { m_marketDataRouter = router; }
-    void setOrderEventBridge(Adapters::OrderEventBridge* bridge) { m_orderEventBridge = bridge; }
+    void setPositionRouter(IBComm::PositionRouter* router) { m_positionRouter = router; }
+    void setHistoricalDataRouter(IBComm::HistoricalDataRouter* router) { m_historicalDataRouter = router; }
+    void setOrderRouter(IBComm::OrderRouter* router) { m_orderRouter = router; }
+    void setAccountRouter(IBComm::AccountRouter* router) { m_accountRouter = router; }
     void registerSymbolForReqId(qint32 reqId, const QString& symbol) override {
         m_reqIdToSymbol[reqId] = symbol;
     }
@@ -341,7 +348,10 @@ private:
     QMap<qint32, QString> m_reqIdToSymbol;
     QMap<qint32, double> m_lastBid;
     QMap<qint32, double> m_lastAsk;
-    Adapters::OrderEventBridge* m_orderEventBridge = nullptr;
+    IBComm::PositionRouter* m_positionRouter = nullptr;
+    IBComm::HistoricalDataRouter* m_historicalDataRouter = nullptr;
+    IBComm::OrderRouter* m_orderRouter = nullptr;
+    IBComm::AccountRouter* m_accountRouter = nullptr;
 
 private:
     IBDataTypes::CAccountSummary m_accountSummaryData;

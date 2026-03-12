@@ -1,0 +1,42 @@
+{
+    "name": "Momentum (Legacy Equivalent)",
+    "description": "LEGO pipeline equivalent of the legacy cMomentum strategy. Uses the same momentum alpha with configurable buying power.",
+    "selection": [
+        {
+            "blockId": "static-list-selection",
+            "config": {
+                "symbols": ["SPY", "QQQ", "IWM"]
+            }
+        }
+    ],
+    "alphas": [
+        {
+            "blockId": "momentum-alpha",
+            "config": {
+                "period": 20,
+                "threshold": 0.02
+            }
+        }
+    ],
+    "rebalance": {
+        "blockId": "simple-rebalance",
+        "config": {
+            "defaultQuantity": 100.0
+        }
+    },
+    "risks": [
+        {
+            "blockId": "max-position-risk",
+            "config": {
+                "maxPositionSize": 1000.0,
+                "maxTotalExposure": 10000.0
+            }
+        }
+    ],
+    "execution": {
+        "blockId": "market-order-execution",
+        "config": {
+            "minQuantity": 1.0
+        }
+    }
+}

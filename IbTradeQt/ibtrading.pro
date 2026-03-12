@@ -176,7 +176,11 @@ HEADERS += \
     Adapters/SqlitePositionRepository.h \
     Adapters/MockExecutionAdapter.h \
     Adapters/MockPositionRepository.h \
-    Adapters/OrderEventBridge.h \
+    Adapters/IBPositionRepositoryAdapter.h \
+    IBComm/PositionRouter.h \
+    IBComm/HistoricalDataRouter.h \
+    IBComm/OrderRouter.h \
+    IBComm/AccountRouter.h \
     Testing/MockMarketDataRouter.h \
     Testing/IntegrationTestHarness.h \
     Replay/MarketDataRecorder.h \
@@ -188,6 +192,9 @@ HEADERS += \
     Blocks/MaxPositionRiskBlock.h \
     Blocks/MarketOrderExecutionBlock.h \
     Blocks/MeanReversionAlphaBlock.h \
+    Blocks/StaticListSelectionBlock.h \
+    Blocks/LimitOrderExecutionBlock.h \
+    Blocks/MovingAverageCrossoverAlphaBlock.h \
     Pipeline/PipelineFactory.h \
     Plugin/BlockPlugin.h \
     Plugin/PluginLoader.h \

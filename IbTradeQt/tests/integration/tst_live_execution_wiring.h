@@ -7,7 +7,7 @@
 
 #include "IBComm/MarketDataRouter.h"
 #include "Adapters/IBOrderExecutionAdapter.h"
-#include "Adapters/OrderEventBridge.h"
+#include "IBComm/OrderRouter.h"
 #include "Adapters/MockExecutionAdapter.h"
 #include "Adapters/MockPositionRepository.h"
 #include "Ports/IOrderExecutionPort.h"
@@ -90,7 +90,7 @@ private slots:
         QCOMPARE(result.error().code, ErrorCode::BrokerConnectionFailed);
     }
 
-    void orderEventBridge_forwardsStatusToAdapter()
+    void orderRouter_forwardsStatusToAdapter()
     {
         MockBrokerAPI broker;
         IBOrderExecutionAdapter adapter(&broker);
@@ -102,15 +102,19 @@ private slots:
         QVERIFY(result.has_value());
         int orderId = result->orderId;
 
-        Adapters::OrderEventBridge bridge(&adapter);
-        bridge.onOrderStatus(orderId, "Filled", 25.0, 0.0, 150.0);
+        IBComm::OrderRouter router;
+        QObject::connect(&router, &IBComm::OrderRouter::orderStatusChanged,
+                         [&adapter](const IBComm::OrderStatusUpdate& u) {
+            adapter.updateOrderStatus(u.orderId, u.status);
+        });
+        router.onOrderStatus(orderId, "Filled", 25.0, 0.0, 150.0);
 
         auto statusResult = adapter.getOrderStatus(orderId);
         QVERIFY(statusResult.has_value());
         QCOMPARE(statusResult->status, QString("Filled"));
     }
 
-    void orderEventBridge_forwardsExecDetailsToAdapter()
+    void orderRouter_forwardsExecDetailsToAdapter()
     {
         MockBrokerAPI broker;
         IBOrderExecutionAdapter adapter(&broker);
@@ -122,8 +126,12 @@ private slots:
         QVERIFY(result.has_value());
         int orderId = result->orderId;
 
-        Adapters::OrderEventBridge bridge(&adapter);
-        bridge.onExecDetails(orderId, "TSLA", 200.0, 10.0);
+        IBComm::OrderRouter router;
+        QObject::connect(&router, &IBComm::OrderRouter::executionReceived,
+                         [&adapter](const IBComm::ExecutionReport& r) {
+            adapter.updateOrderStatus(r.orderId, "Filled");
+        });
+        router.onExecDetails(orderId, "TSLA", 200.0, 10.0, "exec-001");
 
         auto statusResult = adapter.getOrderStatus(orderId);
         QVERIFY(statusResult.has_value());
@@ -243,7 +251,16 @@ private slots:
     {
         MockBrokerAPI broker;
         IBOrderExecutionAdapter liveAdapter(&broker);
-        Adapters::OrderEventBridge bridge(&liveAdapter);
+        IBComm::OrderRouter router;
+
+        QObject::connect(&router, &IBComm::OrderRouter::orderStatusChanged,
+                         [&liveAdapter](const IBComm::OrderStatusUpdate& u) {
+            liveAdapter.updateOrderStatus(u.orderId, u.status);
+        });
+        QObject::connect(&router, &IBComm::OrderRouter::executionReceived,
+                         [&liveAdapter](const IBComm::ExecutionReport& r) {
+            liveAdapter.updateOrderStatus(r.orderId, "Filled");
+        });
 
         Pipeline::ExecutionIntent intent;
         intent.symbol = "META";
@@ -255,12 +272,12 @@ private slots:
         int orderId = result->orderId;
         QCOMPARE(result->status, QString("Submitted"));
 
-        bridge.onOrderStatus(orderId, "PreSubmitted", 0.0, 30.0, 0.0);
+        router.onOrderStatus(orderId, "PreSubmitted", 0.0, 30.0, 0.0);
         auto s1 = liveAdapter.getOrderStatus(orderId);
         QVERIFY(s1.has_value());
         QCOMPARE(s1->status, QString("PreSubmitted"));
 
-        bridge.onExecDetails(orderId, "META", 350.0, 30.0);
+        router.onExecDetails(orderId, "META", 350.0, 30.0, "exec-002");
         auto s2 = liveAdapter.getOrderStatus(orderId);
         QVERIFY(s2.has_value());
         QCOMPARE(s2->status, QString("Filled"));

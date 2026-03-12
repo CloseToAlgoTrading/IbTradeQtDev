@@ -48,6 +48,19 @@ public:
 
     //orders
     virtual qint32 reqPlaceOrderAPI(const QString& _symbol, const qint32 _quantity, const eOrderAction_t _action) = 0;
+
+    virtual qint32 reqPlaceLimitOrderAPI(const QString& _symbol, const qint32 _quantity,
+        const eOrderAction_t _action, double limitPrice) {
+        Q_UNUSED(limitPrice)
+        return reqPlaceOrderAPI(_symbol, _quantity, _action);
+    }
+
+    virtual qint32 reqPlaceStopOrderAPI(const QString& _symbol, const qint32 _quantity,
+        const eOrderAction_t _action, double stopPrice) {
+        Q_UNUSED(stopPrice)
+        return reqPlaceOrderAPI(_symbol, _quantity, _action);
+    }
+
     virtual void cancelOrderAPI(const qint32 _id) = 0;
     virtual void reqOpenOrdersAPI() = 0;
     virtual void reqAllOpenOrdersAPI() = 0;

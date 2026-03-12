@@ -63,6 +63,7 @@ private:
     CBasicRoot *m_pRoot;
     QSharedPointer<CBrokerDataProvider> m_brokerInterface;
     QTimer m_UpdateInfoTimer;
+    QString m_pendingPipelineConfigPath;
 
 public slots:
     void slotOnClickAddAccount();

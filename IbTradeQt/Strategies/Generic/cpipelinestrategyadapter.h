@@ -50,6 +50,10 @@ public:
         s_globalPositionRepo = repo;
     }
 
+    static void setGlobalPersistentPositionRepo(Ports::IPositionRepositoryPort* repo) {
+        s_globalPersistentPositionRepo = repo;
+    }
+
     static IBComm::MarketDataRouter* globalRouter() { return s_globalRouter; }
     static Supervision::Supervisor* globalSupervisor() { return s_globalSupervisor; }
 
@@ -87,8 +91,13 @@ public:
 
             auto* execPort = (m_execMode == ExecutionMode::Live && s_globalExecutionPort)
                 ? s_globalExecutionPort : static_cast<Ports::IOrderExecutionPort*>(&m_mockExecution);
-            auto* posRepo = (m_execMode == ExecutionMode::Live && s_globalPositionRepo)
-                ? s_globalPositionRepo : static_cast<Ports::IPositionRepositoryPort*>(&m_mockPositionRepo);
+            Ports::IPositionRepositoryPort* posRepo;
+            if (m_execMode == ExecutionMode::Live && s_globalPositionRepo)
+                posRepo = s_globalPositionRepo;
+            else if (s_globalPersistentPositionRepo)
+                posRepo = s_globalPersistentPositionRepo;
+            else
+                posRepo = static_cast<Ports::IPositionRepositoryPort*>(&m_mockPositionRepo);
 
             s_globalSupervisor->addStrategy(runtimeName, [this, runtimeName, execPort, posRepo]() {
                 auto* runtime = Pipeline::PipelineFactory::createRuntime(
@@ -291,6 +300,7 @@ private:
     static inline Supervision::Supervisor* s_globalSupervisor = nullptr;
     static inline Ports::IOrderExecutionPort* s_globalExecutionPort = nullptr;
     static inline Ports::IPositionRepositoryPort* s_globalPositionRepo = nullptr;
+    static inline Ports::IPositionRepositoryPort* s_globalPersistentPositionRepo = nullptr;
 };
 
 #endif // CPIPELINESTRATEGYADAPTER_H

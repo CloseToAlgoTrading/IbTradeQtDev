@@ -18,6 +18,7 @@
 #include "integration/tst_default_pipelines.h"
 #include "integration/tst_pipeline_strategy_adapter.h"
 #include "integration/tst_live_execution_wiring.h"
+#include "integration/tst_typed_routers.h"
 
 int main(int argc, char *argv[])
 {
@@ -58,6 +59,9 @@ int main(int argc, char *argv[])
 
     // Integration - Live Execution Wiring
     { TestLiveExecutionWiring tc; status |= QTest::qExec(&tc, argc, argv); }
+
+    // Integration - Typed Routers
+    { TestTypedRouters tc; status |= QTest::qExec(&tc, argc, argv); }
 
     return status;
 }

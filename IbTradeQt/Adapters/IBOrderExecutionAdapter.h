@@ -24,8 +24,20 @@ public:
         eOrderAction_t action = (intent.quantity >= 0) ? OA_BUY : OA_SELL;
         qint32 qty = static_cast<qint32>(std::abs(intent.quantity));
 
-        qint32 orderId = m_brokerApi->reqPlaceOrderAPI(
-            intent.symbol, qty, action);
+        qint32 orderId = 0;
+        switch (intent.orderType) {
+        case Pipeline::ExecutionIntent::Limit:
+            orderId = m_brokerApi->reqPlaceLimitOrderAPI(
+                intent.symbol, qty, action, intent.limitPrice.value_or(0.0));
+            break;
+        case Pipeline::ExecutionIntent::Stop:
+            orderId = m_brokerApi->reqPlaceStopOrderAPI(
+                intent.symbol, qty, action, intent.limitPrice.value_or(0.0));
+            break;
+        default:
+            orderId = m_brokerApi->reqPlaceOrderAPI(intent.symbol, qty, action);
+            break;
+        }
 
         if (orderId <= 0) {
             return make_unexpected(Error{

@@ -10,8 +10,11 @@
 #include "../Supervision/StrategyRuntime.h"
 #include "../Blocks/MomentumAlphaBlock.h"
 #include "../Blocks/MeanReversionAlphaBlock.h"
+#include "../Blocks/MovingAverageCrossoverAlphaBlock.h"
 #include "../Blocks/MaxPositionRiskBlock.h"
 #include "../Blocks/MarketOrderExecutionBlock.h"
+#include "../Blocks/LimitOrderExecutionBlock.h"
+#include "../Blocks/StaticListSelectionBlock.h"
 
 namespace Pipeline {
 
@@ -24,6 +27,17 @@ public:
     {
         BlockGraph graph;
         graph.config = config;
+
+        QJsonArray selectionConfigs = config.value("selection").toArray();
+        for (const auto& selVal : selectionConfigs) {
+            QJsonObject selCfg = selVal.toObject();
+            QString blockId = selCfg.value("blockId").toString();
+            ISelectionBlock* sel = createSelectionBlock(blockId);
+            if (sel) {
+                sel->setConfig(selCfg.value("config").toObject());
+                graph.selectionBlocks.append(sel);
+            }
+        }
 
         QJsonArray alphaConfigs = config.value("alphas").toArray();
         for (const auto& alphaVal : alphaConfigs) {
@@ -95,9 +109,20 @@ public:
     }
 
 private:
+    static ISelectionBlock* createSelectionBlock(const QString& blockId) {
+        if (blockId == "pass-all-selection" || blockId == "pass-all")
+            return new Blocks::PassAllSelectionBlock();
+        if (blockId == "static-list-selection" || blockId == "static-list")
+            return new Blocks::StaticListSelectionBlock();
+        auto result = BlockRegistry::instance().createBlock(blockId);
+        if (result) return qobject_cast<ISelectionBlock*>(*result);
+        return new Blocks::PassAllSelectionBlock();
+    }
+
     static IAlphaBlock* createAlphaBlock(const QString& blockId) {
         if (blockId == "momentum-alpha") return new Blocks::MomentumAlphaBlock();
         if (blockId == "mean-reversion-alpha") return new Blocks::MeanReversionAlphaBlock();
+        if (blockId == "ma-crossover-alpha") return new Blocks::MovingAverageCrossoverAlphaBlock();
         // extensible: check BlockRegistry
         auto result = BlockRegistry::instance().createBlock(blockId);
         if (result) {
@@ -126,6 +151,8 @@ private:
     static IExecutionBlock* createExecutionBlock(const QString& blockId) {
         if (blockId == "market-order-execution" || blockId.isEmpty())
             return new Blocks::MarketOrderExecutionBlock();
+        if (blockId == "limit-order-execution")
+            return new Blocks::LimitOrderExecutionBlock();
         auto result = BlockRegistry::instance().createBlock(blockId);
         if (result) return qobject_cast<IExecutionBlock*>(*result);
         return new Blocks::MarketOrderExecutionBlock();

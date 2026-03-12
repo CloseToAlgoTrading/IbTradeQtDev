@@ -1546,7 +1546,8 @@ IbTradeQt is a dual-architecture trading system in active transition from a lega
 
 3. **Hexagonal Execution**
    - `IOrderExecutionPort` abstracts order placement -- swap between `MockExecutionAdapter` (DryRun) and `IBOrderExecutionAdapter` (Live) without changing pipeline logic
-   - `OrderEventBridge` feeds IB order status/execution callbacks back to the adapter
+   - `OrderRouter` feeds IB order status/execution/commission callbacks to the adapter via typed signals
+   - Supports Market, Limit (`reqPlaceLimitOrderAPI`), and Stop (`reqPlaceStopOrderAPI`) order types
    - Default mode is `DryRun` to prevent accidental live orders
 
 4. **Supervision and Observability**
@@ -1587,8 +1588,14 @@ flowchart TD
         TP["tickPrice()"]
         TS["tickSize()"]
         RB["realtimeBar()"]
+        TBT["tickByTickAllLast()"]
+        HD["historicalData()"]
         OS["orderStatus()"]
         ED["execDetails()"]
+        CR["commissionReport()"]
+        NV["nextValidId()"]
+        POS["position()"]
+        AS["accountSummary()"]
     end
 
     subgraph legacyPath [Legacy Path]
@@ -1598,8 +1605,11 @@ flowchart TD
     end
 
     subgraph newPath [LEGO Pipeline Path]
-        MDR["MarketDataRouter"]
-        OEB["OrderEventBridge"]
+        MDR["MarketDataRouter<br/>(tick, barClose, tickByTickTrade)"]
+        HDR["HistoricalDataRouter<br/>(historicalBar, barsReceived)"]
+        OR["OrderRouter<br/>(orderStatus, execution, commission, nextValidId)"]
+        PR["PositionRouter<br/>(positionChanged, positionSnapshotComplete)"]
+        AR["AccountRouter<br/>(accountSummaryUpdated)"]
         PLSA["CPipelineStrategyAdapter"]
         Runner["StrategyPipelineRunner"]
         SUP["Supervisor"]
@@ -1608,19 +1618,33 @@ flowchart TD
     TP --> CD
     TP --> MDR
     TS --> CD
-    TS -->|"volume"| MDR
+    TS --> MDR
     RB --> CD
     RB --> MDR
+    TBT --> CD
+    TBT --> MDR
+    HD --> CD
+    HD --> HDR
     OS --> CD
-    OS --> OEB
+    OS --> OR
     ED --> CD
-    ED --> OEB
+    ED --> OR
+    CR --> CD
+    CR --> OR
+    NV --> CD
+    NV --> OR
+    POS --> CD
+    POS --> PR
+    AS --> CD
+    AS --> AR
 
     CD --> CS
     CS --> BSV2
 
     MDR --> PLSA
-    OEB --> PLSA
+    HDR --> PLSA
+    OR --> PLSA
+    PR --> PLSA
     PLSA --> Runner
     Runner --> SUP
 ```
@@ -1663,12 +1687,12 @@ flowchart LR
 
 | Interface | File | Concrete Blocks |
 |-----------|------|-----------------|
-| `ISelectionBlock` | `Pipeline/ISelectionBlock.h` | `PassAllSelectionBlock` |
-| `IAlphaBlock` | `Pipeline/IAlphaBlock.h` | `MomentumAlphaBlock`, `MeanReversionAlphaBlock` |
+| `ISelectionBlock` | `Pipeline/ISelectionBlock.h` | `PassAllSelectionBlock`, `StaticListSelectionBlock` |
+| `IAlphaBlock` | `Pipeline/IAlphaBlock.h` | `MomentumAlphaBlock`, `MeanReversionAlphaBlock`, `MovingAverageCrossoverAlphaBlock` |
 | `ISignalMergePolicy` | `Pipeline/ISignalMergePolicy.h` | `FirstWinsMerge`, `WeightedVoteMerge`, `UnanimousMerge` |
 | `IRebalanceBlock` | `Pipeline/IRebalanceBlock.h` | `SimpleRebalanceBlock` |
 | `IRiskBlock` | `Pipeline/IRiskBlock.h` | `MaxPositionRiskBlock` |
-| `IExecutionBlock` | `Pipeline/IExecutionBlock.h` | `MarketOrderExecutionBlock` |
+| `IExecutionBlock` | `Pipeline/IExecutionBlock.h` | `MarketOrderExecutionBlock`, `LimitOrderExecutionBlock` |
 
 ### Ports and Adapters (Hexagonal Architecture)
 
@@ -1703,10 +1727,22 @@ flowchart LR
     IBExec -->|"reqPlaceOrderAPI()"| IB["IB TWS"]
 ```
 
-| Port | Purpose | Live Adapter | Mock Adapter |
+| Port | Purpose | Live Adapter | DryRun Adapter |
 |------|---------|-------------|-------------|
-| `IOrderExecutionPort` | Place/cancel orders, get status | `IBOrderExecutionAdapter` | `MockExecutionAdapter` |
-| `IPositionRepositoryPort` | Query/update positions | `SqlitePositionRepository` | `MockPositionRepository` |
+| `IOrderExecutionPort` | Place/cancel orders (Market, Limit, Stop) | `IBOrderExecutionAdapter` | `MockExecutionAdapter` |
+| `IPositionRepositoryPort` | Query/update positions | `IBPositionRepositoryAdapter` (live IB positions) | `SqlitePositionRepository` (persisted) or `MockPositionRepository` |
+
+### Typed Routers
+
+All IB TWS callbacks are forwarded to typed routers that emit `Q_GADGET`-based signals:
+
+| Router | IB Callback(s) | Signal(s) | Q_GADGET Struct |
+|--------|---------------|-----------|-----------------|
+| `MarketDataRouter` | `tickPrice`, `tickSize`, `realtimeBar`, `tickByTickAllLast` | `tick`, `tickSizeUpdate`, `barClose`, `tickByTickTrade` | `MarketTick`, `TickByTickTrade` |
+| `HistoricalDataRouter` | `historicalData`, `historicalDataEnd` | `historicalBar`, `barsReceived` | `HistoricalBar` |
+| `PositionRouter` | `position`, `positionEnd` | `positionChanged`, `positionSnapshotComplete` | `PositionUpdate` |
+| `OrderRouter` | `orderStatus`, `execDetails`, `commissionReport`, `nextValidId` | `orderStatusChanged`, `executionReceived`, `commissionReceived`, `nextValidIdReceived` | `OrderStatusUpdate`, `ExecutionReport`, `CommissionUpdate` |
+| `AccountRouter` | `accountSummary`, `accountSummaryEnd` | `accountSummaryUpdated` | `AccountSummaryData` |
 
 ### MarketDataRouter
 

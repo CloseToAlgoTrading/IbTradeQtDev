@@ -239,6 +239,50 @@ qint32 IBComClientImpl::reqPlaceOrderAPI(const QString& _symbol, const qint32 _q
 }
 
 //---------------------------------------------------------------
+qint32 IBComClientImpl::reqPlaceLimitOrderAPI(const QString& _symbol, const qint32 _quantity, const eOrderAction_t _action, double limitPrice)
+{
+    reqPlaceOrder_t orderToPlace;
+    qint32 retOrderId = getNexValidId();
+
+    orderToPlace.contract.symbol = _symbol.toLocal8Bit().data();
+    orderToPlace.contract.secType = "STK";
+    orderToPlace.contract.exchange = "SMART";
+
+    orderToPlace.order.action = (OA_BUY == _action) ? "BUY" : "SELL";
+    orderToPlace.order.orderType = "LMT";
+    orderToPlace.order.tif = "DAY";
+    orderToPlace.order.totalQuantity = DecimalFunctions::doubleToDecimal(_quantity);
+    orderToPlace.order.lmtPrice = limitPrice;
+    orderToPlace.order.transmit = true;
+    orderToPlace.order.orderId = retOrderId;
+
+    m_pClient->placeOrder(retOrderId, orderToPlace.contract, orderToPlace.order);
+    return retOrderId;
+}
+
+//---------------------------------------------------------------
+qint32 IBComClientImpl::reqPlaceStopOrderAPI(const QString& _symbol, const qint32 _quantity, const eOrderAction_t _action, double stopPrice)
+{
+    reqPlaceOrder_t orderToPlace;
+    qint32 retOrderId = getNexValidId();
+
+    orderToPlace.contract.symbol = _symbol.toLocal8Bit().data();
+    orderToPlace.contract.secType = "STK";
+    orderToPlace.contract.exchange = "SMART";
+
+    orderToPlace.order.action = (OA_BUY == _action) ? "BUY" : "SELL";
+    orderToPlace.order.orderType = "STP";
+    orderToPlace.order.tif = "DAY";
+    orderToPlace.order.totalQuantity = DecimalFunctions::doubleToDecimal(_quantity);
+    orderToPlace.order.auxPrice = stopPrice;
+    orderToPlace.order.transmit = true;
+    orderToPlace.order.orderId = retOrderId;
+
+    m_pClient->placeOrder(retOrderId, orderToPlace.contract, orderToPlace.order);
+    return retOrderId;
+}
+
+//---------------------------------------------------------------
 void IBComClientImpl::cancelOrderAPI(const qint32 _id)
 {
     const std::string manualOrderCancelTime = "100";
@@ -436,12 +480,22 @@ void IBComClientImpl::historicalData(TickerId reqId, const Bar& bar)
            _historicalData.getClose(), _historicalData.getVolume(), _historicalData.getCount(), _historicalData.getWap(), _historicalData.getHasGaps());
     m_DispatcherBrokerData.SendMessageToSubscribers(&_historicalData, reqId, RT_HISTORICAL_DATA);
 
+    if (m_historicalDataRouter) {
+        m_historicalDataRouter->onHistoricalBar(
+            reqId, QString::fromStdString(bar.time),
+            bar.open, bar.high, bar.low, bar.close,
+            DecimalFunctions::decimalToDouble(bar.volume), bar.count);
+    }
 }
 
 void IBComClientImpl::historicalDataEnd(int reqId, const std::string &startDateStr, const std::string &endDateStr)
 {
     CHistoricalData _historicalData(reqId, "", 0, 0, 0, 0, 0, 0, 0, false, true);
     m_DispatcherBrokerData.SendMessageToSubscribers(&_historicalData, reqId, RT_HISTORICAL_DATA);
+
+    if (m_historicalDataRouter) {
+        m_historicalDataRouter->onHistoricalDataEnd(reqId);
+    }
 }
 
 
@@ -534,8 +588,11 @@ void IBComClientImpl::nextValidId(OrderId orderId)
 	
     m_DispatcherBrokerData.SendMessageToSubscribers(&orderId, orderId, RT_NEXT_VALID_ID);
 
-    return;
+    if (m_orderRouter) {
+        m_orderRouter->onNextValidId(static_cast<int>(orderId));
+    }
 
+    return;
 }
 
 //---------------------------------------------------------------
@@ -620,8 +677,8 @@ void IBComClientImpl::orderStatus( OrderId orderId, const std::string& status, D
 	
     m_DispatcherBrokerData.SendMessageToSubscribers(&orderStatusObj, E_RQ_ID_ORDER_STATUS, RT_ORDER_STATUS);
 
-    if (m_orderEventBridge) {
-        m_orderEventBridge->onOrderStatus(
+    if (m_orderRouter) {
+        m_orderRouter->onOrderStatus(
             static_cast<int>(orderId),
             QString::fromStdString(status),
             DecimalFunctions::decimalToDouble(filled),
@@ -630,8 +687,6 @@ void IBComClientImpl::orderStatus( OrderId orderId, const std::string& status, D
     }
 
 	return;
-
-
 }
 //---------------------------------------------------------------
 void IBComClientImpl::openOrder(OrderId orderId, const Contract& _contract, const Order& _order, const OrderState& _orderState)
@@ -661,12 +716,13 @@ void IBComClientImpl::execDetails(int reqId, const Contract& contract, const Exe
     CExecutionReport execReport(reqId, contract.symbol.c_str(), execution.avgPrice, DecimalFunctions::DecimalFunctions::decimalToDouble(execution.shares), execution.execId.c_str());
     m_DispatcherBrokerData.SendMessageToSubscribers(&execReport, E_RQ_ID_ORDER_STATUS, RT_ORDER_EXECUTION);
 
-    if (m_orderEventBridge) {
-        m_orderEventBridge->onExecDetails(
+    if (m_orderRouter) {
+        m_orderRouter->onExecDetails(
             static_cast<int>(execution.orderId),
             QString::fromStdString(contract.symbol),
             execution.avgPrice,
-            DecimalFunctions::decimalToDouble(execution.shares));
+            DecimalFunctions::decimalToDouble(execution.shares),
+            QString::fromStdString(execution.execId));
     }
 }
 
@@ -678,6 +734,14 @@ void IBComClientImpl::commissionReport(const CommissionReport& commissionReport)
     CCommissionReport _commReport(commissionReport.execId.c_str(), commissionReport.commission, commissionReport.currency.c_str(), commissionReport.realizedPNL, commissionReport.yield, commissionReport.yieldRedemptionDate);
 
     m_DispatcherBrokerData.SendMessageToSubscribers(&_commReport, E_RQ_ID_ORDER_STATUS, RT_ORDER_COMMISSION);
+
+    if (m_orderRouter) {
+        m_orderRouter->onCommissionReport(
+            QString::fromStdString(commissionReport.execId),
+            commissionReport.commission,
+            QString::fromStdString(commissionReport.currency),
+            commissionReport.realizedPNL);
+    }
 }
 
 //---------------------------------------------------------------
@@ -690,6 +754,14 @@ void IBComClientImpl::position(const std::string &account, const Contract &contr
             positionObj.getPos(), positionObj.getAvgCost());
 
     m_DispatcherBrokerData.SendMessageToSubscribers(&positionObj, E_RQ_ID_POSITION, RT_REQ_POSITION);
+
+    if (m_positionRouter) {
+        m_positionRouter->onPosition(
+            positionObj.getAccount(),
+            QString::fromStdString(contract.symbol),
+            DecimalFunctions::decimalToDouble(position),
+            avgCost);
+    }
 }
 
 //---------------------------------------------------------------
@@ -697,6 +769,10 @@ void IBComClientImpl::positionEnd()
 {
     qCDebug(IBComClientImplLog(), "Position End\n");
     m_DispatcherBrokerData.SendMessageToSubscribers(nullptr, E_RQ_ID_POSITION, RT_REQ_POSITION);
+
+    if (m_positionRouter) {
+        m_positionRouter->onPositionEnd();
+    }
     qCDebug(IBComClientImplLog(), "Position End TEST!\n");
 }
 
@@ -718,6 +794,14 @@ void IBComClientImpl::accountSummary(int reqId, const std::string &account, cons
     }
     m_accountSummaryData.setAccount(account.c_str());
     m_accountSummaryData.setCurrency(curency.c_str());
+
+    if (m_accountRouter) {
+        m_accountRouter->onAccountSummary(
+            QString::fromStdString(account),
+            QString::fromStdString(tag),
+            QString::fromStdString(value),
+            QString::fromStdString(curency));
+    }
 }
 
 //---------------------------------------------------------------
@@ -725,6 +809,10 @@ void IBComClientImpl::accountSummaryEnd(int reqId)
 {
     qCDebug(IBComClientImplLog(), "Account Summary End - id [%d] \n", reqId);
     m_DispatcherBrokerData.SendMessageToSubscribers(&m_accountSummaryData, E_RQ_ID_ACCOUNT_SUMMARY, RT_REQ_ACCOUNT_SUMMURY);
+
+    if (m_accountRouter) {
+        m_accountRouter->onAccountSummaryEnd(reqId);
+    }
 }
 
 //---------------------------------------------------------------
@@ -782,6 +870,15 @@ void IBComClientImpl::tickByTickAllLast(int reqId, int tickType, time_t time, do
             _tickbytick.getSpecialConditions().toLocal8Bit().data());
 
     m_DispatcherBrokerData.SendMessageToSubscribers(&_tickbytick, reqId, RT_TICK_BY_TICK_DATA);
+
+    if (m_marketDataRouter && m_reqIdToSymbol.contains(reqId)) {
+        QDateTime ts;
+        ts.setSecsSinceEpoch(time);
+        m_marketDataRouter->onTickByTickAllLast(
+            reqId, m_reqIdToSymbol[reqId], price,
+            DecimalFunctions::decimalToDouble(size),
+            ts, QString::fromStdString(exchange));
+    }
 }
 
 //////////////////////////////////////////////////////////////////

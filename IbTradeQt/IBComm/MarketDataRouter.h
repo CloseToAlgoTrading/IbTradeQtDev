@@ -8,6 +8,21 @@
 
 namespace IBComm {
 
+struct TickByTickTrade {
+    Q_GADGET
+    Q_PROPERTY(QString symbol MEMBER symbol)
+    Q_PROPERTY(double price MEMBER price)
+    Q_PROPERTY(double size MEMBER size)
+    Q_PROPERTY(QDateTime timestamp MEMBER timestamp)
+    Q_PROPERTY(QString exchange MEMBER exchange)
+public:
+    QString symbol;
+    double price = 0.0;
+    double size = 0.0;
+    QDateTime timestamp;
+    QString exchange;
+};
+
 struct MarketTick {
     Q_GADGET
     Q_PROPERTY(QString symbol MEMBER symbol)
@@ -63,10 +78,25 @@ public:
         return m_lastPriceCache.value(symbol);
     }
 
+    void onTickByTickAllLast(int reqId, const QString& symbol,
+                             double price, double size,
+                             const QDateTime& timestamp, const QString& exchange)
+    {
+        Q_UNUSED(reqId)
+        TickByTickTrade trade;
+        trade.symbol = symbol;
+        trade.price = price;
+        trade.size = size;
+        trade.timestamp = timestamp;
+        trade.exchange = exchange;
+        emit tickByTickTrade(trade);
+    }
+
 signals:
     void tick(const IBComm::MarketTick& tick);
     void barClose(const QString& symbol, const QDateTime& timestamp);
     void tickSizeUpdate(const QString& symbol, double volume);
+    void tickByTickTrade(const IBComm::TickByTickTrade& trade);
     void connectionError(const QString& message);
 
 private:
@@ -76,5 +106,6 @@ private:
 } // namespace IBComm
 
 Q_DECLARE_METATYPE(IBComm::MarketTick)
+Q_DECLARE_METATYPE(IBComm::TickByTickTrade)
 
 #endif // MARKETDATAROUTER_H

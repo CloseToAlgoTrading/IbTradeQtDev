@@ -33,6 +33,10 @@ public slots:
         Q_UNUSED(timestamp);
     }
 
+    virtual void onTickByTick(const IBComm::TickByTickTrade& trade) {
+        Q_UNUSED(trade);
+    }
+
 signals:
     void signalGenerated(const Pipeline::Signal& signal);
     void errorOccurred(const QString& message);

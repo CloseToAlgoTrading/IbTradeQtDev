@@ -13,6 +13,9 @@
 #include "cbasicroot.h"
 
 #include "ModelType.h"
+#include <QDir>
+#include <QInputDialog>
+#include <QJsonDocument>
 #include <QUuid>
 
 #define START_OF_WORKING_NODES (3u)
@@ -286,7 +289,11 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
 
                     auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(model.data());
                     if (adapter) {
-                        adapter->loadDefaultConfig("Strategies/DefaultPipelines/simple_momentum_pipeline.json");
+                        QString configPath = m_pendingPipelineConfigPath.isEmpty()
+                            ? "Strategies/DefaultPipelines/simple_momentum_pipeline.json"
+                            : m_pendingPipelineConfigPath;
+                        adapter->loadDefaultConfig(configPath);
+                        m_pendingPipelineConfigPath.clear();
                     }
 
                     portfolio->addModel(model);
@@ -439,10 +446,45 @@ void CPortfolioConfigModel::slotOnClickAddStrategy()
 void CPortfolioConfigModel::slotOnClickAddPipelineStrategy()
 {
     QItemSelectionModel *selectionModel = m_treeView->selectionModel();
+    if (!selectionModel->hasSelection()) return;
 
-    if (selectionModel->hasSelection()) {
+    QDir pipelineDir("Strategies/DefaultPipelines");
+    QStringList jsonFiles = pipelineDir.entryList({"*.json"}, QDir::Files);
+
+    if (jsonFiles.isEmpty()) {
+        m_pendingPipelineConfigPath = "Strategies/DefaultPipelines/simple_momentum_pipeline.json";
         addModel(selectionModel->currentIndex(), {PM_ITEM_PORTFOLIO}, PM_ITEM_PIPELINE_STRATEGY);
+        return;
     }
+
+    QStringList displayNames;
+    QStringList fullPaths;
+    for (const auto& fileName : jsonFiles) {
+        QString fullPath = pipelineDir.filePath(fileName);
+        QFile f(fullPath);
+        QString displayName = fileName;
+        if (f.open(QIODevice::ReadOnly)) {
+            QJsonDocument doc = QJsonDocument::fromJson(f.readAll());
+            QString name = doc.object().value("name").toString();
+            if (!name.isEmpty()) displayName = name;
+        }
+        displayNames.append(displayName);
+        fullPaths.append(fullPath);
+    }
+
+    if (fullPaths.size() == 1) {
+        m_pendingPipelineConfigPath = fullPaths.first();
+    } else {
+        bool ok = false;
+        QString chosen = QInputDialog::getItem(
+            m_treeView, "Select Pipeline Config", "Available pipeline configurations:",
+            displayNames, 0, false, &ok);
+        if (!ok) return;
+        int idx = displayNames.indexOf(chosen);
+        m_pendingPipelineConfigPath = (idx >= 0) ? fullPaths.at(idx) : fullPaths.first();
+    }
+
+    addModel(selectionModel->currentIndex(), {PM_ITEM_PORTFOLIO}, PM_ITEM_PIPELINE_STRATEGY);
 }
 
 void CPortfolioConfigModel::slotOnClickAddSelectionModel()

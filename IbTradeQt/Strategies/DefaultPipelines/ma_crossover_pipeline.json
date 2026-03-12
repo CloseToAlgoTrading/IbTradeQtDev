@@ -1,0 +1,42 @@
+{
+    "name": "MA Crossover Strategy",
+    "description": "LEGO pipeline equivalent of the legacy CMovingAverageCrossover strategy. Uses fast/slow moving average crossover signals.",
+    "selection": [
+        {
+            "blockId": "static-list-selection",
+            "config": {
+                "symbols": ["SPY", "QQQ"]
+            }
+        }
+    ],
+    "alphas": [
+        {
+            "blockId": "ma-crossover-alpha",
+            "config": {
+                "fastPeriod": 10,
+                "slowPeriod": 30
+            }
+        }
+    ],
+    "rebalance": {
+        "blockId": "simple-rebalance",
+        "config": {
+            "defaultQuantity": 100.0
+        }
+    },
+    "risks": [
+        {
+            "blockId": "max-position-risk",
+            "config": {
+                "maxPositionSize": 1000.0,
+                "maxTotalExposure": 10000.0
+            }
+        }
+    ],
+    "execution": {
+        "blockId": "market-order-execution",
+        "config": {
+            "minQuantity": 1.0
+        }
+    }
+}

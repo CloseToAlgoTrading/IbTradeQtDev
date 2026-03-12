@@ -5,11 +5,35 @@
 #include <QSqlDatabase>
 #include <QSqlQuery>
 #include <QSqlError>
+#include <QUuid>
 
 class SqlitePositionRepository : public Ports::IPositionRepositoryPort {
 public:
     explicit SqlitePositionRepository(const QString& connectionName)
-        : m_connectionName(connectionName) {}
+        : m_connectionName(connectionName), m_ownsConnection(false) {}
+
+    explicit SqlitePositionRepository(const QString& dbPath, bool)
+        : m_connectionName("pipeline_positions_" + QUuid::createUuid().toString(QUuid::WithoutBraces))
+        , m_ownsConnection(true)
+    {
+        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", m_connectionName);
+        db.setDatabaseName(dbPath);
+        if (db.open()) {
+            QSqlQuery q(db);
+            q.exec("PRAGMA journal_mode=WAL");
+            ensureTable(db);
+        }
+    }
+
+    ~SqlitePositionRepository() {
+        if (m_ownsConnection) {
+            {
+                QSqlDatabase db = QSqlDatabase::database(m_connectionName);
+                if (db.isOpen()) db.close();
+            }
+            QSqlDatabase::removeDatabase(m_connectionName);
+        }
+    }
 
     Expected<Ports::PositionRow, Error> getPosition(
         int strategyId, const QString& symbol) override
@@ -98,7 +122,21 @@ private:
         return row;
     }
 
+    void ensureTable(QSqlDatabase& db) {
+        if (!db.tables().contains("Positions")) {
+            QSqlQuery q(db);
+            q.exec(
+                "CREATE TABLE IF NOT EXISTS Positions ("
+                "strategyId VARCHAR(64), symbol VARCHAR(10), "
+                "quantity INT DEFAULT 0, averageOpenPrice DOUBLE DEFAULT 0, "
+                "pnl DOUBLE DEFAULT 0, fee DOUBLE DEFAULT 0, "
+                "openDate TEXT, closeDate TEXT, status INT, "
+                "PRIMARY KEY (strategyId, symbol))");
+        }
+    }
+
     QString m_connectionName;
+    bool m_ownsConnection = false;
 };
 
 #endif // ADAPTERS_SQLITEPOSITIONREPOSITORY_H
