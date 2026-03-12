@@ -1,0 +1,42 @@
+{
+    "name": "Dual Alpha Strategy",
+    "description": "Momentum + Mean Reversion with weighted vote merge",
+    "alphas": [
+        {
+            "blockId": "momentum-alpha",
+            "config": {
+                "period": 10,
+                "threshold": 0.01
+            }
+        },
+        {
+            "blockId": "mean-reversion-alpha",
+            "config": {
+                "period": 20,
+                "stdDevThreshold": 2.0
+            }
+        }
+    ],
+    "mergePolicy": "weighted-vote",
+    "rebalance": {
+        "blockId": "simple-rebalance",
+        "config": {
+            "defaultQuantity": 50.0
+        }
+    },
+    "risks": [
+        {
+            "blockId": "max-position-risk",
+            "config": {
+                "maxPositionSize": 500.0,
+                "maxTotalExposure": 3000.0
+            }
+        }
+    ],
+    "execution": {
+        "blockId": "market-order-execution",
+        "config": {
+            "minQuantity": 1.0
+        }
+    }
+}

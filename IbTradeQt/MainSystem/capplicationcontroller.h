@@ -6,6 +6,7 @@
 #include "cpresenter.h"
 #include "ibtradesystemview.h"
 #include "cmainmodel.h"
+#include "Supervision/Supervisor.h"
 #include <QSharedPointer>
 #include <QApplication>
 #include <QObject>
@@ -35,6 +36,8 @@ private:
     CMainModel *pMainModel;
 
     CBasicRoot *m_pDataRoot;
+
+    Supervision::Supervisor *m_pSupervisor = nullptr;
 };
 
 #endif // CAPPLICATIONCONTROLLER_H

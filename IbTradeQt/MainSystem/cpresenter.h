@@ -15,6 +15,7 @@
 #include "AboutDlgPresener.h"
 //#include "PairTradingPresenter.h"
 
+#include "MarketDataRouter.h"
 
 //#include "DBConnector.h"
 
@@ -47,6 +48,7 @@ public:
     void setPGuiModel(CMainModel *newPGuiModel);
 
     QSharedPointer<CBrokerDataProvider> getDataProvider() const;
+    IBComm::MarketDataRouter* marketDataRouter() const { return m_pMarketDataRouter; }
 
 signals:
 	void signalTimeReceived(long time);
@@ -62,6 +64,7 @@ private:
 
     //CBrokerDataProvider m_DataProvider;
     QSharedPointer<CBrokerDataProvider> m_pDataProvider;
+    IBComm::MarketDataRouter* m_pMarketDataRouter = nullptr;
 
 
     CIBTradeSystemView * pIbtsView;

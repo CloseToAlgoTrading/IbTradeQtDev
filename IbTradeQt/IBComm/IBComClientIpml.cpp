@@ -450,6 +450,11 @@ void IBComClientImpl::realtimeBar(TickerId reqId, long time, double open, double
 
     m_DispatcherBrokerData.SendMessageToSubscribers(&_realtimeBar, reqId, RT_REALTIME_BAR);
 
+    if (m_marketDataRouter && m_reqIdToSymbol.contains(reqId)) {
+        QDateTime barTime = QDateTime::fromSecsSinceEpoch(time);
+        m_marketDataRouter->onBarComplete(reqId, m_reqIdToSymbol[reqId], barTime);
+    }
+
     return;
 };
 

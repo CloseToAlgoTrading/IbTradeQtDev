@@ -56,6 +56,9 @@ public:
     virtual void reqGlobalCancelAPI() = 0;
     //exerciseOptions()
 
+    // Pipeline integration: register symbol for reqId mapping (used by MarketDataRouter)
+    virtual void registerSymbolForReqId(qint32 /*reqId*/, const QString& /*symbol*/) {}
+
     //account & portfolio
     //virtual void reqAccountSummary(const qint32 _id, const QString _groups, const QString _tags) = 0;
     //virtual void reqAccountUpdates(const bool _subscribe, const QString _accCode) = 0;

@@ -15,6 +15,7 @@
 #include "phase4/tst_supervision.h"
 #include "phase5/tst_observability.h"
 #include "phase6/tst_benchmark.h"
+#include "integration/tst_default_pipelines.h"
 
 int main(int argc, char *argv[])
 {
@@ -46,6 +47,9 @@ int main(int argc, char *argv[])
 
     // Phase 6 - Benchmarks
     { TestBenchmark tc;        status |= QTest::qExec(&tc, argc, argv); }
+
+    // Integration - Default Pipelines
+    { TestDefaultPipelines tc; status |= QTest::qExec(&tc, argc, argv); }
 
     return status;
 }

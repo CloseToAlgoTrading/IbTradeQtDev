@@ -186,6 +186,8 @@ HEADERS += \
     Blocks/MomentumAlphaBlock.h \
     Blocks/MaxPositionRiskBlock.h \
     Blocks/MarketOrderExecutionBlock.h \
+    Blocks/MeanReversionAlphaBlock.h \
+    Pipeline/PipelineFactory.h \
     Plugin/BlockPlugin.h \
     Plugin/PluginLoader.h \
     Adapters/AlphaModelAdapter.h \

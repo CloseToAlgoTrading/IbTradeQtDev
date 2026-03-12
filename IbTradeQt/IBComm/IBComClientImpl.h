@@ -309,7 +309,7 @@ public:
     void userInfo(int reqId, const std::string& whiteBrandingId) override {}
     // Phase 2: MarketDataRouter integration (runs parallel with CDispatcher)
     void setMarketDataRouter(IBComm::MarketDataRouter* router) { m_marketDataRouter = router; }
-    void registerSymbolForReqId(qint32 reqId, const QString& symbol) {
+    void registerSymbolForReqId(qint32 reqId, const QString& symbol) override {
         m_reqIdToSymbol[reqId] = symbol;
     }
 

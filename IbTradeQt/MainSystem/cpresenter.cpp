@@ -1,4 +1,4 @@
-﻿#include "cpresenter.h"
+#include "cpresenter.h"
 #include "ReqManager.h"
 #include "Dispatcher.h"
 #include "IBComClientImpl.h"
@@ -29,6 +29,10 @@ CPresenter::CPresenter(QObject *parent)
 
    //Define Data Provider
     m_pDataProvider->setClien(pClient);
+
+    // Pipeline integration: create MarketDataRouter and wire to IBComClientImpl
+    m_pMarketDataRouter = new IBComm::MarketDataRouter(this);
+    pClient->setMarketDataRouter(m_pMarketDataRouter);
 
     workerIBClient->moveToThread(threadIBClient);
     QObject::connect(threadIBClient, SIGNAL(started()), workerIBClient, SLOT(process()));

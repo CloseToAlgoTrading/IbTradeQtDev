@@ -33,6 +33,10 @@ CApplicationController::CApplicationController(QObject *parent):
 
     QObject::connect(pMainView->getUi().actionSave, &QAction::triggered, this, &CApplicationController::slotStoreModelTree);
 
+    // Pipeline integration: create Supervisor for LEGO strategy runtimes
+    m_pSupervisor = new Supervision::Supervisor(this);
+    m_pSupervisor->startMonitoring(10000);
+
     /*** Test Code ***/
     // DBManager m_dbManager;
     // QDateTime currentDateTime = QDateTime::currentDateTime();
@@ -55,6 +59,9 @@ CApplicationController::CApplicationController(QObject *parent):
 
 CApplicationController::~CApplicationController()
 {
+    if (m_pSupervisor) {
+        m_pSupervisor->stopAll();
+    }
     delete this->pMainView;
     delete this->pMainPresenter;
     delete this->pMainModel;

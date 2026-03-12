@@ -63,6 +63,9 @@ public:
                     alpha, &IAlphaBlock::onBarClose,
                     Qt::QueuedConnection);
         }
+        connect(router, &IBComm::MarketDataRouter::barClose,
+                this, &StrategyPipelineRunner::onBarClose,
+                Qt::QueuedConnection);
     }
 
     void connectToMockRouter(QObject* mockRouter) {

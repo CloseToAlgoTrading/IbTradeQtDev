@@ -66,6 +66,8 @@ HEADERS += \
     ../Blocks/MomentumAlphaBlock.h \
     ../Blocks/MaxPositionRiskBlock.h \
     ../Blocks/MarketOrderExecutionBlock.h \
+    ../Blocks/MeanReversionAlphaBlock.h \
+    ../Pipeline/PipelineFactory.h \
     ../Plugin/BlockPlugin.h \
     ../Plugin/PluginLoader.h \
     ../Supervision/BoundedQueue.h \
@@ -86,4 +88,5 @@ HEADERS += \
     phase3/tst_pipeline_runner.h \
     phase4/tst_supervision.h \
     phase5/tst_observability.h \
-    phase6/tst_benchmark.h
+    phase6/tst_benchmark.h \
+    integration/tst_default_pipelines.h

@@ -145,6 +145,7 @@ bool CBrokerDataProvider::reqestRealTimeData(const CSubscriberPtr _pSubscriber, 
             //request data
             Subscribe(_pSubscriber, lsymbol, curReq);
             _config.id = curReq.id;
+            getClien()->registerSymbolForReqId(curReq.id, lsymbol);
             getClien()->reqRealTimeDataAPI(curReq.id, _config);
         }
         else
@@ -230,8 +231,8 @@ bool CBrokerDataProvider::requestRealTimeBars(const CSubscriberPtr _pSubscriber,
             {
                 curReq.id = pSubcrItem->ReqMenager()->getNextFreeId(_symbol, curReq.reqType);
             }
-            //request historical data
             Subscribe(_pSubscriber, _symbol, curReq);
+            getClien()->registerSymbolForReqId(curReq.id, _symbol);
             getClien()->reqRealTimeBarsAPI(curReq.id, _symbol);
             //----
         }
