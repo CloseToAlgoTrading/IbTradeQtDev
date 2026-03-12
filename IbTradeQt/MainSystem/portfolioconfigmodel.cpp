@@ -521,123 +521,62 @@ static QString showBlockSelectionDialog(QTreeView* parent, const QString& catego
     return (idx >= 0) ? blockIds.at(idx) : QString();
 }
 
-void CPortfolioConfigModel::slotOnClickAddSelectionModel()
+void CPortfolioConfigModel::addBlockViaDialog(const QString& category, const QString& jsonKey, bool isArray, quint32 itemType)
 {
     QItemSelectionModel *selectionModel = m_treeView->selectionModel();
     if (!selectionModel->hasSelection()) return;
 
-    QString blockId = showBlockSelectionDialog(m_treeView, "Selection");
+    QString blockId = showBlockSelectionDialog(m_treeView, category);
     if (blockId.isEmpty()) return;
 
     auto* adapter = findPipelineAdapterForSelection(this, m_treeView);
     if (adapter) {
         auto descResult = Pipeline::BlockRegistry::instance().descriptor(blockId);
+        QJsonObject defaultCfg = descResult ? descResult.value().defaultConfig : QJsonObject();
         QJsonObject config = adapter->pipelineConfig();
-        QJsonObject sel;
-        sel["blockId"] = blockId;
-        sel["config"] = descResult ? descResult.value().defaultConfig : QJsonObject();
-        config["selection"] = sel;
+
+        QJsonObject entry;
+        entry["blockId"] = blockId;
+        entry["config"] = defaultCfg;
+
+        if (isArray) {
+            QJsonArray arr = config.value(jsonKey).toArray();
+            arr.append(entry);
+            config[jsonKey] = arr;
+        } else {
+            config[jsonKey] = entry;
+        }
+
         adapter->setPipelineConfig(config);
         emit pipelineConfigChanged(config);
     }
 
-    addModel(selectionModel->currentIndex(), {PM_ITEM_STRATEGY, PM_ITEM_PIPELINE_STRATEGY}, PM_ITEM_SELECTION_MODEL);
+    addModel(selectionModel->currentIndex(), {PM_ITEM_STRATEGY, PM_ITEM_PIPELINE_STRATEGY}, itemType);
+}
+
+void CPortfolioConfigModel::slotOnClickAddSelectionModel()
+{
+    addBlockViaDialog("Selection", "selection", false, PM_ITEM_SELECTION_MODEL);
 }
 
 void CPortfolioConfigModel::slotOnClickAddAlphaModel()
 {
-    QItemSelectionModel *selectionModel = m_treeView->selectionModel();
-    if (!selectionModel->hasSelection()) return;
-
-    QString blockId = showBlockSelectionDialog(m_treeView, "Alpha");
-    if (blockId.isEmpty()) return;
-
-    auto* adapter = findPipelineAdapterForSelection(this, m_treeView);
-    if (adapter) {
-        auto descResult = Pipeline::BlockRegistry::instance().descriptor(blockId);
-        QJsonObject config = adapter->pipelineConfig();
-        QJsonArray alphas = config.value("alphas").toArray();
-        QJsonObject newAlpha;
-        newAlpha["blockId"] = blockId;
-        newAlpha["config"] = descResult ? descResult.value().defaultConfig : QJsonObject();
-        alphas.append(newAlpha);
-        config["alphas"] = alphas;
-        adapter->setPipelineConfig(config);
-        emit pipelineConfigChanged(config);
-    }
-
-    addModel(selectionModel->currentIndex(), {PM_ITEM_STRATEGY, PM_ITEM_PIPELINE_STRATEGY}, PM_ITEM_ALFA_MODEL);
+    addBlockViaDialog("Alpha", "alphas", true, PM_ITEM_ALFA_MODEL);
 }
 
 void CPortfolioConfigModel::slotOnClickAddRebalanceModel()
 {
-    QItemSelectionModel *selectionModel = m_treeView->selectionModel();
-    if (!selectionModel->hasSelection()) return;
-
-    QString blockId = showBlockSelectionDialog(m_treeView, "Rebalance");
-    if (blockId.isEmpty()) return;
-
-    auto* adapter = findPipelineAdapterForSelection(this, m_treeView);
-    if (adapter) {
-        auto descResult = Pipeline::BlockRegistry::instance().descriptor(blockId);
-        QJsonObject config = adapter->pipelineConfig();
-        QJsonObject reb;
-        reb["blockId"] = blockId;
-        reb["config"] = descResult ? descResult.value().defaultConfig : QJsonObject();
-        config["rebalance"] = reb;
-        adapter->setPipelineConfig(config);
-        emit pipelineConfigChanged(config);
-    }
-
-    addModel(selectionModel->currentIndex(), {PM_ITEM_STRATEGY, PM_ITEM_PIPELINE_STRATEGY}, PM_ITEM_REBALANCE_MODEL);
+    addBlockViaDialog("Rebalance", "rebalance", false, PM_ITEM_REBALANCE_MODEL);
 }
 
 void CPortfolioConfigModel::slotOnClickAddRiskModel()
 {
-    QItemSelectionModel *selectionModel = m_treeView->selectionModel();
-    if (!selectionModel->hasSelection()) return;
-
-    QString blockId = showBlockSelectionDialog(m_treeView, "Risk");
-    if (blockId.isEmpty()) return;
-
-    auto* adapter = findPipelineAdapterForSelection(this, m_treeView);
-    if (adapter) {
-        auto descResult = Pipeline::BlockRegistry::instance().descriptor(blockId);
-        QJsonObject config = adapter->pipelineConfig();
-        QJsonArray risks = config.value("risks").toArray();
-        QJsonObject newRisk;
-        newRisk["blockId"] = blockId;
-        newRisk["config"] = descResult ? descResult.value().defaultConfig : QJsonObject();
-        risks.append(newRisk);
-        config["risks"] = risks;
-        adapter->setPipelineConfig(config);
-        emit pipelineConfigChanged(config);
-    }
-
-    addModel(selectionModel->currentIndex(), {PM_ITEM_STRATEGY, PM_ITEM_PIPELINE_STRATEGY}, PM_ITEM_RISK_MODEL);
+    addBlockViaDialog("Risk", "risks", true, PM_ITEM_RISK_MODEL);
 }
 
 void CPortfolioConfigModel::slotOnClickAddExecutionModel()
 {
-    QItemSelectionModel *selectionModel = m_treeView->selectionModel();
-    if (!selectionModel->hasSelection()) return;
-
-    QString blockId = showBlockSelectionDialog(m_treeView, "Execution");
-    if (blockId.isEmpty()) return;
-
-    auto* adapter = findPipelineAdapterForSelection(this, m_treeView);
-    if (adapter) {
-        auto descResult = Pipeline::BlockRegistry::instance().descriptor(blockId);
-        QJsonObject config = adapter->pipelineConfig();
-        QJsonObject exec;
-        exec["blockId"] = blockId;
-        exec["config"] = descResult ? descResult.value().defaultConfig : QJsonObject();
-        config["execution"] = exec;
-        adapter->setPipelineConfig(config);
-        emit pipelineConfigChanged(config);
-    }
-
-    addModel(selectionModel->currentIndex(), {PM_ITEM_STRATEGY, PM_ITEM_PIPELINE_STRATEGY}, PM_ITEM_EXECUTION_MODEL);
+    addBlockViaDialog("Execution", "execution", false, PM_ITEM_EXECUTION_MODEL);
 }
 
 

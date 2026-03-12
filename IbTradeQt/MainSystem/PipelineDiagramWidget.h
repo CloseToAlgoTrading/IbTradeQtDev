@@ -11,7 +11,6 @@
 
 struct StrategyDiagramInfo {
     QString name;
-    int blockCount = 0;
     QJsonObject pipelineConfig;
 };
 

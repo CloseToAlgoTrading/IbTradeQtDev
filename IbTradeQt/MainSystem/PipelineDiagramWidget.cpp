@@ -290,7 +290,7 @@ void PipelineDiagramWidget::paintPortfolioView(QPainter& p)
             pipeLabels << cfg["execution"].toObject().value("blockId").toString("Exec");
 
         QString detail = pipeLabels.isEmpty()
-            ? QString("(%1 blocks)").arg(strat.blockCount)
+            ? "(no blocks)"
             : pipeLabels.join(" > ");
 
         p.drawText(stratRect.adjusted(8, stratRect.height() / 2, -4, -2),

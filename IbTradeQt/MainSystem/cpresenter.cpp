@@ -269,17 +269,8 @@ void CPresenter::onTreeSelectionChanged(const QModelIndex& current, const QModel
             StrategyDiagramInfo info;
             info.name = s->getName();
             auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(s.data());
-            if (adapter) {
+            if (adapter)
                 info.pipelineConfig = adapter->pipelineConfig();
-                int count = 0;
-                const auto& cfg = info.pipelineConfig;
-                if (cfg.contains("selection")) ++count;
-                count += cfg.value("alphas").toArray().size();
-                if (cfg.contains("rebalance")) ++count;
-                count += cfg.value("risks").toArray().size();
-                if (cfg.contains("execution")) ++count;
-                info.blockCount = count;
-            }
             strategies.append(info);
         }
 
