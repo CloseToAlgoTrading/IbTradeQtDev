@@ -45,6 +45,7 @@ public:
 
 private:
     void addBlockViaDialog(const QString& category, const QString& jsonKey, bool isArray, quint32 itemType);
+    void syncPipelineConfigAfterRemoval(quint16 itemType, const QModelIndex& index);
     void traverseNodes(TreeItem *node);
     void processNode(TreeItem *node);
     void traverseTreeView(const QModelIndex &parentIndex);

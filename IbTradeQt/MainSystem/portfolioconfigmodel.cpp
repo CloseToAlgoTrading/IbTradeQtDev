@@ -736,6 +736,38 @@ void CPortfolioConfigModel::slotOnTimeoutCallback()
 }
 
 
+void CPortfolioConfigModel::syncPipelineConfigAfterRemoval(quint16 itemType, const QModelIndex& index)
+{
+    auto model = getTopLevelModelByIdex2(index).model;
+    if (!model) return;
+    auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(model.data());
+    if (!adapter) return;
+
+    static const QHash<quint16, QPair<QString, bool>> keyMap = {
+        {PM_ITEM_SELECTION_MODEL,  {"selection",  false}},
+        {PM_ITEM_ALFA_MODEL,       {"alphas",     true}},
+        {PM_ITEM_REBALANCE_MODEL,  {"rebalance",  false}},
+        {PM_ITEM_RISK_MODEL,       {"risks",      true}},
+        {PM_ITEM_EXECUTION_MODEL,  {"execution",  false}},
+    };
+
+    auto it = keyMap.constFind(itemType);
+    if (it == keyMap.constEnd()) return;
+
+    QJsonObject config = adapter->pipelineConfig();
+    const QString& jsonKey = it.value().first;
+    bool isArray = it.value().second;
+
+    if (isArray) {
+        config[jsonKey] = QJsonArray();
+    } else {
+        config.remove(jsonKey);
+    }
+
+    adapter->setPipelineConfig(config);
+    emit pipelineConfigChanged(config);
+}
+
 void CPortfolioConfigModel::removeModel(QModelIndex index)
 {
     TreeItem *tmpItem = getItem(index);
@@ -793,11 +825,8 @@ void CPortfolioConfigModel::removeModel(QModelIndex index)
         int childCount = tmpItem->childCount();
         if(childCount > 0)
         {
-                // Notify the view that you're about to remove rows (child nodes)
                 beginRemoveRows(index, 0, childCount - 1);
-                // Remove all child nodes of tmpItem
                 tmpItem->removeChildren(0, childCount);
-                // Notify the view that you've finished removing rows
                 endRemoveRows();
                 emit signalUpdateData(createIndex(0, 0, rootItem));
 
@@ -806,6 +835,8 @@ void CPortfolioConfigModel::removeModel(QModelIndex index)
 
                 emit dataChanged(topLeft, bottomRight);
         }
+
+        syncPipelineConfigAfterRemoval(tmpItem->data(0).id, index);
     }
     else
     {
