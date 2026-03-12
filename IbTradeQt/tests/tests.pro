@@ -32,6 +32,7 @@ INCLUDEPATH += \
     $$PWD/../Replay \
     $$PWD/../Blocks \
     $$PWD/../Plugin \
+    $$PWD/../Supervision \
     $$MOC_DIR
 
 SOURCES += \
@@ -65,6 +66,9 @@ HEADERS += \
     ../Blocks/MarketOrderExecutionBlock.h \
     ../Plugin/BlockPlugin.h \
     ../Plugin/PluginLoader.h \
+    ../Supervision/BoundedQueue.h \
+    ../Supervision/StrategyRuntime.h \
+    ../Supervision/Supervisor.h \
     phase1/tst_contracts.h \
     phase1/tst_merge_policies.h \
     phase1/tst_market_data_router.h \

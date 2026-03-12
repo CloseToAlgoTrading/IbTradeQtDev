@@ -191,6 +191,9 @@ HEADERS += \
     Adapters/AlphaModelAdapter.h \
     Adapters/RiskModelAdapter.h \
     Adapters/ExecutionModelAdapter.h \
+    Supervision/BoundedQueue.h \
+    Supervision/StrategyRuntime.h \
+    Supervision/Supervisor.h \
     Brokers/IB/Shared/Utils.h \
     Brokers/IB/addon/AccountSummaryTags.h \
     Brokers/IB/addon/AvailableAlgoParams.h \
@@ -366,6 +369,7 @@ INCLUDEPATH += \
     $$PWD/Replay \
     $$PWD/Blocks \
     $$PWD/Plugin \
+    $$PWD/Supervision \
     $$PWD/Brokers/IB/Shared \
     $$PWD/Brokers/IB/addon \
     $$PWD/ReqManager \
