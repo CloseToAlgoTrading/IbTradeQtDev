@@ -12,6 +12,7 @@
 #include "cbasicalphamodel.h"
 #include "cbaserebalancemodel.h"
 #include "cbasicriskmodel.h"
+#include "cpipelinestrategyadapter.h"
 #include <QSharedPointer>
 
 ptrGenericModelType CStrategyFactory::createNewStrategy(ModelType id)
@@ -41,6 +42,8 @@ ptrGenericModelType CStrategyFactory::createNewStrategy(ModelType id)
         return QSharedPointer<CBasicRiskModel>::create();
     case ModelType::STRATEGY_EXECTION_MODEL:
         return QSharedPointer<CBasicExecutionModel>::create();
+    case ModelType::STRATEGY_PIPELINE:
+        return QSharedPointer<CPipelineStrategyAdapter>::create();
     default:
         return nullptr;
     }

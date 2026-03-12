@@ -176,6 +176,7 @@ HEADERS += \
     Adapters/SqlitePositionRepository.h \
     Adapters/MockExecutionAdapter.h \
     Adapters/MockPositionRepository.h \
+    Adapters/OrderEventBridge.h \
     Testing/MockMarketDataRouter.h \
     Testing/IntegrationTestHarness.h \
     Replay/MarketDataRecorder.h \
@@ -243,6 +244,7 @@ HEADERS += \
     Strategies/Generic/cmovingaveragecrossover.h \
     Strategies/Generic/csma.h \
     Strategies/Generic/cstrategyfactory.h \
+    Strategies/Generic/cpipelinestrategyadapter.h \
     Strategies/Generic/cteststrategy.h \
     Strategies/Generic/modelConstants.h \
     Strategies/PairTrader/PairTradingGui.h \

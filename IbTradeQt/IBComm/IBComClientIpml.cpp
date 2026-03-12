@@ -384,6 +384,14 @@ void IBComClientImpl::tickSize(TickerId tickerId, TickType field, Decimal size)
 
     m_DispatcherBrokerData.SendMessageToSubscribers(&_tickSize, tickerId, RT_TICK_SIZE);
 
+    if (m_marketDataRouter && m_reqIdToSymbol.contains(tickerId)) {
+        if (field == 8) {
+            m_marketDataRouter->onTickSize(
+                tickerId, m_reqIdToSymbol[tickerId],
+                DecimalFunctions::decimalToDouble(size));
+        }
+    }
+
 	return;
 };
 
@@ -612,6 +620,15 @@ void IBComClientImpl::orderStatus( OrderId orderId, const std::string& status, D
 	
     m_DispatcherBrokerData.SendMessageToSubscribers(&orderStatusObj, E_RQ_ID_ORDER_STATUS, RT_ORDER_STATUS);
 
+    if (m_orderEventBridge) {
+        m_orderEventBridge->onOrderStatus(
+            static_cast<int>(orderId),
+            QString::fromStdString(status),
+            DecimalFunctions::decimalToDouble(filled),
+            DecimalFunctions::decimalToDouble(remaining),
+            avgFillPrice);
+    }
+
 	return;
 
 
@@ -643,6 +660,14 @@ void IBComClientImpl::execDetails(int reqId, const Contract& contract, const Exe
 
     CExecutionReport execReport(reqId, contract.symbol.c_str(), execution.avgPrice, DecimalFunctions::DecimalFunctions::decimalToDouble(execution.shares), execution.execId.c_str());
     m_DispatcherBrokerData.SendMessageToSubscribers(&execReport, E_RQ_ID_ORDER_STATUS, RT_ORDER_EXECUTION);
+
+    if (m_orderEventBridge) {
+        m_orderEventBridge->onExecDetails(
+            static_cast<int>(execution.orderId),
+            QString::fromStdString(contract.symbol),
+            execution.avgPrice,
+            DecimalFunctions::decimalToDouble(execution.shares));
+    }
 }
 
 //---------------------------------------------------------------

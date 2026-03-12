@@ -19,6 +19,7 @@ public:
     QString symbol;
     double bid = 0.0;
     double ask = 0.0;
+    double volume = 0.0;
     QDateTime timestamp;
     int reqId = 0;
 
@@ -45,6 +46,14 @@ public:
         emit tick(t);
     }
 
+    void onTickSize(int reqId, const QString& symbol, double volume) {
+        Q_UNUSED(reqId)
+        if (m_lastPriceCache.contains(symbol)) {
+            m_lastPriceCache[symbol].volume = volume;
+        }
+        emit tickSizeUpdate(symbol, volume);
+    }
+
     void onBarComplete(int reqId, const QString& symbol, const QDateTime& timestamp) {
         Q_UNUSED(reqId)
         emit barClose(symbol, timestamp);
@@ -57,6 +66,7 @@ public:
 signals:
     void tick(const IBComm::MarketTick& tick);
     void barClose(const QString& symbol, const QDateTime& timestamp);
+    void tickSizeUpdate(const QString& symbol, double volume);
     void connectionError(const QString& message);
 
 private:

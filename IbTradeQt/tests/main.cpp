@@ -16,6 +16,8 @@
 #include "phase5/tst_observability.h"
 #include "phase6/tst_benchmark.h"
 #include "integration/tst_default_pipelines.h"
+#include "integration/tst_pipeline_strategy_adapter.h"
+#include "integration/tst_live_execution_wiring.h"
 
 int main(int argc, char *argv[])
 {
@@ -50,6 +52,12 @@ int main(int argc, char *argv[])
 
     // Integration - Default Pipelines
     { TestDefaultPipelines tc; status |= QTest::qExec(&tc, argc, argv); }
+
+    // Integration - Pipeline Strategy Adapter
+    { TestPipelineStrategyAdapter tc; status |= QTest::qExec(&tc, argc, argv); }
+
+    // Integration - Live Execution Wiring
+    { TestLiveExecutionWiring tc; status |= QTest::qExec(&tc, argc, argv); }
 
     return status;
 }

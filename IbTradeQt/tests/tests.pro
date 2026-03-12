@@ -35,10 +35,30 @@ INCLUDEPATH += \
     $$PWD/../Supervision \
     $$PWD/../Logging \
     $$PWD/../Metrics \
+    $$PWD/../Strategies/Generic \
+    $$PWD/../IBComm \
+    $$PWD/../CObjects \
+    $$PWD/../Brokers/IB/Shared \
+    $$PWD/../ReqManager \
     $$MOC_DIR
 
+unix {
+    INCLUDEPATH += $$PWD/../Libs
+    LIBS += -L$$PWD/../Libs/ -lbid
+    DEPENDPATH += $$PWD/../Libs
+    PRE_TARGETDEPS += $$PWD/../Libs/libbid.a
+}
+
+win32 {
+    LIBS += -L$$PWD/../Libs/win/ -llibbid
+    INCLUDEPATH += $$PWD/../Libs/win
+    DEPENDPATH += $$PWD/../Libs/win
+    PRE_TARGETDEPS += $$PWD/../Libs/win/libbid.lib
+}
+
 SOURCES += \
-    main.cpp
+    main.cpp \
+    ../Brokers/IB/src/Decimal.cpp
 
 HEADERS += \
     ../Pipeline/Contracts.h \
@@ -75,6 +95,7 @@ HEADERS += \
     ../Supervision/Supervisor.h \
     ../Logging/StructuredLogger.h \
     ../Metrics/MetricsCollector.h \
+    ../Strategies/Generic/ModelType.h \
     phase1/tst_contracts.h \
     phase1/tst_merge_policies.h \
     phase1/tst_market_data_router.h \
@@ -89,4 +110,9 @@ HEADERS += \
     phase4/tst_supervision.h \
     phase5/tst_observability.h \
     phase6/tst_benchmark.h \
-    integration/tst_default_pipelines.h
+    integration/tst_default_pipelines.h \
+    integration/tst_pipeline_strategy_adapter.h \
+    integration/tst_live_execution_wiring.h \
+    ../Adapters/IBOrderExecutionAdapter.h \
+    ../Adapters/OrderEventBridge.h \
+    ../IBComm/IBrokerAPI.h

@@ -5,6 +5,7 @@
 
 #include "Dispatcher.h"
 #include "MarketDataRouter.h"
+#include "Adapters/OrderEventBridge.h"
 
 #include "Contract.h"
 #include "MyLogger.h"
@@ -309,6 +310,7 @@ public:
     void userInfo(int reqId, const std::string& whiteBrandingId) override {}
     // Phase 2: MarketDataRouter integration (runs parallel with CDispatcher)
     void setMarketDataRouter(IBComm::MarketDataRouter* router) { m_marketDataRouter = router; }
+    void setOrderEventBridge(Adapters::OrderEventBridge* bridge) { m_orderEventBridge = bridge; }
     void registerSymbolForReqId(qint32 reqId, const QString& symbol) override {
         m_reqIdToSymbol[reqId] = symbol;
     }
@@ -339,6 +341,7 @@ private:
     QMap<qint32, QString> m_reqIdToSymbol;
     QMap<qint32, double> m_lastBid;
     QMap<qint32, double> m_lastAsk;
+    Adapters::OrderEventBridge* m_orderEventBridge = nullptr;
 
 private:
     IBDataTypes::CAccountSummary m_accountSummaryData;

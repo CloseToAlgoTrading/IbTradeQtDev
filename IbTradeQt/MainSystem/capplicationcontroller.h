@@ -7,6 +7,9 @@
 #include "ibtradesystemview.h"
 #include "cmainmodel.h"
 #include "Supervision/Supervisor.h"
+#include "Adapters/IBOrderExecutionAdapter.h"
+#include "Adapters/OrderEventBridge.h"
+#include "Adapters/MockPositionRepository.h"
 #include <QSharedPointer>
 #include <QApplication>
 #include <QObject>
@@ -38,6 +41,9 @@ private:
     CBasicRoot *m_pDataRoot;
 
     Supervision::Supervisor *m_pSupervisor = nullptr;
+    IBOrderExecutionAdapter *m_pExecutionAdapter = nullptr;
+    Adapters::OrderEventBridge *m_pOrderEventBridge = nullptr;
+    MockPositionRepository m_positionRepo;
 };
 
 #endif // CAPPLICATIONCONTROLLER_H

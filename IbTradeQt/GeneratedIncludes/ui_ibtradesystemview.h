@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'ibtradesystemview.ui'
 **
-** Created by: Qt User Interface Compiler version 6.6.0
+** Created by: Qt User Interface Compiler version 6.9.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
 ********************************************************************************/
@@ -183,7 +183,7 @@ public:
         mainToolBar->setObjectName("mainToolBar");
         mainToolBar->setMovable(false);
         mainToolBar->setIconSize(QSize(16, 16));
-        IBTradeSystemClass->addToolBar(Qt::LeftToolBarArea, mainToolBar);
+        IBTradeSystemClass->addToolBar(Qt::ToolBarArea::LeftToolBarArea, mainToolBar);
         statusBar = new QStatusBar(IBTradeSystemClass);
         statusBar->setObjectName("statusBar");
         IBTradeSystemClass->setStatusBar(statusBar);
@@ -204,7 +204,7 @@ public:
         horizontalLayout_3->setObjectName("horizontalLayout_3");
         textEdit = new QTextEdit(dockWidgetContents_2);
         textEdit->setObjectName("textEdit");
-        QSizePolicy sizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
+        QSizePolicy sizePolicy(QSizePolicy::Policy::MinimumExpanding, QSizePolicy::Policy::MinimumExpanding);
         sizePolicy.setHorizontalStretch(0);
         sizePolicy.setVerticalStretch(0);
         sizePolicy.setHeightForWidth(textEdit->sizePolicy().hasHeightForWidth());
@@ -218,7 +218,7 @@ public:
         gridLayout->addLayout(horizontalLayout_3, 0, 0, 1, 1);
 
         dockWidget_Logging->setWidget(dockWidgetContents_2);
-        IBTradeSystemClass->addDockWidget(Qt::BottomDockWidgetArea, dockWidget_Logging);
+        IBTradeSystemClass->addDockWidget(Qt::DockWidgetArea::BottomDockWidgetArea, dockWidget_Logging);
         dockWidget_Settings = new QDockWidget(IBTradeSystemClass);
         dockWidget_Settings->setObjectName("dockWidget_Settings");
         dockWidget_Settings->setMaximumSize(QSize(350, 524287));
@@ -243,7 +243,7 @@ public:
         gridLayout_3->addLayout(horizontalLayout_4, 0, 0, 1, 1);
 
         dockWidget_Settings->setWidget(dockWidgetContents_3);
-        IBTradeSystemClass->addDockWidget(Qt::RightDockWidgetArea, dockWidget_Settings);
+        IBTradeSystemClass->addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, dockWidget_Settings);
 
         menuBar->addAction(menuclear_log->menuAction());
         menuBar->addAction(menuView->menuAction());

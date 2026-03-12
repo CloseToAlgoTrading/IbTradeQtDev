@@ -1,6 +1,7 @@
 #include "CPortfolioConfigModel.h"
 #include "TreeItemDataTypesDef.h"
 #include "PortfolioModelDefines.h"
+#include "cpipelinestrategyadapter.h"
 
 #include <QVariantMap>
 #include <tuple>
@@ -146,7 +147,7 @@ void CPortfolioConfigModel::dataChangeCallback(const QModelIndex &topLeft, const
         auto valueIndex = topLeft;
         auto *itemToUpdate = getItem(topLeft);
 
-        QList<quint16> Ids{PM_ITEM_STRATEGY, PM_ITEM_STRATEGIES, PM_ITEM_PORTFOLIO, PM_ITEM_ACCOUNT, PM_ITEM_SELECTION_MODEL, PM_ITEM_ALFA_MODEL, PM_ITEM_REBALANCE_MODEL, PM_ITEM_RISK_MODEL, PM_ITEM_EXECUTION_MODEL};
+        QList<quint16> Ids{PM_ITEM_STRATEGY, PM_ITEM_PIPELINE_STRATEGY, PM_ITEM_STRATEGIES, PM_ITEM_PORTFOLIO, PM_ITEM_ACCOUNT, PM_ITEM_SELECTION_MODEL, PM_ITEM_ALFA_MODEL, PM_ITEM_REBALANCE_MODEL, PM_ITEM_RISK_MODEL, PM_ITEM_EXECUTION_MODEL};
         auto index = findWorkingNode(topLeft, Ids);
         auto *tmpItem = getItem(index);
 
@@ -267,6 +268,27 @@ void CPortfolioConfigModel::addModel(const QModelIndex& index, const QList<quint
                     model->setId(QUuid::createUuid());
                     model->setParentActivationState(portfolio->getParentActivatedState());
                     model->setParentModel(portfolio.data());
+                    portfolio->addModel(model);
+                }
+            }
+            break;
+        case PM_ITEM_PIPELINE_STRATEGY:
+            {
+                auto account = m_pRoot->getModels().value(workingIndex.parent().row(), nullptr);
+                auto portfolio_offset = item->parent()->getFirstModelChildIndexCache();
+                auto portfolio = account ? account->getModels().value(workingIndex.row() - portfolio_offset, nullptr) : nullptr;
+                if((nullptr != portfolio) && (nullptr != this->m_brokerInterface))
+                {
+                    model = CStrategyFactory::createNewStrategy(ModelType::STRATEGY_PIPELINE);
+                    model->setId(QUuid::createUuid());
+                    model->setParentActivationState(portfolio->getParentActivatedState());
+                    model->setParentModel(portfolio.data());
+
+                    auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(model.data());
+                    if (adapter) {
+                        adapter->loadDefaultConfig("Strategies/DefaultPipelines/simple_momentum_pipeline.json");
+                    }
+
                     portfolio->addModel(model);
                 }
             }
@@ -414,6 +436,15 @@ void CPortfolioConfigModel::slotOnClickAddStrategy()
     }
 }
 
+void CPortfolioConfigModel::slotOnClickAddPipelineStrategy()
+{
+    QItemSelectionModel *selectionModel = m_treeView->selectionModel();
+
+    if (selectionModel->hasSelection()) {
+        addModel(selectionModel->currentIndex(), {PM_ITEM_PORTFOLIO}, PM_ITEM_PIPELINE_STRATEGY);
+    }
+}
+
 void CPortfolioConfigModel::slotOnClickAddSelectionModel()
 {
     QItemSelectionModel *selectionModel = m_treeView->selectionModel();
@@ -547,7 +578,7 @@ void CPortfolioConfigModel::addWorkingNode(QModelIndex index, const ptrGenericMo
         if(pModel != nullptr)
         {
           parent = addWorkingNodeContent(_isModelExist, pModel, item, pModel->getName(), id);
-          if(PM_ITEM_STRATEGY == id)
+          if(PM_ITEM_STRATEGY == id || PM_ITEM_PIPELINE_STRATEGY == id)
           {
                 using ModelGetter = std::function<ptrGenericModelType(ptrGenericModelType)>;
                 std::array<std::tuple<ModelGetter, int, std::string>, 5> modelInfos = {
@@ -602,7 +633,7 @@ void CPortfolioConfigModel::onClickRemoveNodeButton()
         QModelIndex index = selectionModel->currentIndex(); // Assumes single selection mode
         if(PM_ITEM_ACCOUNTS != getItem(index)->data(0).id)
         {
-            QList<quint16> Ids{PM_ITEM_STRATEGY, PM_ITEM_STRATEGIES, PM_ITEM_PORTFOLIO, PM_ITEM_ACCOUNT, PM_ITEM_SELECTION_MODEL, PM_ITEM_ALFA_MODEL, PM_ITEM_REBALANCE_MODEL, PM_ITEM_RISK_MODEL, PM_ITEM_EXECUTION_MODEL};
+            QList<quint16> Ids{PM_ITEM_STRATEGY, PM_ITEM_PIPELINE_STRATEGY, PM_ITEM_STRATEGIES, PM_ITEM_PORTFOLIO, PM_ITEM_ACCOUNT, PM_ITEM_SELECTION_MODEL, PM_ITEM_ALFA_MODEL, PM_ITEM_REBALANCE_MODEL, PM_ITEM_RISK_MODEL, PM_ITEM_EXECUTION_MODEL};
             index = findWorkingNode(index, Ids);
 
             removeModel(index);
@@ -640,6 +671,7 @@ void CPortfolioConfigModel::removeModel(QModelIndex index)
             parentModel->removeModel(modelToRemove);
         break;
     case PM_ITEM_STRATEGY:
+    case PM_ITEM_PIPELINE_STRATEGY:
         if (parentModel)
             parentModel->removeModel(modelToRemove);
         break;
@@ -758,6 +790,7 @@ const ModelContext CPortfolioConfigModel::getTopLevelModelByIdex2(QModelIndex in
         }
         break;
         case PM_ITEM_STRATEGY:
+        case PM_ITEM_PIPELINE_STRATEGY:
         {
             auto account = m_pRoot->getModels().value(index.parent().parent().row(), nullptr);
             auto portfolio_offset = tmpItem->parent()->parent()->getFirstModelChildIndexCache();
@@ -809,6 +842,7 @@ const ptrGenericModelType  CPortfolioConfigModel::getTopLevelModelByIdex(QModelI
         }
         break;
         case PM_ITEM_STRATEGY:
+        case PM_ITEM_PIPELINE_STRATEGY:
         {
             auto account = m_pRoot->getModels().value(index.parent().parent().row(), nullptr);
             auto portfolio_offset = tmpItem->parent()->parent()->getFirstModelChildIndexCache();
@@ -911,6 +945,7 @@ void CPortfolioConfigModel::traverseTreeView(const QModelIndex& parentIndex)
             key = "";
         }
         if (((item->data(0).id == PM_ITEM_ACCOUNT) || (item->data(0).id == PM_ITEM_PORTFOLIO) || (item->data(0).id == PM_ITEM_STRATEGY)
+             || (item->data(0).id == PM_ITEM_PIPELINE_STRATEGY)
              || (item->data(0).id == PM_ITEM_REBALANCE_MODEL)|| (item->data(0).id == PM_ITEM_ALFA_MODEL)
              || (item->data(0).id == PM_ITEM_EXECUTION_MODEL) || (item->data(0).id == PM_ITEM_SELECTION_MODEL)
              || (item->data(0).id == PM_ITEM_RISK_MODEL)))

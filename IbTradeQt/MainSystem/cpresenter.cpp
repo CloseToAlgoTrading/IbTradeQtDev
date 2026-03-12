@@ -86,14 +86,15 @@ void CPresenter::MapSignals()
     QObject::connect(pTreeView->actions().at(0), SIGNAL(triggered()), pPConfigModel, SLOT(slotOnClickAddAccount()), Qt::QueuedConnection);
     QObject::connect(pTreeView->actions().at(1), SIGNAL(triggered()), pPConfigModel, SLOT(slotOnClickAddPortfolio()), Qt::QueuedConnection);
     QObject::connect(pTreeView->actions().at(2), SIGNAL(triggered()), pPConfigModel, SLOT(slotOnClickAddStrategy()), Qt::QueuedConnection);
+    QObject::connect(pTreeView->actions().at(3), SIGNAL(triggered()), pPConfigModel, SLOT(slotOnClickAddPipelineStrategy()), Qt::QueuedConnection);
 
-    QObject::connect(pTreeView->actions().at(4), SIGNAL(triggered()), pPConfigModel, SLOT(slotOnClickAddSelectionModel()), Qt::QueuedConnection);
-    QObject::connect(pTreeView->actions().at(5), SIGNAL(triggered()), pPConfigModel, SLOT(slotOnClickAddAlphaModel()), Qt::QueuedConnection);
-    QObject::connect(pTreeView->actions().at(6), SIGNAL(triggered()), pPConfigModel, SLOT(slotOnClickAddRebalanceModel()), Qt::QueuedConnection);
-    QObject::connect(pTreeView->actions().at(7), SIGNAL(triggered()), pPConfigModel, SLOT(slotOnClickAddRiskModel()), Qt::QueuedConnection);
-    QObject::connect(pTreeView->actions().at(8), SIGNAL(triggered()), pPConfigModel, SLOT(slotOnClickAddExecutionModel()), Qt::QueuedConnection);
+    QObject::connect(pTreeView->actions().at(5), SIGNAL(triggered()), pPConfigModel, SLOT(slotOnClickAddSelectionModel()), Qt::QueuedConnection);
+    QObject::connect(pTreeView->actions().at(6), SIGNAL(triggered()), pPConfigModel, SLOT(slotOnClickAddAlphaModel()), Qt::QueuedConnection);
+    QObject::connect(pTreeView->actions().at(7), SIGNAL(triggered()), pPConfigModel, SLOT(slotOnClickAddRebalanceModel()), Qt::QueuedConnection);
+    QObject::connect(pTreeView->actions().at(8), SIGNAL(triggered()), pPConfigModel, SLOT(slotOnClickAddRiskModel()), Qt::QueuedConnection);
+    QObject::connect(pTreeView->actions().at(9), SIGNAL(triggered()), pPConfigModel, SLOT(slotOnClickAddExecutionModel()), Qt::QueuedConnection);
 
-    QObject::connect(pTreeView->actions().at(10), SIGNAL(triggered()), pPConfigModel, SLOT(onClickRemoveNodeButton()), Qt::QueuedConnection);
+    QObject::connect(pTreeView->actions().at(11), SIGNAL(triggered()), pPConfigModel, SLOT(onClickRemoveNodeButton()), Qt::QueuedConnection);
 
     QObject::connect(pPConfigModel, SIGNAL(signalUpdateData(QModelIndex)), this->pIbtsView, SLOT(slotUpdateTreeView(QModelIndex)));
     QObject::connect(pPConfigModel, &CPortfolioConfigModel::signalUpdateDataAll, this->pIbtsView, &CIBTradeSystemView::slotUpdateTreeViewAll, Qt::QueuedConnection);

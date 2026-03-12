@@ -73,6 +73,7 @@ public slots:
     void slotOnClickAddRebalanceModel();
     void slotOnClickAddRiskModel();
     void slotOnClickAddExecutionModel();
+    void slotOnClickAddPipelineStrategy();
     void onClickRemoveNodeButton();
 
     void slotOnTimeoutCallback();

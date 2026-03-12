@@ -15,6 +15,9 @@
 #include <QDateTime>
 /******* xxx *********/
 
+#include "cpipelinestrategyadapter.h"
+#include "IBComClientImpl.h"
+
 CApplicationController::CApplicationController(QObject *parent):
     QObject(parent)
    , pMainPresenter(new CPresenter(parent))
@@ -36,6 +39,21 @@ CApplicationController::CApplicationController(QObject *parent):
     // Pipeline integration: create Supervisor for LEGO strategy runtimes
     m_pSupervisor = new Supervision::Supervisor(this);
     m_pSupervisor->startMonitoring(10000);
+
+    CPipelineStrategyAdapter::setGlobalRouter(pMainPresenter->marketDataRouter());
+    CPipelineStrategyAdapter::setGlobalSupervisor(m_pSupervisor);
+
+    IBrokerAPI* brokerApi = pMainPresenter->getDataProvider()->getClien().data();
+    m_pExecutionAdapter = new IBOrderExecutionAdapter(brokerApi);
+    m_pOrderEventBridge = new Adapters::OrderEventBridge(m_pExecutionAdapter, this);
+
+    auto* implClient = dynamic_cast<IBComClientImpl*>(brokerApi);
+    if (implClient) {
+        implClient->setOrderEventBridge(m_pOrderEventBridge);
+    }
+
+    CPipelineStrategyAdapter::setGlobalExecutionPort(m_pExecutionAdapter);
+    CPipelineStrategyAdapter::setGlobalPositionRepo(&m_positionRepo);
 
     /*** Test Code ***/
     // DBManager m_dbManager;
@@ -62,6 +80,7 @@ CApplicationController::~CApplicationController()
     if (m_pSupervisor) {
         m_pSupervisor->stopAll();
     }
+    delete m_pExecutionAdapter;
     delete this->pMainView;
     delete this->pMainPresenter;
     delete this->pMainModel;

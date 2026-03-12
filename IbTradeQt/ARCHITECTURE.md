@@ -531,6 +531,7 @@ struct UnifiedModelData {
 - `STRATEGY_MA` → `CMovingAverageCrossover`
 - `STRATEGY_MOMENTUM` → `cMomentum`
 - `STRATEGY_BASIC_TEST` → `CTestStrategy`
+- `STRATEGY_PIPELINE` → `CPipelineStrategyAdapter` (LEGO pipeline)
 - `STRATEGY_SELECTION_MODEL` → `CBasicSelectionModel`
 - `STRATEGY_ALPHA_MODEL` → `CBasicAlphaModel`
 - `STRATEGY_REBALANCE_MODEL` → `CBaseRebalanceModel`
@@ -1531,34 +1532,403 @@ qCritical(logDB) << "Database error:" << errorMessage;
 
 ## Summary
 
-IbTradeQt demonstrates a well-architected trading system with:
+IbTradeQt is a dual-architecture trading system in active transition from a legacy observer-based design to a modern, composable LEGO pipeline:
 
-1. **Clean Separation of Concerns**
-   - Layered architecture with clear boundaries
-   - MVP pattern for testable business logic
-   - Abstracted broker communication
+1. **Dual Data Path**
+   - Legacy: `CDispatcher` -> `void*` -> `CSubscriber::MessageHandler()` (all 15+ message types)
+   - New: `MarketDataRouter` -> typed Qt signals -> `StrategyPipelineRunner` (tick prices, tick sizes, bar closes)
+   - Both paths run simultaneously from `IBComClientImpl` callbacks
 
-2. **Flexible Strategy Framework**
-   - Composite hierarchy for portfolio management
-   - Modular pipeline architecture for strategy components
-   - Factory pattern for easy extensibility
+2. **Two Strategy Models**
+   - Legacy: `CBasicStrategy_V2` with hard-wired sub-models, tightly coupled to `CDispatcher`
+   - New: `CPipelineStrategyAdapter` with composable LEGO blocks, Qt-native signals, and JSON configuration
+   - Both types appear in the same portfolio tree and coexist in the same application
 
-3. **Robust Data Handling**
-   - Observer pattern for efficient data distribution
-   - Dual database system optimized for different use cases
-   - Thread-safe communication patterns
+3. **Hexagonal Execution**
+   - `IOrderExecutionPort` abstracts order placement -- swap between `MockExecutionAdapter` (DryRun) and `IBOrderExecutionAdapter` (Live) without changing pipeline logic
+   - `OrderEventBridge` feeds IB order status/execution callbacks back to the adapter
+   - Default mode is `DryRun` to prevent accidental live orders
 
-4. **Responsive User Interface**
-   - Multi-threaded architecture prevents UI blocking
-   - Real-time updates via Qt signal/slot
-   - Dockable windows for customizable layout
+4. **Supervision and Observability**
+   - `Supervisor` manages runtime lifecycle with health checks and restart policies
+   - `StructuredLogger` provides JSON-line correlation ID tracing
+   - `MetricsCollector` tracks throughput, latency p99, and queue depth
 
-5. **Production-Ready Features**
-   - Comprehensive error handling callbacks from IB
-   - State machine for controlled lifecycle
-   - Persistent configuration and trade history
+5. **264 Tests Across 17 Suites**
+   - Phase 1-6 unit tests for each architectural layer
+   - Integration tests for default pipelines, UI adapter, and live execution wiring
+   - Benchmarks validating <100ms p99 latency and zero message drops
 
-The architecture prioritizes flexibility, allowing multiple strategies to run concurrently within a hierarchical portfolio structure, while maintaining responsive UI and reliable data management.
+The architecture prioritizes incremental migration: the legacy path is untouched, the new path is additive, and both paths are fully tested. See [REMAINING_GAPS.md](REMAINING_GAPS.md) for what remains before the legacy `CDispatcher` can be retired.
+
+---
+
+## LEGO Pipeline Architecture (New)
+
+The LEGO Pipeline is a new strategy execution architecture that runs **alongside** the legacy `CDispatcher` path. It replaces the tightly-coupled `void*` observer pattern with Qt-native typed signals/slots, composable "LEGO blocks", and a supervision layer for crash recovery.
+
+### Why a New Pipeline?
+
+The legacy path (`CDispatcher` -> `CSubscriber` -> `MessageHandler` with `void*` casting) has served well but has inherent limitations:
+- **No type safety** -- all data flows through `void*` pointers with manual casting
+- **Tight coupling** -- strategies must inherit `CProcessingBase_v2` and implement `MessageHandler()`
+- **No composability** -- the five sub-models (Selection, Alpha, Rebalance, Risk, Execution) are hard-wired in `CBasicStrategy_V2`
+- **No supervision** -- a crashed strategy stays dead
+
+The LEGO pipeline addresses all of these with typed Qt `Q_GADGET` contracts, composable blocks, and a supervision layer.
+
+### Dual-Path Architecture
+
+Both the legacy and new paths coexist. Market data from IB flows to **both** simultaneously:
+
+```mermaid
+flowchart TD
+    subgraph ibCallbacks [IB TWS Callbacks]
+        TP["tickPrice()"]
+        TS["tickSize()"]
+        RB["realtimeBar()"]
+        OS["orderStatus()"]
+        ED["execDetails()"]
+    end
+
+    subgraph legacyPath [Legacy Path]
+        CD["CDispatcher"]
+        CS["CSubscriber::MessageHandler()"]
+        BSV2["CBasicStrategy_V2"]
+    end
+
+    subgraph newPath [LEGO Pipeline Path]
+        MDR["MarketDataRouter"]
+        OEB["OrderEventBridge"]
+        PLSA["CPipelineStrategyAdapter"]
+        Runner["StrategyPipelineRunner"]
+        SUP["Supervisor"]
+    end
+
+    TP --> CD
+    TP --> MDR
+    TS --> CD
+    TS -->|"volume"| MDR
+    RB --> CD
+    RB --> MDR
+    OS --> CD
+    OS --> OEB
+    ED --> CD
+    ED --> OEB
+
+    CD --> CS
+    CS --> BSV2
+
+    MDR --> PLSA
+    OEB --> PLSA
+    PLSA --> Runner
+    Runner --> SUP
+```
+
+### Data Contracts (`Q_GADGET` Types)
+
+All data flowing through the pipeline uses typed, serializable Qt value types defined in `Pipeline/Contracts.h`:
+
+| Contract | Purpose | Key Fields |
+|----------|---------|------------|
+| `Signal` | Alpha block output | `symbol`, `confidence`, `direction` (Buy/Sell/Hold), `correlationId` |
+| `TargetPosition` | Rebalance output | `symbol`, `targetQuantity`, `currentQuantity`, `reason` |
+| `ExecutionIntent` | Risk-approved order | `symbol`, `quantity` (signed), `orderType` (Market/Limit/Stop) |
+| `MarketTick` | Router output | `symbol`, `bid`, `ask`, `volume`, `timestamp` |
+
+### Block Interfaces
+
+Each pipeline stage has a pure interface. Blocks are composable -- swap any implementation without changing the rest:
+
+```mermaid
+flowchart LR
+    subgraph Pipeline[LEGO Pipeline Stages]
+        direction LR
+        Selection["ISelectionBlock<br/>Asset Filter"]
+        Alpha["IAlphaBlock<br/>Signal Generation"]
+        Merge["ISignalMergePolicy<br/>Multi-Alpha Merge"]
+        Rebalance["IRebalanceBlock<br/>Target Positions"]
+        Risk["IRiskBlock<br/>Position Limits"]
+        Execution["IExecutionBlock<br/>Order Placement"]
+    end
+
+    MarketTick["MarketTick"] --> Selection
+    Selection -->|"filtered symbols"| Alpha
+    Alpha -->|"Signal[]"| Merge
+    Merge -->|"Signal[]"| Rebalance
+    Rebalance -->|"TargetPosition[]"| Risk
+    Risk -->|"ExecutionIntent[]"| Execution
+    Execution -->|"IOrderExecutionPort"| Broker["IB TWS"]
+```
+
+| Interface | File | Concrete Blocks |
+|-----------|------|-----------------|
+| `ISelectionBlock` | `Pipeline/ISelectionBlock.h` | `PassAllSelectionBlock` |
+| `IAlphaBlock` | `Pipeline/IAlphaBlock.h` | `MomentumAlphaBlock`, `MeanReversionAlphaBlock` |
+| `ISignalMergePolicy` | `Pipeline/ISignalMergePolicy.h` | `FirstWinsMerge`, `WeightedVoteMerge`, `UnanimousMerge` |
+| `IRebalanceBlock` | `Pipeline/IRebalanceBlock.h` | `SimpleRebalanceBlock` |
+| `IRiskBlock` | `Pipeline/IRiskBlock.h` | `MaxPositionRiskBlock` |
+| `IExecutionBlock` | `Pipeline/IExecutionBlock.h` | `MarketOrderExecutionBlock` |
+
+### Ports and Adapters (Hexagonal Architecture)
+
+The pipeline never talks directly to IB. Two **port interfaces** define the boundary:
+
+```mermaid
+flowchart LR
+    subgraph Pipeline[Pipeline Core]
+        ExecBlock["MarketOrderExecutionBlock"]
+        PosQuery["Pipeline needs positions"]
+    end
+
+    subgraph Ports[Port Interfaces]
+        IExec["IOrderExecutionPort"]
+        IPos["IPositionRepositoryPort"]
+    end
+
+    subgraph Adapters[Adapters]
+        IBExec["IBOrderExecutionAdapter<br/>(live orders)"]
+        MockExec["MockExecutionAdapter<br/>(dry-run)"]
+        MockPos["MockPositionRepository"]
+        SqlPos["SqlitePositionRepository"]
+    end
+
+    ExecBlock --> IExec
+    PosQuery --> IPos
+    IExec --> IBExec
+    IExec --> MockExec
+    IPos --> MockPos
+    IPos --> SqlPos
+
+    IBExec -->|"reqPlaceOrderAPI()"| IB["IB TWS"]
+```
+
+| Port | Purpose | Live Adapter | Mock Adapter |
+|------|---------|-------------|-------------|
+| `IOrderExecutionPort` | Place/cancel orders, get status | `IBOrderExecutionAdapter` | `MockExecutionAdapter` |
+| `IPositionRepositoryPort` | Query/update positions | `SqlitePositionRepository` | `MockPositionRepository` |
+
+### MarketDataRouter
+
+`MarketDataRouter` is the Qt-native replacement for `CDispatcher` for market data. It lives in `IBComm/MarketDataRouter.h`:
+
+- **Input**: Called from `IBComClientImpl::tickPrice()`, `tickSize()`, and `realtimeBar()` callbacks
+- **Output**: Emits typed Qt signals: `tick(MarketTick)`, `barClose(symbol, timestamp)`, `tickSizeUpdate(symbol, volume)`
+- **Cache**: Maintains `m_lastPriceCache` for last-known prices per symbol
+- **Thread safety**: Signals are delivered via `Qt::QueuedConnection` to strategy threads
+
+### OrderEventBridge
+
+`OrderEventBridge` (`Adapters/OrderEventBridge.h`) relays IB order callbacks to the pipeline's execution adapter:
+
+- `IBComClientImpl::orderStatus()` --> `bridge.onOrderStatus()` --> `IBOrderExecutionAdapter::updateOrderStatus()`
+- `IBComClientImpl::execDetails()` --> `bridge.onExecDetails()` --> `IBOrderExecutionAdapter::updateOrderStatus()`
+
+This keeps `IBOrderExecutionAdapter` free of QObject overhead while providing thread-safe delivery.
+
+### CPipelineStrategyAdapter (UI Bridge)
+
+`CPipelineStrategyAdapter` (`Strategies/Generic/cpipelinestrategyadapter.h`) bridges the LEGO pipeline into the legacy `CGenericModelApi` tree. It inherits `CBaseModel` so it can appear in the portfolio tree alongside legacy strategies:
+
+| CGenericModelApi Method | CPipelineStrategyAdapter Behavior |
+|------------------------|----------------------------------|
+| `modelType()` | Returns `STRATEGY_PIPELINE` |
+| `getParameters()` | Flattens pipeline JSON config into `QVariantMap` |
+| `setParameters()` | Updates pipeline config from edited `QVariantMap` |
+| `start()` | Creates `StrategyRuntime` via `PipelineFactory`, wires to `MarketDataRouter` + `Supervisor` |
+| `stop()` | Removes runtime from Supervisor |
+| `toJson()` / `fromJson()` | Standard fields + `"pipelineConfig"` JSON object |
+| `genericInfo()` | Runtime stats: pipeline runs, uptime, healthy status, execution mode |
+
+**Execution Mode**: Each pipeline strategy has a `DryRun`/`Live` toggle (default: `DryRun`). In `DryRun`, orders go to `MockExecutionAdapter`. In `Live`, orders go to `IBOrderExecutionAdapter` via the global ports. Users toggle this from the tree parameter editor.
+
+### Pipeline Factory
+
+`PipelineFactory` (`Pipeline/PipelineFactory.h`) creates `BlockGraph` and `StrategyRuntime` instances from JSON config:
+
+```cpp
+// Build a block graph from JSON configuration
+static BlockGraph buildGraph(const QJsonObject& config);
+
+// Create a complete StrategyRuntime wired to MarketDataRouter
+static StrategyRuntime* createRuntime(
+    const QString& name,
+    const QJsonObject& config,
+    IOrderExecutionPort* execPort,
+    IPositionRepositoryPort* posRepo,
+    MarketDataRouter* router);
+```
+
+Uses `BlockRegistry` for block ID lookup and `BlockGraphSerializer` for JSON deserialization.
+
+### Supervision Layer
+
+The `Supervisor` (`Supervision/Supervisor.h`) manages the lifecycle of all running pipeline strategies:
+
+```mermaid
+flowchart TD
+    SUP["Supervisor<br/>(QTimer: 10s health checks)"]
+
+    RT1["StrategyRuntime<br/>SimpleMomentum"]
+    RT2["StrategyRuntime<br/>DualAlpha"]
+
+    BQ1["BoundedQueue<br/>(tick buffer)"]
+    BQ2["BoundedQueue<br/>(tick buffer)"]
+
+    SPR1["StrategyPipelineRunner"]
+    SPR2["StrategyPipelineRunner"]
+
+    SUP --> RT1
+    SUP --> RT2
+    RT1 --> BQ1
+    RT1 --> SPR1
+    RT2 --> BQ2
+    RT2 --> SPR2
+```
+
+| Component | Role |
+|-----------|------|
+| `Supervisor` | Periodic health checks, restart crashed runtimes per `RestartPolicy` |
+| `StrategyRuntime` | Owns a `BoundedQueue` + `StrategyPipelineRunner`, runs on its own thread |
+| `BoundedQueue` | Lock-free tick buffer between MarketDataRouter and the pipeline thread |
+| `StrategyPipelineRunner` | Executes the block graph: Selection -> Alpha -> Merge -> Rebalance -> Risk -> Execution |
+
+### Observability
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| `StructuredLogger` | `Logging/StructuredLogger.h` | JSON-line structured logging with correlation IDs |
+| `MetricsCollector` | `Metrics/MetricsCollector.h` | Counters/gauges for ticks processed, orders placed, latency p99 |
+
+### Default Pipeline Configs
+
+Two pre-built pipeline JSON configs are available in `Strategies/DefaultPipelines/`:
+
+**`simple_momentum_pipeline.json`**: Single alpha (MomentumAlphaBlock, period=20, threshold=0.02), MaxPositionRiskBlock, MarketOrderExecutionBlock.
+
+**`dual_alpha_pipeline.json`**: Two alphas (Momentum + MeanReversion) merged via WeightedVoteMerge, same risk/execution stack.
+
+### Application Wiring
+
+`CApplicationController` creates and wires all pipeline infrastructure at startup:
+
+```cpp
+// 1. Supervisor for runtime lifecycle
+m_pSupervisor = new Supervision::Supervisor(this);
+m_pSupervisor->startMonitoring(10000);
+
+// 2. MarketDataRouter (created in CPresenter, wired to IBComClientImpl)
+CPipelineStrategyAdapter::setGlobalRouter(pMainPresenter->marketDataRouter());
+CPipelineStrategyAdapter::setGlobalSupervisor(m_pSupervisor);
+
+// 3. Live execution adapter
+m_pExecutionAdapter = new IBOrderExecutionAdapter(brokerApi);
+m_pOrderEventBridge = new OrderEventBridge(m_pExecutionAdapter, this);
+implClient->setOrderEventBridge(m_pOrderEventBridge);
+
+// 4. Global ports for pipeline strategies
+CPipelineStrategyAdapter::setGlobalExecutionPort(m_pExecutionAdapter);
+CPipelineStrategyAdapter::setGlobalPositionRepo(&m_positionRepo);
+```
+
+### UI Integration
+
+The tree view context menu has "Add Pipeline Strategy (LEGO)" alongside the legacy "Add New Strategy". When clicked:
+
+1. `CPortfolioConfigModel::slotOnClickAddPipelineStrategy()` creates a `CPipelineStrategyAdapter` via `CStrategyFactory`
+2. The adapter loads `simple_momentum_pipeline.json` as default config
+3. The tree displays the pipeline's parameters (flattened from JSON) and info (runtime stats)
+4. Users edit parameters (block configs, execution mode) directly in the tree
+5. `PM_ITEM_PIPELINE_STRATEGY` is recognized in all tree operations (edit, remove, lookup, refresh)
+
+### Test Coverage
+
+The pipeline has **264 tests** across 17 test suites organized by phase:
+
+| Phase | Suite | Tests | Focus |
+|-------|-------|-------|-------|
+| 1 | Contracts, MergePolicies, MarketDataRouter, BlockInterfaces, Expected, Scope | 69 | Core types and interfaces |
+| 2 | Replay, Adapters, Integration | 44 | Adapters, replay, integration harness |
+| 3 | BlockRegistry, PipelineRunner | 29 | Block registry, pipeline orchestration |
+| 4 | Supervision | 20 | Supervisor, StrategyRuntime, BoundedQueue |
+| 5 | Observability | 27 | StructuredLogger, MetricsCollector |
+| 6 | Benchmark | 14 | Throughput, latency p99, queue depth |
+| Integration | DefaultPipelines, PipelineStrategyAdapter, LiveExecutionWiring | 40 | End-to-end: factory, adapter, execution, UI bridge |
+
+### Directory Structure (Pipeline Components)
+
+```
+IbTradeQt/
+├── Pipeline/                    # Core pipeline framework
+│   ├── Contracts.h              # Q_GADGET data types (Signal, TargetPosition, ExecutionIntent)
+│   ├── Scope.h                  # Pipeline scope / context
+│   ├── IAlphaBlock.h            # Alpha block interface
+│   ├── ISelectionBlock.h        # Selection block interface
+│   ├── IRebalanceBlock.h        # Rebalance block interface
+│   ├── IRiskBlock.h             # Risk block interface
+│   ├── IExecutionBlock.h        # Execution block interface
+│   ├── ISignalMergePolicy.h     # Multi-alpha merge interface
+│   ├── BlockRegistry.h          # Block ID → factory registry
+│   ├── BlockGraphSerializer.h   # JSON <-> BlockGraph serialization
+│   ├── StrategyPipelineRunner.h # Orchestrates one pipeline run
+│   └── PipelineFactory.h        # Creates BlockGraph + StrategyRuntime from JSON
+│
+├── Blocks/                      # Concrete block implementations
+│   ├── MomentumAlphaBlock.h     # Momentum alpha (period, threshold)
+│   ├── MeanReversionAlphaBlock.h # Mean reversion alpha (window, stdDevThreshold)
+│   ├── MaxPositionRiskBlock.h   # Max position size risk filter
+│   └── MarketOrderExecutionBlock.h # Market order execution via IOrderExecutionPort
+│
+├── Ports/                       # Hexagonal architecture port interfaces
+│   ├── IOrderExecutionPort.h    # Order placement/cancellation port
+│   └── IPositionRepositoryPort.h # Position query/update port
+│
+├── Adapters/                    # Port adapters (live + mock)
+│   ├── IBOrderExecutionAdapter.h # Live: calls IBrokerAPI::reqPlaceOrderAPI()
+│   ├── MockExecutionAdapter.h   # Mock: records orders for testing
+│   ├── MockPositionRepository.h # Mock: in-memory positions
+│   ├── SqlitePositionRepository.h # Persistent: SQLite positions
+│   ├── OrderEventBridge.h       # Relays IB orderStatus/execDetails to adapter
+│   ├── AlphaModelAdapter.h      # Wraps legacy CBasicAlphaModel as IAlphaBlock
+│   ├── RiskModelAdapter.h       # Wraps legacy CBasicRiskModel as IRiskBlock
+│   └── ExecutionModelAdapter.h  # Wraps legacy CBasicExecutionModel as IExecutionBlock
+│
+├── Supervision/                 # Runtime lifecycle management
+│   ├── Supervisor.h             # Health checks, restart policies
+│   ├── StrategyRuntime.h        # Per-strategy thread + queue + runner
+│   └── BoundedQueue.h           # Lock-free tick buffer
+│
+├── Logging/                     # Structured logging
+│   └── StructuredLogger.h       # JSON-line logger with correlation IDs
+│
+├── Metrics/                     # Operational metrics
+│   └── MetricsCollector.h       # Counters, gauges, snapshots
+│
+├── Replay/                      # Deterministic replay
+│   ├── MarketDataRecorder.h     # Records ticks to file
+│   └── MarketDataReplayer.h     # Replays ticks from file
+│
+├── Testing/                     # Test infrastructure
+│   ├── MockMarketDataRouter.h   # Synchronous mock router for unit tests
+│   └── IntegrationTestHarness.h # Wires complete pipeline for integration tests
+│
+├── Plugin/                      # Dynamic block loading
+│   ├── BlockPlugin.h            # Plugin interface
+│   └── PluginLoader.h           # QLibrary-based loader
+│
+├── Strategies/
+│   ├── DefaultPipelines/        # Pre-built pipeline JSON configs
+│   │   ├── simple_momentum_pipeline.json
+│   │   └── dual_alpha_pipeline.json
+│   └── Generic/
+│       └── cpipelinestrategyadapter.h  # Bridges LEGO pipeline into CGenericModelApi tree
+│
+└── tests/
+    └── integration/
+        ├── tst_default_pipelines.h         # Default pipeline end-to-end tests
+        ├── tst_pipeline_strategy_adapter.h  # Adapter config/lifecycle tests
+        └── tst_live_execution_wiring.h      # Live execution, OrderEventBridge, tickSize tests
+```
 
 ---
 
