@@ -2,6 +2,7 @@
 #include "cbasicalphamodel.h"
 //#include <QDateTime>
 #include <QStringList>
+#include "mandatoryFieldKeys.h"
 
 Q_LOGGING_CATEGORY(BasicAlphaModelLog, "BasicAlphaModel.PM");
 
@@ -19,15 +20,12 @@ CBasicAlphaModel::CBasicAlphaModel(QObject *parent)
     , m_pProcessingData()
     , m_errorReceivedCounter(0)
 {
-    m_Name = "Base Alpha Model";
-    this->setName("Base Alpha Model");
+    registerMandatoryParam(MandatoryParams::Name, "Base Alpha Model");
 
-    this->m_ParametersMap.clear();
     this->m_ParametersMap[P_M_PERIOD_STR] = 1;
     this->m_ParametersMap[P_M_PERIOD_RES_STR] = "year";
     this->m_ParametersMap[P_M_N] = 3;
 
-    this->m_genericInfo.clear();
     this->m_genericInfo[I_ASSETS] = "";
 
     m_pProcessedData = createDataList();

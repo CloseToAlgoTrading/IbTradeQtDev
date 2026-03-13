@@ -4,6 +4,7 @@
 
 
 #include "cgenericmodelApi.h"
+#include "IMandatoryFields.h"
 #include <QList>
 #include <QVariantList>
 #include "cbrokerdataprovider.h"
@@ -19,7 +20,7 @@
 
 
 
-class CBaseModel : public CProcessingBase_v2, public CGenericModelApi
+class CBaseModel : public CProcessingBase_v2, public CGenericModelApi, public IMandatoryFields
 {
 Q_OBJECT
 public:
@@ -90,6 +91,20 @@ public:
     inline auto getStrUuId() const{
         return m_uuid.toString(QUuid::WithoutBraces).toStdString();
     }
+
+    // --- IMandatoryFields ---
+    void registerMandatoryParam(const QString& key, const QVariant& defaultValue) override;
+    void registerInheritableParam(const QString& key, const QVariant& defaultValue) override;
+    void registerMandatoryInfo(const QString& key, const QVariant& defaultValue) override;
+    void registerMandatoryAssetField(const QString& key, const QVariant& defaultValue) override;
+    const QSet<QString>& mandatoryParamKeys() const override;
+    const QSet<QString>& mandatoryInfoKeys() const override;
+    const QSet<QString>& mandatoryAssetFieldKeys() const override;
+    CGenericModelApi* findAncestor(ModelType type) const override;
+    QVariant resolvedParam(const QString& key, const QVariant& fallback = {}) const override;
+    double aggregateChildInfo(const QString& key) const override;
+    QVariantMap createAssetEntry(const QVariantMap& values = {}) const override;
+
 protected:
     void connectModels();
     void disconnectModels();
@@ -98,13 +113,19 @@ protected:
     QList<ptrGenericModelType> m_Models;
     QVariantMap m_ParametersMap;
     QVariantMap m_InfoMap;
-    QString m_Name;
     QUuid m_uuid;
 
     //CBrokerDataProvider m_DataProvider;
 
     QVariantMap m_assetList;
     QVariantMap m_genericInfo;
+
+    QSet<QString> m_mandatoryParamKeys;
+    QSet<QString> m_mandatoryInfoKeys;
+    QSet<QString> m_mandatoryAssetFieldKeys;
+    QSet<QString> m_inheritableParamKeys;
+    QVariantMap m_assetFieldDefaults;
+
     QTimer m_tmpTimer;
 
     ptrGenericModelType m_SelectionModel;

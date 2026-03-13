@@ -2,6 +2,7 @@
 #include "cbaserebalancemodel.h"
 #include "modelConstants.h"
 #include "cbasicstrategy_V2.h"
+#include "mandatoryFieldKeys.h"
 
 Q_LOGGING_CATEGORY(BasicRebalanceModelLog, "BasicRebalanceModelLog.PM");
 
@@ -9,8 +10,7 @@ CBaseRebalanceModel::CBaseRebalanceModel(QObject *parent)
     : CBaseModel{parent}
     //, m_dbManager(parent)
 {
-    m_Name = "Base Rebalance Model";
-    this->setName("Base Rebalance Model");
+    registerMandatoryParam(MandatoryParams::Name, "Base Rebalance Model");
 
     connect(&m_dbManager, &DBManager::signalOpenPositionsFetched, this, &CBaseRebalanceModel::slotOpenPositionsFetched, Qt::AutoConnection);
 

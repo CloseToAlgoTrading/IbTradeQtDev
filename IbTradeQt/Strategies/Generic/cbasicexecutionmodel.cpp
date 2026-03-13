@@ -1,6 +1,7 @@
 
 #include "cbasicexecutionmodel.h"
 #include "dbdatatypes.h"
+#include "mandatoryFieldKeys.h"
 #include <QDateTime>
 #include <QString>
 #include <limits>
@@ -13,8 +14,7 @@ CBasicExecutionModel::CBasicExecutionModel(QObject *parent)
     //, m_dbManager(parent)
     , m_Oder()
 {
-    m_Name = "Base Execution Model";
-    this->setName("Base Execution Model");
+    registerMandatoryParam(MandatoryParams::Name, "Base Execution Model");
 
     QObject::connect(this, &CProcessingBase_v2::signalRecvExecutionReport, this, &CBasicExecutionModel::slotRecvExecutionReport, Qt::AutoConnection);
     QObject::connect(this, &CProcessingBase_v2::signalRecvCommissionReport, this, &CBasicExecutionModel::slotRecvCommissionReport, Qt::AutoConnection);

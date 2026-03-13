@@ -156,7 +156,12 @@ bool TreeItem::isModel(const quint16 id) const
     return (_id == PM_ITEM_ACCOUNT)
         || (_id == PM_ITEM_PORTFOLIO)
         || (_id == PM_ITEM_STRATEGY)
-        || (_id == PM_ITEM_SELECTION_MODEL);
+        || (_id == PM_ITEM_PIPELINE_STRATEGY)
+        || (_id == PM_ITEM_SELECTION_MODEL)
+        || (_id == PM_ITEM_ALFA_MODEL)
+        || (_id == PM_ITEM_REBALANCE_MODEL)
+        || (_id == PM_ITEM_RISK_MODEL)
+        || (_id == PM_ITEM_EXECUTION_MODEL);
 }
 
 void TreeItem::updateFirstModelChildIndex()

@@ -1,13 +1,13 @@
 
 #include "cbasicriskmodel.h"
+#include "mandatoryFieldKeys.h"
 
 Q_LOGGING_CATEGORY(BasicRiskModelLog, "BasicRiskModelLog.PM");
 
 CBasicRiskModel::CBasicRiskModel(QObject *parent)
     : CBaseModel{parent}
 {
-    m_Name = "Base Risk Model";
-    this->setName("Base Risk Model");
+    registerMandatoryParam(MandatoryParams::Name, "Base Risk Model");
 }
 
 void CBasicRiskModel::processData(DataListPtr data)

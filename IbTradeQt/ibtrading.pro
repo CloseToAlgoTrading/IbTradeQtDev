@@ -227,6 +227,9 @@ HEADERS += \
     MainSystem/ctreeviewdatamodel.h \
     MainSystem/ibtradesystemview.h \
     Strategies/Generic/ModelType.h \
+    Strategies/Generic/IMandatoryFields.h \
+    Strategies/Generic/mandatoryFieldKeys.h \
+    Strategies/Generic/mandatoryFieldRegistration.h \
     Strategies/Generic/UnifiedModelData.h \
     Strategies/Generic/cbasemodel.h \
     Strategies/Generic/cbaserebalancemodel.h \

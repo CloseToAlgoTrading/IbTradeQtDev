@@ -10,6 +10,7 @@ public:
     virtual ~CBasicPortfolio() {};
 
     ModelType modelType() const override { return ModelType::PORTFOLIO; }
+    QVariantMap assetList() const override;
 };
 
 #endif // CBASICPORTFOLIO_H

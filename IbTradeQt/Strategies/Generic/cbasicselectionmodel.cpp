@@ -1,19 +1,16 @@
 
 #include "cbasicselectionmodel.h"
 #include "UnifiedModelData.h"
+#include "mandatoryFieldKeys.h"
 
 Q_LOGGING_CATEGORY(BasicSelectionModelLog, "BasicSelectionModel.PM");
 
 CBasicSelectionModel::CBasicSelectionModel(QObject *parent) : CBaseModel(parent)
 {
-    m_Name = "Base Selection Model";
-    this->setName("Base Selection Model");
-    this->m_genericInfo.clear();
-    this->m_ParametersMap.clear();
+    registerMandatoryParam(MandatoryParams::Name, "Base Selection Model");
     this->m_ParametersMap["Selected_Assets"] = "";
-     this->m_genericInfo["Selected_Assets"] = "";
+    this->m_genericInfo["Selected_Assets"] = "";
     m_pAssetList = createDataList();
-    // m_pAssetList->append(UnifiedModelData("NVDA", 0, 0, 0));
 }
 
 void CBasicSelectionModel::setParameters(const QVariantMap &parametersMap)

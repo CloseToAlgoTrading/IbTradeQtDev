@@ -2,6 +2,8 @@
 #define CPIPELINESTRATEGYADAPTER_H
 
 #include "cbasemodel.h"
+#include "mandatoryFieldRegistration.h"
+#include "mandatoryFieldKeys.h"
 #include "Pipeline/PipelineFactory.h"
 #include "Supervision/Supervisor.h"
 #include "Supervision/StrategyRuntime.h"
@@ -23,7 +25,8 @@ public:
     explicit CPipelineStrategyAdapter(QObject *parent = nullptr)
         : CBaseModel(parent)
     {
-        m_Name = "Pipeline Strategy";
+        MandatoryFieldRegistration::registerStrategyFields(*this);
+        m_ParametersMap[MandatoryParams::Name] = "Pipeline Strategy";
     }
 
     virtual ~CPipelineStrategyAdapter() override {
@@ -75,7 +78,7 @@ public:
             QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
             setPipelineConfig(doc.object());
             if (m_pipelineConfig.contains("name")) {
-                m_Name = m_pipelineConfig["name"].toString();
+                setName(m_pipelineConfig["name"].toString());
             }
         }
     }
@@ -87,7 +90,7 @@ public:
         if (m_pipelineConfig.isEmpty()) return false;
 
         if (s_globalSupervisor && s_globalRouter) {
-            QString runtimeName = m_Name + "_" + m_uuid.toString(QUuid::WithoutBraces).left(8);
+            QString runtimeName = getName() + "_" + m_uuid.toString(QUuid::WithoutBraces).left(8);
 
             auto* execPort = (m_execMode == ExecutionMode::Live && s_globalExecutionPort)
                 ? s_globalExecutionPort : static_cast<Ports::IOrderExecutionPort*>(&m_mockExecution);
@@ -128,14 +131,13 @@ public:
     }
 
     void setParameters(const QVariantMap& parametersMap) override {
-        m_ParametersMap = parametersMap;
+        CBaseModel::setParameters(parametersMap);
         updateConfigFromParameters();
     }
 
     QVariantMap genericInfo() const override {
-        QVariantMap info;
-        info["type"] = "LEGO Pipeline";
-        info["status"] = m_pipelineRunning ? "Running" : "Stopped";
+        QVariantMap info = m_genericInfo;
+        info[MandatoryInfo::Strategy::Status] = m_pipelineRunning ? "Running" : "Stopped";
 
         if (s_globalSupervisor && !m_runtimeName.isEmpty()) {
             auto* rt = s_globalSupervisor->runtime(m_runtimeName);
@@ -180,14 +182,19 @@ private:
     }
 
     void updateParametersFromConfig() {
+        QVariantMap preserved;
+        for (const auto& key : m_mandatoryParamKeys) {
+            if (m_ParametersMap.contains(key))
+                preserved[key] = m_ParametersMap[key];
+        }
         m_ParametersMap.clear();
+        for (auto it = preserved.cbegin(); it != preserved.cend(); ++it)
+            m_ParametersMap[it.key()] = it.value();
 
-        if (m_pipelineConfig.contains("name")) {
-            m_ParametersMap["pipeline_name"] = m_pipelineConfig["name"].toString();
-        }
-        if (m_pipelineConfig.contains("description")) {
-            m_ParametersMap["pipeline_description"] = m_pipelineConfig["description"].toString();
-        }
+        if (m_pipelineConfig.contains("name"))
+            m_ParametersMap[MandatoryParams::Name] = m_pipelineConfig["name"].toString();
+        if (m_pipelineConfig.contains("description"))
+            m_ParametersMap[MandatoryParams::Description] = m_pipelineConfig["description"].toString();
 
         QJsonArray alphas = m_pipelineConfig.value("alphas").toArray();
         for (int i = 0; i < alphas.size(); ++i) {
@@ -239,9 +246,8 @@ private:
     }
 
     void updateConfigFromParameters() {
-        if (m_ParametersMap.contains("pipeline_name")) {
-            m_pipelineConfig["name"] = m_ParametersMap["pipeline_name"].toString();
-            m_Name = m_ParametersMap["pipeline_name"].toString();
+        if (m_ParametersMap.contains(MandatoryParams::Name)) {
+            m_pipelineConfig["name"] = m_ParametersMap[MandatoryParams::Name].toString();
         }
 
         if (m_ParametersMap.contains("execution_mode")) {

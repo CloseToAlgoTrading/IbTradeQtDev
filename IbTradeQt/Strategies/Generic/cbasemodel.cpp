@@ -5,6 +5,7 @@
 #include "cstrategyfactory.h"
 #include "modelConstants.h"
 #include "cmodelstateimpl.h"
+#include "mandatoryFieldKeys.h"
 
 CBaseModel::CBaseModel(QObject *parent): CProcessingBase_v2(parent)
     , m_Models()
@@ -25,12 +26,9 @@ CBaseModel::CBaseModel(QObject *parent): CProcessingBase_v2(parent)
     , m_usedFunds(0.0)
     , m_OpenPositionList()
 {
-    m_Name = "basemodel";
-    //this->m_genericInfo["test_pnl"] = 0.2f;
-    //this->m_assetList["test_SPY"] = QVariantMap({{"pnl",23.0f}, {"aprice",100.0f}});
+    registerMandatoryParam(MandatoryParams::Name, "");
+    registerMandatoryParam(MandatoryParams::Description, "");
 
-//    QObject::connect(&m_tmpTimer, &QTimer::timeout, this, &CBaseModel::onTimeoutSlot);
-//    m_tmpTimer.start(100);
     this->m_InfoMap[CIM_IsStarted] = false;
     this->m_InfoMap[CIM_IsParentActivated] = false;
 
@@ -75,18 +73,25 @@ QList<ptrGenericModelType>& CBaseModel::getModels()
 
 QString CBaseModel::getName()
 {
-    return this->m_InfoMap["name"].toString();
+    return m_ParametersMap[MandatoryParams::Name].toString();
 }
 
 void CBaseModel::setName(const QString& name)
 {
-    this->m_InfoMap["name"] = name;
+    m_ParametersMap[MandatoryParams::Name] = name;
 }
 
 void CBaseModel::setParameters(const QVariantMap &parametersMap)
 {
-    this->m_ParametersMap = parametersMap;
-    //emit onUpdateParametersSignal(this->m_ParametersMap);
+    QVariantMap preserved;
+    for (const auto& key : m_mandatoryParamKeys) {
+        preserved[key] = parametersMap.contains(key)
+            ? parametersMap[key]
+            : m_ParametersMap.value(key);
+    }
+    m_ParametersMap = parametersMap;
+    for (auto it = preserved.cbegin(); it != preserved.cend(); ++it)
+        m_ParametersMap[it.key()] = it.value();
 }
 
 const QVariantMap &CBaseModel::getParameters()
@@ -176,8 +181,6 @@ QJsonObject CBaseModel::toJson() const
 {
     QJsonObject json;
 
-    // Serialize m_Name
-    json["m_Name"] = m_Name.toStdString().c_str();
     json["m_uuid"] = m_uuid.toString(QUuid::WithoutBraces).toStdString().c_str();
 
     json["modelType"] = static_cast<int>(modelType());
@@ -241,13 +244,23 @@ void CBaseModel::fromJson(const QJsonObject &json)
     };
 
     // from json
-    m_Name = json["m_Name"].toString();
     setId(QUuid::fromString(json["m_uuid"].toString()));
 
-    m_ParametersMap = json["parameters"].toObject().toVariantMap();
+    setParameters(json["parameters"].toObject().toVariantMap());
     m_InfoMap = json["info"].toObject().toVariantMap();
     m_assetList = json["assetList"].toObject().toVariantMap();
-    m_genericInfo = json["genericInfo"].toObject().toVariantMap();
+    setGenericInfo(json["genericInfo"].toObject().toVariantMap());
+
+    // Backward compat: old configs stored name in "m_Name" and/or info["name"]
+    // but not in parameters["Name"]. Restore from the old locations.
+    if (!json["parameters"].toObject().contains(MandatoryParams::Name)) {
+        QString nameFromInfo = m_InfoMap.value("name").toString();
+        if (!nameFromInfo.isEmpty()) {
+            m_ParametersMap[MandatoryParams::Name] = nameFromInfo;
+        } else if (json.contains("m_Name") && !json["m_Name"].toString().isEmpty()) {
+            m_ParametersMap[MandatoryParams::Name] = json["m_Name"].toString();
+        }
+    }
 
     m_Models.clear();
     QJsonArray modelsArray = json["models"].toArray();
@@ -284,7 +297,15 @@ QVariantMap CBaseModel::genericInfo() const
 
 void CBaseModel::setGenericInfo(const QVariantMap &newGenericInfo)
 {
+    QVariantMap preserved;
+    for (const auto& key : m_mandatoryInfoKeys) {
+        preserved[key] = newGenericInfo.contains(key)
+            ? newGenericInfo[key]
+            : m_genericInfo.value(key);
+    }
     m_genericInfo = newGenericInfo;
+    for (auto it = preserved.cbegin(); it != preserved.cend(); ++it)
+        m_genericInfo[it.key()] = it.value();
 }
 
 ModelType CBaseModel::modelType() const
@@ -309,7 +330,7 @@ void CBaseModel::setBrokerDataProvider(QSharedPointer<CBrokerDataProvider> newCl
 
 void CBaseModel::onUpdateParametersSlot(const QVariantMap& parameters)
 {
-    this->m_ParametersMap = parameters;
+    setParameters(parameters);
 }
 
 void CBaseModel::onTimeoutSlot()
@@ -359,9 +380,8 @@ void CBaseModel::slotModelInfoFetched(const DbModelInfo &obj, e_queryStatus stat
     {
         m_ModelInfo = obj;
         qDebug() << "Model Info: " << m_ModelInfo.modelId << m_ModelInfo.modelName;
-        this->m_genericInfo["Id"] = m_ModelInfo.modelId;
-        this->m_genericInfo["Name"] = m_ModelInfo.modelName;
-        this->m_genericInfo["Description"] = m_ModelInfo.modelDescription;
+        if (m_ParametersMap[MandatoryParams::Description].toString().isEmpty())
+            m_ParametersMap[MandatoryParams::Description] = obj.modelDescription;
     }
     else if(e_queryStatus::QS_NOT_FOUND == state)
     {
@@ -470,7 +490,7 @@ void CBaseModel::connectModels()
 
     for (auto &currentModel : models) {
         if (!currentModel.isNull()) {
-            qDebug() << "[CONNECT 1] model:" << this->m_Name << "connect to " << currentModel->m_Name;
+            qDebug() << "[CONNECT 1] model:" << this->getName() << "connect to " << currentModel->getName();
             QObject::connect(this, &CBaseModel::dataProcessed,
                                  currentModel.data(), &CBaseModel::processData);
             break;
@@ -480,7 +500,7 @@ void CBaseModel::connectModels()
     for (auto &currentModel : models) {
         if (!currentModel.isNull()) {
             if (!previousModel.isNull()) {
-                qDebug() << "[CONNECT 2] model:" << previousModel->m_Name << "connect to " << currentModel->m_Name;
+                qDebug() << "[CONNECT 2] model:" << previousModel->getName() << "connect to " << currentModel->getName();
                 QObject::connect(previousModel.data(), &CBaseModel::dataProcessed,
                                  currentModel.data(), &CBaseModel::processData);
             }
@@ -502,7 +522,7 @@ void CBaseModel::disconnectModels() {
     // First, disconnect this from each model
     for (auto &currentModel : models) {
         if (!currentModel.isNull()) {
-            qDebug() << "[DISCONNECT 1] model:" << this->m_Name << "disconnect from " << currentModel->m_Name;
+            qDebug() << "[DISCONNECT 1] model:" << this->getName() << "disconnect from " << currentModel->getName();
             QObject::disconnect(this, &CBaseModel::dataProcessed,
                                 currentModel.data(), &CBaseModel::processData);
             break;
@@ -514,7 +534,7 @@ void CBaseModel::disconnectModels() {
     for (auto &currentModel : models) {
         if (!currentModel.isNull()) {
             if (!previousModel.isNull()) {
-                qDebug() << "[DISCONNECT 2] model:" << previousModel->m_Name << "disconnect from " << currentModel->m_Name;
+                qDebug() << "[DISCONNECT 2] model:" << previousModel->getName() << "disconnect from " << currentModel->getName();
                 QObject::disconnect(previousModel.data(), &CBaseModel::dataProcessed,
                                     currentModel.data(), &CBaseModel::processData);
             }
@@ -588,6 +608,95 @@ e_modelState CBaseModel::getState()
 void CBaseModel::requestInitData()
 {
     emit m_dbManager.signalGetModelInfo(getStrUuId().c_str());
+}
+
+// --- IMandatoryFields implementation ---
+
+void CBaseModel::registerMandatoryParam(const QString& key, const QVariant& defaultValue)
+{
+    m_mandatoryParamKeys.insert(key);
+    m_ParametersMap[key] = defaultValue;
+}
+
+void CBaseModel::registerInheritableParam(const QString& key, const QVariant& defaultValue)
+{
+    registerMandatoryParam(key, defaultValue);
+    m_inheritableParamKeys.insert(key);
+}
+
+void CBaseModel::registerMandatoryInfo(const QString& key, const QVariant& defaultValue)
+{
+    m_mandatoryInfoKeys.insert(key);
+    m_genericInfo[key] = defaultValue;
+}
+
+void CBaseModel::registerMandatoryAssetField(const QString& key, const QVariant& defaultValue)
+{
+    m_mandatoryAssetFieldKeys.insert(key);
+    m_assetFieldDefaults[key] = defaultValue;
+}
+
+const QSet<QString>& CBaseModel::mandatoryParamKeys() const
+{
+    return m_mandatoryParamKeys;
+}
+
+const QSet<QString>& CBaseModel::mandatoryInfoKeys() const
+{
+    return m_mandatoryInfoKeys;
+}
+
+const QSet<QString>& CBaseModel::mandatoryAssetFieldKeys() const
+{
+    return m_mandatoryAssetFieldKeys;
+}
+
+CGenericModelApi* CBaseModel::findAncestor(ModelType type) const
+{
+    CGenericModelApi* current = m_ParentModel;
+    while (current) {
+        if (current->modelType() == type)
+            return current;
+        current = current->getParentModel();
+    }
+    return nullptr;
+}
+
+QVariant CBaseModel::resolvedParam(const QString& key, const QVariant& fallback) const
+{
+    if (!m_inheritableParamKeys.contains(key))
+        return m_ParametersMap.value(key, fallback);
+
+    if (m_ParametersMap.contains(key)) {
+        const auto& val = m_ParametersMap[key];
+        if (val.isValid() && !val.toString().isEmpty())
+            return val;
+    }
+    if (m_ParentModel) {
+        auto* parentBase = dynamic_cast<const CBaseModel*>(m_ParentModel);
+        if (parentBase)
+            return parentBase->resolvedParam(key, fallback);
+    }
+    return fallback;
+}
+
+double CBaseModel::aggregateChildInfo(const QString& key) const
+{
+    double total = 0.0;
+    for (const auto& child : m_Models) {
+        auto info = child->genericInfo();
+        if (info.contains(key))
+            total += info[key].toDouble();
+    }
+    return total;
+}
+
+QVariantMap CBaseModel::createAssetEntry(const QVariantMap& values) const
+{
+    QVariantMap entry = m_assetFieldDefaults;
+    for (auto it = values.cbegin(); it != values.cend(); ++it)
+        entry[it.key()] = it.value();
+    return entry;
 }
 
 bool CBaseModel::getActiveStatus() const

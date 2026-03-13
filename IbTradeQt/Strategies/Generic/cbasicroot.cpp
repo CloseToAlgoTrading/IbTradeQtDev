@@ -1,6 +1,7 @@
 #include "cbasicroot.h"
+#include "mandatoryFieldKeys.h"
 
 CBasicRoot::CBasicRoot(QObject *parent): CBaseModel(parent)
 {
-    m_Name = "BasicRoot";
+    registerMandatoryParam(MandatoryParams::Name, "BasicRoot");
 }
