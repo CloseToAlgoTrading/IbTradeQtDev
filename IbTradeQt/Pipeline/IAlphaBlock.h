@@ -5,6 +5,7 @@
 #include <QJsonObject>
 #include "Contracts.h"
 #include "../IBComm/MarketDataRouter.h"
+#include "../Common/IClock.h"
 
 namespace Pipeline {
 
@@ -25,6 +26,10 @@ public:
     virtual void initialize() = 0;
     virtual void shutdown() = 0;
 
+    // Inject a clock for deterministic time. Live path passes nullptr (falls back
+    // to QDateTime::currentDateTime()). Backtest path passes SimulatedClock*.
+    virtual void setClock(IClock* clock) { m_clock = clock; }
+
 public slots:
     virtual void onTick(const IBComm::MarketTick& tick) = 0;
 
@@ -40,6 +45,10 @@ public slots:
 signals:
     void signalGenerated(const Pipeline::Signal& signal);
     void errorOccurred(const QString& message);
+
+protected:
+    // Blocks that need deterministic time call: m_clock ? m_clock->now() : QDateTime::currentDateTime()
+    IClock* m_clock = nullptr;
 };
 
 } // namespace Pipeline

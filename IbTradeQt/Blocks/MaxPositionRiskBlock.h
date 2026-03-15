@@ -36,7 +36,8 @@ public:
 
     Pipeline::RiskDecision evaluate(
         const Pipeline::TargetPosition& target,
-        const QVector<Pipeline::TargetPosition>& otherTargets) override
+        const QVector<Pipeline::TargetPosition>& allTargets,
+        const QMap<QString, double>& /*currentPositions*/) override
     {
         if (std::abs(target.targetQuantity) > m_maxPositionSize) {
             double clampedDelta = (target.targetQuantity > 0)
@@ -57,7 +58,7 @@ public:
         }
 
         double totalExposure = 0.0;
-        for (const auto& t : otherTargets) {
+        for (const auto& t : allTargets) {
             totalExposure += std::abs(t.targetQuantity);
         }
 

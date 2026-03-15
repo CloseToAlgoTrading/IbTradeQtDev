@@ -1,21 +1,21 @@
 QT += core testlib sql network
 QT -= gui
 
-TARGET = ibtrading_tests
+TARGET   = ibtrading_live_backtest
 TEMPLATE = app
-CONFIG += c++17 testcase console
-CONFIG -= app_bundle
+CONFIG  += c++17 console
+CONFIG  -= app_bundle
 
 CONFIG(debug, debug|release) {
     DESTDIR     = $$PWD/debug
-    OBJECTS_DIR = $$PWD/debug/obj
-    MOC_DIR     = $$PWD/debug/moc
-    RCC_DIR     = $$PWD/debug/rcc
+    OBJECTS_DIR = $$PWD/debug/obj_live
+    MOC_DIR     = $$PWD/debug/moc_live
+    RCC_DIR     = $$PWD/debug/rcc_live
 } else {
     DESTDIR     = $$PWD/release
-    OBJECTS_DIR = $$PWD/release/obj
-    MOC_DIR     = $$PWD/release/moc
-    RCC_DIR     = $$PWD/release/rcc
+    OBJECTS_DIR = $$PWD/release/obj_live
+    MOC_DIR     = $$PWD/release/moc_live
+    RCC_DIR     = $$PWD/release/rcc_live
 }
 
 DEFINES += SRCDIR=\\\"$$PWD\\\"
@@ -37,11 +37,10 @@ INCLUDEPATH += \
     $$PWD/../Logging \
     $$PWD/../Metrics \
     $$PWD/../Strategies/Generic \
-    $$PWD/../IBComm \
     $$PWD/../CObjects \
     $$PWD/../Brokers/IB/Shared \
     $$PWD/../ReqManager \
-    $$MOC_DIR
+    $$PWD/debug/moc_live
 
 unix {
     INCLUDEPATH += $$PWD/../Libs
@@ -50,15 +49,8 @@ unix {
     PRE_TARGETDEPS += $$PWD/../Libs/libbid.a
 }
 
-win32 {
-    LIBS += -L$$PWD/../Libs/win/ -llibbid
-    INCLUDEPATH += $$PWD/../Libs/win
-    DEPENDPATH += $$PWD/../Libs/win
-    PRE_TARGETDEPS += $$PWD/../Libs/win/libbid.lib
-}
-
 SOURCES += \
-    main.cpp \
+    live_backtest_main.cpp \
     ../Brokers/IB/src/Decimal.cpp \
     ../CObjects/caccountsummary.cpp \
     ../CObjects/cposition.cpp \
@@ -86,56 +78,20 @@ HEADERS += \
     ../Ports/IOrderExecutionPort.h \
     ../Ports/IPositionRepositoryPort.h \
     ../Common/Expected.h \
+    ../Common/IClock.h \
     ../ThirdParty/expected.hpp \
-    ../Adapters/MockExecutionAdapter.h \
-    ../Adapters/MockPositionRepository.h \
-    ../Testing/MockMarketDataRouter.h \
-    ../Testing/IntegrationTestHarness.h \
-    ../Replay/MarketDataRecorder.h \
     ../Replay/MarketDataReplayer.h \
     ../Pipeline/BlockRegistry.h \
     ../Pipeline/StrategyPipelineRunner.h \
     ../Pipeline/BlockGraphSerializer.h \
+    ../Pipeline/PipelineFactory.h \
     ../Blocks/MomentumAlphaBlock.h \
     ../Blocks/MaxPositionRiskBlock.h \
     ../Blocks/MarketOrderExecutionBlock.h \
     ../Blocks/MeanReversionAlphaBlock.h \
-    ../Pipeline/PipelineFactory.h \
-    ../Plugin/BlockPlugin.h \
-    ../Plugin/PluginLoader.h \
-    ../Supervision/BoundedQueue.h \
-    ../Supervision/StrategyRuntime.h \
-    ../Supervision/Supervisor.h \
-    ../Logging/StructuredLogger.h \
-    ../Metrics/MetricsCollector.h \
-    ../Strategies/Generic/ModelType.h \
-    phase1/tst_contracts.h \
-    phase1/tst_merge_policies.h \
-    phase1/tst_market_data_router.h \
-    phase1/tst_block_interfaces.h \
-    phase1/tst_expected.h \
-    phase1/tst_scope.h \
-    phase2/tst_replay.h \
-    phase2/tst_adapters.h \
-    phase2/tst_integration.h \
-    phase3/tst_block_registry.h \
-    phase3/tst_pipeline_runner.h \
-    phase4/tst_supervision.h \
-    phase5/tst_observability.h \
-    phase6/tst_benchmark.h \
-    integration/tst_default_pipelines.h \
-    integration/tst_pipeline_strategy_adapter.h \
-    integration/tst_live_execution_wiring.h \
-    integration/tst_typed_routers.h \
-    integration/tst_phase_b_migration.h \
-    integration/tst_phase_d_dispatcher_removal.h \
-    integration/tst_phase_e_remaining_routers.h \
-    ../Adapters/IBOrderExecutionAdapter.h \
-    ../Adapters/IBPositionRepositoryAdapter.h \
-    ../Adapters/SqlitePositionRepository.h \
+    ../Blocks/MovingAverageCrossoverAlphaBlock.h \
     ../Blocks/StaticListSelectionBlock.h \
     ../Blocks/LimitOrderExecutionBlock.h \
-    ../Blocks/MovingAverageCrossoverAlphaBlock.h \
     ../IBComm/IBrokerAPI.h \
     ../IBComm/PositionRouter.h \
     ../IBComm/HistoricalDataRouter.h \
@@ -149,7 +105,6 @@ HEADERS += \
     ../CObjects/crealtimebar.h \
     ../CObjects/cexecutionreport.h \
     ../CObjects/ccommissionreport.h \
-    ../Common/IClock.h \
     ../Backtest/BacktestConfig.h \
     ../Backtest/BacktestResult.h \
     ../Backtest/DataQuality.h \
@@ -166,6 +121,7 @@ HEADERS += \
     ../Backtest/BenchmarkComparison.h \
     ../Backtest/BacktestReportWriter.h \
     ../Backtest/BacktestSession.h \
-    backtest/tst_backtest.h \
-    backtest/tst_yahoo_backtest.h \
+    ../Adapters/IBOrderExecutionAdapter.h \
+    ../Adapters/IBPositionRepositoryAdapter.h \
+    ../Adapters/SqlitePositionRepository.h \
     backtest/tst_live_backtest.h

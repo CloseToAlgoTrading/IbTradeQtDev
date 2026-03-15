@@ -22,6 +22,9 @@
 #include "integration/tst_phase_b_migration.h"
 #include "integration/tst_phase_d_dispatcher_removal.h"
 #include "integration/tst_phase_e_remaining_routers.h"
+#include "backtest/tst_backtest.h"
+#include "backtest/tst_yahoo_backtest.h"
+#include "backtest/tst_live_backtest.h"
 
 int main(int argc, char *argv[])
 {
@@ -74,6 +77,25 @@ int main(int argc, char *argv[])
 
     // Phase E - Remaining router signals
     { TestPhaseE_RemainingRouters tc; status |= QTest::qExec(&tc, argc, argv); }
+
+    // Backtester — Phase 1 foundations
+    { TestIClock tc;                         status |= QTest::qExec(&tc, argc, argv); }
+    { TestMarketPriceStore tc;               status |= QTest::qExec(&tc, argc, argv); }
+    { TestSimulatedLedger tc;                status |= QTest::qExec(&tc, argc, argv); }
+    { TestSimulatedExecutionAdapter tc;      status |= QTest::qExec(&tc, argc, argv); }
+    { TestBacktestMetricsCollector tc;       status |= QTest::qExec(&tc, argc, argv); }
+    { TestMarketDataReplayerExtensions tc;   status |= QTest::qExec(&tc, argc, argv); }
+    { TestCsvHistoricalDataSource tc;        status |= QTest::qExec(&tc, argc, argv); }
+    { TestJsonlHistoricalDataSource tc;      status |= QTest::qExec(&tc, argc, argv); }
+    { TestFullBacktestSession tc;            status |= QTest::qExec(&tc, argc, argv); }
+
+    // Backtester — Yahoo Finance data source + benchmark comparison
+    { TestYahooFinanceDataSource tc;         status |= QTest::qExec(&tc, argc, argv); }
+    { TestBenchmarkComparison tc;            status |= QTest::qExec(&tc, argc, argv); }
+    { TestMACrossoverBacktest tc;            status |= QTest::qExec(&tc, argc, argv); }
+
+    // Live end-to-end backtests — require internet, write HTML+TXT reports
+    { TestLiveBacktest tc;                   status |= QTest::qExec(&tc, argc, argv); }
 
     return status;
 }

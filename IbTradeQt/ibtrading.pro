@@ -145,11 +145,17 @@ SOURCES += \
     CObjects/chistoricalticks.cpp \
     DBStore/dbstoremodel.cpp \
     #MainSystem/cstandartitemsettings.cpp \
-    MainSystem/treeitem.cpp
+    MainSystem/treeitem.cpp \
+    Backtest/SimulatedLedger.cpp \
+    Backtest/SimulatedExecutionAdapter.cpp \
+    Backtest/BacktestMetricsCollector.cpp \
+    Backtest/BacktestSession.cpp \
+    Backtest/YahooFinanceDataSource.cpp
 
 
 HEADERS += \
     Common/Expected.h \
+    Common/IClock.h \
     ThirdParty/expected.hpp \
     Pipeline/Contracts.h \
     Pipeline/Scope.h \
@@ -245,6 +251,22 @@ HEADERS += \
     Strategies/Generic/csma.h \
     Strategies/Generic/cstrategyfactory.h \
     Strategies/Generic/cpipelinestrategyadapter.h \
+    Backtest/BacktestConfig.h \
+    Backtest/BacktestResult.h \
+    Backtest/DataQuality.h \
+    Backtest/FilledOrder.h \
+    Backtest/LedgerSnapshot.h \
+    Backtest/MarketPriceStore.h \
+    Backtest/SimulatedLedger.h \
+    Backtest/SimulatedExecutionAdapter.h \
+    Backtest/BacktestMetricsCollector.h \
+    Backtest/IHistoricalDataSource.h \
+    Backtest/JsonlHistoricalDataSource.h \
+    Backtest/CsvHistoricalDataSource.h \
+    Backtest/YahooFinanceDataSource.h \
+    Backtest/BenchmarkComparison.h \
+    Backtest/BacktestReportWriter.h \
+    Backtest/BacktestSession.h \
     Strategies/Generic/modelConstants.h \
     Strategies/StateMachine/cmodelstate.h \
     Strategies/StateMachine/cmodelstateimpl.h \
@@ -356,6 +378,7 @@ FORMS += \
     DBStore/dbstroreform.ui
 
 INCLUDEPATH += \
+    $$PWD/Backtest \
     $$PWD/Pipeline \
     $$PWD/Ports \
     $$PWD/ThirdParty \

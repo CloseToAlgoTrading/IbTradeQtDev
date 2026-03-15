@@ -20,7 +20,16 @@ class CPipelineStrategyAdapter : public CBaseModel
     Q_OBJECT
 
 public:
-    enum class ExecutionMode { DryRun, Live };
+    enum class ExecutionMode { DryRun, Live, Backtest };
+
+    // Per-instance dependency injection for backtest mode.
+    // All fields must be non-null when used with ExecutionMode::Backtest.
+    struct BacktestContext {
+        IBComm::MarketDataRouter*        router     = nullptr;
+        Supervision::Supervisor*         supervisor = nullptr;
+        Ports::IOrderExecutionPort*      execPort   = nullptr;
+        Ports::IPositionRepositoryPort*  posRepo    = nullptr;
+    };
 
     explicit CPipelineStrategyAdapter(QObject *parent = nullptr)
         : CBaseModel(parent)
@@ -60,6 +69,14 @@ public:
     static IBComm::MarketDataRouter* globalRouter() { return s_globalRouter; }
     static Supervision::Supervisor* globalSupervisor() { return s_globalSupervisor; }
 
+    // Inject per-instance context for backtest mode.
+    // Call this before start(). Automatically sets ExecutionMode::Backtest.
+    void injectBacktestContext(const BacktestContext& ctx) {
+        m_injectedContext    = ctx;
+        m_useInjectedContext = true;
+        m_execMode           = ExecutionMode::Backtest;
+    }
+
     ExecutionMode executionMode() const { return m_execMode; }
     void setExecutionMode(ExecutionMode mode) { m_execMode = mode; }
 
@@ -89,6 +106,36 @@ public:
         if (m_pipelineRunning) return true;
         if (m_pipelineConfig.isEmpty()) return false;
 
+        if (m_useInjectedContext) {
+            // Backtest mode — must use injected context; static globals are forbidden
+            Q_ASSERT_X(m_injectedContext.router     != nullptr &&
+                       m_injectedContext.supervisor  != nullptr &&
+                       m_injectedContext.execPort    != nullptr &&
+                       m_injectedContext.posRepo     != nullptr,
+                       "CPipelineStrategyAdapter::start",
+                       "Backtest mode requires fully injected context — "
+                       "all BacktestContext fields must be non-null");
+
+            QString runtimeName = getName() + "_bt_" + m_uuid.toString(QUuid::WithoutBraces).left(8);
+            auto* execPort = m_injectedContext.execPort;
+            auto* posRepo  = m_injectedContext.posRepo;
+            auto* router   = m_injectedContext.router;
+
+            m_injectedContext.supervisor->addStrategy(
+                runtimeName,
+                [this, runtimeName, execPort, posRepo, router]() {
+                    return Pipeline::PipelineFactory::createRuntime(
+                        runtimeName, m_pipelineConfig, execPort, posRepo, router);
+                },
+                Supervision::RestartPolicy::Never);
+
+            m_runtimeName     = runtimeName;
+            m_pipelineRunning = true;
+            updateInfoFromRuntime();
+            return true;
+        }
+
+        // Live / DryRun path — uses static globals (unchanged behaviour)
         if (s_globalSupervisor && s_globalRouter) {
             QString runtimeName = getName() + "_" + m_uuid.toString(QUuid::WithoutBraces).left(8);
 
@@ -139,8 +186,11 @@ public:
         QVariantMap info = m_genericInfo;
         info[MandatoryInfo::Strategy::Status] = m_pipelineRunning ? "Running" : "Stopped";
 
-        if (s_globalSupervisor && !m_runtimeName.isEmpty()) {
-            auto* rt = s_globalSupervisor->runtime(m_runtimeName);
+        Supervision::Supervisor* activeSupervisor =
+            m_useInjectedContext ? m_injectedContext.supervisor : s_globalSupervisor;
+
+        if (activeSupervisor && !m_runtimeName.isEmpty()) {
+            auto* rt = activeSupervisor->runtime(m_runtimeName);
             if (rt) {
                 info["pipeline_runs"] = rt->pipelineRunCount();
                 info["uptime_ms"] = rt->uptimeMs();
@@ -174,13 +224,19 @@ public:
 
 private:
     void stopPipeline() {
-        if (m_pipelineRunning && s_globalSupervisor && !m_runtimeName.isEmpty()) {
-            s_globalSupervisor->removeStrategy(m_runtimeName);
+        if (m_pipelineRunning && !m_runtimeName.isEmpty()) {
+            Supervision::Supervisor* activeSupervisor =
+                m_useInjectedContext ? m_injectedContext.supervisor : s_globalSupervisor;
+            if (activeSupervisor) {
+                activeSupervisor->removeStrategy(m_runtimeName);
+            }
         }
         m_pipelineRunning = false;
         m_runtimeName.clear();
     }
 
+    // Populate only strategy-level parameters. Block params (alpha_*, risk_*, rebalance_*, execution_*)
+    // belong to the respective model containers and are not aggregated here.
     void updateParametersFromConfig() {
         QVariantMap preserved;
         for (const auto& key : m_mandatoryParamKeys) {
@@ -196,53 +252,17 @@ private:
         if (m_pipelineConfig.contains("description"))
             m_ParametersMap[MandatoryParams::Description] = m_pipelineConfig["description"].toString();
 
-        QJsonArray alphas = m_pipelineConfig.value("alphas").toArray();
-        for (int i = 0; i < alphas.size(); ++i) {
-            QJsonObject alpha = alphas[i].toObject();
-            QString prefix = QString("alpha_%1_").arg(i);
-            m_ParametersMap[prefix + "blockId"] = alpha.value("blockId").toString();
-
-            QJsonObject cfg = alpha.value("config").toObject();
-            for (auto it = cfg.begin(); it != cfg.end(); ++it) {
-                m_ParametersMap[prefix + it.key()] = it.value().toVariant();
-            }
-        }
-
-        QJsonObject rebalance = m_pipelineConfig.value("rebalance").toObject();
-        if (!rebalance.isEmpty()) {
-            m_ParametersMap["rebalance_blockId"] = rebalance.value("blockId").toString();
-            QJsonObject cfg = rebalance.value("config").toObject();
-            for (auto it = cfg.begin(); it != cfg.end(); ++it) {
-                m_ParametersMap["rebalance_" + it.key()] = it.value().toVariant();
-            }
-        }
-
-        QJsonArray risks = m_pipelineConfig.value("risks").toArray();
-        for (int i = 0; i < risks.size(); ++i) {
-            QJsonObject risk = risks[i].toObject();
-            QString prefix = QString("risk_%1_").arg(i);
-            m_ParametersMap[prefix + "blockId"] = risk.value("blockId").toString();
-
-            QJsonObject cfg = risk.value("config").toObject();
-            for (auto it = cfg.begin(); it != cfg.end(); ++it) {
-                m_ParametersMap[prefix + it.key()] = it.value().toVariant();
-            }
-        }
-
-        QJsonObject exec = m_pipelineConfig.value("execution").toObject();
-        if (!exec.isEmpty()) {
-            m_ParametersMap["execution_blockId"] = exec.value("blockId").toString();
-            QJsonObject cfg = exec.value("config").toObject();
-            for (auto it = cfg.begin(); it != cfg.end(); ++it) {
-                m_ParametersMap["execution_" + it.key()] = it.value().toVariant();
-            }
-        }
-
         if (m_pipelineConfig.contains("mergePolicy")) {
             m_ParametersMap["mergePolicy"] = m_pipelineConfig["mergePolicy"].toString();
         }
 
-        m_ParametersMap["execution_mode"] = (m_execMode == ExecutionMode::Live) ? "live" : "dry_run";
+        QString modeStr;
+        switch (m_execMode) {
+        case ExecutionMode::Live:     modeStr = "live";     break;
+        case ExecutionMode::Backtest: modeStr = "backtest"; break;
+        default:                      modeStr = "dry_run";  break;
+        }
+        m_ParametersMap["execution_mode"] = modeStr;
     }
 
     void updateConfigFromParameters() {
@@ -251,8 +271,14 @@ private:
         }
 
         if (m_ParametersMap.contains("execution_mode")) {
-            m_execMode = (m_ParametersMap["execution_mode"].toString() == "live")
-                ? ExecutionMode::Live : ExecutionMode::DryRun;
+            const QString modeStr = m_ParametersMap["execution_mode"].toString();
+            if (modeStr == "live")         m_execMode = ExecutionMode::Live;
+            else if (modeStr == "backtest") m_execMode = ExecutionMode::Backtest;
+            else                            m_execMode = ExecutionMode::DryRun;
+        }
+
+        if (m_ParametersMap.contains("mergePolicy")) {
+            m_pipelineConfig["mergePolicy"] = m_ParametersMap["mergePolicy"].toString();
         }
 
         QJsonArray alphas = m_pipelineConfig.value("alphas").toArray();
@@ -298,6 +324,10 @@ private:
     bool m_pipelineRunning = false;
     QString m_runtimeName;
     ExecutionMode m_execMode = ExecutionMode::DryRun;
+
+    // Per-instance backtest context (set via injectBacktestContext())
+    BacktestContext m_injectedContext;
+    bool m_useInjectedContext = false;
 
     MockExecutionAdapter m_mockExecution;
     MockPositionRepository m_mockPositionRepo;
