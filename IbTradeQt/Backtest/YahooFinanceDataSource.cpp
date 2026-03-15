@@ -16,17 +16,6 @@ namespace Backtest {
 static const QString kYahooBaseUrl =
     "https://query1.finance.yahoo.com/v8/finance/chart/%1";
 
-static QString intervalFor(BarResolution r) {
-    switch (r) {
-    case BarResolution::Min1:  return "1m";
-    case BarResolution::Min5:  return "5m";
-    case BarResolution::Min15: return "15m";
-    case BarResolution::Min30: return "30m";
-    case BarResolution::Hour1: return "1h";
-    case BarResolution::Day1:  return "1d";
-    default:                   return "1d";
-    }
-}
 
 YahooFinanceDataSource::YahooFinanceDataSource(QObject* parent)
     : IHistoricalDataSource(parent)
@@ -67,7 +56,14 @@ void YahooFinanceDataSource::requestBars(const QStringList& symbols,
     m_failed           = false;
     m_lastError.clear();
 
-    const QString interval = intervalFor(resolution);
+    // Yahoo Finance free API only supports daily data reliably for multi-year ranges.
+    // Intraday intervals are capped to ~60 days by Yahoo; always use daily.
+    if (resolution != BarResolution::Day1) {
+        qWarning() << "YahooFinanceDataSource: resolution"
+                   << static_cast<int>(resolution)
+                   << "not supported — falling back to Day1 (Yahoo Finance limit)";
+    }
+    const QString interval = "1d";
     const qint64  period1  = from.isValid() ? from.toSecsSinceEpoch() : 0;
     const qint64  period2  = to.isValid()   ? to.toSecsSinceEpoch()
                                             : QDateTime::currentDateTimeUtc().toSecsSinceEpoch();

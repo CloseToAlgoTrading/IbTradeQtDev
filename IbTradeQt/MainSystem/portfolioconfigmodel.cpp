@@ -2,6 +2,7 @@
 #include "TreeItemDataTypesDef.h"
 #include "PortfolioModelDefines.h"
 #include "cpipelinestrategyadapter.h"
+#include "Backtest/BacktestDataTypes.h"
 
 #include <QVariantMap>
 #include <tuple>
@@ -1204,5 +1205,53 @@ void CPortfolioConfigModel::synchronizeModelParameters(const QModelIndex& parent
         endRemoveRows();
         treeViewRowCount--;
     }
+}
+
+void CPortfolioConfigModel::slotOnClickOpenInBacktestWorkspace()
+{
+    if (!m_treeView) return;
+    QItemSelectionModel* selModel = m_treeView->selectionModel();
+    if (!selModel || !selModel->hasSelection()) return;
+
+    QModelIndex index = selModel->currentIndex();
+    quint16 nodeType = nodeTypeId(index);
+
+    if (nodeType != PM_ITEM_PIPELINE_STRATEGY && nodeType != PM_ITEM_STRATEGY)
+        return;
+
+    ModelContext ctx = getTopLevelModelByIdex2(index);
+    if (!ctx.model) return;
+
+    auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(ctx.model.data());
+    if (!adapter) return;
+
+    // Build portfolio path for disambiguation: "AccountName / PortfolioName / StrategyName"
+    QString portfolioPath;
+    if (ctx.parentModel) {
+        // Walk up: find account name by checking root models
+        QString portfolioName = ctx.parentModel->getName();
+        QString accountName;
+        for (const auto& acc : m_pRoot->getModels()) {
+            for (const auto& port : acc->getModels()) {
+                if (port.data() == ctx.parentModel.data()) {
+                    accountName = acc->getName();
+                    break;
+                }
+            }
+            if (!accountName.isEmpty()) break;
+        }
+        portfolioPath = accountName.isEmpty()
+            ? portfolioName + QStringLiteral(" / ") + ctx.model->getName()
+            : accountName + QStringLiteral(" / ") + portfolioName + QStringLiteral(" / ") + ctx.model->getName();
+    } else {
+        portfolioPath = ctx.model->getName();
+    }
+
+    emit openInBacktestWorkspace(
+        adapter->getId().toString(QUuid::WithoutBraces),
+        adapter->getName(),
+        portfolioPath,
+        adapter->pipelineConfig()
+    );
 }
 

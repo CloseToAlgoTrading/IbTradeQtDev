@@ -507,14 +507,14 @@ private slots:
         small.symbol = "AAPL";
         small.targetQuantity = 100.0;
 
-        auto decision = risk.evaluate(small, {small});
+        auto decision = risk.evaluate(small, {small}, {});
         QCOMPARE(decision.action, Pipeline::RiskDecision::Action::Approve);
 
         Pipeline::TargetPosition large;
         large.symbol = "MSFT";
         large.targetQuantity = 300.0;
 
-        decision = risk.evaluate(large, {large});
+        decision = risk.evaluate(large, {large}, {});
         QCOMPARE(decision.action, Pipeline::RiskDecision::Action::Modify);
         QVERIFY(decision.modifiedQuantity.has_value());
     }

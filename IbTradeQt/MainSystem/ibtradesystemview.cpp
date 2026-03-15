@@ -17,24 +17,32 @@ CIBTradeSystemView::CIBTradeSystemView(QWidget *parent)
 
 
 
-    /*** Beggin Create Context Menu **************/
-    ui.test_treeView->setContextMenuPolicy(Qt::ActionsContextMenu);
-    //ui.test_treeView->addAction(QIcon(":/IBTradeSystem/x_resources/Account.png"), "Add New Account");
-    ui.test_treeView->addAction(m_ih.loadIconFromResourceTheme("Account"), "Add New Account");
-    ui.test_treeView->addAction(m_ih.loadIconFromResourceTheme("Portfolio"), "Add New Portfolio");
-    ui.test_treeView->addAction(m_ih.loadIconFromResourceTheme("Strategy"), "Add Strategy");
+    /*** Begin Create Context Menu **************/
+    // Switch to custom context menu so we can show context-sensitive actions
+    // (e.g. "Open in Backtest Workspace" only for pipeline strategy nodes).
+    ui.test_treeView->setContextMenuPolicy(Qt::CustomContextMenu);
+
+    // Pre-create named actions so CPresenter can connect them by index.
+    // Order must match the indices used in CPresenter::MapSignals().
+    ui.test_treeView->addAction(m_ih.loadIconFromResourceTheme("Account"),   "Add New Account");   // [0]
+    ui.test_treeView->addAction(m_ih.loadIconFromResourceTheme("Portfolio"),  "Add New Portfolio"); // [1]
+    ui.test_treeView->addAction(m_ih.loadIconFromResourceTheme("Strategy"),   "Add Strategy");      // [2]
     QAction *act = new QAction(this);
     act->setSeparator(true);
-    ui.test_treeView->addAction(act);
-    ui.test_treeView->addAction(m_ih.loadIconFromResourceTheme("Strategy"), "Add Selection Model");
-    ui.test_treeView->addAction(m_ih.loadIconFromResourceTheme("Strategy"), "Add Aplha Model");
-    ui.test_treeView->addAction(m_ih.loadIconFromResourceTheme("Strategy"), "Add Rebalance Model");
-    ui.test_treeView->addAction(m_ih.loadIconFromResourceTheme("Strategy"), "Add Risk Model");
-    ui.test_treeView->addAction(m_ih.loadIconFromResourceTheme("Strategy"), "Add Execution Model");
+    ui.test_treeView->addAction(act);                                                               // [3] separator
+    ui.test_treeView->addAction(m_ih.loadIconFromResourceTheme("Strategy"), "Add Selection Model"); // [4]
+    ui.test_treeView->addAction(m_ih.loadIconFromResourceTheme("Strategy"), "Add Aplha Model");     // [5]
+    ui.test_treeView->addAction(m_ih.loadIconFromResourceTheme("Strategy"), "Add Rebalance Model"); // [6]
+    ui.test_treeView->addAction(m_ih.loadIconFromResourceTheme("Strategy"), "Add Risk Model");      // [7]
+    ui.test_treeView->addAction(m_ih.loadIconFromResourceTheme("Strategy"), "Add Execution Model"); // [8]
     act = new QAction(this);
     act->setSeparator(true);
-    ui.test_treeView->addAction(act);
-    ui.test_treeView->addAction("Remove Selected Node");
+    ui.test_treeView->addAction(act);                                                               // [9] separator
+    ui.test_treeView->addAction("Remove Selected Node");                                            // [10]
+    act = new QAction(this);
+    act->setSeparator(true);
+    ui.test_treeView->addAction(act);                                                               // [11] separator
+    ui.test_treeView->addAction("Open in Backtest Workspace");                                      // [12]
 
     /*** End Create Context Menu **************/
 

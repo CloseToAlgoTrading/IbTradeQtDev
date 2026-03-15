@@ -3,6 +3,9 @@
 
 #include <QObject>
 #include <memory>
+#include <QJsonObject>
+#include <QMap>
+#include <QVector>
 #include "Backtest/BacktestConfig.h"
 #include "Backtest/BacktestResult.h"
 #include "Backtest/IHistoricalDataSource.h"
@@ -31,6 +34,27 @@ class BacktestSession : public QObject {
     Q_OBJECT
 public:
     explicit BacktestSession(const BacktestConfig& config, QObject* parent = nullptr);
+
+    // Optional: inject a pipeline config JSON directly instead of loading from file.
+    // Must be called before run(). Takes precedence over config.strategyConfigPath.
+    void setPipelineConfig(const QJsonObject& config) { m_inlinePipelineConfig = config; }
+
+    // Optional: inject pre-fetched bars (from HistoricalDataManager) so the session
+    // skips its own network fetch. Key = symbol, value = ordered bars.
+    // When set, loadHistoricalData() is bypassed entirely.
+    void setPreloadedBars(const QMap<QString, QVector<IBComm::HistoricalBar>>& bars) {
+        m_preloadedBars = bars;
+    }
+
+    // Optional: inject pre-fetched benchmark bars to skip benchmark network fetch.
+    void setPreloadedBenchmarkBars(const QVector<IBComm::HistoricalBar>& bars) {
+        m_preloadedBenchmarkBars = bars;
+    }
+
+    // Access the preloaded strategy bars (for controller to forward to UI after run)
+    const QMap<QString, QVector<IBComm::HistoricalBar>>& preloadedBars() const {
+        return m_preloadedBars;
+    }
 
     // Preload-then-replay: all historical data is loaded into MarketDataReplayer
     // before the replay loop starts. Blocks until finished or cancelled.
@@ -61,6 +85,9 @@ private:
     std::unique_ptr<Pipeline::StrategyPipelineRunner> m_pipelineRunner;
     BacktestResult                                  m_result;
     bool                                            m_cancelled = false;
+    QJsonObject                                     m_inlinePipelineConfig;
+    QMap<QString, QVector<IBComm::HistoricalBar>>   m_preloadedBars;
+    QVector<IBComm::HistoricalBar>                  m_preloadedBenchmarkBars;
 };
 
 } // namespace Backtest

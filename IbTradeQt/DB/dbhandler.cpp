@@ -23,8 +23,22 @@ bool DBHandler::connectDB(const QString& dbName) {
         return false;
     }
 
-    //return initializeDatabase();
+    initializeBacktestTables();
     return true;
+}
+
+void DBHandler::initializeBacktestTables() {
+    auto exec = [this](const char* sql) {
+        QSqlQuery q(m_db);
+        if (!q.exec(QLatin1String(sql)))
+            qWarning() << "DBHandler: failed to create table:" << q.lastError().text();
+    };
+
+    exec(CREATE_TABLE_BACKTEST_RUNS);
+    exec(CREATE_TABLE_BACKTEST_METRICS);
+    exec(CREATE_TABLE_BACKTEST_TRADES);
+    exec(CREATE_TABLE_BACKTEST_EQUITY_CURVE);
+    exec(CREATE_TABLE_HISTORICAL_BARS);
 }
 
 void DBHandler::disconnectDB() {
@@ -259,6 +273,213 @@ void DBHandler::slotGetStrategyData(const QString &strategy_id)
             emit signalStrategyDataFetched(obj, e_queryStatus::QS_NOT_FOUND);
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// Backtest write slots
+// ---------------------------------------------------------------------------
+
+void DBHandler::slotInsertBacktestRun(const DbBacktestRun& run) {
+    auto q = query_insertBacktestRun(run, m_uniqueConnectionName);
+    if (!q.exec())
+        qWarning() << "DBHandler: slotInsertBacktestRun failed:" << q.lastError().text();
+}
+
+void DBHandler::slotUpdateBacktestRunStatus(const QString& runId, const QString& status,
+                                            const QString& errorText, qint64 durationMs,
+                                            const QString& dataRefreshedAt) {
+    auto q = query_updateBacktestRunStatus(runId, status, errorText, durationMs,
+                                            dataRefreshedAt, m_uniqueConnectionName);
+    if (!q.exec())
+        qWarning() << "DBHandler: slotUpdateBacktestRunStatus failed:" << q.lastError().text();
+}
+
+void DBHandler::slotInsertBacktestMetrics(const DbBacktestMetrics& metrics) {
+    auto q = query_insertBacktestMetrics(metrics, m_uniqueConnectionName);
+    if (!q.exec())
+        qWarning() << "DBHandler: slotInsertBacktestMetrics failed:" << q.lastError().text();
+}
+
+void DBHandler::slotInsertBacktestTrades(const QList<DbBacktestTrade>& trades) {
+    if (trades.isEmpty()) return;
+    m_db.transaction();
+    for (const auto& t : trades) {
+        auto q = query_insertBacktestTrade(t, m_uniqueConnectionName);
+        if (!q.exec())
+            qWarning() << "DBHandler: slotInsertBacktestTrades failed:" << q.lastError().text();
+    }
+    m_db.commit();
+}
+
+void DBHandler::slotInsertEquityCurve(const QList<DbBacktestEquityPoint>& points) {
+    if (points.isEmpty()) return;
+    m_db.transaction();
+    for (const auto& p : points) {
+        auto q = query_insertEquityPoint(p, m_uniqueConnectionName);
+        if (!q.exec())
+            qWarning() << "DBHandler: slotInsertEquityCurve failed:" << q.lastError().text();
+    }
+    m_db.commit();
+}
+
+void DBHandler::slotUpsertHistoricalBars(const QList<DbHistoricalBar>& bars) {
+    if (bars.isEmpty()) return;
+    m_db.transaction();
+    for (const auto& b : bars) {
+        auto q = query_upsertHistoricalBar(b, m_uniqueConnectionName);
+        if (!q.exec())
+            qWarning() << "DBHandler: slotUpsertHistoricalBars failed:" << q.lastError().text();
+    }
+    m_db.commit();
+}
+
+// ---------------------------------------------------------------------------
+// Backtest read slots
+// ---------------------------------------------------------------------------
+
+void DBHandler::slotFetchRunsForStrategy(const QString& strategyId) {
+    QList<DbBacktestRunSummary> result;
+    auto q = query_fetchRunsForStrategy(strategyId, m_uniqueConnectionName);
+    if (!q.exec()) {
+        qWarning() << "DBHandler: slotFetchRunsForStrategy failed:" << q.lastError().text();
+        emit signalRunsForStrategyFetched(result);
+        return;
+    }
+    while (q.next()) {
+        DbBacktestRunSummary s;
+        s.runId        = q.value("runId").toString();
+        s.strategyId   = q.value("strategyId").toString();
+        s.symbols      = q.value("symbols").toString();
+        s.startDate    = q.value("startDate").toString();
+        s.endDate      = q.value("endDate").toString();
+        s.status       = q.value("status").toString();
+        s.dataSourceId = q.value("dataSourceId").toString();
+        s.createdAt    = q.value("createdAt").toString();
+        s.totalReturn  = q.value("totalReturn").toDouble();
+        s.sharpeRatio  = q.value("sharpeRatio").toDouble();
+        result.append(s);
+    }
+    emit signalRunsForStrategyFetched(result);
+}
+
+void DBHandler::slotFetchLoadedRun(const QString& runId) {
+    DbBacktestRun run;
+    DbBacktestMetrics metrics;
+    QList<DbBacktestTrade> trades;
+    QList<DbBacktestEquityPoint> equity;
+
+    // Fetch run record
+    {
+        auto q = query_fetchBacktestRun(runId, m_uniqueConnectionName);
+        if (q.exec() && q.next()) {
+            run.runId               = q.value("runId").toString();
+            run.strategyId          = q.value("strategyId").toString();
+            run.strategyDisplayName = q.value("strategyDisplayName").toString();
+            run.portfolioPath       = q.value("portfolioPath").toString();
+            run.configJson          = q.value("configJson").toString();
+            run.symbols             = q.value("symbols").toString();
+            run.startDate           = q.value("startDate").toString();
+            run.endDate             = q.value("endDate").toString();
+            run.status              = q.value("status").toString();
+            run.errorText           = q.value("errorText").toString();
+            run.durationMs          = q.value("durationMs").toLongLong();
+            run.engineVersion       = q.value("engineVersion").toString();
+            run.dataSourceId        = q.value("dataSourceId").toString();
+            run.dataRefreshedAt     = q.value("dataRefreshedAt").toString();
+            run.createdAt           = q.value("createdAt").toString();
+        }
+    }
+
+    // Fetch metrics
+    {
+        auto q = query_fetchBacktestMetrics(runId, m_uniqueConnectionName);
+        if (q.exec() && q.next()) {
+            metrics.runId            = runId;
+            metrics.totalReturn      = q.value("totalReturn").toDouble();
+            metrics.annualizedReturn = q.value("annualizedReturn").toDouble();
+            metrics.sharpeRatio      = q.value("sharpeRatio").toDouble();
+            metrics.maxDrawdown      = q.value("maxDrawdown").toDouble();
+            metrics.winRate          = q.value("winRate").toDouble();
+            metrics.totalTrades      = q.value("totalTrades").toInt();
+            metrics.initialCapital   = q.value("initialCapital").toDouble();
+            metrics.finalCapital     = q.value("finalCapital").toDouble();
+            metrics.benchmarkReturn  = q.value("benchmarkReturn").toDouble();
+            metrics.benchmarkSharpe  = q.value("benchmarkSharpe").toDouble();
+            metrics.alpha            = q.value("alpha").toDouble();
+        }
+    }
+
+    // Fetch trades
+    {
+        auto q = query_fetchBacktestTrades(runId, m_uniqueConnectionName);
+        if (q.exec()) {
+            while (q.next()) {
+                DbBacktestTrade t;
+                t.runId     = runId;
+                t.symbol    = q.value("symbol").toString();
+                t.side      = q.value("side").toString();
+                t.quantity  = q.value("quantity").toDouble();
+                t.fillPrice = q.value("fillPrice").toDouble();
+                t.timestamp = q.value("timestamp").toString();
+                trades.append(t);
+            }
+        }
+    }
+
+    // Fetch equity curve
+    {
+        auto q = query_fetchEquityCurve(runId, m_uniqueConnectionName);
+        if (q.exec()) {
+            while (q.next()) {
+                DbBacktestEquityPoint p;
+                p.runId          = runId;
+                p.timestamp      = q.value("timestamp").toString();
+                p.value          = q.value("value").toDouble();
+                p.benchmarkValue = q.value("benchmarkValue").toDouble();
+                equity.append(p);
+            }
+        }
+    }
+
+    emit signalLoadedRunFetched(run, metrics, trades, equity);
+}
+
+void DBHandler::slotFetchHistoricalBars(const QString& symbol, const QString& resolution,
+                                         const QString& dataSourceId,
+                                         const QString& fromUtc, const QString& toUtc) {
+    QList<DbHistoricalBar> bars;
+    auto q = query_fetchHistoricalBars(symbol, resolution, dataSourceId,
+                                        fromUtc, toUtc, m_uniqueConnectionName);
+    if (!q.exec()) {
+        qWarning() << "DBHandler: slotFetchHistoricalBars failed:" << q.lastError().text();
+        emit signalHistoricalBarsFetched(symbol, resolution, dataSourceId, bars);
+        return;
+    }
+    while (q.next()) {
+        DbHistoricalBar b;
+        b.symbol       = symbol;
+        b.resolution   = resolution;
+        b.dataSourceId = dataSourceId;
+        b.timestamp    = q.value("timestamp").toString();
+        b.open         = q.value("open").toDouble();
+        b.high         = q.value("high").toDouble();
+        b.low          = q.value("low").toDouble();
+        b.close        = q.value("close").toDouble();
+        b.volume       = q.value("volume").toDouble();
+        bars.append(b);
+    }
+    emit signalHistoricalBarsFetched(symbol, resolution, dataSourceId, bars);
+}
+
+void DBHandler::slotFetchCachedBarRange(const QString& symbol, const QString& resolution,
+                                         const QString& dataSourceId) {
+    auto q = query_cachedBarRange(symbol, resolution, dataSourceId, m_uniqueConnectionName);
+    QString minTs, maxTs;
+    if (q.exec() && q.next()) {
+        minTs = q.value("minTs").toString();
+        maxTs = q.value("maxTs").toString();
+    }
+    emit signalCachedBarRangeFetched(symbol, resolution, dataSourceId, minTs, maxTs);
 }
 
 

@@ -150,7 +150,15 @@ SOURCES += \
     Backtest/SimulatedExecutionAdapter.cpp \
     Backtest/BacktestMetricsCollector.cpp \
     Backtest/BacktestSession.cpp \
-    Backtest/YahooFinanceDataSource.cpp
+    Backtest/YahooFinanceDataSource.cpp \
+    Backtest/HistoricalDataManager.cpp \
+    Backtest/BacktestController.cpp \
+    BacktestUI/BacktestWorkspaceDock.cpp \
+    BacktestUI/BacktestRunConfigPanel.cpp \
+    BacktestUI/BacktestRunHistoryPanel.cpp \
+    BacktestUI/EquityChartWidget.cpp \
+    BacktestUI/BacktestCandlestickWidget.cpp \
+    BacktestUI/TradeLogWidget.cpp
 
 
 HEADERS += \
@@ -267,6 +275,15 @@ HEADERS += \
     Backtest/BenchmarkComparison.h \
     Backtest/BacktestReportWriter.h \
     Backtest/BacktestSession.h \
+    Backtest/BacktestDataTypes.h \
+    Backtest/HistoricalDataManager.h \
+    Backtest/BacktestController.h \
+    BacktestUI/BacktestWorkspaceDock.h \
+    BacktestUI/BacktestRunConfigPanel.h \
+    BacktestUI/BacktestRunHistoryPanel.h \
+    BacktestUI/EquityChartWidget.h \
+    BacktestUI/BacktestCandlestickWidget.h \
+    BacktestUI/TradeLogWidget.h \
     Strategies/Generic/modelConstants.h \
     Strategies/StateMachine/cmodelstate.h \
     Strategies/StateMachine/cmodelstateimpl.h \

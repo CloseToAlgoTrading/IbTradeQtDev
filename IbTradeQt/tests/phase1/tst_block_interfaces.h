@@ -112,7 +112,8 @@ public:
 
     Pipeline::RiskDecision evaluate(
         const Pipeline::TargetPosition& target,
-        const QVector<Pipeline::TargetPosition>&) override
+        const QVector<Pipeline::TargetPosition>&,
+        const QMap<QString, double>&) override
     {
         m_evalCount++;
         if (std::abs(target.targetQuantity) > m_maxPosition) {
@@ -269,7 +270,7 @@ private slots:
         tp.symbol = "AAPL";
         tp.targetQuantity = 100.0;
 
-        auto decision = risk.evaluate(tp, {});
+        auto decision = risk.evaluate(tp, {}, {});
         QCOMPARE(decision.action, Pipeline::RiskDecision::Action::Approve);
         QCOMPARE(risk.m_evalCount, 1);
     }
@@ -283,7 +284,7 @@ private slots:
         tp.symbol = "AAPL";
         tp.targetQuantity = 100.0;
 
-        auto decision = risk.evaluate(tp, {});
+        auto decision = risk.evaluate(tp, {}, {});
         QCOMPARE(decision.action, Pipeline::RiskDecision::Action::Reject);
         QVERIFY(!decision.reason.isEmpty());
     }

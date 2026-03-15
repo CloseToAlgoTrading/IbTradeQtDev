@@ -3,6 +3,7 @@
 
 #include <QString>
 #include <QDateTime>
+#include <QList>
 
 enum e_positionStatus {
     PS_INIT_OPEN = 0,
@@ -99,5 +100,85 @@ struct DbModelInfo {
     {}
 };
 
+
+// ---------------------------------------------------------------------------
+// Backtest DB data types
+// ---------------------------------------------------------------------------
+
+struct DbBacktestRun {
+    QString runId;
+    QString strategyId;
+    QString strategyDisplayName;
+    QString portfolioPath;
+    QString configJson;
+    QString symbols;
+    QString startDate;
+    QString endDate;
+    QString status;         // "Created" | "Running" | "Finished" | "Failed"
+    QString errorText;
+    qint64  durationMs    = 0;
+    QString engineVersion;
+    QString dataSourceId;
+    QString dataRefreshedAt;
+    QString createdAt;
+};
+
+struct DbBacktestMetrics {
+    QString runId;
+    double  totalReturn      = 0.0;
+    double  annualizedReturn = 0.0;
+    double  sharpeRatio      = 0.0;
+    double  maxDrawdown      = 0.0;
+    double  winRate          = 0.0;
+    int     totalTrades      = 0;
+    double  initialCapital   = 0.0;
+    double  finalCapital     = 0.0;
+    double  benchmarkReturn  = 0.0;
+    double  benchmarkSharpe  = 0.0;
+    double  alpha            = 0.0;
+};
+
+struct DbBacktestTrade {
+    QString runId;
+    QString symbol;
+    QString side;           // "BUY" | "SELL"
+    double  quantity    = 0.0;
+    double  fillPrice   = 0.0;
+    QString timestamp;      // UTC ISO 8601
+};
+
+struct DbBacktestEquityPoint {
+    QString runId;
+    QString timestamp;      // UTC ISO 8601
+    double  value           = 0.0;
+    double  benchmarkValue  = 0.0;
+};
+
+struct DbHistoricalBar {
+    QString symbol;
+    QString resolution;     // "Day1" | "Min1" | etc.
+    QString dataSourceId;   // "yahoo" | "csv" | "jsonl"
+    QString timestamp;      // UTC ISO 8601
+    double  open    = 0.0;
+    double  high    = 0.0;
+    double  low     = 0.0;
+    double  close   = 0.0;
+    double  volume  = 0.0;
+};
+
+// Lightweight summary row returned by slotFetchRunsForStrategy
+struct DbBacktestRunSummary {
+    QString runId;
+    QString strategyId;
+    QString symbols;
+    QString startDate;
+    QString endDate;
+    QString status;
+    QString dataSourceId;
+    QString createdAt;
+    // Metrics flattened for display in Run History panel
+    double  totalReturn  = 0.0;
+    double  sharpeRatio  = 0.0;
+};
 
 #endif // DBDATATYPES_H

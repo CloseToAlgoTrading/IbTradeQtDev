@@ -13,10 +13,15 @@
 #include "AboutDlgPresener.h"
 
 #include "MarketDataRouter.h"
+#include "Backtest/BacktestDataTypes.h"
+#include <QJsonObject>
 
 class CMainModel;
 class PipelineDiagramWidget;
 class QDockWidget;
+
+namespace BacktestUI { class BacktestWorkspaceDock; }
+namespace Backtest   { class BacktestController;   }
 
 class CPresenter : public QObject
 {
@@ -74,9 +79,20 @@ private:
 private slots:
     void onTreeSelectionChanged(const QModelIndex& current, const QModelIndex& previous);
 
+    // Backtest workspace slots
+    void onOpenInBacktestWorkspace(const QString& strategyId,
+                                   const QString& displayName,
+                                   const QString& portfolioPath,
+                                   const QJsonObject& pipelineConfig);
+    void onLoadRun(const QString& runId);
+    void onBacktestFinished(const Backtest::BacktestLoadedRun& run);
+    void onBacktestFailed(const QString& reason);
+
 private:
-    PipelineDiagramWidget* m_pDiagramWidget = nullptr;
-    QDockWidget* m_pDiagramDock = nullptr;
+    PipelineDiagramWidget*              m_pDiagramWidget     = nullptr;
+    QDockWidget*                        m_pDiagramDock       = nullptr;
+    BacktestUI::BacktestWorkspaceDock*  m_pBacktestDock      = nullptr;
+    Backtest::BacktestController*       m_pBacktestController = nullptr;
 	QScopedPointer<AboutDlgPresener> pAboutDlgPresenter;
 };
 

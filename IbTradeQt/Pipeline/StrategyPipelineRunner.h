@@ -76,6 +76,28 @@ public:
         , m_positionRepo(positionRepo)
     {}
 
+    // Wire any QObject that has tick(MarketTick) and barClose(QString,QDateTime) signals.
+    // Used by tests with MockMarketDataRouter and by production with IBComm::MarketDataRouter.
+    template<typename RouterT>
+    void connectToAnyRouter(RouterT* router) {
+        for (auto* alpha : m_graph.alphaBlocks) {
+            connect(router, &RouterT::tick,     alpha, &IAlphaBlock::onTick,    Qt::DirectConnection);
+            connect(router, &RouterT::barClose, alpha, &IAlphaBlock::onBarClose, Qt::DirectConnection);
+        }
+        for (auto* risk : allRiskBlocks()) {
+            connect(router, &RouterT::tick,
+                    risk, [risk](const IBComm::MarketTick& t){ risk->onTick(t); },
+                    Qt::DirectConnection);
+        }
+        connect(router, &RouterT::barClose,
+                this, &StrategyPipelineRunner::onBarClose,
+                Qt::DirectConnection);
+    }
+
+    // Convenience alias for tests using MockMarketDataRouter
+    template<typename MockT>
+    void connectToMockRouter(MockT* mock) { connectToAnyRouter(mock); }
+
     // Wire live market data router (used in production).
     void connectToMarketData(IBComm::MarketDataRouter* router) {
         for (auto* alpha : m_graph.alphaBlocks) {

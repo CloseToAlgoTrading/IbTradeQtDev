@@ -92,7 +92,8 @@ public:
 
     Pipeline::RiskDecision evaluate(
         const Pipeline::TargetPosition&,
-        const QVector<Pipeline::TargetPosition>&) override
+        const QVector<Pipeline::TargetPosition>&,
+        const QMap<QString, double>&) override
     {
         return {Pipeline::RiskDecision::Action::Approve, "No-op", {}, id()};
     }
@@ -143,7 +144,8 @@ public:
 
     Pipeline::RiskDecision evaluate(
         const Pipeline::TargetPosition& tp,
-        const QVector<Pipeline::TargetPosition>&) override
+        const QVector<Pipeline::TargetPosition>&,
+        const QMap<QString, double>&) override
     {
         if (std::abs(tp.targetQuantity) > m_maxQty) {
             return {Pipeline::RiskDecision::Action::Reject,
@@ -211,7 +213,7 @@ private slots:
         tp.symbol = "AAPL";
         tp.targetQuantity = 1000.0;
 
-        auto decision = risk.evaluate(tp, {});
+        auto decision = risk.evaluate(tp, {}, {});
         QCOMPARE(decision.action, Pipeline::RiskDecision::Action::Approve);
     }
 
@@ -251,7 +253,7 @@ private slots:
             auto targets = rebalance.rebalance({sig}, {});
             QVector<Pipeline::ExecutionIntent> intents;
             for (const auto& tp : targets) {
-                auto decision = risk.evaluate(tp, targets);
+                auto decision = risk.evaluate(tp, targets, {});
                 if (decision.action == Pipeline::RiskDecision::Action::Approve) {
                     Pipeline::ExecutionIntent ei;
                     ei.symbol = tp.symbol;
@@ -296,7 +298,7 @@ private slots:
             auto targets = rebalance.rebalance({sig}, {});
             QVector<Pipeline::ExecutionIntent> intents;
             for (const auto& tp : targets) {
-                auto decision = risk.evaluate(tp, targets);
+                auto decision = risk.evaluate(tp, targets, {});
                 if (decision.action == Pipeline::RiskDecision::Action::Approve) {
                     Pipeline::ExecutionIntent ei;
                     ei.symbol = tp.symbol;

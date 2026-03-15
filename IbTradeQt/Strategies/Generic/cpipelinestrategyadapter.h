@@ -10,6 +10,7 @@
 #include "IBComm/MarketDataRouter.h"
 #include "Adapters/MockExecutionAdapter.h"
 #include "Adapters/MockPositionRepository.h"
+#include "Backtest/BacktestDataTypes.h"
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -88,6 +89,20 @@ public:
     }
 
     const QJsonObject& pipelineConfig() const { return m_pipelineConfig; }
+
+    // --- BacktestProfile — lightweight defaults stored per strategy ---
+    // Only three fields: defaultBenchmark, defaultResolution, defaultDataSource.
+    // All run-specific parameters (dates, capital, slippage) live in the Backtest UI.
+
+    Backtest::BacktestProfile backtestProfile() const {
+        return Backtest::BacktestProfile::fromJson(
+            m_pipelineConfig.value("backtestProfile").toObject());
+    }
+
+    void setBacktestProfile(const Backtest::BacktestProfile& profile) {
+        m_pipelineConfig["backtestProfile"] = profile.toJson();
+        updateParametersFromConfig();
+    }
 
     void loadDefaultConfig(const QString& configPath) {
         QFile file(configPath);
@@ -256,6 +271,15 @@ private:
             m_ParametersMap["mergePolicy"] = m_pipelineConfig["mergePolicy"].toString();
         }
 
+        // BacktestProfile defaults — exposed in tree so users can set sensible defaults
+        // without needing to re-enter them every time they open the Backtest Workspace.
+        {
+            QJsonObject profileObj = m_pipelineConfig.value("backtestProfile").toObject();
+            m_ParametersMap["bt_defaultBenchmark"]   = profileObj.value("defaultBenchmark").toString("SPY");
+            m_ParametersMap["bt_defaultResolution"]  = profileObj.value("defaultResolution").toString("Day1");
+            m_ParametersMap["bt_defaultDataSource"]  = profileObj.value("defaultDataSource").toString("yahoo");
+        }
+
         QString modeStr;
         switch (m_execMode) {
         case ExecutionMode::Live:     modeStr = "live";     break;
@@ -279,6 +303,18 @@ private:
 
         if (m_ParametersMap.contains("mergePolicy")) {
             m_pipelineConfig["mergePolicy"] = m_ParametersMap["mergePolicy"].toString();
+        }
+
+        // Write BacktestProfile defaults back to pipelineConfig JSON
+        {
+            QJsonObject profileObj = m_pipelineConfig.value("backtestProfile").toObject();
+            if (m_ParametersMap.contains("bt_defaultBenchmark"))
+                profileObj["defaultBenchmark"]  = m_ParametersMap["bt_defaultBenchmark"].toString();
+            if (m_ParametersMap.contains("bt_defaultResolution"))
+                profileObj["defaultResolution"] = m_ParametersMap["bt_defaultResolution"].toString();
+            if (m_ParametersMap.contains("bt_defaultDataSource"))
+                profileObj["defaultDataSource"] = m_ParametersMap["bt_defaultDataSource"].toString();
+            m_pipelineConfig["backtestProfile"] = profileObj;
         }
 
         QJsonArray alphas = m_pipelineConfig.value("alphas").toArray();

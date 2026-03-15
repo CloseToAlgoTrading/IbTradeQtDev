@@ -27,10 +27,23 @@ void BacktestSession::run()
 
     buildObjectGraph();
 
-    loadHistoricalData();
-    if (m_cancelled) {
-        emit failed("Cancelled during data load");
-        return;
+    if (!m_preloadedBars.isEmpty()) {
+        // Bars were pre-fetched by HistoricalDataManager — skip network fetch
+        int totalBars = 0;
+        for (auto it = m_preloadedBars.begin(); it != m_preloadedBars.end(); ++it) {
+            for (const auto& bar : it.value()) {
+                m_replayer->addBar(bar, true);
+                ++totalBars;
+            }
+        }
+        qDebug() << "BacktestSession: using" << totalBars
+                 << "preloaded bars for" << m_preloadedBars.keys();
+    } else {
+        loadHistoricalData();
+        if (m_cancelled) {
+            emit failed("Cancelled during data load");
+            return;
+        }
     }
 
     driveReplayLoop();
@@ -89,9 +102,11 @@ void BacktestSession::buildObjectGraph()
 
     m_metrics = std::make_unique<BacktestMetricsCollector>(m_config.initialCapital);
 
-    // Load pipeline config from file
+    // Load pipeline config — inline takes precedence over file path
     QJsonObject pipelineConfig;
-    if (!m_config.strategyConfigPath.isEmpty()) {
+    if (!m_inlinePipelineConfig.isEmpty()) {
+        pipelineConfig = m_inlinePipelineConfig;
+    } else if (!m_config.strategyConfigPath.isEmpty()) {
         QFile f(m_config.strategyConfigPath);
         if (f.open(QIODevice::ReadOnly)) {
             pipelineConfig = QJsonDocument::fromJson(f.readAll()).object();
@@ -238,6 +253,22 @@ void BacktestSession::driveReplayLoop()
 
 void BacktestSession::loadBenchmarkData()
 {
+    // If benchmark bars were pre-fetched, use them directly
+    if (!m_preloadedBenchmarkBars.isEmpty()) {
+        BenchmarkComparison cmp;
+        cmp.setInitialCapital(m_config.initialCapital);
+        for (const auto& bar : m_preloadedBenchmarkBars) {
+            if (bar.symbol == m_config.benchmarkSymbol) {
+                cmp.addClose(bar.timestamp, bar.close);
+            }
+        }
+        m_result.benchmark = cmp.compute(m_config.benchmarkSymbol);
+        qDebug() << "BacktestSession: benchmark" << m_config.benchmarkSymbol
+                 << "(preloaded) total return:" << m_result.benchmark.totalReturn * 100.0 << "%"
+                 << "annualised:" << m_result.benchmark.annualizedReturn * 100.0 << "%";
+        return;
+    }
+
     // Build a separate data source of the same type as the strategy source
     // to fetch benchmark bars. For Yahoo, reuse the same source type.
     std::unique_ptr<IHistoricalDataSource> bmSource;

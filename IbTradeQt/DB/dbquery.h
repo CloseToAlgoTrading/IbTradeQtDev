@@ -6,8 +6,8 @@
 
 
 /* Create Tables */
-const char* TABLE_STRATEGYDATA = "StrategyData";
-const char* CREATE_TABLE_STRATEGYDATA_TEMPLATE =
+static const char* const TABLE_STRATEGYDATA = "StrategyData";
+static const char* const CREATE_TABLE_STRATEGYDATA_TEMPLATE =
     "CREATE TABLE IF NOT EXISTS %1 ("
     "strategyId VARCHAR(64) PRIMARY KEY, "
     "availableBP DOUBLE, "
@@ -17,8 +17,8 @@ const char* CREATE_TABLE_STRATEGYDATA_TEMPLATE =
     "pnlPercentage DOUBLE, "
     "fees DOUBLE)";
 
-const char* TABLE_MODELINFO = "ModelInfo";
-const char* CREATE_TABLE_MODELINFO_TEMPLATE =
+static const char* const TABLE_MODELINFO = "ModelInfo";
+static const char* const CREATE_TABLE_MODELINFO_TEMPLATE =
     "CREATE TABLE IF NOT EXISTS %1 ("
     "modelId VARCHAR(64) PRIMARY KEY, "
     "modelName VARCHAR(255), "
@@ -27,8 +27,8 @@ const char* CREATE_TABLE_MODELINFO_TEMPLATE =
     "updatedAt DATETIME, "
     "status VARCHAR(64)) ";
 
-const char* TABLE_TRADES = "Trades";
-const char* CREATE_TABLE_TRADES_TEMPLATE =
+static const char* const TABLE_TRADES = "Trades";
+static const char* const CREATE_TABLE_TRADES_TEMPLATE =
     "CREATE TABLE IF NOT EXISTS %1 ("
     "execId VARCHAR(50) PRIMARY KEY, "
     "strategyId VARCHAR(64), "
@@ -41,8 +41,8 @@ const char* CREATE_TABLE_TRADES_TEMPLATE =
     "tradeType VARCHAR(10), "
     "FOREIGN KEY (strategyId) REFERENCES ModelInfo(strategyId))";
 
-const char* TABLE_POSITIONS = "Positions";
-const char* CREATE_TABLE_POSITIONS_TEMPLATE =
+static const char* const TABLE_POSITIONS = "Positions";
+static const char* const CREATE_TABLE_POSITIONS_TEMPLATE =
     R"(CREATE TABLE IF NOT EXISTS %1 (
     strategyId VARCHAR(64),
     symbol VARCHAR(10),
@@ -59,7 +59,7 @@ const char* CREATE_TABLE_POSITIONS_TEMPLATE =
 
 
 /* Triggers */
-const char* CREATE_UPDATE_OR_INSERT_TRIGGER_TEMPLATE = R"(
+static const char* const CREATE_UPDATE_OR_INSERT_TRIGGER_TEMPLATE = R"(
         CREATE TRIGGER IF NOT EXISTS update_or_insert_position
         AFTER INSERT ON %1
         FOR EACH ROW
@@ -214,5 +214,289 @@ inline QSqlQuery query_getDbModelInfo(const QString& modelId, const QString& uni
     return query;
 }
 
+// ---------------------------------------------------------------------------
+// Backtest table DDL
+// ---------------------------------------------------------------------------
+
+static const char* const TABLE_BACKTEST_RUNS = "BacktestRuns";
+static const char* const CREATE_TABLE_BACKTEST_RUNS =
+    "CREATE TABLE IF NOT EXISTS BacktestRuns ("
+    "runId               TEXT PRIMARY KEY, "
+    "strategyId          TEXT NOT NULL, "
+    "strategyDisplayName TEXT, "
+    "portfolioPath       TEXT, "
+    "configJson          TEXT, "
+    "symbols             TEXT, "
+    "startDate           TEXT, "
+    "endDate             TEXT, "
+    "status              TEXT, "   // Created | Running | Finished | Failed
+    "errorText           TEXT, "
+    "durationMs          INTEGER DEFAULT 0, "
+    "engineVersion       TEXT, "
+    "dataSourceId        TEXT, "
+    "dataRefreshedAt     TEXT, "
+    "createdAt           TEXT)";
+
+static const char* const TABLE_BACKTEST_METRICS = "BacktestMetrics";
+static const char* const CREATE_TABLE_BACKTEST_METRICS =
+    "CREATE TABLE IF NOT EXISTS BacktestMetrics ("
+    "runId             TEXT PRIMARY KEY, "
+    "totalReturn       REAL, "
+    "annualizedReturn  REAL, "
+    "sharpeRatio       REAL, "
+    "maxDrawdown       REAL, "
+    "winRate           REAL, "
+    "totalTrades       INTEGER, "
+    "initialCapital    REAL, "
+    "finalCapital      REAL, "
+    "benchmarkReturn   REAL, "
+    "benchmarkSharpe   REAL, "
+    "alpha             REAL)";
+
+static const char* const TABLE_BACKTEST_TRADES = "BacktestTrades";
+static const char* const CREATE_TABLE_BACKTEST_TRADES =
+    "CREATE TABLE IF NOT EXISTS BacktestTrades ("
+    "id         INTEGER PRIMARY KEY AUTOINCREMENT, "
+    "runId      TEXT, "
+    "symbol     TEXT, "
+    "side       TEXT, "
+    "quantity   REAL, "
+    "fillPrice  REAL, "
+    "timestamp  TEXT)";
+
+static const char* const TABLE_BACKTEST_EQUITY_CURVE = "BacktestEquityCurve";
+static const char* const CREATE_TABLE_BACKTEST_EQUITY_CURVE =
+    "CREATE TABLE IF NOT EXISTS BacktestEquityCurve ("
+    "id             INTEGER PRIMARY KEY AUTOINCREMENT, "
+    "runId          TEXT, "
+    "timestamp      TEXT, "
+    "value          REAL, "
+    "benchmarkValue REAL)";
+
+// Historical bar cache.
+// INSERT OR REPLACE: new fetch always trusted; no versioning.
+// dataSourceId is part of PK so bars from yahoo and csv never mix.
+// All timestamps stored as UTC ISO 8601.
+static const char* const TABLE_HISTORICAL_BARS = "HistoricalBars";
+static const char* const CREATE_TABLE_HISTORICAL_BARS =
+    "CREATE TABLE IF NOT EXISTS HistoricalBars ("
+    "symbol       TEXT NOT NULL, "
+    "resolution   TEXT NOT NULL, "
+    "dataSourceId TEXT NOT NULL, "
+    "timestamp    TEXT NOT NULL, "
+    "open         REAL, "
+    "high         REAL, "
+    "low          REAL, "
+    "close        REAL, "
+    "volume       REAL, "
+    "PRIMARY KEY (symbol, resolution, dataSourceId, timestamp))";
+
+// ---------------------------------------------------------------------------
+// Backtest query functions
+// ---------------------------------------------------------------------------
+
+inline QSqlQuery query_insertBacktestRun(const DbBacktestRun& r, const QString& conn) {
+    QSqlQuery q(QSqlDatabase::database(conn));
+    q.prepare(
+        "INSERT INTO BacktestRuns "
+        "(runId, strategyId, strategyDisplayName, portfolioPath, configJson, symbols, "
+        " startDate, endDate, status, errorText, durationMs, engineVersion, "
+        " dataSourceId, dataRefreshedAt, createdAt) "
+        "VALUES (:runId,:strategyId,:strategyDisplayName,:portfolioPath,:configJson,"
+        ":symbols,:startDate,:endDate,:status,:errorText,:durationMs,:engineVersion,"
+        ":dataSourceId,:dataRefreshedAt,:createdAt)");
+    q.bindValue(":runId",               r.runId);
+    q.bindValue(":strategyId",          r.strategyId);
+    q.bindValue(":strategyDisplayName", r.strategyDisplayName);
+    q.bindValue(":portfolioPath",        r.portfolioPath);
+    q.bindValue(":configJson",           r.configJson);
+    q.bindValue(":symbols",              r.symbols);
+    q.bindValue(":startDate",            r.startDate);
+    q.bindValue(":endDate",              r.endDate);
+    q.bindValue(":status",               r.status);
+    q.bindValue(":errorText",            r.errorText);
+    q.bindValue(":durationMs",           r.durationMs);
+    q.bindValue(":engineVersion",        r.engineVersion);
+    q.bindValue(":dataSourceId",         r.dataSourceId);
+    q.bindValue(":dataRefreshedAt",      r.dataRefreshedAt);
+    q.bindValue(":createdAt",            r.createdAt);
+    return q;
+}
+
+inline QSqlQuery query_updateBacktestRunStatus(const QString& runId,
+                                               const QString& status,
+                                               const QString& errorText,
+                                               qint64 durationMs,
+                                               const QString& dataRefreshedAt,
+                                               const QString& conn)
+{
+    QSqlQuery q(QSqlDatabase::database(conn));
+    q.prepare(
+        "UPDATE BacktestRuns "
+        "SET status = :status, errorText = :errorText, "
+        "    durationMs = :durationMs, dataRefreshedAt = :dataRefreshedAt "
+        "WHERE runId = :runId");
+    q.bindValue(":runId",           runId);
+    q.bindValue(":status",          status);
+    q.bindValue(":errorText",       errorText);
+    q.bindValue(":durationMs",      durationMs);
+    q.bindValue(":dataRefreshedAt", dataRefreshedAt);
+    return q;
+}
+
+inline QSqlQuery query_insertBacktestMetrics(const DbBacktestMetrics& m, const QString& conn) {
+    QSqlQuery q(QSqlDatabase::database(conn));
+    q.prepare(
+        "INSERT OR REPLACE INTO BacktestMetrics "
+        "(runId, totalReturn, annualizedReturn, sharpeRatio, maxDrawdown, winRate, "
+        " totalTrades, initialCapital, finalCapital, benchmarkReturn, benchmarkSharpe, alpha) "
+        "VALUES (:runId,:totalReturn,:annualizedReturn,:sharpeRatio,:maxDrawdown,:winRate,"
+        ":totalTrades,:initialCapital,:finalCapital,:benchmarkReturn,:benchmarkSharpe,:alpha)");
+    q.bindValue(":runId",            m.runId);
+    q.bindValue(":totalReturn",      m.totalReturn);
+    q.bindValue(":annualizedReturn", m.annualizedReturn);
+    q.bindValue(":sharpeRatio",      m.sharpeRatio);
+    q.bindValue(":maxDrawdown",      m.maxDrawdown);
+    q.bindValue(":winRate",          m.winRate);
+    q.bindValue(":totalTrades",      m.totalTrades);
+    q.bindValue(":initialCapital",   m.initialCapital);
+    q.bindValue(":finalCapital",     m.finalCapital);
+    q.bindValue(":benchmarkReturn",  m.benchmarkReturn);
+    q.bindValue(":benchmarkSharpe",  m.benchmarkSharpe);
+    q.bindValue(":alpha",            m.alpha);
+    return q;
+}
+
+inline QSqlQuery query_insertBacktestTrade(const DbBacktestTrade& t, const QString& conn) {
+    QSqlQuery q(QSqlDatabase::database(conn));
+    q.prepare(
+        "INSERT INTO BacktestTrades (runId, symbol, side, quantity, fillPrice, timestamp) "
+        "VALUES (:runId,:symbol,:side,:quantity,:fillPrice,:timestamp)");
+    q.bindValue(":runId",     t.runId);
+    q.bindValue(":symbol",    t.symbol);
+    q.bindValue(":side",      t.side);
+    q.bindValue(":quantity",  t.quantity);
+    q.bindValue(":fillPrice", t.fillPrice);
+    q.bindValue(":timestamp", t.timestamp);
+    return q;
+}
+
+inline QSqlQuery query_insertEquityPoint(const DbBacktestEquityPoint& p, const QString& conn) {
+    QSqlQuery q(QSqlDatabase::database(conn));
+    q.prepare(
+        "INSERT INTO BacktestEquityCurve (runId, timestamp, value, benchmarkValue) "
+        "VALUES (:runId,:timestamp,:value,:benchmarkValue)");
+    q.bindValue(":runId",          p.runId);
+    q.bindValue(":timestamp",      p.timestamp);
+    q.bindValue(":value",          p.value);
+    q.bindValue(":benchmarkValue", p.benchmarkValue);
+    return q;
+}
+
+inline QSqlQuery query_upsertHistoricalBar(const DbHistoricalBar& b, const QString& conn) {
+    QSqlQuery q(QSqlDatabase::database(conn));
+    q.prepare(
+        "INSERT OR REPLACE INTO HistoricalBars "
+        "(symbol, resolution, dataSourceId, timestamp, open, high, low, close, volume) "
+        "VALUES (:symbol,:resolution,:dataSourceId,:timestamp,:open,:high,:low,:close,:volume)");
+    q.bindValue(":symbol",       b.symbol);
+    q.bindValue(":resolution",   b.resolution);
+    q.bindValue(":dataSourceId", b.dataSourceId);
+    q.bindValue(":timestamp",    b.timestamp);
+    q.bindValue(":open",         b.open);
+    q.bindValue(":high",         b.high);
+    q.bindValue(":low",          b.low);
+    q.bindValue(":close",        b.close);
+    q.bindValue(":volume",       b.volume);
+    return q;
+}
+
+// Returns runs for a strategy, joining with metrics for display.
+// Ordered newest first.
+inline QSqlQuery query_fetchRunsForStrategy(const QString& strategyId, const QString& conn) {
+    QSqlQuery q(QSqlDatabase::database(conn));
+    q.prepare(
+        "SELECT r.runId, r.strategyId, r.symbols, r.startDate, r.endDate, "
+        "       r.status, r.dataSourceId, r.createdAt, "
+        "       COALESCE(m.totalReturn, 0) AS totalReturn, "
+        "       COALESCE(m.sharpeRatio, 0) AS sharpeRatio "
+        "FROM BacktestRuns r "
+        "LEFT JOIN BacktestMetrics m ON r.runId = m.runId "
+        "WHERE r.strategyId = :strategyId "
+        "ORDER BY r.createdAt DESC");
+    q.bindValue(":strategyId", strategyId);
+    return q;
+}
+
+inline QSqlQuery query_fetchBacktestRun(const QString& runId, const QString& conn) {
+    QSqlQuery q(QSqlDatabase::database(conn));
+    q.prepare("SELECT * FROM BacktestRuns WHERE runId = :runId");
+    q.bindValue(":runId", runId);
+    return q;
+}
+
+inline QSqlQuery query_fetchBacktestMetrics(const QString& runId, const QString& conn) {
+    QSqlQuery q(QSqlDatabase::database(conn));
+    q.prepare("SELECT * FROM BacktestMetrics WHERE runId = :runId");
+    q.bindValue(":runId", runId);
+    return q;
+}
+
+inline QSqlQuery query_fetchBacktestTrades(const QString& runId, const QString& conn) {
+    QSqlQuery q(QSqlDatabase::database(conn));
+    q.prepare("SELECT symbol, side, quantity, fillPrice, timestamp "
+              "FROM BacktestTrades WHERE runId = :runId ORDER BY timestamp ASC");
+    q.bindValue(":runId", runId);
+    return q;
+}
+
+inline QSqlQuery query_fetchEquityCurve(const QString& runId, const QString& conn) {
+    QSqlQuery q(QSqlDatabase::database(conn));
+    q.prepare("SELECT timestamp, value, benchmarkValue "
+              "FROM BacktestEquityCurve WHERE runId = :runId ORDER BY timestamp ASC");
+    q.bindValue(":runId", runId);
+    return q;
+}
+
+// Fetches cached bars for a symbol/resolution/source within a date range.
+// Returns rows ordered by timestamp ASC.
+inline QSqlQuery query_fetchHistoricalBars(const QString& symbol,
+                                            const QString& resolution,
+                                            const QString& dataSourceId,
+                                            const QString& fromUtc,
+                                            const QString& toUtc,
+                                            const QString& conn)
+{
+    QSqlQuery q(QSqlDatabase::database(conn));
+    q.prepare(
+        "SELECT timestamp, open, high, low, close, volume "
+        "FROM HistoricalBars "
+        "WHERE symbol = :symbol AND resolution = :resolution AND dataSourceId = :dataSourceId "
+        "  AND timestamp >= :from AND timestamp <= :to "
+        "ORDER BY timestamp ASC");
+    q.bindValue(":symbol",       symbol);
+    q.bindValue(":resolution",   resolution);
+    q.bindValue(":dataSourceId", dataSourceId);
+    q.bindValue(":from",         fromUtc);
+    q.bindValue(":to",           toUtc);
+    return q;
+}
+
+// Returns the min and max cached timestamp for a (symbol, resolution, dataSourceId) triple.
+inline QSqlQuery query_cachedBarRange(const QString& symbol,
+                                       const QString& resolution,
+                                       const QString& dataSourceId,
+                                       const QString& conn)
+{
+    QSqlQuery q(QSqlDatabase::database(conn));
+    q.prepare(
+        "SELECT MIN(timestamp) AS minTs, MAX(timestamp) AS maxTs "
+        "FROM HistoricalBars "
+        "WHERE symbol = :symbol AND resolution = :resolution AND dataSourceId = :dataSourceId");
+    q.bindValue(":symbol",       symbol);
+    q.bindValue(":resolution",   resolution);
+    q.bindValue(":dataSourceId", dataSourceId);
+    return q;
+}
 
 #endif // DBQUERY_H

@@ -33,9 +33,11 @@ public:
 
     Pipeline::RiskDecision evaluate(
         const Pipeline::TargetPosition& target,
-        const QVector<Pipeline::TargetPosition>& otherTargets) override
+        const QVector<Pipeline::TargetPosition>& otherTargets,
+        const QMap<QString, double>& currentPositions) override
     {
         Q_UNUSED(otherTargets)
+        Q_UNUSED(currentPositions)
 
         DataListPtr data = createDataList();
         UnifiedModelData umd(target.symbol, DIRECTION_UNDEFINED, 0.0,

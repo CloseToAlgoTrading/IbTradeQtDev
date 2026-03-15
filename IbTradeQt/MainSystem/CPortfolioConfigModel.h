@@ -82,10 +82,22 @@ public slots:
     void slotOnTimeoutCallback();
 
 
+public slots:
+    // Triggered from the "Open in Backtest Workspace" context menu entry.
+    // Emits openInBacktestWorkspace with the full strategy identity.
+    void slotOnClickOpenInBacktestWorkspace();
+
 signals:
     void signalUpdateData(const QModelIndex& index);
     void signalUpdateDataAll();
     void pipelineConfigChanged(const QJsonObject& config);
+
+    // Emitted when the user selects "Open in Backtest Workspace" on a pipeline strategy node.
+    // Carries the full strategy identity so CPresenter can pre-populate the Backtest Workspace.
+    void openInBacktestWorkspace(const QString& strategyId,
+                                 const QString& strategyDisplayName,
+                                 const QString& portfolioPath,
+                                 const QJsonObject& pipelineConfig);
 };
 
 inline void CPortfolioConfigModel::setBrokerDataProvider(QSharedPointer<CBrokerDataProvider> newBrokerInterface)
