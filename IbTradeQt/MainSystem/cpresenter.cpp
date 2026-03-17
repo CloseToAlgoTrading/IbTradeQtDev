@@ -1,4 +1,5 @@
 #include "cpresenter.h"
+#include "ISystemBackend.h"
 #include "ReqManager.h"
 #include "IBComClientImpl.h"
 #include "cmainmodel.h"
@@ -110,17 +111,16 @@ void CPresenter::MapSignals()
     QTreeView * pTreeView = this->pIbtsView->getPortfolioConfigTreeView();
     CPortfolioConfigModel *pPConfigModel = this->getPGuiModel()->pPortfolioConfigModel();
 
-    // Context menu driven by SystemTreeModel (replaces old index-based wiring)
+    // Context menu driven by SystemTreeModel, mutations routed through ISystemBackend
     auto* sysModel = m_pSystemTreeModel;
-    auto* root = this->getPGuiModel()->dataRoot();
+    auto* backend = m_backend;
 
     QObject::connect(pTreeView, &QTreeView::customContextMenuRequested,
-                     this->pIbtsView, [pTreeView, sysModel, root, pPConfigModel, this](const QPoint& pos) {
+                     this->pIbtsView, [pTreeView, sysModel, pPConfigModel, backend, this](const QPoint& pos) {
         QModelIndex index = pTreeView->indexAt(pos);
 
         QMenu menu;
 
-        // "Add Account" is always available (even on empty tree / right-click on blank space)
         QAction* addAccount = menu.addAction("Add New Account");
 
         QAction* addPortfolio = nullptr;
@@ -132,11 +132,14 @@ void CPresenter::MapSignals()
         QAction* addRebalanceBlock  = nullptr;
         QAction* addRiskBlock       = nullptr;
         QAction* addExecutionBlock  = nullptr;
+        QAction* removeBlock        = nullptr;
 
         CGenericModelApi* clickedModel = nullptr;
         ModelType clickedType = ModelType::ROOT;
+        bool isVirtual = false;
 
         if (index.isValid() && sysModel) {
+            isVirtual = sysModel->isVirtualBlock(index);
             clickedModel = sysModel->modelAt(index);
             if (clickedModel)
                 clickedType = clickedModel->modelType();
@@ -168,7 +171,10 @@ void CPresenter::MapSignals()
                 addExecutionBlock  = menu.addAction("Add Execution Model");
             }
 
-            if (clickedModel) {
+            if (isVirtual) {
+                menu.addSeparator();
+                removeBlock = menu.addAction("Remove Block");
+            } else if (clickedModel) {
                 menu.addSeparator();
                 removeNode = menu.addAction("Remove Selected Node");
             }
@@ -177,124 +183,126 @@ void CPresenter::MapSignals()
         QAction* chosen = menu.exec(pTreeView->viewport()->mapToGlobal(pos));
         if (!chosen) return;
 
-        if (chosen == addAccount) {
-            auto model = QSharedPointer<CBasicAccount>::create();
-            model->setName("Account");
-            model->setId(QUuid::createUuid());
-            model->setParentActivationState(true);
-            root->addModel(model);
+        auto rebuildTree = [&]() {
             sysModel->rebuildFromRoot();
             pPConfigModel->setupModelData();
             pTreeView->expandAll();
+        };
+
+        if (chosen == addAccount && backend) {
+            backend->createAccount("Account");
+            rebuildTree();
         }
-        else if (chosen == addPortfolio && clickedModel) {
-            auto model = QSharedPointer<CBasicPortfolio>::create();
-            model->setName("Portfolio");
-            model->setId(QUuid::createUuid());
-            model->setParentActivationState(clickedModel->getActiveStatus());
-            model->setParentModel(clickedModel);
-            clickedModel->addModel(model);
-            sysModel->rebuildFromRoot();
-            pPConfigModel->setupModelData();
-            pTreeView->expandAll();
+        else if (chosen == addPortfolio && clickedModel && backend) {
+            QString accountId = clickedModel->getId().toString(QUuid::WithoutBraces);
+            backend->createPortfolio(accountId, "Portfolio");
+            rebuildTree();
         }
-        else if (chosen == addStrategy && clickedModel) {
-            auto model = CStrategyFactory::createNewStrategy(ModelType::STRATEGY_PIPELINE);
-            if (model) {
-                model->setId(QUuid::createUuid());
-                model->setParentActivationState(clickedModel->getActiveStatus());
-                model->setParentModel(clickedModel);
-                clickedModel->addModel(model);
-                sysModel->rebuildFromRoot();
-                pPConfigModel->setupModelData();
-                pTreeView->expandAll();
-            }
+        else if (chosen == addStrategy && clickedModel && backend) {
+            QString portfolioId = clickedModel->getId().toString(QUuid::WithoutBraces);
+            backend->createStrategy(portfolioId, ModelType::STRATEGY_PIPELINE);
+            rebuildTree();
         }
-        else if (chosen == openBacktest && clickedModel) {
-            auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(clickedModel);
-            if (adapter) {
-                CGenericModelApi* parentModel = sysModel->parentModelAt(index);
-                QString portfolioPath = parentModel ? parentModel->getName() : "";
-                emit pPConfigModel->openInBacktestWorkspace(
-                    clickedModel->getId().toString(QUuid::WithoutBraces),
-                    clickedModel->getName(),
-                    portfolioPath,
-                    adapter->pipelineConfig());
-            }
+        else if (chosen == openBacktest && clickedModel && backend) {
+            QString strategyId = clickedModel->getId().toString(QUuid::WithoutBraces);
+            QJsonObject pipelineCfg = backend->pipelineConfig(strategyId);
+            CGenericModelApi* parentModel = sysModel->parentModelAt(index);
+            QString portfolioPath = parentModel ? parentModel->getName() : "";
+            emit pPConfigModel->openInBacktestWorkspace(
+                strategyId,
+                clickedModel->getName(),
+                portfolioPath,
+                pipelineCfg);
         }
         else if ((chosen == addSelectionBlock || chosen == addAlphaBlock ||
                   chosen == addRebalanceBlock || chosen == addRiskBlock ||
-                  chosen == addExecutionBlock) && clickedModel) {
-            auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(clickedModel);
-            if (adapter) {
-                QString category, jsonKey;
-                bool isArray = false;
+                  chosen == addExecutionBlock) && clickedModel && backend) {
+            QString category;
 
-                if (chosen == addSelectionBlock)      { category = "Selection";  jsonKey = "selection";  isArray = false; }
-                else if (chosen == addAlphaBlock)     { category = "Alpha";      jsonKey = "alphas";     isArray = true;  }
-                else if (chosen == addRebalanceBlock) { category = "Rebalance";  jsonKey = "rebalance";  isArray = false; }
-                else if (chosen == addRiskBlock)      { category = "Risk";       jsonKey = "risks";      isArray = true;  }
-                else if (chosen == addExecutionBlock) { category = "Execution";  jsonKey = "execution";  isArray = false; }
+            if (chosen == addSelectionBlock)      { category = "Selection"; }
+            else if (chosen == addAlphaBlock)     { category = "Alpha";    }
+            else if (chosen == addRebalanceBlock) { category = "Rebalance";}
+            else if (chosen == addRiskBlock)      { category = "Risk";     }
+            else if (chosen == addExecutionBlock) { category = "Execution";}
 
-                auto blocks = Pipeline::BlockRegistry::instance().blocksByCategory(category);
-                if (!blocks.isEmpty()) {
-                    QStringList displayNames, blockIds;
-                    for (const auto& desc : blocks) {
-                        QString label = desc.name;
-                        if (!desc.description.isEmpty())
-                            label += " -- " + desc.description;
-                        displayNames.append(label);
-                        blockIds.append(desc.id);
-                    }
+            auto blocks = Pipeline::BlockRegistry::instance().blocksByCategory(category);
+            if (!blocks.isEmpty()) {
+                QStringList displayNames, blockIds;
+                for (const auto& desc : blocks) {
+                    QString label = desc.name;
+                    if (!desc.description.isEmpty())
+                        label += " -- " + desc.description;
+                    displayNames.append(label);
+                    blockIds.append(desc.id);
+                }
 
-                    bool ok = false;
-                    QString chosenBlock = QInputDialog::getItem(
-                        pTreeView, QString("Select %1 Block").arg(category),
-                        QString("Available %1 blocks:").arg(category.toLower()),
-                        displayNames, 0, false, &ok);
+                bool ok = false;
+                QString chosenBlock = QInputDialog::getItem(
+                    pTreeView, QString("Select %1 Block").arg(category),
+                    QString("Available %1 blocks:").arg(category.toLower()),
+                    displayNames, 0, false, &ok);
 
-                    if (ok && !chosenBlock.isEmpty()) {
-                        int idx = displayNames.indexOf(chosenBlock);
-                        if (idx >= 0) {
-                            QString blockId = blockIds.at(idx);
-                            auto descResult = Pipeline::BlockRegistry::instance().descriptor(blockId);
-                            QJsonObject defaultCfg = descResult ? descResult.value().defaultConfig : QJsonObject();
-                            QJsonObject config = adapter->pipelineConfig();
+                if (ok && !chosenBlock.isEmpty()) {
+                    int idx = displayNames.indexOf(chosenBlock);
+                    if (idx >= 0) {
+                        QString blockId = blockIds.at(idx);
+                        auto descResult = Pipeline::BlockRegistry::instance().descriptor(blockId);
+                        QJsonObject defaultCfg = descResult ? descResult.value().defaultConfig : QJsonObject();
 
-                            QJsonObject entry;
-                            entry["blockId"] = blockId;
-                            entry["config"] = defaultCfg;
+                        QString strategyId = clickedModel->getId().toString(QUuid::WithoutBraces);
+                        backend->addBlock(strategyId, category, blockId, defaultCfg);
 
-                            if (isArray) {
-                                QJsonArray arr = config.value(jsonKey).toArray();
-                                arr.append(entry);
-                                config[jsonKey] = arr;
-                            } else {
-                                config[jsonKey] = entry;
-                            }
+                        sysModel->rebuildFromRoot();
+                        pTreeView->expandAll();
 
-                            adapter->setPipelineConfig(config);
-                            sysModel->rebuildFromRoot();
-                            pTreeView->expandAll();
-                            emit pPConfigModel->pipelineConfigChanged(config);
-                        }
+                        auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(clickedModel);
+                        if (adapter)
+                            emit pPConfigModel->pipelineConfigChanged(adapter->pipelineConfig());
                     }
                 }
             }
         }
-        else if (chosen == removeNode && clickedModel) {
-            CGenericModelApi* parentObj = clickedModel->getParentModel();
-            if (parentObj) {
-                auto& siblings = parentObj->getModels();
-                for (int i = 0; i < siblings.size(); ++i) {
-                    if (siblings[i].data() == clickedModel) {
-                        parentObj->removeModel(siblings[i]);
-                        break;
+        else if (chosen == removeBlock && isVirtual && backend) {
+            CGenericModelApi* parentStrategy = sysModel->parentStrategyOf(index);
+            if (parentStrategy) {
+                QString strategyId = parentStrategy->getId().toString(QUuid::WithoutBraces);
+                QString category = sysModel->virtualCategory(index);
+                QString blockId  = sysModel->virtualBlockId(index);
+
+                auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(parentStrategy);
+                if (adapter) {
+                    bool isArray = false;
+                    QString jsonKey;
+                    if (category == "Selection")       { jsonKey = "selection";  isArray = true;  }
+                    else if (category == "Alpha")      { jsonKey = "alphas";     isArray = true;  }
+                    else if (category == "Risk")       { jsonKey = "risks";      isArray = true;  }
+                    else if (category == "Rebalance")  { jsonKey = "rebalance";  isArray = false; }
+                    else if (category == "Execution")  { jsonKey = "execution";  isArray = false; }
+
+                    if (isArray) {
+                        QJsonArray arr = adapter->pipelineConfig().value(jsonKey).toArray();
+                        int blockIndex = -1;
+                        for (int i = 0; i < arr.size(); ++i) {
+                            QJsonObject obj = arr[i].toObject();
+                            if (obj.value("blockId").toString() == blockId) {
+                                blockIndex = i;
+                                break;
+                            }
+                        }
+                        if (blockIndex >= 0)
+                            backend->removeBlock(strategyId, category, blockIndex);
+                    } else {
+                        backend->removeBlock(strategyId, category, 0);
                     }
+
+                    rebuildTree();
                 }
-                sysModel->rebuildFromRoot();
-                pPConfigModel->setupModelData();
             }
+        }
+        else if (chosen == removeNode && clickedModel && backend) {
+            QString uuid = clickedModel->getId().toString(QUuid::WithoutBraces);
+            backend->removeNode(uuid);
+            rebuildTree();
         }
     });
 
@@ -395,25 +403,19 @@ void CPresenter::onClickMyButton()
     static bool buttonState = false;
     if ((false == buttonState) && (!m_pDataProvider->getClien()->isConnectedAPI()))
     {
-        //Connect to the server
         workerIBClient->setCommand(IBWorker::CONNECT);
-        //get time from server (1 sec period)
         workerAlfaTime->StartGetTimeUpdate(1000);
 
-        //send signal to gui for change text of connect button
+        if (m_backend) m_backend->connectBroker();
         emit signalClickConnect(true);
         buttonState = true;
     }
     else
     {
-        //Stop getting time from server
         workerAlfaTime->StopTimeUpdate();
-        //Disconnect from server
         workerIBClient->setCommand(IBWorker::DISCONNECT);
 
-        //pAboutDlgPresenter->showDlg();
-
-        //send signal to gui for change text of connect button
+        if (m_backend) m_backend->disconnectBroker();
         emit signalClickConnect(false);
 
         buttonState = false;
@@ -450,6 +452,11 @@ QSharedPointer<CBrokerDataProvider> CPresenter::getDataProvider() const
     return m_pDataProvider;
 }
 
+void CPresenter::setBackend(ISystemBackend* backend)
+{
+    m_backend = backend;
+}
+
 CMainModel *CPresenter::getPGuiModel() const
 {
     return pGuiModel;
@@ -467,6 +474,7 @@ void CPresenter::setPGuiModel(CMainModel *newPGuiModel)
    // Set up SystemTreeModel (operations console tree replacing old config tree)
    m_pSystemTreeModel = new SystemTreeModel(this);
    m_pSystemTreeDelegate = new SystemTreeDelegate(this);
+   m_pSystemTreeModel->setBackend(m_backend);
    m_pSystemTreeModel->setRoot(this->getPGuiModel()->dataRoot());
 
    QTreeView* treeView = this->pIbtsView->getPortfolioConfigTreeView();

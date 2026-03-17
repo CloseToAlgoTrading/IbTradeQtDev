@@ -25,6 +25,11 @@
 #include "backtest/tst_backtest.h"
 #include "backtest/tst_yahoo_backtest.h"
 #include "backtest/tst_live_backtest.h"
+#include "backend/tst_model_tree_repository.h"
+#include "backend/tst_system_backend.h"
+#include "backend/tst_persistence.h"
+#include "backend/tst_runtime.h"
+#include "backend/tst_cli_proof.h"
 
 int main(int argc, char *argv[])
 {
@@ -96,6 +101,21 @@ int main(int argc, char *argv[])
 
     // Live end-to-end backtests — require internet, write HTML+TXT reports
     { TestLiveBacktest tc;                   status |= QTest::qExec(&tc, argc, argv); }
+
+    // Backend - Model Tree Repository & Mapper
+    { TestModelTreeRepository tc;            status |= QTest::qExec(&tc, argc, argv); }
+
+    // Backend - System Backend
+    { TestSystemBackend tc;                  status |= QTest::qExec(&tc, argc, argv); }
+
+    // Backend - Persistence & Migration
+    { TestPersistence tc;                    status |= QTest::qExec(&tc, argc, argv); }
+
+    // Backend - Runtime & Backtester Integration
+    { TestRuntime tc;                        status |= QTest::qExec(&tc, argc, argv); }
+
+    // CLI Proof of Concept (no GUI dependency)
+    { TestCliProof tc;                       status |= QTest::qExec(&tc, argc, argv); }
 
     return status;
 }

@@ -8,6 +8,7 @@
 #include "cgenericmodelApi.h"
 
 class CBasicRoot;
+class ISystemBackend;
 
 class SystemTreeModel : public QAbstractItemModel
 {
@@ -32,6 +33,7 @@ public:
     ~SystemTreeModel() override;
 
     void setRoot(CBasicRoot* root);
+    void setBackend(ISystemBackend* backend) { m_backend = backend; }
     CBasicRoot* root() const { return m_root; }
 
     CGenericModelApi* modelAt(const QModelIndex& index) const;
@@ -78,6 +80,7 @@ private:
     double resolveAggregatedPnL(TreeNode* node) const;
     QString buildModelPath(CGenericModelApi* model) const;
 
+    ISystemBackend* m_backend = nullptr;
     CBasicRoot* m_root = nullptr;
     TreeNode* m_rootNode = nullptr;
     QTimer m_pollTimer;

@@ -2,6 +2,8 @@
 #define CAPPLICATIONCONTROLLER_H
 
 #include "cbasicroot.h"
+#include "ModelTreeRepository.h"
+#include "SystemBackendImpl.h"
 
 #include "cpresenter.h"
 #include "ibtradesystemview.h"
@@ -31,10 +33,6 @@ public:
 
     void setPMainModel(CMainModel *newPMainModel);
 
-private:
-    void loadTreeFromFile(const QString& fileName, QSharedPointer<CBrokerDataProvider> dataProvider = nullptr);
-
-
 public slots:
     void slotStoreModelTree();
 
@@ -45,6 +43,8 @@ private:
     CMainModel *pMainModel;
 
     CBasicRoot *m_pDataRoot;
+    ModelTreeRepository *m_repo = nullptr;
+    SystemBackendImpl   *m_backend = nullptr;
 
     Supervision::Supervisor *m_pSupervisor = nullptr;
     IBOrderExecutionAdapter *m_pExecutionAdapter = nullptr;

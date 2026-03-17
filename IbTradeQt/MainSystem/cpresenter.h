@@ -21,6 +21,7 @@ class PipelineDiagramWidget;
 class QDockWidget;
 class SystemTreeModel;
 class SystemTreeDelegate;
+class ISystemBackend;
 
 namespace BacktestUI { class BacktestWorkspaceDock; }
 namespace Backtest   { class BacktestController;   }
@@ -47,6 +48,9 @@ public:
 
     CMainModel *getPGuiModel() const;
     void setPGuiModel(CMainModel *newPGuiModel);
+
+    void setBackend(ISystemBackend* backend);
+    ISystemBackend* backend() const { return m_backend; }
 
     QSharedPointer<CBrokerDataProvider> getDataProvider() const;
     IBComm::MarketDataRouter* marketDataRouter() const { return m_pMarketDataRouter; }
@@ -97,6 +101,7 @@ private:
     Backtest::BacktestController*       m_pBacktestController = nullptr;
 	QScopedPointer<AboutDlgPresener> pAboutDlgPresenter;
 
+    ISystemBackend*     m_backend             = nullptr;
     SystemTreeModel*    m_pSystemTreeModel    = nullptr;
     SystemTreeDelegate* m_pSystemTreeDelegate = nullptr;
 };

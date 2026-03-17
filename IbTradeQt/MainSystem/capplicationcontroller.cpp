@@ -76,11 +76,38 @@ CApplicationController::CApplicationController(QObject *parent):
     QObject(parent)
    , pMainPresenter(new CPresenter(parent))
    , pMainView(new CIBTradeSystemView)
-   , m_pDataRoot(new CBasicRoot())
+   , m_pDataRoot(nullptr)
 {
     registerBuiltinBlocks();
 
-    // Create typed routers BEFORE loadTreeFromFile so they propagate via setBrokerDataProvider
+    // Initialize backend (SQLite repository + service layer)
+    m_repo = new ModelTreeRepository("model_tree.sqlite", "app_main_conn");
+    m_repo->initialize();
+    m_backend = new SystemBackendImpl(m_repo, this);
+
+    // Try loading from DB; if empty, migrate from legacy JSON file (one-time)
+    if (!m_backend->loadFromDb()) {
+        QString migrated = m_repo->metadata("model_tree_migrated_from_json");
+        if (migrated != "true") {
+            QFile jsonFile("model_tree_config.json");
+            if (jsonFile.exists()) {
+                qInfo("Migration: importing model tree from JSON to SQLite (one-time)");
+                if (m_backend->importFromJsonFile("model_tree_config.json")) {
+                    m_repo->setMetadata("model_tree_migrated_from_json", "true");
+                    m_repo->setMetadata("migration_source", "model_tree_config.json");
+                    m_repo->setMetadata("migration_timestamp",
+                                        QDateTime::currentDateTimeUtc().toString(Qt::ISODate));
+                    qInfo("Migration: completed successfully");
+                } else {
+                    qWarning("Migration: failed to import from JSON");
+                }
+            }
+        }
+    }
+
+    m_pDataRoot = m_backend->dataRoot();
+
+    // Create typed routers BEFORE setting broker provider
     m_pPositionRouter = new IBComm::PositionRouter(this);
     m_pHistoricalDataRouter = new IBComm::HistoricalDataRouter(this);
     m_pOrderRouter = new IBComm::OrderRouter(this);
@@ -108,12 +135,15 @@ CApplicationController::CApplicationController(QObject *parent):
     dp->setTimeRouter(m_pTimeRouter);
     dp->setMarketDepthRouter(m_pMarketDepthRouter);
 
-    loadTreeFromFile("model_tree_config.json", dp);
+    // Set broker data provider on the root so models can use it at runtime
+    if (m_pDataRoot)
+        m_pDataRoot->setBrokerDataProvider(dp);
 
     this->pMainPresenter->addView(this->pMainView);
 
-    pMainModel =new CMainModel(pMainPresenter, m_pDataRoot, nullptr);
+    pMainModel = new CMainModel(pMainPresenter, m_pDataRoot, nullptr);
 
+    this->pMainPresenter->setBackend(m_backend);
     this->pMainPresenter->setPGuiModel(this->pMainModel);
 
     // Connect AlphaModGetTime to TimeRouter
@@ -185,7 +215,7 @@ CApplicationController::~CApplicationController()
     delete this->pMainView;
     delete this->pMainPresenter;
     delete this->pMainModel;
-    delete this->m_pDataRoot;
+    // m_pDataRoot is owned by m_backend (which is a QObject child of this)
 }
 
 void CApplicationController::setUpApplication(QApplication &app)
@@ -214,32 +244,8 @@ void CApplicationController::setPMainModel(CMainModel *newPMainModel)
     pMainModel = newPMainModel;
 }
 
-void CApplicationController::loadTreeFromFile(const QString &fileName, QSharedPointer<CBrokerDataProvider> dataProvider)
-{
-    QFile file(fileName);
-    if (file.exists())
-    {
-        if (!file.open(QIODevice::ReadOnly)) {
-            // Handle error
-        }
-
-        QByteArray jsonData = file.readAll();
-        QJsonDocument doc = QJsonDocument::fromJson(jsonData);
-        QJsonObject rootJson = doc.object();
-        this->m_pDataRoot->setBrokerDataProvider(dataProvider);
-        this->m_pDataRoot->fromJson(rootJson);
-    }
-}
-
 void CApplicationController::slotStoreModelTree()
 {
-    QFile file("model_tree_config.json");
-    if (!file.open(QIODevice::WriteOnly)) {
-        // Handle error
-    }
-
-    QJsonObject rootJson = m_pDataRoot->toJson();
-    QJsonDocument doc(rootJson);
-    file.write(doc.toJson());
-
+    if (m_backend)
+        m_backend->exportToJsonFile("model_tree_config.json");
 }

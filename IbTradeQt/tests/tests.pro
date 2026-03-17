@@ -1,5 +1,4 @@
-QT += core testlib sql network
-QT -= gui
+QT += core testlib sql network gui
 
 TARGET = ibtrading_tests
 TEMPLATE = app
@@ -22,6 +21,7 @@ DEFINES += SRCDIR=\\\"$$PWD\\\"
 
 INCLUDEPATH += \
     $$PWD/.. \
+    $$PWD/../Backend \
     $$PWD/../Backtest \
     $$PWD/../Pipeline \
     $$PWD/../Ports \
@@ -37,6 +37,8 @@ INCLUDEPATH += \
     $$PWD/../Logging \
     $$PWD/../Metrics \
     $$PWD/../Strategies/Generic \
+    $$PWD/../Strategies/StateMachine \
+    $$PWD/../DB \
     $$PWD/../IBComm \
     $$PWD/../CObjects \
     $$PWD/../Brokers/IB/Shared \
@@ -67,6 +69,43 @@ SOURCES += \
     ../CObjects/cexecutionreport.cpp \
     ../CObjects/ccommissionreport.cpp \
     ../Common/NHelper.cpp \
+    ../Common/cprocessingbase_v2.cpp \
+    ../IBComm/cbrokerdataprovider.cpp \
+    ../CObjects/cdeltaobject.cpp \
+    ../CObjects/copenorder.cpp \
+    ../CObjects/corderstatus.cpp \
+    ../CObjects/coptiontickcomputation.cpp \
+    ../CObjects/ctickprice.cpp \
+    ../CObjects/cticksize.cpp \
+    ../CObjects/ctickgeneric.cpp \
+    ../CObjects/ctickstring.cpp \
+    ../CObjects/cmktdepth.cpp \
+    ../CObjects/cmktdepthl2.cpp \
+    ../CObjects/ctickbytickalllast.cpp \
+    ../CObjects/chistoricalticks.cpp \
+    ../ReqManager/globalreqmanager.cpp \
+    ../ReqManager/ReqManager.cpp \
+    ../Brokers/IB/src/SoftDollarTier.cpp \
+    ../Common/globalsettings.cpp \
+    ../Strategies/Generic/cbasemodel.cpp \
+    ../Strategies/Generic/cbasicroot.cpp \
+    ../Strategies/Generic/cbasicaccount.cpp \
+    ../Strategies/Generic/cbasicportfolio.cpp \
+    ../Strategies/Generic/cbasicstrategy_V2.cpp \
+    ../Strategies/Generic/cbasicselectionmodel.cpp \
+    ../Strategies/Generic/cbasicalphamodel.cpp \
+    ../Strategies/Generic/cbaserebalancemodel.cpp \
+    ../Strategies/Generic/cbasicriskmodel.cpp \
+    ../Strategies/Generic/cbasicexecutionmodel.cpp \
+    ../Strategies/Generic/cgenericmodelApi.cpp \
+    ../Strategies/Generic/cstrategyfactory.cpp \
+    ../Strategies/Generic/UnifiedModelData.cpp \
+    ../DB/dbhandler.cpp \
+    ../DB/dbmanager.cpp \
+    ../DB/DBConnector.cpp \
+    ../Backend/ModelTreeRepository.cpp \
+    ../Backend/ModelTreeMapper.cpp \
+    ../Backend/SystemBackendImpl.cpp \
     ../Backtest/SimulatedLedger.cpp \
     ../Backtest/SimulatedExecutionAdapter.cpp \
     ../Backtest/BacktestMetricsCollector.cpp \
@@ -168,4 +207,55 @@ HEADERS += \
     ../Backtest/BacktestSession.h \
     backtest/tst_backtest.h \
     backtest/tst_yahoo_backtest.h \
-    backtest/tst_live_backtest.h
+    backtest/tst_live_backtest.h \
+    backend/tst_model_tree_repository.h \
+    backend/tst_system_backend.h \
+    backend/tst_persistence.h \
+    backend/tst_runtime.h \
+    backend/tst_cli_proof.h \
+    ../Backend/ISystemBackend.h \
+    ../Backend/SystemBackendImpl.h \
+    ../Backend/ModelNodeRecord.h \
+    ../Backend/ModelTreeRepository.h \
+    ../Backend/ModelTreeMapper.h \
+    ../Strategies/Generic/cbasemodel.h \
+    ../Strategies/Generic/cbasicroot.h \
+    ../Strategies/Generic/cbasicaccount.h \
+    ../Strategies/Generic/cbasicportfolio.h \
+    ../Strategies/Generic/cbasicstrategy_V2.h \
+    ../Strategies/Generic/cbasicselectionmodel.h \
+    ../Strategies/Generic/cbasicalphamodel.h \
+    ../Strategies/Generic/cbaserebalancemodel.h \
+    ../Strategies/Generic/cbasicriskmodel.h \
+    ../Strategies/Generic/cbasicexecutionmodel.h \
+    ../Strategies/Generic/cstrategyfactory.h \
+    ../Strategies/Generic/cpipelinestrategyadapter.h \
+    ../Strategies/Generic/UnifiedModelData.h \
+    ../Strategies/Generic/IMandatoryFields.h \
+    ../Strategies/Generic/mandatoryFieldKeys.h \
+    ../Strategies/Generic/mandatoryFieldRegistration.h \
+    ../Strategies/Generic/modelConstants.h \
+    ../Strategies/StateMachine/cmodelstate.h \
+    ../Strategies/StateMachine/cmodelstateimpl.h \
+    ../Strategies/StateMachine/ModelStateUtils.h \
+    ../Common/cprocessingbase_v2.h \
+    ../DB/dbhandler.h \
+    ../DB/dbmanager.h \
+    ../DB/dbdatatypes.h \
+    ../DB/DBConnector.h \
+    ../CObjects/cdeltaobject.h \
+    ../CObjects/copenorder.h \
+    ../CObjects/corderstatus.h \
+    ../CObjects/coptiontickcomputation.h \
+    ../CObjects/ctickprice.h \
+    ../CObjects/cticksize.h \
+    ../CObjects/ctickgeneric.h \
+    ../CObjects/ctickstring.h \
+    ../CObjects/cmktdepth.h \
+    ../CObjects/cmktdepthl2.h \
+    ../CObjects/ctickbytickalllast.h \
+    ../CObjects/chistoricalticks.h \
+    ../IBComm/cbrokerdataprovider.h \
+    ../Common/globalsettings.h \
+    ../ReqManager/globalreqmanager.h \
+    ../ReqManager/ReqManager.h

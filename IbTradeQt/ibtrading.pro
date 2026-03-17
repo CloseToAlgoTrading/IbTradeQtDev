@@ -171,7 +171,10 @@ SOURCES += \
     MainSystem/WorkspaceWidgets/AccountWorkspace.cpp \
     MainSystem/WorkspaceWidgets/PortfolioWorkspace.cpp \
     MainSystem/WorkspaceWidgets/BlockWorkspace.cpp \
-    MainSystem/AlertService.cpp
+    MainSystem/AlertService.cpp \
+    Backend/ModelTreeRepository.cpp \
+    Backend/ModelTreeMapper.cpp \
+    Backend/SystemBackendImpl.cpp
 
 
 HEADERS += \
@@ -311,6 +314,11 @@ HEADERS += \
     MainSystem/WorkspaceWidgets/PortfolioWorkspace.h \
     MainSystem/WorkspaceWidgets/BlockWorkspace.h \
     MainSystem/AlertService.h \
+    Backend/ModelNodeRecord.h \
+    Backend/ModelTreeRepository.h \
+    Backend/ModelTreeMapper.h \
+    Backend/ISystemBackend.h \
+    Backend/SystemBackendImpl.h \
     Strategies/Generic/modelConstants.h \
     Strategies/StateMachine/cmodelstate.h \
     Strategies/StateMachine/cmodelstateimpl.h \
@@ -451,6 +459,7 @@ INCLUDEPATH += \
     $$PWD/AlphaModelGetTime \
     $$PWD/AboutDialog \
     $$PWD/Strategies/Generic \
+    $$PWD/Backend \
     $$PWD/Strategies/StateMachine \
     $$PWD/GeneratedIncludes \
     $$PWD/DBStore

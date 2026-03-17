@@ -214,6 +214,7 @@ void CProcessingBase_v2::cancelAllActiveRequests()
 
 bool CProcessingBase_v2::isConnectedTotheServer()
 {
+    if (!m_Client) return false;
     return m_Client->isConnectedToTheServer();
 }
 

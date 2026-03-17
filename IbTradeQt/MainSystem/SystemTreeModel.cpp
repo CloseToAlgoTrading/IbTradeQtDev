@@ -1,4 +1,5 @@
 #include "SystemTreeModel.h"
+#include "ISystemBackend.h"
 #include "cbasicroot.h"
 #include "cpipelinestrategyadapter.h"
 #include "ModelStateUtils.h"
@@ -359,7 +360,14 @@ bool SystemTreeModel::setData(const QModelIndex& index, const QVariant& value, i
     if (!node || !node->model) return false;
 
     bool newState = (value.toInt() == Qt::Checked);
-    node->model->setActivationState(newState);
+    QString uuid = node->model->getId().toString(QUuid::WithoutBraces);
+
+    if (m_backend) {
+        m_backend->setNodeActive(uuid, newState);
+    } else {
+        node->model->setActivationState(newState);
+    }
+
     emit dataChanged(index, index, {Qt::CheckStateRole});
     return true;
 }
