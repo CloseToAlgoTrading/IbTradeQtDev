@@ -159,6 +159,7 @@ void CBaseModel::setActivationState(bool state)
             stop();
         }
     }
+    checkDisplayState();
 }
 
 void CBaseModel::setParentActivationState(bool state)
@@ -306,6 +307,7 @@ void CBaseModel::setGenericInfo(const QVariantMap &newGenericInfo)
     m_genericInfo = newGenericInfo;
     for (auto it = preserved.cbegin(); it != preserved.cend(); ++it)
         m_genericInfo[it.key()] = it.value();
+    checkDisplayState();
 }
 
 ModelType CBaseModel::modelType() const
@@ -594,10 +596,11 @@ void CBaseModel::setState(std::unique_ptr<CModelState> state)
     if (currentState) {
         currentState->exitState(this);
     }
-    currentState = std::move(state);  // Transfer ownership to the unique_ptr
+    currentState = std::move(state);
     if (currentState) {
         currentState->enterState(this);
     }
+    checkDisplayState();
 }
 
 e_modelState CBaseModel::getState()
@@ -717,5 +720,31 @@ void CBaseModel::setParentModel(CGenericModelApi* pModel)
 CGenericModelApi* CBaseModel::getParentModel()
 {
     return m_ParentModel;
+}
+
+DisplayState CBaseModel::resolveDisplayState() const
+{
+    bool activated = getActiveStatus();
+    e_modelState internalState = currentState ? currentState->getStateID() : e_modelState::MS_Init;
+
+    QString statusStr;
+    if (m_genericInfo.contains(MandatoryInfo::Strategy::Status))
+        statusStr = m_genericInfo.value(MandatoryInfo::Strategy::Status).toString();
+    else if (m_genericInfo.contains(MandatoryInfo::Account::Status))
+        statusStr = m_genericInfo.value(MandatoryInfo::Account::Status).toString();
+    else if (m_genericInfo.contains(MandatoryInfo::Portfolio::Status))
+        statusStr = m_genericInfo.value(MandatoryInfo::Portfolio::Status).toString();
+
+    return ModelStateUtils::resolveFromInternal(internalState, activated, statusStr);
+}
+
+void CBaseModel::checkDisplayState()
+{
+    DisplayState newState = resolveDisplayState();
+    if (newState != m_lastDisplayState) {
+        DisplayState old = m_lastDisplayState;
+        m_lastDisplayState = newState;
+        emit displayStateChanged(old, newState);
+    }
 }
 

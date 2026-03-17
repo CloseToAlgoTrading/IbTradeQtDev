@@ -6,10 +6,25 @@
 #include "PipelineItemDelegate.h"
 #include "PipelineDiagramWidget.h"
 #include "cpipelinestrategyadapter.h"
+#include "cstrategyfactory.h"
+#include "cbasicaccount.h"
+#include "cbasicportfolio.h"
+#include "cbasicroot.h"
+#include "Pipeline/BlockRegistry.h"
+#include <QInputDialog>
+#include <QJsonArray>
+#include <QJsonObject>
 #include "PortfolioModelDefines.h"
+#include "SystemTreeModel.h"
+#include "SystemTreeDelegate.h"
+#include "GlobalStatusBar.h"
+#include "EventLogPanel.h"
+#include "ContextWorkspace.h"
+#include "AlertService.h"
 #include <QDockWidget>
 #include <QMenu>
 #include <QPoint>
+#include <QUuid>
 #include "Backtest/BacktestController.h"
 #include "BacktestUI/BacktestWorkspaceDock.h"
 #include "DB/dbquery.h"
@@ -94,43 +109,194 @@ void CPresenter::MapSignals()
 
     QTreeView * pTreeView = this->pIbtsView->getPortfolioConfigTreeView();
     CPortfolioConfigModel *pPConfigModel = this->getPGuiModel()->pPortfolioConfigModel();
-    // Named action connections (indices match the order in ibtradesystemview.cpp)
-    QObject::connect(pTreeView->actions().at(0),  SIGNAL(triggered()), pPConfigModel, SLOT(slotOnClickAddAccount()),        Qt::QueuedConnection);
-    QObject::connect(pTreeView->actions().at(1),  SIGNAL(triggered()), pPConfigModel, SLOT(slotOnClickAddPortfolio()),       Qt::QueuedConnection);
-    QObject::connect(pTreeView->actions().at(2),  SIGNAL(triggered()), pPConfigModel, SLOT(slotOnClickAddStrategy()),        Qt::QueuedConnection);
-    QObject::connect(pTreeView->actions().at(4),  SIGNAL(triggered()), pPConfigModel, SLOT(slotOnClickAddSelectionModel()), Qt::QueuedConnection);
-    QObject::connect(pTreeView->actions().at(5),  SIGNAL(triggered()), pPConfigModel, SLOT(slotOnClickAddAlphaModel()),     Qt::QueuedConnection);
-    QObject::connect(pTreeView->actions().at(6),  SIGNAL(triggered()), pPConfigModel, SLOT(slotOnClickAddRebalanceModel()), Qt::QueuedConnection);
-    QObject::connect(pTreeView->actions().at(7),  SIGNAL(triggered()), pPConfigModel, SLOT(slotOnClickAddRiskModel()),      Qt::QueuedConnection);
-    QObject::connect(pTreeView->actions().at(8),  SIGNAL(triggered()), pPConfigModel, SLOT(slotOnClickAddExecutionModel()), Qt::QueuedConnection);
-    QObject::connect(pTreeView->actions().at(10), SIGNAL(triggered()), pPConfigModel, SLOT(onClickRemoveNodeButton()),      Qt::QueuedConnection);
-    QObject::connect(pTreeView->actions().at(12), SIGNAL(triggered()), pPConfigModel, SLOT(slotOnClickOpenInBacktestWorkspace()), Qt::QueuedConnection);
 
-    // Custom context menu: show/hide actions depending on the selected node type
+    // Context menu driven by SystemTreeModel (replaces old index-based wiring)
+    auto* sysModel = m_pSystemTreeModel;
+    auto* root = this->getPGuiModel()->dataRoot();
+
     QObject::connect(pTreeView, &QTreeView::customContextMenuRequested,
-                     this->pIbtsView, [pTreeView, pPConfigModel](const QPoint& pos) {
+                     this->pIbtsView, [pTreeView, sysModel, root, pPConfigModel, this](const QPoint& pos) {
         QModelIndex index = pTreeView->indexAt(pos);
-        if (!index.isValid()) return;
-
-        quint16 nodeType = pPConfigModel->nodeTypeId(index);
-        const bool isPipelineStrategy = (nodeType == PM_ITEM_PIPELINE_STRATEGY ||
-                                         nodeType == PM_ITEM_STRATEGY);
-
-        // Show/hide the "Open in Backtest Workspace" action (index 12)
-        auto actions = pTreeView->actions();
-        if (actions.size() > 12) {
-            actions.at(11)->setVisible(isPipelineStrategy); // separator before backtest
-            actions.at(12)->setVisible(isPipelineStrategy);
-        }
 
         QMenu menu;
-        for (QAction* a : pTreeView->actions()) {
-            if (a->isVisible()) menu.addAction(a);
-        }
-        menu.exec(pTreeView->viewport()->mapToGlobal(pos));
-    });
 
-    pTreeView->setItemDelegateForColumn(1, new PipelineItemDelegate(pTreeView));
+        // "Add Account" is always available (even on empty tree / right-click on blank space)
+        QAction* addAccount = menu.addAction("Add New Account");
+
+        QAction* addPortfolio = nullptr;
+        QAction* addStrategy  = nullptr;
+        QAction* removeNode   = nullptr;
+        QAction* openBacktest = nullptr;
+        QAction* addSelectionBlock  = nullptr;
+        QAction* addAlphaBlock      = nullptr;
+        QAction* addRebalanceBlock  = nullptr;
+        QAction* addRiskBlock       = nullptr;
+        QAction* addExecutionBlock  = nullptr;
+
+        CGenericModelApi* clickedModel = nullptr;
+        ModelType clickedType = ModelType::ROOT;
+
+        if (index.isValid() && sysModel) {
+            clickedModel = sysModel->modelAt(index);
+            if (clickedModel)
+                clickedType = clickedModel->modelType();
+
+            if (clickedType == ModelType::ACCOUNT) {
+                addPortfolio = menu.addAction("Add New Portfolio");
+            }
+            if (clickedType == ModelType::PORTFOLIO) {
+                addStrategy = menu.addAction("Add Strategy");
+            }
+
+            bool isStrategy = (clickedType == ModelType::STRATEGY ||
+                               clickedType == ModelType::STRATEGY_BASIC_TEST ||
+                               clickedType == ModelType::STRATEGY_MA ||
+                               clickedType == ModelType::STRATEGY_MOMENTUM ||
+                               clickedType == ModelType::STRATEGY_PIPELINE);
+
+            if (isStrategy) {
+                openBacktest = menu.addAction("Open in Backtest Workspace");
+            }
+
+            bool isPipelineStrategy = (clickedType == ModelType::STRATEGY_PIPELINE);
+            if (isPipelineStrategy) {
+                menu.addSeparator();
+                addSelectionBlock  = menu.addAction("Add Selection Model");
+                addAlphaBlock      = menu.addAction("Add Alpha Model");
+                addRebalanceBlock  = menu.addAction("Add Rebalance Model");
+                addRiskBlock       = menu.addAction("Add Risk Model");
+                addExecutionBlock  = menu.addAction("Add Execution Model");
+            }
+
+            if (clickedModel) {
+                menu.addSeparator();
+                removeNode = menu.addAction("Remove Selected Node");
+            }
+        }
+
+        QAction* chosen = menu.exec(pTreeView->viewport()->mapToGlobal(pos));
+        if (!chosen) return;
+
+        if (chosen == addAccount) {
+            auto model = QSharedPointer<CBasicAccount>::create();
+            model->setName("Account");
+            model->setId(QUuid::createUuid());
+            model->setParentActivationState(true);
+            root->addModel(model);
+            sysModel->rebuildFromRoot();
+            pPConfigModel->setupModelData();
+            pTreeView->expandAll();
+        }
+        else if (chosen == addPortfolio && clickedModel) {
+            auto model = QSharedPointer<CBasicPortfolio>::create();
+            model->setName("Portfolio");
+            model->setId(QUuid::createUuid());
+            model->setParentActivationState(clickedModel->getActiveStatus());
+            model->setParentModel(clickedModel);
+            clickedModel->addModel(model);
+            sysModel->rebuildFromRoot();
+            pPConfigModel->setupModelData();
+            pTreeView->expandAll();
+        }
+        else if (chosen == addStrategy && clickedModel) {
+            auto model = CStrategyFactory::createNewStrategy(ModelType::STRATEGY_PIPELINE);
+            if (model) {
+                model->setId(QUuid::createUuid());
+                model->setParentActivationState(clickedModel->getActiveStatus());
+                model->setParentModel(clickedModel);
+                clickedModel->addModel(model);
+                sysModel->rebuildFromRoot();
+                pPConfigModel->setupModelData();
+                pTreeView->expandAll();
+            }
+        }
+        else if (chosen == openBacktest && clickedModel) {
+            auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(clickedModel);
+            if (adapter) {
+                CGenericModelApi* parentModel = sysModel->parentModelAt(index);
+                QString portfolioPath = parentModel ? parentModel->getName() : "";
+                emit pPConfigModel->openInBacktestWorkspace(
+                    clickedModel->getId().toString(QUuid::WithoutBraces),
+                    clickedModel->getName(),
+                    portfolioPath,
+                    adapter->pipelineConfig());
+            }
+        }
+        else if ((chosen == addSelectionBlock || chosen == addAlphaBlock ||
+                  chosen == addRebalanceBlock || chosen == addRiskBlock ||
+                  chosen == addExecutionBlock) && clickedModel) {
+            auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(clickedModel);
+            if (adapter) {
+                QString category, jsonKey;
+                bool isArray = false;
+
+                if (chosen == addSelectionBlock)      { category = "Selection";  jsonKey = "selection";  isArray = false; }
+                else if (chosen == addAlphaBlock)     { category = "Alpha";      jsonKey = "alphas";     isArray = true;  }
+                else if (chosen == addRebalanceBlock) { category = "Rebalance";  jsonKey = "rebalance";  isArray = false; }
+                else if (chosen == addRiskBlock)      { category = "Risk";       jsonKey = "risks";      isArray = true;  }
+                else if (chosen == addExecutionBlock) { category = "Execution";  jsonKey = "execution";  isArray = false; }
+
+                auto blocks = Pipeline::BlockRegistry::instance().blocksByCategory(category);
+                if (!blocks.isEmpty()) {
+                    QStringList displayNames, blockIds;
+                    for (const auto& desc : blocks) {
+                        QString label = desc.name;
+                        if (!desc.description.isEmpty())
+                            label += " -- " + desc.description;
+                        displayNames.append(label);
+                        blockIds.append(desc.id);
+                    }
+
+                    bool ok = false;
+                    QString chosenBlock = QInputDialog::getItem(
+                        pTreeView, QString("Select %1 Block").arg(category),
+                        QString("Available %1 blocks:").arg(category.toLower()),
+                        displayNames, 0, false, &ok);
+
+                    if (ok && !chosenBlock.isEmpty()) {
+                        int idx = displayNames.indexOf(chosenBlock);
+                        if (idx >= 0) {
+                            QString blockId = blockIds.at(idx);
+                            auto descResult = Pipeline::BlockRegistry::instance().descriptor(blockId);
+                            QJsonObject defaultCfg = descResult ? descResult.value().defaultConfig : QJsonObject();
+                            QJsonObject config = adapter->pipelineConfig();
+
+                            QJsonObject entry;
+                            entry["blockId"] = blockId;
+                            entry["config"] = defaultCfg;
+
+                            if (isArray) {
+                                QJsonArray arr = config.value(jsonKey).toArray();
+                                arr.append(entry);
+                                config[jsonKey] = arr;
+                            } else {
+                                config[jsonKey] = entry;
+                            }
+
+                            adapter->setPipelineConfig(config);
+                            sysModel->rebuildFromRoot();
+                            pTreeView->expandAll();
+                            emit pPConfigModel->pipelineConfigChanged(config);
+                        }
+                    }
+                }
+            }
+        }
+        else if (chosen == removeNode && clickedModel) {
+            CGenericModelApi* parentObj = clickedModel->getParentModel();
+            if (parentObj) {
+                auto& siblings = parentObj->getModels();
+                for (int i = 0; i < siblings.size(); ++i) {
+                    if (siblings[i].data() == clickedModel) {
+                        parentObj->removeModel(siblings[i]);
+                        break;
+                    }
+                }
+                sysModel->rebuildFromRoot();
+                pPConfigModel->setupModelData();
+            }
+        }
+    });
 
     m_pDiagramWidget = new PipelineDiagramWidget();
     m_pDiagramDock = new QDockWidget("Diagram View", this->pIbtsView);
@@ -159,8 +325,11 @@ void CPresenter::MapSignals()
     QObject::connect(m_pBacktestDock, &BacktestUI::BacktestWorkspaceDock::loadRunRequested,
                      this, &CPresenter::onLoadRun);
 
-    QObject::connect(pTreeView->selectionModel(), &QItemSelectionModel::currentChanged,
-                     this, &CPresenter::onTreeSelectionChanged);
+    // Reconnect selection changed to account for the new model that was set in setPGuiModel()
+    if (pTreeView->selectionModel()) {
+        QObject::connect(pTreeView->selectionModel(), &QItemSelectionModel::currentChanged,
+                         this, &CPresenter::onTreeSelectionChanged);
+    }
 
     QObject::connect(pPConfigModel, &CPortfolioConfigModel::pipelineConfigChanged,
                      m_pDiagramWidget, &PipelineDiagramWidget::updateFromConfig);
@@ -170,6 +339,18 @@ void CPresenter::MapSignals()
 
 
     this->pIbtsView->mapSignals();
+
+    // Wire AlertService to GlobalStatusBar (D2: owned, not singleton)
+    if (pGuiModel && pGuiModel->alertService() && pIbtsView->globalStatusBar()) {
+        QObject::connect(pGuiModel->alertService(), &AlertService::countChanged,
+                         pIbtsView->globalStatusBar(), &GlobalStatusBar::setAlertCount);
+    }
+
+    // Wire global actions from GlobalStatusBar
+    if (pIbtsView->globalStatusBar()) {
+        QObject::connect(pIbtsView->globalStatusBar(), &GlobalStatusBar::reconnectClicked,
+                         this, &CPresenter::onClickMyButton);
+    }
 
 
 
@@ -280,11 +461,26 @@ void CPresenter::setPGuiModel(CMainModel *newPGuiModel)
    this->pIbtsView->getSettingsTreeView()->setModel(this->pGuiModel->pSettingsModel());
    this->pIbtsView->getSettingsTreeView()->expandAll();
 
-   this->pIbtsView->getPortfolioConfigTreeView()->setModel(this->pGuiModel->pPortfolioConfigModel());
-   //this->pIbtsView->getPortfolioConfigTreeView()->expandAll();
-
    this->getPGuiModel()->pPortfolioConfigModel()->setBrokerDataProvider(this->m_pDataProvider);
    this->getPGuiModel()->pPortfolioConfigModel()->setupModelData();
+
+   // Set up SystemTreeModel (operations console tree replacing old config tree)
+   m_pSystemTreeModel = new SystemTreeModel(this);
+   m_pSystemTreeDelegate = new SystemTreeDelegate(this);
+   m_pSystemTreeModel->setRoot(this->getPGuiModel()->dataRoot());
+
+   QTreeView* treeView = this->pIbtsView->getPortfolioConfigTreeView();
+   treeView->setModel(m_pSystemTreeModel);
+   treeView->setItemDelegate(m_pSystemTreeDelegate);
+   treeView->setHeaderHidden(false);
+   treeView->setAlternatingRowColors(true);
+   treeView->setColumnWidth(SystemTreeModel::ColName, 200);
+   treeView->setColumnWidth(SystemTreeModel::ColEnabled, 50);
+   treeView->setColumnWidth(SystemTreeModel::ColStatus, 110);
+   treeView->setColumnWidth(SystemTreeModel::ColPnL, 90);
+   treeView->header()->setStretchLastSection(false);
+   treeView->header()->setSectionResizeMode(SystemTreeModel::ColName, QHeaderView::Stretch);
+   treeView->expandAll();
 }
 
 
@@ -485,55 +681,103 @@ void CPresenter::onBacktestFailed(const QString& reason) {
 
 void CPresenter::onTreeSelectionChanged(const QModelIndex& current, const QModelIndex& /*previous*/)
 {
-    if (!m_pDiagramWidget || !current.isValid()) return;
+    if (!current.isValid()) return;
 
-    auto* configModel = getPGuiModel()->pPortfolioConfigModel();
-    quint16 nodeType = configModel->nodeTypeId(current);
-
-    if (nodeType == PM_ITEM_ACCOUNT) {
-        auto accountModel = configModel->getTopLevelModelByIdex2(current).model;
-        if (!accountModel) { m_pDiagramWidget->clear(); return; }
-
-        QStringList portfolioNames;
-        for (const auto& p : accountModel->getModels())
-            portfolioNames.append(p->getName());
-
-        m_pDiagramWidget->setAccountView(accountModel->getName(), portfolioNames);
+    if (!m_pSystemTreeModel) {
+        if (m_pDiagramWidget) m_pDiagramWidget->clear();
         return;
     }
 
-    if (nodeType == PM_ITEM_PORTFOLIO) {
-        auto portfolioModel = configModel->getTopLevelModelByIdex2(current).model;
-        if (!portfolioModel) { m_pDiagramWidget->clear(); return; }
+    // Handle virtual block nodes first
+    if (m_pSystemTreeModel->isVirtualBlock(current)) {
+        CGenericModelApi* parentStrategy = m_pSystemTreeModel->parentStrategyOf(current);
+        auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(parentStrategy);
 
-        QVector<StrategyDiagramInfo> strategies;
-        for (const auto& s : portfolioModel->getModels()) {
-            StrategyDiagramInfo info;
-            info.name = s->getName();
-            auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(s.data());
-            if (adapter)
-                info.pipelineConfig = adapter->pipelineConfig();
-            strategies.append(info);
-        }
-
-        m_pDiagramWidget->setPortfolioView(portfolioModel->getName(), strategies);
-        return;
-    }
-
-    if (nodeType == PM_ITEM_STRATEGY || nodeType == PM_ITEM_PIPELINE_STRATEGY ||
-        nodeType == PM_ITEM_SELECTION_MODEL || nodeType == PM_ITEM_ALFA_MODEL ||
-        nodeType == PM_ITEM_REBALANCE_MODEL || nodeType == PM_ITEM_RISK_MODEL ||
-        nodeType == PM_ITEM_EXECUTION_MODEL) {
-        auto model = configModel->getTopLevelModelByIdex2(current).model;
-        if (!model) { m_pDiagramWidget->clear(); return; }
-
-        auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(model.data());
-        if (adapter) {
+        if (adapter && m_pDiagramWidget)
             m_pDiagramWidget->setPipelineConfig(adapter->pipelineConfig());
-            return;
+
+        if (adapter && pIbtsView->contextWorkspace()) {
+            QString blockId  = m_pSystemTreeModel->virtualBlockId(current);
+            QString category = m_pSystemTreeModel->virtualCategory(current);
+
+            QString jsonKey;
+            bool isArray = false;
+            if (category == "Selection")       { jsonKey = "selection";  isArray = true;  }
+            else if (category == "Alpha")      { jsonKey = "alphas";     isArray = true;  }
+            else if (category == "Risk")       { jsonKey = "risks";      isArray = true;  }
+            else if (category == "Rebalance")  { jsonKey = "rebalance";  isArray = false; }
+            else if (category == "Execution")  { jsonKey = "execution";  isArray = false; }
+
+            int arrayIndex = -1;
+            if (isArray) {
+                QJsonArray arr = adapter->pipelineConfig().value(jsonKey).toArray();
+                for (int i = 0; i < arr.size(); ++i) {
+                    QJsonObject obj = arr[i].toObject();
+                    QString id = obj.value("blockId").toString();
+                    if (id.isEmpty()) id = obj.value("type").toString();
+                    if (id == blockId) { arrayIndex = i; break; }
+                }
+            }
+
+            pIbtsView->contextWorkspace()->showBlockWorkspace(
+                adapter, category, blockId, jsonKey, arrayIndex);
+        }
+        return;
+    }
+
+    CGenericModelApi* model = m_pSystemTreeModel->modelAt(current);
+    if (!model) {
+        if (m_pDiagramWidget) m_pDiagramWidget->clear();
+        if (pIbtsView->contextWorkspace()) pIbtsView->contextWorkspace()->showEmpty();
+        return;
+    }
+
+    ModelType mt = model->modelType();
+
+    if (m_pDiagramWidget) {
+        if (mt == ModelType::ACCOUNT) {
+            QStringList portfolioNames;
+            for (const auto& p : model->getModels())
+                portfolioNames.append(p->getName());
+            m_pDiagramWidget->setAccountView(model->getName(), portfolioNames);
+        }
+        else if (mt == ModelType::PORTFOLIO) {
+            QVector<StrategyDiagramInfo> strategies;
+            for (const auto& s : model->getModels()) {
+                StrategyDiagramInfo info;
+                info.name = s->getName();
+                auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(s.data());
+                if (adapter) info.pipelineConfig = adapter->pipelineConfig();
+                strategies.append(info);
+            }
+            m_pDiagramWidget->setPortfolioView(model->getName(), strategies);
+        }
+        else {
+            auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(model);
+            if (adapter)
+                m_pDiagramWidget->setPipelineConfig(adapter->pipelineConfig());
+            else
+                m_pDiagramWidget->clear();
         }
     }
 
-    m_pDiagramWidget->clear();
+    if (pIbtsView->contextWorkspace()) {
+        bool isStrategy = (mt == ModelType::STRATEGY ||
+                           mt == ModelType::STRATEGY_BASIC_TEST ||
+                           mt == ModelType::STRATEGY_MA ||
+                           mt == ModelType::STRATEGY_MOMENTUM ||
+                           mt == ModelType::STRATEGY_PIPELINE);
+        if (mt == ModelType::ACCOUNT) {
+            pIbtsView->contextWorkspace()->showAccountWorkspace(model);
+        } else if (mt == ModelType::PORTFOLIO) {
+            CGenericModelApi* parentModel = m_pSystemTreeModel->parentModelAt(current);
+            pIbtsView->contextWorkspace()->showPortfolioWorkspace(model, parentModel);
+        } else if (isStrategy) {
+            CGenericModelApi* parentModel = m_pSystemTreeModel->parentModelAt(current);
+            pIbtsView->contextWorkspace()->showStrategyWorkspace(model, parentModel);
+        } else {
+            pIbtsView->contextWorkspace()->showEmpty();
+        }
+    }
 }
 

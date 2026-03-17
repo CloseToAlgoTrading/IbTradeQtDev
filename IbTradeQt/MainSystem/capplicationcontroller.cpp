@@ -197,6 +197,15 @@ void CApplicationController::setUpApplication(QApplication &app)
     auto icon = QIcon(":/IBTradeSystem/x_resources/app.png");
     app.setWindowIcon(icon);
 
+    // Load operations console stylesheet
+    QFile qssFile(":/style/operations-console.qss");
+    if (!qssFile.exists())
+        qssFile.setFileName(QStringLiteral("MainSystem/style/operations-console.qss"));
+    if (qssFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        app.setStyleSheet(qssFile.readAll());
+        qssFile.close();
+    }
+
     this->pMainView->show();
 }
 

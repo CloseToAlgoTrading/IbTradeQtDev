@@ -3,13 +3,13 @@
 
 
 #include <QObject>
-//#include "CPortfolioConfigModel.h"
 #include "csettinsmodeldata.h"
 
 
 class CPresenter;
 class CPortfolioConfigModel;
 class CBasicRoot;
+class AlertService;
 
 class CMainModel : public QObject
 {
@@ -19,12 +19,16 @@ public:
 
     CSettinsModelData *pSettingsModel();
     CPortfolioConfigModel *pPortfolioConfigModel() const;
+    CBasicRoot* dataRoot() const { return m_pDataRoot; }
+    AlertService* alertService() const { return m_pAlertService; }
 
 private:
     CPresenter *m_pPresenter;
 
     CSettinsModelData* m_pSettingsModel;
     CPortfolioConfigModel* m_pPortfolioConfigModel;
+    CBasicRoot* m_pDataRoot;
+    AlertService* m_pAlertService;
 };
 
 #endif // CMAINMODEL_H

@@ -16,6 +16,7 @@
 #include "dbdatatypes.h"
 #include "dbmanager.h"
 #include "cmodelstate.h"
+#include "ModelStateUtils.h"
 #include <memory>  // For std::unique_ptr
 
 
@@ -169,7 +170,11 @@ public slots:
     virtual void slotDbManagerConnectionState(const bool state);
     virtual void slotModelInfoFetched(const DbModelInfo& obj, e_queryStatus state);
 
+    DisplayState resolveDisplayState() const;
+    void checkDisplayState();
+
 signals:
+    void displayStateChanged(DisplayState oldDisplayState, DisplayState newDisplayState);
     void dataProcessed(DataListPtr data);
 
 
@@ -178,6 +183,7 @@ public:
     DbModelInfo m_ModelInfo;
 
 private:
+    DisplayState m_lastDisplayState = DisplayState::Idle;
     qreal m_availableFunds;
     qreal m_usedFunds;
     QList<OpenPosition> m_OpenPositionList;

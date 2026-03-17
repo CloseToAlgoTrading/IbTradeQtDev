@@ -19,4 +19,7 @@
         <file>x_resources/icons/default/Connect.png</file>
         <file>x_resources/icons/default/Disconnect.png</file>
     </qresource>
+    <qresource prefix="/style">
+        <file alias="operations-console.qss">MainSystem/style/operations-console.qss</file>
+    </qresource>
 </RCC>

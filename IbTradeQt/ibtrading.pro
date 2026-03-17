@@ -158,7 +158,20 @@ SOURCES += \
     BacktestUI/BacktestRunHistoryPanel.cpp \
     BacktestUI/EquityChartWidget.cpp \
     BacktestUI/BacktestCandlestickWidget.cpp \
-    BacktestUI/TradeLogWidget.cpp
+    BacktestUI/TradeLogWidget.cpp \
+    MainSystem/GlobalStatusBar.cpp \
+    MainSystem/EventLogPanel.cpp \
+    MainSystem/ContextWorkspace.cpp \
+    MainSystem/SystemTreeModel.cpp \
+    MainSystem/SystemTreeDelegate.cpp \
+    MainSystem/WorkspaceWidgets/WorkspaceBase.cpp \
+    MainSystem/WorkspaceWidgets/WorkspaceHeader.cpp \
+    MainSystem/WorkspaceWidgets/MetricsStrip.cpp \
+    MainSystem/WorkspaceWidgets/StrategyWorkspace.cpp \
+    MainSystem/WorkspaceWidgets/AccountWorkspace.cpp \
+    MainSystem/WorkspaceWidgets/PortfolioWorkspace.cpp \
+    MainSystem/WorkspaceWidgets/BlockWorkspace.cpp \
+    MainSystem/AlertService.cpp
 
 
 HEADERS += \
@@ -284,9 +297,24 @@ HEADERS += \
     BacktestUI/EquityChartWidget.h \
     BacktestUI/BacktestCandlestickWidget.h \
     BacktestUI/TradeLogWidget.h \
+    MainSystem/GlobalStatusBar.h \
+    MainSystem/EventLogPanel.h \
+    MainSystem/ContextWorkspace.h \
+    MainSystem/SystemTreeModel.h \
+    MainSystem/SystemTreeDelegate.h \
+    MainSystem/WorkspaceWidgets/LayoutConstants.h \
+    MainSystem/WorkspaceWidgets/WorkspaceBase.h \
+    MainSystem/WorkspaceWidgets/WorkspaceHeader.h \
+    MainSystem/WorkspaceWidgets/MetricsStrip.h \
+    MainSystem/WorkspaceWidgets/StrategyWorkspace.h \
+    MainSystem/WorkspaceWidgets/AccountWorkspace.h \
+    MainSystem/WorkspaceWidgets/PortfolioWorkspace.h \
+    MainSystem/WorkspaceWidgets/BlockWorkspace.h \
+    MainSystem/AlertService.h \
     Strategies/Generic/modelConstants.h \
     Strategies/StateMachine/cmodelstate.h \
     Strategies/StateMachine/cmodelstateimpl.h \
+    Strategies/StateMachine/ModelStateUtils.h \
     baseimpl.h \
     AboutDialog/aboutdialog.h \
     AboutDialog/AboutDlgPresener.h \
@@ -413,6 +441,7 @@ INCLUDEPATH += \
     $$PWD/QCustomPlot \
     $$PWD/PairTrader \
     $$PWD/MainSystem \
+    $$PWD/MainSystem/WorkspaceWidgets \
     $$PWD/Logger \
     $$PWD/IBComm \
     $$PWD/DB \

@@ -19,6 +19,8 @@
 class CMainModel;
 class PipelineDiagramWidget;
 class QDockWidget;
+class SystemTreeModel;
+class SystemTreeDelegate;
 
 namespace BacktestUI { class BacktestWorkspaceDock; }
 namespace Backtest   { class BacktestController;   }
@@ -94,6 +96,9 @@ private:
     BacktestUI::BacktestWorkspaceDock*  m_pBacktestDock      = nullptr;
     Backtest::BacktestController*       m_pBacktestController = nullptr;
 	QScopedPointer<AboutDlgPresener> pAboutDlgPresenter;
+
+    SystemTreeModel*    m_pSystemTreeModel    = nullptr;
+    SystemTreeDelegate* m_pSystemTreeDelegate = nullptr;
 };
 
 #endif // CPRESENTER_H
