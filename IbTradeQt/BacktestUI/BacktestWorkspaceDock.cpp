@@ -4,6 +4,7 @@
 #include "BacktestUI/EquityChartWidget.h"
 #include "BacktestUI/BacktestCandlestickWidget.h"
 #include "BacktestUI/TradeLogWidget.h"
+#include "PipelineConfigEditor.h"
 #include <QLabel>
 #include <QTabWidget>
 #include <QVBoxLayout>
@@ -11,6 +12,7 @@
 #include <QSplitter>
 #include <QFont>
 #include <QSizePolicy>
+#include <QJsonDocument>
 
 namespace BacktestUI {
 
@@ -20,7 +22,6 @@ BacktestWorkspaceDock::BacktestWorkspaceDock(QWidget* parent)
     setFeatures(QDockWidget::DockWidgetMovable  |
                 QDockWidget::DockWidgetFloatable |
                 QDockWidget::DockWidgetClosable);
-    // Make the dock reasonably large by default so charts are visible
     setMinimumSize(700, 500);
     buildDock();
 }
@@ -40,16 +41,34 @@ void BacktestWorkspaceDock::buildDock() {
     m_headerLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     outerLayout->addWidget(m_headerLabel);
 
-    // Vertical splitter: config panel (top, collapsible) | results tabs (bottom, expands)
+    // Vertical splitter: config area (top) | results tabs (bottom)
     auto* splitter = new QSplitter(Qt::Vertical, container);
     splitter->setChildrenCollapsible(false);
 
-    // Config panel
-    m_configPanel = new BacktestRunConfigPanel();
-    m_configPanel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    splitter->addWidget(m_configPanel);
+    // Top: tabbed config area (Run Configuration | Pipeline Blocks)
+    m_configTabs = new QTabWidget();
+    m_configTabs->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
-    // Tab widget for results
+    m_configPanel = new BacktestRunConfigPanel();
+    m_configTabs->addTab(m_configPanel, QStringLiteral("Run Configuration"));
+
+    m_pipelineEditor = new PipelineConfigEditor();
+    m_configTabs->addTab(m_pipelineEditor, QStringLiteral("Pipeline Blocks"));
+
+    splitter->addWidget(m_configTabs);
+
+    // When user edits pipeline params, update the stored config JSON
+    connect(m_pipelineEditor, &PipelineConfigEditor::configChanged,
+            this, [this](const QJsonObject& newConfig) {
+        QString json = QString::fromUtf8(
+            QJsonDocument(newConfig).toJson(QJsonDocument::Compact));
+        m_configPanel->setStrategyContext(
+            m_currentStrategyId, m_currentDisplayName,
+            m_currentPortfolioPath, json,
+            m_currentStrategyDefId, m_currentStrategyVersion);
+    });
+
+    // Bottom: results tabs
     m_tabWidget = new QTabWidget();
     m_tabWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
@@ -64,13 +83,10 @@ void BacktestWorkspaceDock::buildDock() {
     m_tabWidget->addTab(m_tradeLog,     QStringLiteral("Trade Log"));
 
     splitter->addWidget(m_tabWidget);
-
-    // Give most space to the results area (1:3 ratio)
     splitter->setStretchFactor(0, 1);
     splitter->setStretchFactor(1, 3);
 
     outerLayout->addWidget(splitter, 1);
-
     setWidget(container);
 
     // Wire internal signals upward to CPresenter
@@ -103,6 +119,10 @@ void BacktestWorkspaceDock::selectStrategy(const QString& strategyId,
     m_configPanel->setCatalogVersionId(catalogVersionId);
     m_configPanel->applyProfile(profile);
 
+    // Populate the pipeline editor with the strategy's config
+    QJsonObject pipelineCfg = QJsonDocument::fromJson(pipelineConfigJson.toUtf8()).object();
+    m_pipelineEditor->setPipelineConfig(pipelineCfg);
+
     // Clear result tabs since a different strategy is now selected
     m_equityChart->clear();
     m_candleChart->clear();
@@ -111,7 +131,6 @@ void BacktestWorkspaceDock::selectStrategy(const QString& strategyId,
 }
 
 void BacktestWorkspaceDock::updateStrategyHeader() {
-    // Show definition version badge when a catalog binding is known
     QString versionBadge;
     if (!m_currentStrategyDefId.isEmpty()) {
         versionBadge = QString(
@@ -134,13 +153,11 @@ void BacktestWorkspaceDock::updateStrategyHeader() {
 void BacktestWorkspaceDock::displayResult(const Backtest::BacktestLoadedRun& run) {
     const auto& result = run.result;
 
-    // Equity curve
     m_equityChart->setData(
         result.equityCurve,
         result.benchmark.equityCurve,
         result.benchmark.symbol);
 
-    // Candlestick chart — bars come from run.histBars (populated by HistoricalDataManager)
     {
         QList<DbBacktestTrade> dbFills;
         for (const auto& fill : result.tradeLog) {
@@ -156,10 +173,7 @@ void BacktestWorkspaceDock::displayResult(const Backtest::BacktestLoadedRun& run
         m_candleChart->setData(run.histBars, dbFills);
     }
 
-    // Trade log
     m_tradeLog->setFills(result.tradeLog);
-
-    // Switch to Equity Curve tab to show result immediately
     m_tabWidget->setCurrentIndex(1);
 }
 

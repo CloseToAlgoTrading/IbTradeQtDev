@@ -42,6 +42,8 @@ INCLUDEPATH += \
     $$PWD/../IBComm \
     $$PWD/../CObjects \
     $$PWD/../StrategyManagementUI \
+    $$PWD/../MainSystem \
+    $$PWD/../MainSystem/WorkspaceWidgets \
     $$PWD/../Brokers/IB/Shared \
     $$PWD/../ReqManager \
     $$MOC_DIR
@@ -115,7 +117,8 @@ SOURCES += \
     ../StrategyManagementUI/StrategyCatalogModel.cpp \
     ../StrategyManagementUI/StrategyCatalogPanel.cpp \
     ../StrategyManagementUI/StrategyDetailPanel.cpp \
-    ../StrategyManagementUI/StrategyManagementPanel.cpp
+    ../StrategyManagementUI/StrategyManagementPanel.cpp \
+    ../MainSystem/WorkspaceWidgets/PipelineConfigEditor.cpp
 
 HEADERS += \
     ../Pipeline/Contracts.h \
@@ -270,4 +273,5 @@ HEADERS += \
     ../StrategyManagementUI/StrategyCatalogModel.h \
     ../StrategyManagementUI/StrategyCatalogPanel.h \
     ../StrategyManagementUI/StrategyDetailPanel.h \
-    ../StrategyManagementUI/StrategyManagementPanel.h
+    ../StrategyManagementUI/StrategyManagementPanel.h \
+    ../MainSystem/WorkspaceWidgets/PipelineConfigEditor.h

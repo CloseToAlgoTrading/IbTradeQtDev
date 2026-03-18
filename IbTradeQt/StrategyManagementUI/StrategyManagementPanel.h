@@ -32,17 +32,24 @@ public:
                             const QJsonArray& versions);
 
 signals:
-    // Re-emitted from child panels for the presenter to handle
     void strategySelected(const QString& strategyId);
     void newStrategyRequested();
     void metadataChanged(const QString& strategyId, const QString& name,
                          const QString& description, const QString& tags,
                          const QString& lifecycleState);
-    void newVersionRequested(const QString& strategyId);
+    void newVersionRequested(const QString& strategyId,
+                             const QJsonObject& pipelineConfig);
     void publishRequested(const QString& strategyId, const QString& versionId);
     void archiveRequested(const QString& strategyId);
     void useInLiveRequested(const QString& strategyId, const QString& versionId);
     void openInBacktestRequested(const QString& strategyId, const QString& versionId);
+    void addBlockRequested(const QString& strategyId,
+                           const QString& category,
+                           const QString& blockId,
+                           const QJsonObject& defaultConfig);
+    void removeBlockRequested(const QString& strategyId,
+                              const QString& category,
+                              int blockIndex);
 
 private:
     void buildUi();

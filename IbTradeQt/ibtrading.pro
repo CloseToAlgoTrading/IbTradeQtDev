@@ -172,6 +172,7 @@ SOURCES += \
     MainSystem/WorkspaceWidgets/AccountWorkspace.cpp \
     MainSystem/WorkspaceWidgets/PortfolioWorkspace.cpp \
     MainSystem/WorkspaceWidgets/BlockWorkspace.cpp \
+    MainSystem/WorkspaceWidgets/PipelineConfigEditor.cpp \
     MainSystem/AlertService.cpp \
     Backend/ModelTreeRepository.cpp \
     Backend/ModelTreeMapper.cpp \
@@ -319,6 +320,7 @@ HEADERS += \
     MainSystem/WorkspaceWidgets/AccountWorkspace.h \
     MainSystem/WorkspaceWidgets/PortfolioWorkspace.h \
     MainSystem/WorkspaceWidgets/BlockWorkspace.h \
+    MainSystem/WorkspaceWidgets/PipelineConfigEditor.h \
     MainSystem/AlertService.h \
     Backend/ModelNodeRecord.h \
     Backend/ModelTreeRepository.h \

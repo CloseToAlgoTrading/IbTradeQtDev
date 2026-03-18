@@ -128,24 +128,15 @@ void CPresenter::MapSignals()
 
         QAction* addAccount = menu.addAction("Add New Account");
 
-        QAction* addPortfolio    = nullptr;
-        QAction* addStrategy     = nullptr;
+        QAction* addPortfolio     = nullptr;
         QAction* useExistingStrat = nullptr;
-        QAction* removeNode      = nullptr;
-        QAction* openBacktest = nullptr;
-        QAction* addSelectionBlock  = nullptr;
-        QAction* addAlphaBlock      = nullptr;
-        QAction* addRebalanceBlock  = nullptr;
-        QAction* addRiskBlock       = nullptr;
-        QAction* addExecutionBlock  = nullptr;
-        QAction* removeBlock        = nullptr;
+        QAction* removeNode       = nullptr;
+        QAction* openBacktest     = nullptr;
 
         CGenericModelApi* clickedModel = nullptr;
         ModelType clickedType = ModelType::ROOT;
-        bool isVirtual = false;
 
         if (index.isValid() && sysModel) {
-            isVirtual = sysModel->isVirtualBlock(index);
             clickedModel = sysModel->modelAt(index);
             if (clickedModel)
                 clickedType = clickedModel->modelType();
@@ -154,8 +145,7 @@ void CPresenter::MapSignals()
                 addPortfolio = menu.addAction("Add New Portfolio");
             }
             if (clickedType == ModelType::PORTFOLIO) {
-                addStrategy       = menu.addAction("Add New Strategy");
-                useExistingStrat  = menu.addAction("Use Existing Strategy...");
+                useExistingStrat = menu.addAction("Use Existing Strategy...");
             }
 
             bool isStrategy = (clickedType == ModelType::STRATEGY ||
@@ -168,20 +158,7 @@ void CPresenter::MapSignals()
                 openBacktest = menu.addAction("Open in Backtest Workspace");
             }
 
-            bool isPipelineStrategy = (clickedType == ModelType::STRATEGY_PIPELINE);
-            if (isPipelineStrategy) {
-                menu.addSeparator();
-                addSelectionBlock  = menu.addAction("Add Selection Model");
-                addAlphaBlock      = menu.addAction("Add Alpha Model");
-                addRebalanceBlock  = menu.addAction("Add Rebalance Model");
-                addRiskBlock       = menu.addAction("Add Risk Model");
-                addExecutionBlock  = menu.addAction("Add Execution Model");
-            }
-
-            if (isVirtual) {
-                menu.addSeparator();
-                removeBlock = menu.addAction("Remove Block");
-            } else if (clickedModel) {
+            if (clickedModel) {
                 menu.addSeparator();
                 removeNode = menu.addAction("Remove Selected Node");
             }
@@ -203,11 +180,6 @@ void CPresenter::MapSignals()
         else if (chosen == addPortfolio && clickedModel && backend) {
             QString accountId = clickedModel->getId().toString(QUuid::WithoutBraces);
             backend->createPortfolio(accountId, "Portfolio");
-            rebuildTree();
-        }
-        else if (chosen == addStrategy && clickedModel && backend) {
-            QString portfolioId = clickedModel->getId().toString(QUuid::WithoutBraces);
-            backend->createStrategy(portfolioId, ModelType::STRATEGY_PIPELINE);
             rebuildTree();
         }
         else if (chosen == useExistingStrat && clickedModel && backend) {
@@ -261,86 +233,6 @@ void CPresenter::MapSignals()
                 clickedModel->getName(),
                 portfolioPath,
                 pipelineCfg);
-        }
-        else if ((chosen == addSelectionBlock || chosen == addAlphaBlock ||
-                  chosen == addRebalanceBlock || chosen == addRiskBlock ||
-                  chosen == addExecutionBlock) && clickedModel && backend) {
-            QString category;
-
-            if (chosen == addSelectionBlock)      { category = Pipeline::Category::Selection; }
-            else if (chosen == addAlphaBlock)     { category = Pipeline::Category::Alpha;     }
-            else if (chosen == addRebalanceBlock) { category = Pipeline::Category::Rebalance; }
-            else if (chosen == addRiskBlock)      { category = Pipeline::Category::Risk;      }
-            else if (chosen == addExecutionBlock) { category = Pipeline::Category::Execution; }
-
-            auto blocks = Pipeline::BlockRegistry::instance().blocksByCategory(category);
-            if (!blocks.isEmpty()) {
-                QStringList displayNames, blockIds;
-                for (const auto& desc : blocks) {
-                    QString label = desc.name;
-                    if (!desc.description.isEmpty())
-                        label += " -- " + desc.description;
-                    displayNames.append(label);
-                    blockIds.append(desc.id);
-                }
-
-                bool ok = false;
-                QString chosenBlock = QInputDialog::getItem(
-                    pTreeView, QString("Select %1 Block").arg(category),
-                    QString("Available %1 blocks:").arg(category.toLower()),
-                    displayNames, 0, false, &ok);
-
-                if (ok && !chosenBlock.isEmpty()) {
-                    int idx = displayNames.indexOf(chosenBlock);
-                    if (idx >= 0) {
-                        QString blockId = blockIds.at(idx);
-                        auto descResult = Pipeline::BlockRegistry::instance().descriptor(blockId);
-                        QJsonObject defaultCfg = descResult ? descResult.value().defaultConfig : QJsonObject();
-
-                        QString strategyId = clickedModel->getId().toString(QUuid::WithoutBraces);
-                        backend->addBlock(strategyId, category, blockId, defaultCfg);
-
-                        sysModel->rebuildFromRoot();
-                        pTreeView->expandAll();
-
-                        auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(clickedModel);
-                        if (adapter)
-                            emit pPConfigModel->pipelineConfigChanged(adapter->pipelineConfig());
-                    }
-                }
-            }
-        }
-        else if (chosen == removeBlock && isVirtual && backend) {
-            CGenericModelApi* parentStrategy = sysModel->parentStrategyOf(index);
-            if (parentStrategy) {
-                QString strategyId = parentStrategy->getId().toString(QUuid::WithoutBraces);
-                QString category = sysModel->virtualCategory(index);
-                QString blockId  = sysModel->virtualBlockId(index);
-
-                auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(parentStrategy);
-                if (adapter) {
-                    const QString jsonKey = QString(Pipeline::categoryKey(category));
-                    const bool isArray    = Pipeline::categoryIsArray(category);
-
-                    if (isArray) {
-                        QJsonArray arr = adapter->pipelineConfig().value(jsonKey).toArray();
-                        int blockIndex = -1;
-                        for (int i = 0; i < arr.size(); ++i) {
-                            QJsonObject obj = arr[i].toObject();
-                            if (obj.value(Pipeline::Key::BlockId).toString() == blockId) {
-                                blockIndex = i;
-                                break;
-                            }
-                        }
-                        if (blockIndex >= 0)
-                            backend->removeBlock(strategyId, category, blockIndex);
-                    } else {
-                        backend->removeBlock(strategyId, category, 0);
-                    }
-
-                    rebuildTree();
-                }
-            }
         }
         else if (chosen == removeNode && clickedModel && backend) {
             QString uuid = clickedModel->getId().toString(QUuid::WithoutBraces);
@@ -455,19 +347,13 @@ void CPresenter::MapSignals()
         });
 
         connect(smPanel, &StrategyMgmt::StrategyManagementPanel::newVersionRequested,
-                this, [this](const QString& strategyId) {
+                this, [this](const QString& strategyId, const QJsonObject& pipelineConfig) {
             if (!m_backend) return;
-            auto latestVers = m_backend->listStrategyVersions(strategyId);
-            QJsonObject latestCfg;
-            if (!latestVers.isEmpty())
-                latestCfg = QJsonDocument::fromJson(
-                    latestVers.last().toObject()["configJson"].toString().toUtf8()).object();
             QString notes = QInputDialog::getText(pIbtsView,
                 QStringLiteral("New Version"),
                 QStringLiteral("Notes for this version:"));
-            m_backend->createStrategyVersion(strategyId, latestCfg, notes);
+            m_backend->createStrategyVersion(strategyId, pipelineConfig, notes);
             refreshStrategyCatalog();
-            // Refresh detail for the same strategy
             QJsonObject entry = m_backend->strategyCatalogEntry(strategyId);
             QJsonArray versions = m_backend->listStrategyVersions(strategyId);
             pIbtsView->strategyManagementPanel()->showStrategyDetail(entry, versions);

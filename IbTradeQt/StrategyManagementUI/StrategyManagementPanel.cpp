@@ -48,6 +48,10 @@ void StrategyManagementPanel::buildUi()
             this, &StrategyManagementPanel::useInLiveRequested);
     connect(m_detailPanel, &StrategyDetailPanel::openInBacktestRequested,
             this, &StrategyManagementPanel::openInBacktestRequested);
+    connect(m_detailPanel, &StrategyDetailPanel::addBlockRequested,
+            this, &StrategyManagementPanel::addBlockRequested);
+    connect(m_detailPanel, &StrategyDetailPanel::removeBlockRequested,
+            this, &StrategyManagementPanel::removeBlockRequested);
 }
 
 void StrategyManagementPanel::populateCatalog(const QJsonArray& catalogEntries,

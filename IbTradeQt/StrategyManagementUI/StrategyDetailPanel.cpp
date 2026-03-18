@@ -1,4 +1,5 @@
 #include "StrategyDetailPanel.h"
+#include "PipelineConfigEditor.h"
 
 #include <QLabel>
 #include <QLineEdit>
@@ -14,6 +15,13 @@
 #include <QGroupBox>
 #include <QHeaderView>
 #include <QJsonDocument>
+#include <QJsonArray>
+#include <QInputDialog>
+#include <QMessageBox>
+#include <QTabWidget>
+
+#include "PipelineConstants.h"
+#include "BlockRegistry.h"
 
 namespace StrategyMgmt {
 
@@ -77,28 +85,52 @@ void StrategyDetailPanel::buildUi()
     m_versionTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_versionTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_versionTable->verticalHeader()->hide();
+    m_versionTable->setMaximumHeight(120);
     verLayout->addWidget(m_versionTable);
 
-    mainLayout->addWidget(verGroup, 1);
+    mainLayout->addWidget(verGroup);
 
-    // --- Version config viewer ---
-    auto* cfgGroup = new QGroupBox(QStringLiteral("Version Config"));
-    auto* cfgLayout = new QVBoxLayout(cfgGroup);
+    // --- Pipeline Block Editor + Raw JSON viewer in tabs ---
+    auto* configTabs = new QTabWidget;
+
+    // Tab 1: Visual pipeline editor with add/remove
+    auto* pipelineTab = new QWidget;
+    auto* pipelineLayout = new QVBoxLayout(pipelineTab);
+    pipelineLayout->setContentsMargins(0, 0, 0, 0);
+
+    m_pipelineEditor = new PipelineConfigEditor(pipelineTab);
+    pipelineLayout->addWidget(m_pipelineEditor, 1);
+
+    auto* blockBtnBar = new QHBoxLayout;
+    m_addBlockBtn    = new QPushButton(QStringLiteral("Add Block"));
+    m_removeBlockBtn = new QPushButton(QStringLiteral("Remove Block"));
+    blockBtnBar->addWidget(m_addBlockBtn);
+    blockBtnBar->addWidget(m_removeBlockBtn);
+    blockBtnBar->addStretch();
+    pipelineLayout->addLayout(blockBtnBar);
+
+    configTabs->addTab(pipelineTab, QStringLiteral("Pipeline Blocks"));
+
+    // Tab 2: Raw JSON viewer with diff toggle
+    auto* jsonTab = new QWidget;
+    auto* jsonLayout = new QVBoxLayout(jsonTab);
+    jsonLayout->setContentsMargins(4, 4, 4, 4);
 
     m_diffToggle = new QCheckBox(QStringLiteral("Diff vs Previous"));
-    cfgLayout->addWidget(m_diffToggle);
+    jsonLayout->addWidget(m_diffToggle);
 
     m_configViewer = new QPlainTextEdit;
     m_configViewer->setReadOnly(true);
-    m_configViewer->setMaximumHeight(150);
-    cfgLayout->addWidget(m_configViewer);
+    jsonLayout->addWidget(m_configViewer);
 
-    mainLayout->addWidget(cfgGroup);
+    configTabs->addTab(jsonTab, QStringLiteral("Raw JSON"));
+
+    mainLayout->addWidget(configTabs, 1);
 
     // --- Action buttons ---
     auto* actionBar = new QHBoxLayout;
 
-    m_newVersionBtn = new QPushButton(QStringLiteral("New Version"));
+    m_newVersionBtn = new QPushButton(QStringLiteral("Save as New Version"));
     m_publishBtn    = new QPushButton(QStringLiteral("Publish"));
     m_archiveBtn    = new QPushButton(QStringLiteral("Archive Strategy"));
     m_useInLiveBtn  = new QPushButton(QStringLiteral("Use in Live"));
@@ -128,10 +160,21 @@ void StrategyDetailPanel::buildUi()
             this, &StrategyDetailPanel::onUseInLive);
     connect(m_openBtBtn, &QPushButton::clicked,
             this, &StrategyDetailPanel::onOpenInBacktest);
+    connect(m_addBlockBtn, &QPushButton::clicked,
+            this, &StrategyDetailPanel::onAddBlock);
+    connect(m_removeBlockBtn, &QPushButton::clicked,
+            this, &StrategyDetailPanel::onRemoveBlock);
     connect(m_diffToggle, &QCheckBox::toggled,
             this, [this](bool) {
         int row = m_versionTable->currentRow();
         if (row >= 0) onVersionSelected(row, 0);
+    });
+
+    // Pipeline editor changes → update working config and raw JSON viewer
+    connect(m_pipelineEditor, &PipelineConfigEditor::configChanged,
+            this, [this](const QJsonObject& newCfg) {
+        m_workingConfig = newCfg;
+        markDirty();
     });
 
     clear();
@@ -179,10 +222,22 @@ void StrategyDetailPanel::showStrategy(const QJsonObject& catalogEntry,
 
     m_configViewer->clear();
 
-    // Auto-select the latest version
+    // Load working config from the latest version
     if (versions.size() > 0) {
+        QJsonObject latest = versions.last().toObject();
+        QString cfgStr = latest.value("configJson").toString();
+        m_workingConfig = QJsonDocument::fromJson(cfgStr.toUtf8()).object();
+        m_configDirty = false;
+        m_newVersionBtn->setText(QStringLiteral("Save as New Version"));
+
+        m_pipelineEditor->setPipelineConfig(m_workingConfig);
+
         m_versionTable->selectRow(versions.size() - 1);
         onVersionSelected(versions.size() - 1, 0);
+    } else {
+        m_workingConfig = QJsonObject();
+        m_configDirty = false;
+        m_pipelineEditor->clear();
     }
 }
 
@@ -197,6 +252,9 @@ void StrategyDetailPanel::clear()
     m_statusCombo->setCurrentIndex(0);
     m_versionTable->setRowCount(0);
     m_configViewer->clear();
+    m_pipelineEditor->clear();
+    m_workingConfig = QJsonObject();
+    m_configDirty = false;
     setEnabled(false);
 }
 
@@ -210,6 +268,14 @@ void StrategyDetailPanel::onVersionSelected(int row, int)
     QJsonObject v = m_currentVersions[row].toObject();
     QString configJson = v.value("configJson").toString();
     QJsonDocument doc = QJsonDocument::fromJson(configJson.toUtf8());
+
+    // Update working config and pipeline editor from selected version
+    m_workingConfig = doc.object();
+    m_configDirty = false;
+    m_newVersionBtn->setText(QStringLiteral("Save as New Version"));
+    m_pipelineEditor->setPipelineConfig(m_workingConfig);
+
+    // Update raw JSON viewer
     QString currentText = doc.toJson(QJsonDocument::Indented);
 
     if (m_diffToggle->isChecked() && row > 0) {
@@ -241,6 +307,179 @@ void StrategyDetailPanel::onVersionSelected(int row, int)
     }
 }
 
+// --- Pipeline block add/remove ---
+
+void StrategyDetailPanel::refreshBlocksTable()
+{
+    // No longer needed — PipelineConfigEditor manages its own tree
+}
+
+void StrategyDetailPanel::onAddBlock()
+{
+    if (m_currentStrategyId.isEmpty()) return;
+
+    QStringList categories = {
+        Pipeline::Category::Selection,
+        Pipeline::Category::Alpha,
+        Pipeline::Category::Rebalance,
+        Pipeline::Category::Risk,
+        Pipeline::Category::Execution
+    };
+
+    bool ok = false;
+    QString category = QInputDialog::getItem(
+        this, QStringLiteral("Add Block"),
+        QStringLiteral("Select category:"),
+        categories, 0, false, &ok);
+    if (!ok || category.isEmpty()) return;
+
+    auto blocks = Pipeline::BlockRegistry::instance().blocksByCategory(category);
+    if (blocks.isEmpty()) {
+        QMessageBox::information(this, QStringLiteral("No Blocks"),
+            QStringLiteral("No registered blocks for category '%1'.").arg(category));
+        return;
+    }
+
+    QStringList displayNames, blockIds;
+    for (const auto& desc : blocks) {
+        QString label = desc.name;
+        if (!desc.description.isEmpty())
+            label += QStringLiteral(" -- ") + desc.description;
+        displayNames.append(label);
+        blockIds.append(desc.id);
+    }
+
+    QString chosenLabel = QInputDialog::getItem(
+        this, QStringLiteral("Select %1 Block").arg(category),
+        QStringLiteral("Available blocks:"),
+        displayNames, 0, false, &ok);
+    if (!ok || chosenLabel.isEmpty()) return;
+
+    int idx = displayNames.indexOf(chosenLabel);
+    if (idx < 0) return;
+
+    QString blockId = blockIds.at(idx);
+    auto descResult = Pipeline::BlockRegistry::instance().descriptor(blockId);
+    QJsonObject defaultCfg = descResult ? descResult.value().defaultConfig : QJsonObject();
+
+    applyBlockToWorkingConfig(category, blockId, defaultCfg);
+    m_pipelineEditor->setPipelineConfig(m_workingConfig);
+    markDirty();
+
+    emit addBlockRequested(m_currentStrategyId, category, blockId, defaultCfg);
+}
+
+void StrategyDetailPanel::onRemoveBlock()
+{
+    // Build a flat list of current blocks for user to pick from
+    struct BlockEntry {
+        QString category;
+        QString blockId;
+        int arrayIndex;
+    };
+    QVector<BlockEntry> entries;
+    QStringList displayItems;
+
+    struct CatDef {
+        QString category;
+        QLatin1StringView key;
+        bool isArray;
+    };
+    const CatDef cats[] = {
+        { Pipeline::Category::Selection,  Pipeline::Key::Selection, true  },
+        { Pipeline::Category::Alpha,      Pipeline::Key::Alphas,    true  },
+        { Pipeline::Category::Risk,       Pipeline::Key::Risks,     true  },
+        { Pipeline::Category::Rebalance,  Pipeline::Key::Rebalance, false },
+        { Pipeline::Category::Execution,  Pipeline::Key::Execution, false },
+    };
+
+    for (const auto& cat : cats) {
+        QJsonValue val = m_workingConfig.value(cat.key);
+        if (cat.isArray) {
+            QJsonArray arr = val.toArray();
+            for (int i = 0; i < arr.size(); ++i) {
+                QString bid = arr[i].toObject().value(Pipeline::Key::BlockId).toString();
+                entries.append({cat.category, bid, i});
+                displayItems << QStringLiteral("[%1] %2").arg(cat.category, bid);
+            }
+        } else if (val.isObject() && !val.toObject().isEmpty()) {
+            QString bid = val.toObject().value(Pipeline::Key::BlockId).toString();
+            entries.append({cat.category, bid, 0});
+            displayItems << QStringLiteral("[%1] %2").arg(cat.category, bid);
+        }
+    }
+
+    if (displayItems.isEmpty()) {
+        QMessageBox::information(this, QStringLiteral("No Blocks"),
+            QStringLiteral("No blocks to remove."));
+        return;
+    }
+
+    bool ok = false;
+    QString chosen = QInputDialog::getItem(
+        this, QStringLiteral("Remove Block"),
+        QStringLiteral("Select block to remove:"),
+        displayItems, 0, false, &ok);
+    if (!ok) return;
+
+    int idx = displayItems.indexOf(chosen);
+    if (idx < 0) return;
+
+    const auto& entry = entries[idx];
+    removeBlockFromWorkingConfig(entry.category, entry.arrayIndex);
+    m_pipelineEditor->setPipelineConfig(m_workingConfig);
+    markDirty();
+
+    emit removeBlockRequested(m_currentStrategyId, entry.category, entry.arrayIndex);
+}
+
+void StrategyDetailPanel::applyBlockToWorkingConfig(
+    const QString& category, const QString& blockId, const QJsonObject& defaultConfig)
+{
+    QLatin1StringView key = Pipeline::categoryKey(category);
+    bool isArray = Pipeline::categoryIsArray(category);
+
+    QJsonObject block;
+    block[Pipeline::Key::BlockId] = blockId;
+    block[Pipeline::Key::Config]  = defaultConfig;
+
+    if (isArray) {
+        QJsonArray arr = m_workingConfig.value(key).toArray();
+        arr.append(block);
+        m_workingConfig[key] = arr;
+    } else {
+        m_workingConfig[key] = block;
+    }
+}
+
+void StrategyDetailPanel::removeBlockFromWorkingConfig(const QString& category, int index)
+{
+    QLatin1StringView key = Pipeline::categoryKey(category);
+    bool isArray = Pipeline::categoryIsArray(category);
+
+    if (isArray) {
+        QJsonArray arr = m_workingConfig.value(key).toArray();
+        if (index >= 0 && index < arr.size()) {
+            arr.removeAt(index);
+            m_workingConfig[key] = arr;
+        }
+    } else {
+        m_workingConfig.remove(key);
+    }
+}
+
+void StrategyDetailPanel::markDirty()
+{
+    m_configDirty = true;
+    m_newVersionBtn->setText(QStringLiteral("Save as New Version *"));
+
+    // Update the raw JSON viewer to reflect the working config
+    QJsonDocument doc(m_workingConfig);
+    m_configViewer->setPlainText(doc.toJson(QJsonDocument::Indented));
+}
+
+// --- Metadata & actions ---
+
 void StrategyDetailPanel::onSaveMetadata()
 {
     if (m_currentStrategyId.isEmpty()) return;
@@ -253,8 +492,8 @@ void StrategyDetailPanel::onSaveMetadata()
 
 void StrategyDetailPanel::onNewVersion()
 {
-    if (!m_currentStrategyId.isEmpty())
-        emit newVersionRequested(m_currentStrategyId);
+    if (m_currentStrategyId.isEmpty()) return;
+    emit newVersionRequested(m_currentStrategyId, m_workingConfig);
 }
 
 void StrategyDetailPanel::onPublish()

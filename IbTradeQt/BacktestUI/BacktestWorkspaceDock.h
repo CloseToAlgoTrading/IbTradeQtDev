@@ -37,6 +37,7 @@ class QLabel;
 class QTabWidget;
 class QWidget;
 class QSplitter;
+class PipelineConfigEditor;
 
 namespace BacktestUI {
 
@@ -52,10 +53,6 @@ class BacktestWorkspaceDock : public QDockWidget {
 public:
     explicit BacktestWorkspaceDock(QWidget* parent = nullptr);
 
-    // Select a strategy for backtesting. Pre-populates form from profile defaults.
-    // Must be called before the user can launch a run.
-    // strategyDefId / strategyVersion come from the strategy catalog (may be empty
-    // for legacy nodes that haven't been through loadFromDb orphan repair yet).
     void selectStrategy(const QString& strategyId,
                         const QString& displayName,
                         const QString& portfolioPath,
@@ -65,14 +62,9 @@ public:
                         int            strategyVersion   = 1,
                         const QString& catalogVersionId  = {});
 
-    // Populate all result tabs from a fully-loaded run (from DB or just finished).
-    // run.histBars carries the OHLC data needed by the Candlestick chart.
     void displayResult(const Backtest::BacktestLoadedRun& run);
-
-    // Reload the Run History panel for the current strategy (called after a new run completes).
     void setRunHistory(const QList<DbBacktestRunSummary>& runs);
 
-    // Progress/status from BacktestController (relayed to config panel)
     void setProgress(int percent);
     void setStatus(const QString& status);
     void setRunning(bool running);
@@ -91,15 +83,17 @@ private:
     QString m_currentStrategyDefId;
     int     m_currentStrategyVersion = 1;
 
-    QLabel*                  m_headerLabel   = nullptr;
+    QLabel*                  m_headerLabel     = nullptr;
 
-    BacktestRunConfigPanel*  m_configPanel   = nullptr;
-    QTabWidget*              m_tabWidget     = nullptr;
+    QTabWidget*              m_configTabs      = nullptr;
+    BacktestRunConfigPanel*  m_configPanel     = nullptr;
+    PipelineConfigEditor*    m_pipelineEditor  = nullptr;
+    QTabWidget*              m_tabWidget       = nullptr;
 
-    BacktestRunHistoryPanel* m_historyPanel  = nullptr;
-    EquityChartWidget*       m_equityChart   = nullptr;
-    BacktestCandlestickWidget* m_candleChart = nullptr;
-    TradeLogWidget*          m_tradeLog      = nullptr;
+    BacktestRunHistoryPanel* m_historyPanel    = nullptr;
+    EquityChartWidget*       m_equityChart     = nullptr;
+    BacktestCandlestickWidget* m_candleChart   = nullptr;
+    TradeLogWidget*          m_tradeLog        = nullptr;
 };
 
 } // namespace BacktestUI
