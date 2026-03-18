@@ -14,9 +14,20 @@ CBasicAccount::CBasicAccount(QObject *parent) : CBaseModel(parent)
 
 void CBasicAccount::setBrokerDataProvider(QSharedPointer<CBrokerDataProvider> newClient)
 {
+    // Disconnect from old provider before replacing it
+    auto old = getIBrokerDataProvider();
+    if (old && old->getClien()) {
+        QObject::disconnect(old->getClien().data(), &IBrokerAPI::signalServerStateUpdate,
+                            this, &CBaseModel::onUpdateServerConnectionStateSlot);
+    }
+
     CBaseModel::setBrokerDataProvider(newClient);
-    QObject::disconnect(this->getIBrokerDataProvider()->getClien().data(), &IBrokerAPI::signalServerStateUpdate, this, &CBaseModel::onUpdateServerConnectionStateSlot);
-    QObject::connect(this->getIBrokerDataProvider()->getClien().data(), &IBrokerAPI::signalServerStateUpdate, this, &CBaseModel::onUpdateServerConnectionStateSlot);
+
+    // Connect to new provider only when both are valid
+    if (newClient && newClient->getClien()) {
+        QObject::connect(newClient->getClien().data(), &IBrokerAPI::signalServerStateUpdate,
+                         this, &CBaseModel::onUpdateServerConnectionStateSlot);
+    }
 }
 
 /* Temporary here.. probably need to make a generic in base */

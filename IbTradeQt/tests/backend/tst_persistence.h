@@ -68,7 +68,9 @@ private slots:
         auto repo = makeRepo("_mig");
         auto backend = std::make_unique<SystemBackendImpl>(repo.get());
 
-        QVERIFY(!backend->loadFromDb());
+        // Empty DB is now a valid state — loadFromDb() succeeds with an empty root
+        QVERIFY(backend->loadFromDb());
+        QCOMPARE(backend->dataRoot()->getModels().size(), 0);
 
         // Simulate migration by inserting records directly
         ModelNodeRecord rec;

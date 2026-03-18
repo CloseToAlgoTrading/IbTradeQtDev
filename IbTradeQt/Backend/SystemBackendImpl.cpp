@@ -741,9 +741,13 @@ bool SystemBackendImpl::isBrokerConnected() const
 bool SystemBackendImpl::loadFromDb()
 {
     QList<ModelNodeRecord> records = m_repo->fetchAll();
-    if (records.isEmpty()) return false;
 
-    CBasicRoot* newRoot = ModelTreeMapper::toRoot(records);
+    // An empty DB is valid (fresh install or user deleted all nodes).
+    // Build a synthetic empty root rather than signalling failure, which
+    // would trigger the JSON migration path and a null-broker crash.
+    CBasicRoot* newRoot = records.isEmpty()
+                          ? new CBasicRoot()
+                          : ModelTreeMapper::toRoot(records);
     if (!newRoot) return false;
 
     delete m_root;
