@@ -75,6 +75,7 @@ private:
     QModelIndex indexForNode(TreeNode* node, int column = 0) const;
     void buildSubtree(TreeNode* parentNode, CGenericModelApi* model);
     void connectModelSignals(CGenericModelApi* model, TreeNode* node);
+    void disconnectModelSignals(TreeNode* node);
 
     DisplayState resolveAggregatedStatus(TreeNode* node) const;
     double resolveAggregatedPnL(TreeNode* node) const;

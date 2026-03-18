@@ -40,6 +40,7 @@ SystemTreeModel::SystemTreeModel(QObject* parent)
 
 SystemTreeModel::~SystemTreeModel()
 {
+    disconnectModelSignals(m_rootNode);
     delete m_rootNode;
 }
 
@@ -93,9 +94,27 @@ CGenericModelApi* SystemTreeModel::parentStrategyOf(const QModelIndex& index) co
 
 // ---- model rebuild ----
 
+// Disconnect all model→this signal connections accumulated by connectModelSignals
+// for the given subtree.  Must be called before freeing TreeNodes so that stale
+// lambdas (which capture raw TreeNode* pointers) are never invoked after the
+// nodes are deleted.
+void SystemTreeModel::disconnectModelSignals(TreeNode* node)
+{
+    if (!node) return;
+    if (node->model && !node->isVirtual) {
+        auto* baseModel = dynamic_cast<CBaseModel*>(node->model);
+        if (baseModel)
+            QObject::disconnect(baseModel, nullptr, this, nullptr);
+    }
+    for (auto* child : node->children)
+        disconnectModelSignals(child);
+}
+
 void SystemTreeModel::rebuildFromRoot()
 {
     beginResetModel();
+    // Disconnect stale lambdas BEFORE the nodes are freed.
+    disconnectModelSignals(m_rootNode);
     delete m_rootNode;
     m_rootNode = nullptr;
     m_pathIndex.clear();
