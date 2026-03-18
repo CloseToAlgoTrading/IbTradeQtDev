@@ -241,6 +241,9 @@ private slots:
     }
 
     void testSyncBumpsVersionOnChangedConfig() {
+        // Since v3, detectVersionDivergence() no longer auto-bumps versions.
+        // Version creation is gated/explicit. This test now verifies that
+        // the version is NOT bumped (detect-only behavior).
         setupBackend();
         QString acctId  = m_backend->createAccount("A");
         QString portId  = m_backend->createPortfolio(acctId, "P");
@@ -249,14 +252,13 @@ private slots:
         DbLiveStrategyBinding binding = m_repo->fetchBindingForNode(stratId);
         int versionBefore = m_repo->fetchStrategyDefinition(binding.strategyDefId).version;
 
-        // Change the config meaningfully
         QJsonObject newConfig;
         newConfig["alphas"] = QJsonArray();
         newConfig["mergePolicy"] = "changed";
         m_backend->updatePipelineConfig(stratId, newConfig);
 
         int versionAfter = m_repo->fetchStrategyDefinition(binding.strategyDefId).version;
-        QCOMPARE(versionAfter, versionBefore + 1);
+        QCOMPARE(versionAfter, versionBefore);
     }
 
     // ---- Extract canonical config ----

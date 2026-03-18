@@ -883,7 +883,7 @@ QString SystemBackendImpl::createStrategyCatalogEntry(const QString& name, int k
     strat.name           = name;
     strat.strategyKind   = kind;
     strat.lifecycleState = QStringLiteral("draft");
-    strat.description    = description;
+    strat.description    = description.isNull() ? QStringLiteral("") : description;
     strat.isArchived     = false;
     strat.createdAt      = now;
     strat.updatedAt      = now;
@@ -970,9 +970,9 @@ QString SystemBackendImpl::createStrategyVersion(const QString& strategyId,
     ver.versionNumber        = m_repo->nextVersionNumber(strategyId);
     ver.configJson           = QString::fromUtf8(
         QJsonDocument(config).toJson(QJsonDocument::Compact));
-    ver.notes                = notes;
+    ver.notes                = notes.isNull() ? QStringLiteral("") : notes;
     ver.isPublished          = false;
-    ver.createdFromVersionId = fromVersionId;
+    ver.createdFromVersionId = fromVersionId.isNull() ? QStringLiteral("") : fromVersionId;
     ver.createdAt            = now;
 
     if (!m_repo->createStrategyVersion(ver))
@@ -1145,12 +1145,14 @@ QString SystemBackendImpl::createLiveNodeForExistingCatalog(
 QString SystemBackendImpl::createStrategyDefinition(const QString& name, int kind,
                                                      const QJsonObject& fullConfig)
 {
-    QString stratId = createStrategyCatalogEntry(name, kind);
+    // createStrategyCatalogEntry auto-creates v1 with the provided config
+    QString stratId = createStrategyCatalogEntry(name, kind, fullConfig);
     if (stratId.isEmpty()) return {};
 
-    QString versionId = createStrategyVersion(stratId, fullConfig);
-    if (versionId.isEmpty()) return {};
-    publishVersion(versionId);
+    // Publish the auto-created v1
+    auto versions = m_repo->listStrategyVersions(stratId);
+    if (!versions.isEmpty())
+        publishVersion(versions.first().versionId);
 
     // Also write legacy row for backward compat
     DbStrategyDefinition def;
@@ -1259,8 +1261,8 @@ QJsonArray SystemBackendImpl::listStrategyDefinitions(bool includeArchived) cons
 bool SystemBackendImpl::archiveStrategyDefinition(const QString& defId)
 {
     bool ok = m_repo->archiveStrategyCatalog(defId);
-    if (!ok)
-        ok = m_repo->archiveStrategyDefinition(defId);
+    // Also archive the legacy row if it exists
+    m_repo->archiveStrategyDefinition(defId);
     if (!ok) return false;
 
     emit strategyDefinitionChanged(defId);

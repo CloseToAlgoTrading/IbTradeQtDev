@@ -6,6 +6,8 @@
 #include <QUuid>
 #include <QJsonDocument>
 #include <QJsonArray>
+#include <QSqlDatabase>
+#include <QSqlQuery>
 #include "Backend/ModelTreeRepository.h"
 #include "Backend/SystemBackendImpl.h"
 #include "DB/dbdatatypes.h"
@@ -1068,8 +1070,8 @@ private slots:
         cfg.catalogStrategyId = "cat-s1";
         cfg.catalogVersionId = "cat-v1";
         cfg.symbols << "AAPL";
-        cfg.startDate = QDateTime(QDate(2025, 1, 1), QTime(), Qt::UTC);
-        cfg.endDate   = QDateTime(QDate(2025, 12, 31), QTime(), Qt::UTC);
+        cfg.startDate = QDateTime(QDate(2025, 1, 1), QTime(), QTimeZone::UTC);
+        cfg.endDate   = QDateTime(QDate(2025, 12, 31), QTime(), QTimeZone::UTC);
         cfg.initialCapital = 100000.0;
 
         QJsonObject json = cfg.toJson();
@@ -1093,8 +1095,8 @@ private slots:
         cfg.catalogStrategyId  = "cat-strategy-1";
         cfg.catalogVersionId   = "cat-version-1";
         cfg.symbols << "MSFT";
-        cfg.startDate      = QDateTime(QDate(2025, 1, 1), QTime(), Qt::UTC);
-        cfg.endDate        = QDateTime(QDate(2025, 6, 30), QTime(), Qt::UTC);
+        cfg.startDate      = QDateTime(QDate(2025, 1, 1), QTime(), QTimeZone::UTC);
+        cfg.endDate        = QDateTime(QDate(2025, 6, 30), QTime(), QTimeZone::UTC);
         cfg.initialCapital = 50000.0;
 
         // Serialize to the format that gets persisted
@@ -1174,12 +1176,18 @@ private slots:
             QCOMPARE(versions[0].configJson, QString("{\"alpha\":\"legacy\"}"));
             QVERIFY(versions[0].isPublished);
 
-            // The backup table should exist
-            QSqlDatabase db = m_repo->db();
-            QSqlQuery q(db);
-            q.exec("SELECT COUNT(*) FROM strategy_definitions_backup");
-            QVERIFY(q.next());
-            QVERIFY(q.value(0).toInt() >= 1);
+            // The backup table should exist — open a direct connection to verify
+            QString verifyConn = "verify_backup_" + QUuid::createUuid().toString(QUuid::WithoutBraces);
+            {
+                QSqlDatabase vdb = QSqlDatabase::addDatabase("QSQLITE", verifyConn);
+                vdb.setDatabaseName(m_dbPath);
+                QVERIFY(vdb.open());
+                QSqlQuery q(vdb);
+                q.exec("SELECT COUNT(*) FROM strategy_definitions_backup");
+                QVERIFY(q.next());
+                QVERIFY(q.value(0).toInt() >= 1);
+            }
+            QSqlDatabase::removeDatabase(verifyConn);
         }
     }
 

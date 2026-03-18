@@ -223,8 +223,8 @@ struct DbStrategy {
     QString name;
     int     strategyKind    = 0;
     QString lifecycleState  = QStringLiteral("draft");
-    QString description;
-    QString tags;
+    QString description     = QStringLiteral("");
+    QString tags            = QStringLiteral("");
     bool    isArchived      = false;
     QString createdAt;
     QString updatedAt;
@@ -237,8 +237,8 @@ struct DbStrategyVersion {
     QString versionId;
     QString strategyId;
     int     versionNumber   = 1;
-    QString configJson;
-    QString notes;
+    QString configJson      = QStringLiteral("{}");
+    QString notes           = QStringLiteral("");
     bool    isPublished     = false;
     QString createdFromVersionId;
     QString createdAt;
@@ -250,7 +250,7 @@ struct DbLiveStrategyBinding {
     QString bindingId;
     QString modelNodeId;   // FK → model_nodes.uuid
     QString strategyDefId; // FK → strategies.strategy_id (kept name for compat)
-    QString versionId;     // FK → strategy_versions.version_id
+    QString versionId      = QStringLiteral("");  // FK → strategy_versions.version_id
     QString createdAt;
     QString updatedAt;
 

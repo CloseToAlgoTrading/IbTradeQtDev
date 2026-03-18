@@ -491,7 +491,7 @@ void CPresenter::MapSignals()
         });
 
         connect(smPanel, &StrategyMgmt::StrategyManagementPanel::useInLiveRequested,
-                this, [this](const QString& catalogStrategyId, const QString& catalogVersionId) {
+                this, [this, pPConfigModel](const QString& catalogStrategyId, const QString& catalogVersionId) {
             if (!m_backend) return;
             CGenericModelApi* root = m_backend->dataRoot();
             if (!root) return;
@@ -529,7 +529,7 @@ void CPresenter::MapSignals()
 
             // Refresh the live tree
             if (pPConfigModel) {
-                pPConfigModel->setData(root);
+                pPConfigModel->setupModelData();
                 pIbtsView->slotUpdateTreeViewAll();
             }
         });
