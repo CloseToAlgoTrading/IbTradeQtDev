@@ -31,7 +31,9 @@ void StrategyCatalogModel::resetData(const QJsonArray& catalogEntries,
         e.strategyId     = obj.value("strategyId").toString();
         e.name           = obj.value("name").toString();
         e.strategyKind   = obj.value("strategyKind").toInt();
-        e.lifecycleState = obj.value("lifecycleState").toString();
+        e.lifecycleState = obj.value("isArchived").toBool()
+                               ? QStringLiteral("archived")
+                               : obj.value("lifecycleState").toString();
         e.updatedAt      = obj.value("updatedAt").toString();
         e.versionCount   = versionCounts.value(e.strategyId, 0);
         e.raw            = obj;

@@ -919,7 +919,7 @@ void CPresenter::refreshStrategyCatalog()
     auto* smPanel = pIbtsView ? pIbtsView->strategyManagementPanel() : nullptr;
     if (!smPanel || !m_backend) return;
 
-    QJsonArray entries = m_backend->listStrategyCatalog(false);
+    QJsonArray entries = m_backend->listStrategyCatalog(true);
 
     QMap<QString, int> versionCounts;
     for (const auto& e : entries) {
