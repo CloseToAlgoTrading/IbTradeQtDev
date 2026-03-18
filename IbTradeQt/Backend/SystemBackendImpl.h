@@ -60,7 +60,38 @@ public:
     // ---- Access ----
     CBasicRoot* dataRoot() const override { return m_root; }
 
-    // ---- Strategy Catalog ----
+    // ---- Strategy Catalog (v2: families + versions) ----
+    QString     createStrategyCatalogEntry(const QString& name, int kind,
+                                            const QJsonObject& initialConfig = {},
+                                            const QString& description = {}) override;
+    bool        updateStrategyCatalogMeta(const QString& strategyId,
+                                           const QString& name,
+                                           const QString& description,
+                                           const QString& tags,
+                                           const QString& lifecycleState) override;
+    QJsonObject strategyCatalogEntry(const QString& strategyId) const override;
+    QJsonArray  listStrategyCatalog(bool includeArchived = false) const override;
+    bool        archiveStrategyCatalogEntry(const QString& strategyId) override;
+
+    QString     createStrategyVersion(const QString& strategyId,
+                                       const QJsonObject& config,
+                                       const QString& notes = {},
+                                       const QString& fromVersionId = {}) override;
+    QJsonObject strategyVersionInfo(const QString& versionId) const override;
+    QJsonArray  listStrategyVersions(const QString& strategyId) const override;
+    bool        publishVersion(const QString& versionId) override;
+
+    bool        bindLiveNodeToVersion(const QString& nodeId,
+                                       const QString& strategyId,
+                                       const QString& versionId) override;
+    QJsonObject bindingForNode(const QString& nodeId) const override;
+    QString     createLiveNodeForExistingCatalog(const QString& portfolioId,
+                                                  ModelType type,
+                                                  const QString& strategyId,
+                                                  const QString& versionId) override;
+    bool        isNodeDivergedFromVersion(const QString& nodeId) const override;
+
+    // ---- Legacy Strategy Catalog (deprecated, delegate to v2) ----
     QString     createStrategyDefinition(const QString& name, int kind,
                                          const QJsonObject& fullConfig) override;
     bool        updateStrategyDefinition(const QString& defId,
@@ -87,13 +118,14 @@ private:
     void wireRuntimeSignals(CGenericModelApi* node);
     void persistNode(CGenericModelApi* node);
 
-    // Canonical strategy definition sync — the single point for all config mutations.
-    void syncDefinitionFromNode(const QString& strategyNodeUuid);
-    // Extracts the canonical config subset (parameters + pipelineConfig + assetList).
+    // Detects whether a node's current config diverges from its pinned version.
+    // Emits nodeConfigDiverged() if so. Does NOT create versions.
+    void detectVersionDivergence(const QString& strategyNodeUuid);
+    // Extracts the canonical config subset (pipelineConfig + assetList).
     static QJsonObject extractCanonicalStrategyConfig(const QJsonObject& rawNodeConfigJson);
-    // Creates definition + binding for a new or orphaned strategy node.
-    void createDefinitionAndBinding(const QString& nodeUuid, const QString& name,
-                                    int strategyKind, const QJsonObject& canonicalConfig);
+    // Creates catalog entry + v1 + binding for a new or orphaned strategy node.
+    void createCatalogEntryAndBinding(const QString& nodeUuid, const QString& name,
+                                      int strategyKind, const QJsonObject& canonicalConfig);
     static QString nowUtcIso();
 
     static bool isStrategyType(ModelType type);
@@ -101,6 +133,8 @@ private:
     static QString categoryToJsonKey(const QString& category, bool& isArray);
 
     static QJsonObject definitionToJson(const DbStrategyDefinition& def);
+    static QJsonObject strategyToJson(const DbStrategy& s);
+    static QJsonObject versionToJson(const DbStrategyVersion& v);
 
     CBasicRoot* m_root = nullptr;
     ModelTreeRepository* m_repo;

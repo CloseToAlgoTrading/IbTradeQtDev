@@ -15,13 +15,16 @@ namespace BacktestUI {
 // ---------------------------------------------------------------------------
 // Tree item roles
 // ---------------------------------------------------------------------------
-static constexpr int RoleStrategyId    = Qt::UserRole + 0;
-static constexpr int RoleDefId         = Qt::UserRole + 1;
-static constexpr int RoleVersion       = Qt::UserRole + 2;
-static constexpr int RoleDisplayName   = Qt::UserRole + 3;
-static constexpr int RolePortfolioPath = Qt::UserRole + 4;
-static constexpr int RolePipelineJson  = Qt::UserRole + 5;
-static constexpr int RoleIsStrategy    = Qt::UserRole + 6;
+static constexpr int RoleStrategyId      = Qt::UserRole + 0;
+static constexpr int RoleDefId           = Qt::UserRole + 1;
+static constexpr int RoleVersion         = Qt::UserRole + 2;
+static constexpr int RoleDisplayName     = Qt::UserRole + 3;
+static constexpr int RolePortfolioPath   = Qt::UserRole + 4;
+static constexpr int RolePipelineJson    = Qt::UserRole + 5;
+static constexpr int RoleIsStrategy      = Qt::UserRole + 6;
+static constexpr int RoleIsCatalogEntry  = Qt::UserRole + 7;
+static constexpr int RoleCatalogStratId  = Qt::UserRole + 8;
+static constexpr int RoleCatalogVerId    = Qt::UserRole + 9;
 
 // ---------------------------------------------------------------------------
 // BacktestStrategySelector
@@ -132,6 +135,13 @@ void BacktestStrategySelector::populate(const QList<StrategyListItem>& items)
     applyFilter(m_searchEdit ? m_searchEdit->text() : QString());
 }
 
+void BacktestStrategySelector::populateCatalog(const QList<CatalogVersionItem>& catalogItems)
+{
+    m_catalogItems = catalogItems;
+    // Rebuild the full tree (includes both live and catalog sections)
+    applyFilter(m_searchEdit ? m_searchEdit->text() : QString());
+}
+
 void BacktestStrategySelector::applyFilter(const QString& filter)
 {
     if (!m_tree) return;
@@ -201,12 +211,61 @@ void BacktestStrategySelector::applyFilter(const QString& filter)
         }
     }
 
+    // Catalog Strategies section
+    QMap<QString, QTreeWidgetItem*> catalogStratItems;
+    for (const auto& ci : m_catalogItems) {
+        if (!lf.isEmpty() && !ci.strategyName.toLower().contains(lf))
+            continue;
+
+        ++visibleCount;
+
+        if (!catalogStratItems.contains(ci.strategyId)) {
+            if (catalogStratItems.isEmpty()) {
+                auto* sectionItem = new QTreeWidgetItem(m_tree);
+                sectionItem->setText(0, QStringLiteral("Catalog Strategies"));
+                sectionItem->setData(0, RoleIsStrategy, false);
+                sectionItem->setData(0, RoleIsCatalogEntry, false);
+                QFont sf = sectionItem->font(0);
+                sf.setBold(true);
+                sf.setItalic(true);
+                sectionItem->setFont(0, sf);
+                sectionItem->setForeground(0, QColor(QStringLiteral("#d4a04a")));
+                sectionItem->setFlags(sectionItem->flags() & ~Qt::ItemIsSelectable);
+            }
+            auto* si = new QTreeWidgetItem(m_tree->topLevelItem(m_tree->topLevelItemCount() - 1));
+            si->setText(0, ci.strategyName);
+            si->setData(0, RoleIsStrategy, false);
+            si->setData(0, RoleIsCatalogEntry, false);
+            QFont f = si->font(0);
+            f.setBold(true);
+            si->setFont(0, f);
+            si->setForeground(0, QColor(QStringLiteral("#c8b060")));
+            si->setFlags(si->flags() & ~Qt::ItemIsSelectable);
+            catalogStratItems[ci.strategyId] = si;
+        }
+
+        QTreeWidgetItem* parent = catalogStratItems[ci.strategyId];
+        auto* vi = new QTreeWidgetItem(parent);
+        QString label = QStringLiteral("v%1").arg(ci.versionNumber);
+        if (ci.isPublished) label += QStringLiteral(" (published)");
+        vi->setText(0, label);
+        vi->setText(1, QStringLiteral("v%1").arg(ci.versionNumber));
+        vi->setData(0, RoleIsStrategy, true);
+        vi->setData(0, RoleIsCatalogEntry, true);
+        vi->setData(0, RoleCatalogStratId, ci.strategyId);
+        vi->setData(0, RoleCatalogVerId, ci.versionId);
+        vi->setData(0, RoleDisplayName,
+                    ci.strategyName + QStringLiteral(" v") + QString::number(ci.versionNumber));
+        vi->setForeground(0, QColor(QStringLiteral("#e0e6f0")));
+        vi->setForeground(1, QColor(QStringLiteral("#d4a04a")));
+    }
+
     m_tree->expandAll();
 
-    const QString label = visibleCount == 1
+    const QString countText = visibleCount == 1
         ? QStringLiteral("1 strategy")
         : QString("%1 strategies").arg(visibleCount);
-    m_countLabel->setText(label);
+    m_countLabel->setText(countText);
 }
 
 void BacktestStrategySelector::highlightStrategy(const QString& strategyId)
@@ -226,6 +285,13 @@ void BacktestStrategySelector::onItemDoubleClicked(QTreeWidgetItem* item, int /*
 {
     if (!item || !item->data(0, RoleIsStrategy).toBool()) return;
 
+    if (item->data(0, RoleIsCatalogEntry).toBool()) {
+        const QString catStratId = item->data(0, RoleCatalogStratId).toString();
+        const QString catVerId   = item->data(0, RoleCatalogVerId).toString();
+        emit catalogVersionSelected(catStratId, catVerId);
+        return;
+    }
+
     const QString id     = item->data(0, RoleStrategyId).toString();
     const QString name   = item->data(0, RoleDisplayName).toString();
     const QString path   = item->data(0, RolePortfolioPath).toString();
@@ -243,7 +309,9 @@ void BacktestStrategySelector::onSelectClicked()
 {
     auto sel = m_tree->selectedItems();
     if (sel.isEmpty()) return;
-    onItemDoubleClicked(sel.first(), 0);
+    auto* item = sel.first();
+    if (!item->data(0, RoleIsStrategy).toBool()) return;
+    onItemDoubleClicked(item, 0);
 }
 
 } // namespace BacktestUI

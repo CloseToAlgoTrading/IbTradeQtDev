@@ -302,11 +302,13 @@ inline QSqlQuery query_insertBacktestRun(const DbBacktestRun& r, const QString& 
         "(runId, strategyId, strategyDisplayName, portfolioPath, configJson, symbols, "
         " startDate, endDate, status, errorText, durationMs, engineVersion, "
         " dataSourceId, dataRefreshedAt, createdAt, "
-        " strategyDefId, scopeType, scopeRefId, strategyVersion) "
+        " strategyDefId, scopeType, scopeRefId, strategyVersion,"
+        " catalogStrategyId, catalogVersionId) "
         "VALUES (:runId,:strategyId,:strategyDisplayName,:portfolioPath,:configJson,"
         ":symbols,:startDate,:endDate,:status,:errorText,:durationMs,:engineVersion,"
         ":dataSourceId,:dataRefreshedAt,:createdAt,"
-        ":strategyDefId,:scopeType,:scopeRefId,:strategyVersion)");
+        ":strategyDefId,:scopeType,:scopeRefId,:strategyVersion,"
+        ":catalogStrategyId,:catalogVersionId)");
     q.bindValue(":runId",               r.runId);
     q.bindValue(":strategyId",          r.strategyId);
     q.bindValue(":strategyDisplayName", r.strategyDisplayName);
@@ -326,6 +328,8 @@ inline QSqlQuery query_insertBacktestRun(const DbBacktestRun& r, const QString& 
     q.bindValue(":scopeType",            r.scopeType);
     q.bindValue(":scopeRefId",           r.scopeRefId);
     q.bindValue(":strategyVersion",      r.strategyVersion);
+    q.bindValue(":catalogStrategyId",    r.catalogStrategyId);
+    q.bindValue(":catalogVersionId",     r.catalogVersionId);
     return q;
 }
 
@@ -531,6 +535,12 @@ static const char* const ALTER_BACKTEST_RUNS_ADD_SCOPE_REF_ID =
 static const char* const ALTER_BACKTEST_RUNS_ADD_STRATEGY_VERSION =
     "ALTER TABLE BacktestRuns ADD COLUMN strategyVersion INTEGER DEFAULT 1";
 
+// v3 catalog columns
+static const char* const ALTER_BACKTEST_RUNS_ADD_CATALOG_STRATEGY_ID =
+    "ALTER TABLE BacktestRuns ADD COLUMN catalogStrategyId TEXT DEFAULT ''";
+static const char* const ALTER_BACKTEST_RUNS_ADD_CATALOG_VERSION_ID =
+    "ALTER TABLE BacktestRuns ADD COLUMN catalogVersionId  TEXT DEFAULT ''";
+
 // ---------------------------------------------------------------------------
 // BacktestRunProfiles query functions
 // ---------------------------------------------------------------------------
@@ -575,11 +585,14 @@ inline QSqlQuery query_fetchRunsForDefinition(const QString& strategyDefId, cons
         "SELECT r.runId, r.strategyId, r.strategyDefId, r.scopeType, r.scopeRefId, "
         "       r.symbols, r.startDate, r.endDate, "
         "       r.status, r.dataSourceId, r.createdAt, r.strategyVersion, "
+        "       COALESCE(r.catalogStrategyId, '') AS catalogStrategyId, "
+        "       COALESCE(r.catalogVersionId, '')  AS catalogVersionId, "
         "       COALESCE(m.totalReturn, 0) AS totalReturn, "
         "       COALESCE(m.sharpeRatio, 0) AS sharpeRatio "
         "FROM BacktestRuns r "
         "LEFT JOIN BacktestMetrics m ON r.runId = m.runId "
         "WHERE r.strategyDefId = :defId "
+        "   OR r.catalogStrategyId = :defId "
         "ORDER BY r.createdAt DESC");
     q.bindValue(":defId", strategyDefId);
     return q;

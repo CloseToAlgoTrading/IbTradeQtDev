@@ -59,27 +59,68 @@ public:
     // ---- Access (transition period) ----
     virtual CBasicRoot* dataRoot() const = 0;
 
-    // ---- Strategy Catalog ----
-    // Creates a canonical strategy definition (independent of live tree placement).
-    // Returns the new definition UUID, or empty string on failure.
+    // ---- Strategy Catalog (v2: families + versions) ----
+
+    // Creates a strategy family/container in the catalog.
+    // Returns the new strategy UUID, or empty string on failure.
+    virtual QString     createStrategyCatalogEntry(const QString& name, int kind,
+                                                    const QJsonObject& initialConfig = {},
+                                                    const QString& description = {}) = 0;
+    // Updates metadata (non-config) fields of a catalog strategy.
+    virtual bool        updateStrategyCatalogMeta(const QString& strategyId,
+                                                   const QString& name,
+                                                   const QString& description,
+                                                   const QString& tags,
+                                                   const QString& lifecycleState) = 0;
+    // Returns a QJsonObject representing the catalog entry, or empty if not found.
+    virtual QJsonObject strategyCatalogEntry(const QString& strategyId) const = 0;
+    // Lists all catalog entries; set includeArchived to true to include archived ones.
+    virtual QJsonArray  listStrategyCatalog(bool includeArchived = false) const = 0;
+    // Archives a catalog entry (soft delete). Does not remove bindings or run history.
+    virtual bool        archiveStrategyCatalogEntry(const QString& strategyId) = 0;
+
+    // Creates an immutable config snapshot (version) for a strategy family.
+    // Returns the new version UUID, or empty string on failure.
+    virtual QString     createStrategyVersion(const QString& strategyId,
+                                               const QJsonObject& config,
+                                               const QString& notes = {},
+                                               const QString& fromVersionId = {}) = 0;
+    // Returns version info JSON, or empty if not found.
+    virtual QJsonObject strategyVersionInfo(const QString& versionId) const = 0;
+    // Lists all versions for a strategy, ordered by version_number ASC.
+    virtual QJsonArray  listStrategyVersions(const QString& strategyId) const = 0;
+    // Marks a version as published (eligible for deployment/selection).
+    virtual bool        publishVersion(const QString& versionId) = 0;
+
+    // Binds a live tree node to a specific strategy version.
+    virtual bool        bindLiveNodeToVersion(const QString& nodeId,
+                                               const QString& strategyId,
+                                               const QString& versionId) = 0;
+    // Returns binding info (strategy_id + version_id + version config) for a node.
+    virtual QJsonObject bindingForNode(const QString& nodeId) const = 0;
+
+    // Creates a live tree node bound to an existing catalog strategy+version,
+    // without creating a new catalog entry. Returns the new node UUID.
+    virtual QString     createLiveNodeForExistingCatalog(const QString& portfolioId,
+                                                         ModelType type,
+                                                         const QString& strategyId,
+                                                         const QString& versionId) = 0;
+
+    // Returns true if the node's current config differs from its pinned version.
+    // Does NOT create a new version — purely a detector.
+    virtual bool        isNodeDivergedFromVersion(const QString& nodeId) const = 0;
+
+    // ---- Legacy Strategy Catalog (deprecated, delegates to v2 catalog) ----
+
     virtual QString     createStrategyDefinition(const QString& name, int kind,
                                                  const QJsonObject& fullConfig) = 0;
-    // Updates the canonical config of an existing definition.
-    // Version increment and timestamp are computed by the implementation.
     virtual bool        updateStrategyDefinition(const QString& defId,
                                                  const QJsonObject& fullConfig) = 0;
-    // Returns a QJsonObject representing the definition, or empty object if not found.
     virtual QJsonObject strategyDefinition(const QString& defId) const = 0;
-    // Lists all strategy definitions; set includeArchived to true to include archived ones.
     virtual QJsonArray  listStrategyDefinitions(bool includeArchived = false) const = 0;
-    // Archives a definition (soft delete). Does not remove bindings or run history.
     virtual bool        archiveStrategyDefinition(const QString& defId) = 0;
-    // Explicitly binds an existing live strategy node to a canonical definition.
-    // Used during import/migration; normally auto-created by createStrategy().
     virtual bool        bindLiveNodeToDefinition(const QString& nodeId,
                                                  const QString& defId) = 0;
-    // Returns the definition JSON for the strategy node's bound definition,
-    // or empty object if no binding exists.
     virtual QJsonObject strategyDefinitionForNode(const QString& nodeId) const = 0;
 
     // ---- Backtest Run Profiles ----
@@ -110,6 +151,12 @@ signals:
 
     // Emitted when a canonical strategy definition's config or metadata changes.
     void strategyDefinitionChanged(const QString& defId);
+
+    // v3 catalog signals
+    void strategyCatalogChanged(const QString& strategyId);
+    void strategyVersionCreated(const QString& strategyId, const QString& versionId);
+    // Emitted when detectVersionDivergence() finds the node config differs from its pinned version.
+    void nodeConfigDiverged(const QString& nodeId);
 };
 
 #endif // ISYSTEMBACKEND_H

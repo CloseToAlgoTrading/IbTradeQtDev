@@ -61,8 +61,9 @@ public:
                         const QString& portfolioPath,
                         const Backtest::BacktestProfile& profile,
                         const QString& pipelineConfigJson,
-                        const QString& strategyDefId   = {},
-                        int            strategyVersion = 1);
+                        const QString& strategyDefId     = {},
+                        int            strategyVersion   = 1,
+                        const QString& catalogVersionId  = {});
 
     // Populate all result tabs from a fully-loaded run (from DB or just finished).
     // run.histBars carries the OHLC data needed by the Candlestick chart.

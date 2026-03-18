@@ -175,7 +175,11 @@ SOURCES += \
     MainSystem/AlertService.cpp \
     Backend/ModelTreeRepository.cpp \
     Backend/ModelTreeMapper.cpp \
-    Backend/SystemBackendImpl.cpp
+    Backend/SystemBackendImpl.cpp \
+    StrategyManagementUI/StrategyCatalogModel.cpp \
+    StrategyManagementUI/StrategyCatalogPanel.cpp \
+    StrategyManagementUI/StrategyDetailPanel.cpp \
+    StrategyManagementUI/StrategyManagementPanel.cpp
 
 
 HEADERS += \
@@ -321,6 +325,10 @@ HEADERS += \
     Backend/ModelTreeMapper.h \
     Backend/ISystemBackend.h \
     Backend/SystemBackendImpl.h \
+    StrategyManagementUI/StrategyCatalogModel.h \
+    StrategyManagementUI/StrategyCatalogPanel.h \
+    StrategyManagementUI/StrategyDetailPanel.h \
+    StrategyManagementUI/StrategyManagementPanel.h \
     Strategies/Generic/modelConstants.h \
     Strategies/StateMachine/cmodelstate.h \
     Strategies/StateMachine/cmodelstateimpl.h \
@@ -462,6 +470,7 @@ INCLUDEPATH += \
     $$PWD/AboutDialog \
     $$PWD/Strategies/Generic \
     $$PWD/Backend \
+    $$PWD/StrategyManagementUI \
     $$PWD/Strategies/StateMachine \
     $$PWD/GeneratedIncludes \
     $$PWD/DBStore

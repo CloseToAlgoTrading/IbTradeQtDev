@@ -15,6 +15,7 @@ class QSplitter;
 class QTabWidget;
 
 namespace BacktestUI { class BacktestStrategySelector; }
+namespace StrategyMgmt { class StrategyManagementPanel; }
 
 class CIBTradeSystemView : public QMainWindow
 {
@@ -35,9 +36,11 @@ public:
     QTabWidget*       mainTabWidget()    const { return m_mainTabWidget; }
     BacktestUI::BacktestStrategySelector* backtestStrategySelector() const
                                                { return m_backtestSelector; }
+    StrategyMgmt::StrategyManagementPanel* strategyManagementPanel() const
+                                               { return m_strategyMgmtPanel; }
 
-    // Switch the main tab to "Backtest" (index 1)
     void switchToBacktestTab();
+    void switchToStrategyManagementTab();
 
     void mapSignals();
 
@@ -56,6 +59,7 @@ private:
     QSplitter*        m_mainSplitter     = nullptr;   // inside "Live Trading" tab
     QTabWidget*       m_mainTabWidget    = nullptr;
     BacktestUI::BacktestStrategySelector* m_backtestSelector = nullptr;
+    StrategyMgmt::StrategyManagementPanel* m_strategyMgmtPanel = nullptr;
 
 private slots:
 	void slotOnTimeReceived(long time);

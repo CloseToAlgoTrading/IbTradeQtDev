@@ -31,18 +31,34 @@ public:
 
     int nextSortOrder(const QString& parentUuid) const;
 
-    // ---- strategy_definitions CRUD (record-only, no business logic) ----
+    // ---- strategy_definitions CRUD (legacy, reads backup table) ----
     bool createStrategyDefinition(const DbStrategyDefinition& def);
     DbStrategyDefinition fetchStrategyDefinition(const QString& defId) const;
     bool updateStrategyDefinition(const DbStrategyDefinition& def);
     QList<DbStrategyDefinition> listStrategyDefinitions(bool includeArchived = false) const;
     bool archiveStrategyDefinition(const QString& defId);
 
+    // ---- strategies CRUD (v3 catalog) ----
+    bool createStrategyCatalog(const DbStrategy& strategy);
+    DbStrategy fetchStrategyCatalog(const QString& strategyId) const;
+    QList<DbStrategy> listStrategyCatalog(bool includeArchived = false) const;
+    bool updateStrategyCatalog(const DbStrategy& strategy);
+    bool archiveStrategyCatalog(const QString& strategyId);
+
+    // ---- strategy_versions CRUD ----
+    bool createStrategyVersion(const DbStrategyVersion& version);
+    DbStrategyVersion fetchStrategyVersion(const QString& versionId) const;
+    QList<DbStrategyVersion> listStrategyVersions(const QString& strategyId) const;
+    DbStrategyVersion fetchLatestVersion(const QString& strategyId) const;
+    bool setVersionPublished(const QString& versionId, bool published);
+    int nextVersionNumber(const QString& strategyId) const;
+
     // ---- live_strategy_bindings CRUD ----
     bool createLiveBinding(const DbLiveStrategyBinding& binding);
     DbLiveStrategyBinding fetchBindingForNode(const QString& nodeUuid) const;
     QList<DbLiveStrategyBinding> listBindingsForDefinition(const QString& defId) const;
     bool removeBindingForNode(const QString& nodeUuid);
+    bool updateBindingVersion(const QString& bindingId, const QString& versionId);
 
     // ---- backtest_run_profiles CRUD ----
     bool createRunProfile(const DbBacktestRunProfile& profile);
@@ -57,8 +73,12 @@ private:
     QSqlDatabase db() const;
     ModelNodeRecord recordFromQuery(const class QSqlQuery& query) const;
     DbStrategyDefinition definitionFromQuery(const class QSqlQuery& query) const;
+    DbStrategy strategyCatalogFromQuery(const class QSqlQuery& query) const;
+    DbStrategyVersion versionFromQuery(const class QSqlQuery& query) const;
     DbLiveStrategyBinding bindingFromQuery(const class QSqlQuery& query) const;
     DbBacktestRunProfile profileFromQuery(const class QSqlQuery& query) const;
+
+    bool migrateV2toV3();
 
     QString m_dbPath;
     QString m_connectionName;

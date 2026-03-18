@@ -87,7 +87,8 @@ void BacktestWorkspaceDock::selectStrategy(const QString& strategyId,
                                             const Backtest::BacktestProfile& profile,
                                             const QString& pipelineConfigJson,
                                             const QString& strategyDefId,
-                                            int            strategyVersion) {
+                                            int            strategyVersion,
+                                            const QString& catalogVersionId) {
     m_currentStrategyId      = strategyId;
     m_currentDisplayName     = displayName;
     m_currentPortfolioPath   = portfolioPath;
@@ -99,6 +100,7 @@ void BacktestWorkspaceDock::selectStrategy(const QString& strategyId,
     m_configPanel->setStrategyContext(strategyId, displayName, portfolioPath,
                                       pipelineConfigJson,
                                       strategyDefId, m_currentStrategyVersion);
+    m_configPanel->setCatalogVersionId(catalogVersionId);
     m_configPanel->applyProfile(profile);
 
     // Clear result tabs since a different strategy is now selected

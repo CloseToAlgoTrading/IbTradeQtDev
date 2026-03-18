@@ -84,6 +84,10 @@ struct BacktestRunConfig {
     QString     scopeRefId;          // UUID of scope object (def UUID or node UUID per scopeType)
     int         strategyVersion = 1; // definition version snapshot; callers should set this
 
+    // v3 catalog fields (dual-write alongside legacy fields)
+    QString     catalogStrategyId;   // FK → strategies.strategy_id
+    QString     catalogVersionId;    // FK → strategy_versions.version_id
+
     QStringList symbols;
     QDateTime   startDate;
     QDateTime   endDate;
@@ -121,6 +125,8 @@ struct BacktestRunConfig {
         obj["scopeType"]           = scopeType;
         obj["scopeRefId"]          = scopeRefId;
         obj["strategyVersion"]     = strategyVersion;
+        obj["catalogStrategyId"]   = catalogStrategyId;
+        obj["catalogVersionId"]    = catalogVersionId;
         QJsonArray syms;
         for (const auto& s : symbols) syms.append(s);
         obj["symbols"]             = syms;
@@ -147,6 +153,8 @@ struct BacktestRunConfig {
         c.scopeType           = obj.value("scopeType").toString(QString(Backtest::Scope::Strategy));
         c.scopeRefId          = obj.value("scopeRefId").toString();
         c.strategyVersion     = obj.value("strategyVersion").toInt(1);
+        c.catalogStrategyId   = obj.value("catalogStrategyId").toString();
+        c.catalogVersionId    = obj.value("catalogVersionId").toString();
         QJsonArray syms       = obj.value("symbols").toArray();
         for (const auto& v : syms) c.symbols.append(v.toString());
         c.startDate           = QDateTime::fromString(obj.value("startDate").toString(), Qt::ISODate);
@@ -195,6 +203,10 @@ struct BacktestRunRecord {
     QString scopeType = QStringLiteral("strategy");  // "strategy" | "portfolio" | "account"
     QString scopeRefId;         // UUID of scope object (see truth table in design)
     int     strategyVersion = 1; // definition version snapshot at time of run
+
+    // v3 catalog fields
+    QString catalogStrategyId;  // FK → strategies.strategy_id
+    QString catalogVersionId;   // FK → strategy_versions.version_id
 };
 
 // ---------------------------------------------------------------------------

@@ -91,4 +91,30 @@ All 6 previously-unused message types now have full typed router coverage:
 
 2. **GlobalReqManager simplification** -- `GlobalReqManager` is now a standalone member of `CBrokerDataProvider`. It could be further simplified since subscriber-based ID tracking is no longer needed.
 
+3. **Legacy `strategy_definitions` removal** -- The old `strategy_definitions` table has been renamed to `strategy_definitions_backup` and an empty compatibility table recreated. Once the v3 catalog is proven stable, both can be dropped along with the legacy API wrappers in `ISystemBackend`.
+
 See `DISPATCHER_RETIREMENT_AUDIT.md` for the complete per-message-type migration status.
+
+---
+
+## Recently Completed
+
+### Strategy Catalog and Management (March 2026)
+
+Two-stage implementation of a dedicated Strategy Management tab:
+
+**Stage A (Backend):**
+- `strategies` + `strategy_versions` two-table schema (v3)
+- Conservative v2→v3 migration with `strategy_definitions_backup` retention
+- Backend catalog API: family CRUD, version CRUD, binding, divergence detection
+- Backtest runs record `catalogStrategyId` + `catalogVersionId`
+- Gated versioning: `detectVersionDivergence()` detects drift without auto-creating versions
+
+**Stage B (UI + Integration):**
+- Strategy Management tab with `QAbstractItemModel`-based catalog tree and detail panel
+- Combined search + status filtering via custom `CatalogFilterProxy`
+- Version config viewer with "Diff vs Previous" toggle
+- Live tree integration: "Use Existing Strategy" creates nodes bound to existing catalog entries
+- Backtest integration: catalog version picker in `BacktestStrategySelector`
+- Gated versioning prompts before live deployment and after backtest runs
+- Comprehensive test suite covering repository CRUD, migration, backend API, model population, sorting, filtering, divergence detection, and full lifecycle

@@ -144,8 +144,10 @@ Backtest::BacktestRunConfig BacktestRunConfigPanel::currentConfig() const {
     c.strategyDefId       = m_strategyDefId;
     c.strategyVersion     = m_strategyVersion;
     c.scopeType           = QString(Backtest::Scope::Strategy);
-    // scopeRefId: use defId when available (preferred); fall back to live node UUID.
     c.scopeRefId          = m_strategyDefId.isEmpty() ? m_strategyId : m_strategyDefId;
+    // v3 catalog dual-write: reuse the same IDs since strategyDefId == catalog strategyId
+    c.catalogStrategyId   = m_strategyDefId;
+    c.catalogVersionId    = m_catalogVersionId;
 
     const QString symsText = m_symbolsEdit->text().trimmed();
     for (const QString& s : symsText.split(',', Qt::SkipEmptyParts))

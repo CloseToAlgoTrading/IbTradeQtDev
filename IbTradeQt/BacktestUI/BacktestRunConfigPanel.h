@@ -48,6 +48,8 @@ public:
                             const QString& strategyDefId   = {},
                             int            strategyVersion = 1);
 
+    void setCatalogVersionId(const QString& versionId) { m_catalogVersionId = versionId; }
+
     // Progress / status (called by BacktestWorkspaceDock)
     void setProgress(int percent);
     void setStatus(const QString& status);
@@ -68,6 +70,7 @@ private:
     QString m_portfolioPath;
     QString m_pipelineConfigJson;
     QString m_strategyDefId;
+    QString m_catalogVersionId;
     int     m_strategyVersion = 1;
 
     // Form fields

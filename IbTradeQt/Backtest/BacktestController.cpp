@@ -93,12 +93,14 @@ void BacktestController::start(const BacktestRunConfig& config) {
     runRecord.createdAt           = QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
     // Canonical scope fields — caller is responsible for populating these before calling start().
     // Do NOT set scopeRefId = config.strategyId implicitly (they serve different semantics).
-    runRecord.strategyDefId     = config.strategyDefId;
-    runRecord.scopeType         = config.scopeType.isEmpty()
-                                    ? QString(Backtest::Scope::Strategy)
-                                    : config.scopeType;
-    runRecord.scopeRefId        = config.scopeRefId;
-    runRecord.strategyVersion   = config.strategyVersion > 0 ? config.strategyVersion : 1;
+    runRecord.strategyDefId       = config.strategyDefId;
+    runRecord.scopeType           = config.scopeType.isEmpty()
+                                      ? QString(Backtest::Scope::Strategy)
+                                      : config.scopeType;
+    runRecord.scopeRefId          = config.scopeRefId;
+    runRecord.strategyVersion     = config.strategyVersion > 0 ? config.strategyVersion : 1;
+    runRecord.catalogStrategyId   = config.catalogStrategyId;
+    runRecord.catalogVersionId    = config.catalogVersionId;
     persistRunRecord(runRecord);
 
     // Transition to Running
@@ -251,8 +253,14 @@ void BacktestController::onSessionFinished(const BacktestResult& result) {
     loaded.record.durationMs          = durationMs;
     loaded.record.dataRefreshedAt     = m_dataRefreshedAt;
     loaded.record.strategyDefId       = m_currentConfig.strategyDefId;
+    loaded.record.strategyVersion     = m_currentConfig.strategyVersion;
     loaded.record.scopeType           = m_currentConfig.scopeType;
     loaded.record.scopeRefId          = m_currentConfig.scopeRefId;
+    loaded.record.catalogStrategyId   = m_currentConfig.catalogStrategyId;
+    loaded.record.catalogVersionId    = m_currentConfig.catalogVersionId;
+    loaded.record.configJson          = QString::fromUtf8(
+        QJsonDocument(m_currentConfig.toJson()).toJson(QJsonDocument::Compact));
+    loaded.record.createdAt           = QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
     loaded.result                     = result;
     loaded.histBars                   = m_lastHistBars;
 

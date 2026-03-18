@@ -1,4 +1,4 @@
-QT += core testlib sql network gui
+QT += core testlib sql network gui widgets
 
 TARGET = ibtrading_tests
 TEMPLATE = app
@@ -41,6 +41,7 @@ INCLUDEPATH += \
     $$PWD/../DB \
     $$PWD/../IBComm \
     $$PWD/../CObjects \
+    $$PWD/../StrategyManagementUI \
     $$PWD/../Brokers/IB/Shared \
     $$PWD/../ReqManager \
     $$MOC_DIR
@@ -110,7 +111,11 @@ SOURCES += \
     ../Backtest/SimulatedExecutionAdapter.cpp \
     ../Backtest/BacktestMetricsCollector.cpp \
     ../Backtest/BacktestSession.cpp \
-    ../Backtest/YahooFinanceDataSource.cpp
+    ../Backtest/YahooFinanceDataSource.cpp \
+    ../StrategyManagementUI/StrategyCatalogModel.cpp \
+    ../StrategyManagementUI/StrategyCatalogPanel.cpp \
+    ../StrategyManagementUI/StrategyDetailPanel.cpp \
+    ../StrategyManagementUI/StrategyManagementPanel.cpp
 
 HEADERS += \
     ../Pipeline/Contracts.h \
@@ -214,6 +219,7 @@ HEADERS += \
     backend/tst_runtime.h \
     backend/tst_cli_proof.h \
     backend/tst_strategy_definition.h \
+    backend/tst_strategy_catalog.h \
     integration/tst_adapter_pure_backtest.h \
     ../Backend/ISystemBackend.h \
     ../Backend/SystemBackendImpl.h \
@@ -260,4 +266,8 @@ HEADERS += \
     ../IBComm/cbrokerdataprovider.h \
     ../Common/globalsettings.h \
     ../ReqManager/globalreqmanager.h \
-    ../ReqManager/ReqManager.h
+    ../ReqManager/ReqManager.h \
+    ../StrategyManagementUI/StrategyCatalogModel.h \
+    ../StrategyManagementUI/StrategyCatalogPanel.h \
+    ../StrategyManagementUI/StrategyDetailPanel.h \
+    ../StrategyManagementUI/StrategyManagementPanel.h

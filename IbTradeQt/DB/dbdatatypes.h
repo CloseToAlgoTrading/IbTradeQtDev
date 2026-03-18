@@ -121,11 +121,14 @@ struct DbBacktestRun {
     QString dataSourceId;
     QString dataRefreshedAt;
     QString createdAt;
-    // --- new scope/definition fields ---
-    QString strategyDefId;       // canonical definition UUID
+    // --- scope/definition fields ---
+    QString strategyDefId;       // canonical definition UUID (legacy name, = strategy_id)
     QString scopeType   = QStringLiteral("strategy");  // "strategy" | "portfolio" | "account"
-    QString scopeRefId;          // UUID of scope object (see scopeRefId truth table in plan)
+    QString scopeRefId;          // UUID of scope object
     int     strategyVersion = 1; // definition version snapshot at time of run
+    // --- v3 catalog fields (dual-write alongside legacy fields) ---
+    QString catalogStrategyId;   // FK → strategies.strategy_id
+    QString catalogVersionId;    // FK → strategy_versions.version_id
 };
 
 struct DbBacktestMetrics {
@@ -186,6 +189,9 @@ struct DbBacktestRunSummary {
     QString scopeType;
     QString scopeRefId;
     int     strategyVersion = 1;
+    // v3 catalog fields
+    QString catalogStrategyId;
+    QString catalogVersionId;
     // Metrics flattened for display in Run History panel
     double  totalReturn  = 0.0;
     double  sharpeRatio  = 0.0;
@@ -195,25 +201,56 @@ struct DbBacktestRunSummary {
 // Strategy catalog data types (stored in ModelTreeRepository DB)
 // ---------------------------------------------------------------------------
 
+// Legacy type kept for migration and backward-compat reads of strategy_definitions_backup.
 struct DbStrategyDefinition {
     QString strategyDefId;
     QString name;
     int     strategyKind    = 0;
-    QString configJson;        // canonical config: parameters + pipelineConfig + assetList
+    QString configJson;
     int     version         = 1;
     QString lifecycleState  = QStringLiteral("draft");
     bool    isArchived      = false;
     QString createdAt;
     QString updatedAt;
-    QString createdFromDefId;  // lineage for cloned/forked definitions; empty for originals
+    QString createdFromDefId;
 
     bool isValid() const { return !strategyDefId.isEmpty(); }
+};
+
+// Strategy family / container — the long-lived catalog object.
+struct DbStrategy {
+    QString strategyId;
+    QString name;
+    int     strategyKind    = 0;
+    QString lifecycleState  = QStringLiteral("draft");
+    QString description;
+    QString tags;
+    bool    isArchived      = false;
+    QString createdAt;
+    QString updatedAt;
+
+    bool isValid() const { return !strategyId.isEmpty(); }
+};
+
+// Immutable versioned config snapshot belonging to a strategy family.
+struct DbStrategyVersion {
+    QString versionId;
+    QString strategyId;
+    int     versionNumber   = 1;
+    QString configJson;
+    QString notes;
+    bool    isPublished     = false;
+    QString createdFromVersionId;
+    QString createdAt;
+
+    bool isValid() const { return !versionId.isEmpty(); }
 };
 
 struct DbLiveStrategyBinding {
     QString bindingId;
     QString modelNodeId;   // FK → model_nodes.uuid
-    QString strategyDefId; // FK → strategy_definitions.strategy_def_id
+    QString strategyDefId; // FK → strategies.strategy_id (kept name for compat)
+    QString versionId;     // FK → strategy_versions.version_id
     QString createdAt;
     QString updatedAt;
 

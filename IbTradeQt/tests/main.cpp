@@ -31,6 +31,7 @@
 #include "backend/tst_runtime.h"
 #include "backend/tst_cli_proof.h"
 #include "backend/tst_strategy_definition.h"
+#include "backend/tst_strategy_catalog.h"
 #include "integration/tst_adapter_pure_backtest.h"
 
 int main(int argc, char *argv[])
@@ -121,6 +122,9 @@ int main(int argc, char *argv[])
 
     // Strategy Definition Refactoring — Phase 1-9
     { TestStrategyDefinition tc;             status |= QTest::qExec(&tc, argc, argv); }
+
+    // Strategy Catalog (v3: families + versions)
+    { TestStrategyCatalog tc;                status |= QTest::qExec(&tc, argc, argv); }
 
     // Phase 10 — Adapter pure-backtest mode + config parity
     { TestAdapterPureBacktest tc;            status |= QTest::qExec(&tc, argc, argv); }

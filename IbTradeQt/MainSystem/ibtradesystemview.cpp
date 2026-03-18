@@ -3,6 +3,7 @@
 #include "EventLogPanel.h"
 #include "ContextWorkspace.h"
 #include "BacktestUI/BacktestStrategySelector.h"
+#include "StrategyManagementUI/StrategyManagementPanel.h"
 #include <time.h>
 #include <QStandardItemModel>
 #include "GlobalDef.h"
@@ -126,8 +127,11 @@ void CIBTradeSystemView::setupConsoleLayout()
         "QTabWidget::pane { border:none; } "
         "QTabBar::tab { padding:6px 18px; font-size:12px; } "
         "QTabBar::tab:selected { font-weight:bold; }");
-    m_mainTabWidget->addTab(m_mainSplitter,    QStringLiteral("Live Trading"));
-    m_mainTabWidget->addTab(backtestSplitter,  QStringLiteral("Backtest"));
+    m_strategyMgmtPanel = new StrategyMgmt::StrategyManagementPanel(this);
+
+    m_mainTabWidget->addTab(m_mainSplitter,      QStringLiteral("Live Trading"));
+    m_mainTabWidget->addTab(backtestSplitter,     QStringLiteral("Backtest"));
+    m_mainTabWidget->addTab(m_strategyMgmtPanel,  QStringLiteral("Strategy Management"));
 
     // Replace the old central widget content with the new console layout.
     // Hide old .ui splitter hierarchy.
@@ -146,6 +150,12 @@ void CIBTradeSystemView::switchToBacktestTab()
 {
     if (m_mainTabWidget)
         m_mainTabWidget->setCurrentIndex(1);
+}
+
+void CIBTradeSystemView::switchToStrategyManagementTab()
+{
+    if (m_mainTabWidget)
+        m_mainTabWidget->setCurrentIndex(2);
 }
 
 Ui::IBTradeSystemClass CIBTradeSystemView::getUi()

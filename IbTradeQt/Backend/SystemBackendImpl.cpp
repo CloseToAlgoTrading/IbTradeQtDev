@@ -82,42 +82,73 @@ QJsonObject SystemBackendImpl::definitionToJson(const DbStrategyDefinition& def)
     return obj;
 }
 
-void SystemBackendImpl::createDefinitionAndBinding(const QString& nodeUuid,
-                                                    const QString& name,
-                                                    int strategyKind,
-                                                    const QJsonObject& canonicalConfig)
+void SystemBackendImpl::createCatalogEntryAndBinding(const QString& nodeUuid,
+                                                       const QString& name,
+                                                       int strategyKind,
+                                                       const QJsonObject& canonicalConfig)
 {
-    QString defId = QUuid::createUuid().toString(QUuid::WithoutBraces);
-    QString now   = nowUtcIso();
+    QString stratId   = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    QString versionId = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    QString now       = nowUtcIso();
 
+    // 1. Create the catalog strategy entry
+    DbStrategy strat;
+    strat.strategyId     = stratId;
+    strat.name           = name;
+    strat.strategyKind   = strategyKind;
+    strat.lifecycleState = QStringLiteral("active");
+    strat.isArchived     = false;
+    strat.createdAt      = now;
+    strat.updatedAt      = now;
+
+    if (!m_repo->createStrategyCatalog(strat)) {
+        qWarning("SystemBackendImpl::createCatalogEntryAndBinding: "
+                 "failed to persist strategies row for node %s",
+                 qPrintable(nodeUuid));
+        return;
+    }
+
+    // 2. Create v1 version (published by default)
+    DbStrategyVersion ver;
+    ver.versionId     = versionId;
+    ver.strategyId    = stratId;
+    ver.versionNumber = 1;
+    ver.configJson    = QString::fromUtf8(
+        QJsonDocument(canonicalConfig).toJson(QJsonDocument::Compact));
+    ver.isPublished   = true;
+    ver.createdAt     = now;
+
+    if (!m_repo->createStrategyVersion(ver)) {
+        qWarning("SystemBackendImpl::createCatalogEntryAndBinding: "
+                 "failed to persist strategy_versions row for node %s",
+                 qPrintable(nodeUuid));
+        return;
+    }
+
+    // 3. Also create legacy strategy_definitions row for backward compat
     DbStrategyDefinition def;
-    def.strategyDefId  = defId;
+    def.strategyDefId  = stratId;
     def.name           = name;
     def.strategyKind   = strategyKind;
-    def.configJson     = QString::fromUtf8(
-        QJsonDocument(canonicalConfig).toJson(QJsonDocument::Compact));
+    def.configJson     = ver.configJson;
     def.version        = 1;
     def.lifecycleState = QStringLiteral("active");
     def.isArchived     = false;
     def.createdAt      = now;
     def.updatedAt      = now;
+    m_repo->createStrategyDefinition(def);
 
-    if (!m_repo->createStrategyDefinition(def)) {
-        qWarning("SystemBackendImpl::createDefinitionAndBinding: "
-                 "failed to persist strategy_definitions row for node %s",
-                 qPrintable(nodeUuid));
-        return;
-    }
-
+    // 4. Create binding with version_id
     DbLiveStrategyBinding binding;
     binding.bindingId     = QUuid::createUuid().toString(QUuid::WithoutBraces);
     binding.modelNodeId   = nodeUuid;
-    binding.strategyDefId = defId;
+    binding.strategyDefId = stratId;
+    binding.versionId     = versionId;
     binding.createdAt     = now;
     binding.updatedAt     = now;
 
     if (!m_repo->createLiveBinding(binding)) {
-        qWarning("SystemBackendImpl::createDefinitionAndBinding: "
+        qWarning("SystemBackendImpl::createCatalogEntryAndBinding: "
                  "failed to persist live_strategy_bindings row for node %s",
                  qPrintable(nodeUuid));
         return;
@@ -126,47 +157,30 @@ void SystemBackendImpl::createDefinitionAndBinding(const QString& nodeUuid,
     // Populate runtime field on the in-memory adapter
     CGenericModelApi* node = findNodeByUuid(nodeUuid);
     if (auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(node))
-        adapter->setStrategyDefinitionId(defId);
+        adapter->setStrategyDefinitionId(stratId);
 }
 
-void SystemBackendImpl::syncDefinitionFromNode(const QString& strategyNodeUuid)
+void SystemBackendImpl::detectVersionDivergence(const QString& strategyNodeUuid)
 {
-    auto nodeOpt = m_repo->fetchNode(strategyNodeUuid);
-    if (!nodeOpt) return;
-
-    // Build raw node config from the in-memory model (most up-to-date after a mutation)
     CGenericModelApi* node = findNodeByUuid(strategyNodeUuid);
     if (!node) return;
 
-    QJsonObject rawConfig   = ModelTreeMapper::nodeConfigJson(node);
-    QJsonObject canonical   = extractCanonicalStrategyConfig(rawConfig);
-    QByteArray  newBytes    = QJsonDocument(canonical).toJson(QJsonDocument::Compact);
-
     DbLiveStrategyBinding binding = m_repo->fetchBindingForNode(strategyNodeUuid);
-    if (!binding.isValid()) {
-        qWarning("[syncDefinitionFromNode] no binding for strategy %s — skipping sync",
-                 qPrintable(strategyNodeUuid));
+    if (!binding.isValid() || binding.versionId.isEmpty())
         return;
-    }
 
-    DbStrategyDefinition def = m_repo->fetchStrategyDefinition(binding.strategyDefId);
-    if (!def.isValid()) {
-        qWarning("[syncDefinitionFromNode] definition %s missing — skipping sync",
-                 qPrintable(binding.strategyDefId));
+    DbStrategyVersion ver = m_repo->fetchStrategyVersion(binding.versionId);
+    if (!ver.isValid())
         return;
-    }
 
-    QByteArray existingBytes = QJsonDocument::fromJson(def.configJson.toUtf8())
+    QJsonObject rawConfig = ModelTreeMapper::nodeConfigJson(node);
+    QJsonObject canonical = extractCanonicalStrategyConfig(rawConfig);
+    QByteArray  newBytes  = QJsonDocument(canonical).toJson(QJsonDocument::Compact);
+
+    QByteArray existingBytes = QJsonDocument::fromJson(ver.configJson.toUtf8())
                                    .toJson(QJsonDocument::Compact);
-    if (newBytes == existingBytes)
-        return; // Content unchanged — no version bump, no write, no signal
-
-    def.configJson  = QString::fromUtf8(newBytes);
-    def.version    += 1;
-    def.updatedAt   = nowUtcIso();
-
-    m_repo->updateStrategyDefinition(def);
-    emit strategyDefinitionChanged(binding.strategyDefId);
+    if (newBytes != existingBytes)
+        emit nodeConfigDiverged(strategyNodeUuid);
 }
 
 bool SystemBackendImpl::isDescendantOf(CGenericModelApi* node, CGenericModelApi* potentialAncestor)
@@ -342,10 +356,10 @@ QString SystemBackendImpl::createStrategy(const QString& portfolioId, ModelType 
     m_uuidIndex.insert(uuid, model.data());
     wireRuntimeSignals(model.data());
 
-    // Auto-create canonical definition + live binding for the new strategy node.
+    // Auto-create catalog entry + v1 + live binding for the new strategy node.
     QJsonObject rawConfig  = ModelTreeMapper::nodeConfigJson(model.data());
     QJsonObject canonical  = extractCanonicalStrategyConfig(rawConfig);
-    createDefinitionAndBinding(uuid, model->getName(), static_cast<int>(type), canonical);
+    createCatalogEntryAndBinding(uuid, model->getName(), static_cast<int>(type), canonical);
 
     emit nodeCreated(uuid, portfolioId, rec.modelType);
     return uuid;
@@ -504,7 +518,7 @@ bool SystemBackendImpl::addBlock(const QString& strategyId, const QString& categ
     adapter->setPipelineConfig(config);
 
     persistNode(node);
-    syncDefinitionFromNode(strategyId);
+    detectVersionDivergence(strategyId);
 
     emit pipelineConfigChanged(strategyId, config);
     return true;
@@ -533,7 +547,7 @@ bool SystemBackendImpl::removeBlock(const QString& strategyId, const QString& ca
 
     adapter->setPipelineConfig(config);
     persistNode(node);
-    syncDefinitionFromNode(strategyId);
+    detectVersionDivergence(strategyId);
 
     emit pipelineConfigChanged(strategyId, config);
     return true;
@@ -565,9 +579,9 @@ bool SystemBackendImpl::updateNodeConfig(const QString& uuid, const QJsonObject&
 
     if (!m_repo->updateNode(rec)) return false;
 
-    // Sync canonical definition for strategy nodes
+    // Detect divergence for strategy nodes (no auto-version creation)
     if (isStrategyType(static_cast<ModelType>(node->modelType())))
-        syncDefinitionFromNode(uuid);
+        detectVersionDivergence(uuid);
 
     emit configChanged(uuid);
     return true;
@@ -591,7 +605,7 @@ bool SystemBackendImpl::updatePipelineConfig(const QString& strategyId, const QJ
 
     adapter->setPipelineConfig(config);
     persistNode(node);
-    syncDefinitionFromNode(strategyId);
+    detectVersionDivergence(strategyId);
 
     emit pipelineConfigChanged(strategyId, config);
     return true;
@@ -747,41 +761,39 @@ bool SystemBackendImpl::loadFromDb()
         DbLiveStrategyBinding binding = m_repo->fetchBindingForNode(nodeUuid);
 
         if (!binding.isValid()) {
-            qWarning("[repair] strategy node %s has no binding — auto-creating definition",
+            qWarning("[repair] strategy node %s has no binding — auto-creating catalog entry",
                      qPrintable(nodeUuid));
             QJsonObject canonical = extractCanonicalStrategyConfig(rec.config);
-            createDefinitionAndBinding(nodeUuid, rec.name,
-                                       rec.modelType, canonical);
+            createCatalogEntryAndBinding(nodeUuid, rec.name,
+                                         rec.modelType, canonical);
             continue;
         }
 
-        DbStrategyDefinition def = m_repo->fetchStrategyDefinition(binding.strategyDefId);
-        if (!def.isValid()) {
-            qWarning("[repair] definition %s missing for binding — recreating from node config",
-                     qPrintable(binding.strategyDefId));
-            QJsonObject canonical = extractCanonicalStrategyConfig(rec.config);
-            // Reuse existing defId from the orphaned binding so other references stay valid
-            DbStrategyDefinition restored;
-            restored.strategyDefId  = binding.strategyDefId;
-            restored.name           = rec.name;
-            restored.strategyKind   = rec.modelType;
-            restored.configJson     = QString::fromUtf8(
-                QJsonDocument(canonical).toJson(QJsonDocument::Compact));
-            restored.version        = 1;
-            restored.lifecycleState = QStringLiteral("active");
-            restored.isArchived     = false;
-            restored.createdAt      = nowUtcIso();
-            restored.updatedAt      = restored.createdAt;
-            m_repo->createStrategyDefinition(restored);
-
-            // Populate runtime field
-            CGenericModelApi* node = findNodeByUuid(nodeUuid);
-            if (auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(node))
-                adapter->setStrategyDefinitionId(binding.strategyDefId);
-            continue;
+        // Check if v3 catalog entry exists; if not, check legacy definition
+        DbStrategy catalogEntry = m_repo->fetchStrategyCatalog(binding.strategyDefId);
+        if (!catalogEntry.isValid()) {
+            DbStrategyDefinition def = m_repo->fetchStrategyDefinition(binding.strategyDefId);
+            if (!def.isValid()) {
+                qWarning("[repair] no catalog or definition for binding %s — recreating",
+                         qPrintable(binding.strategyDefId));
+                m_repo->removeBindingForNode(nodeUuid);
+                QJsonObject canonical = extractCanonicalStrategyConfig(rec.config);
+                createCatalogEntryAndBinding(nodeUuid, rec.name,
+                                             rec.modelType, canonical);
+                continue;
+            }
         }
 
-        // Binding and definition both valid — just populate the runtime field
+        // Ensure binding has a version_id
+        if (binding.versionId.isEmpty()) {
+            DbStrategyVersion latest = m_repo->fetchLatestVersion(binding.strategyDefId);
+            if (latest.isValid()) {
+                m_repo->updateBindingVersion(binding.bindingId, latest.versionId);
+                binding.versionId = latest.versionId;
+            }
+        }
+
+        // Populate the runtime field
         CGenericModelApi* node = findNodeByUuid(nodeUuid);
         if (auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(node))
             adapter->setStrategyDefinitionId(binding.strategyDefId);
@@ -826,17 +838,323 @@ bool SystemBackendImpl::exportToJsonFile(const QString& path)
 }
 
 // ---------------------------------------------------------------------------
-// Strategy Catalog
+// Strategy Catalog (v2: families + versions)
+// ---------------------------------------------------------------------------
+
+QJsonObject SystemBackendImpl::strategyToJson(const DbStrategy& s)
+{
+    QJsonObject obj;
+    obj["strategyId"]     = s.strategyId;
+    obj["name"]           = s.name;
+    obj["strategyKind"]   = s.strategyKind;
+    obj["lifecycleState"] = s.lifecycleState;
+    obj["description"]    = s.description;
+    obj["tags"]           = s.tags;
+    obj["isArchived"]     = s.isArchived;
+    obj["createdAt"]      = s.createdAt;
+    obj["updatedAt"]      = s.updatedAt;
+    return obj;
+}
+
+QJsonObject SystemBackendImpl::versionToJson(const DbStrategyVersion& v)
+{
+    QJsonObject obj;
+    obj["versionId"]     = v.versionId;
+    obj["strategyId"]    = v.strategyId;
+    obj["versionNumber"] = v.versionNumber;
+    obj["configJson"]    = v.configJson;
+    obj["notes"]         = v.notes;
+    obj["isPublished"]   = v.isPublished;
+    obj["createdAt"]     = v.createdAt;
+    if (!v.createdFromVersionId.isEmpty())
+        obj["createdFromVersionId"] = v.createdFromVersionId;
+    return obj;
+}
+
+QString SystemBackendImpl::createStrategyCatalogEntry(const QString& name, int kind,
+                                                       const QJsonObject& initialConfig,
+                                                       const QString& description)
+{
+    QString stratId = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    QString now     = nowUtcIso();
+
+    DbStrategy strat;
+    strat.strategyId     = stratId;
+    strat.name           = name;
+    strat.strategyKind   = kind;
+    strat.lifecycleState = QStringLiteral("draft");
+    strat.description    = description;
+    strat.isArchived     = false;
+    strat.createdAt      = now;
+    strat.updatedAt      = now;
+
+    if (!m_repo->createStrategyCatalog(strat))
+        return {};
+
+    // Auto-create v1 with the initial config (empty {} if none provided)
+    DbStrategyVersion v1;
+    v1.versionId     = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    v1.strategyId    = stratId;
+    v1.versionNumber = 1;
+    v1.configJson    = QString::fromUtf8(
+        QJsonDocument(initialConfig).toJson(QJsonDocument::Compact));
+    v1.notes         = QStringLiteral("Initial version");
+    v1.isPublished   = false;
+    v1.createdAt     = now;
+    m_repo->createStrategyVersion(v1);
+
+    emit strategyCatalogChanged(stratId);
+    emit strategyVersionCreated(stratId, v1.versionId);
+    return stratId;
+}
+
+bool SystemBackendImpl::updateStrategyCatalogMeta(const QString& strategyId,
+                                                    const QString& name,
+                                                    const QString& description,
+                                                    const QString& tags,
+                                                    const QString& lifecycleState)
+{
+    DbStrategy strat = m_repo->fetchStrategyCatalog(strategyId);
+    if (!strat.isValid()) return false;
+
+    strat.name           = name;
+    strat.description    = description;
+    strat.tags           = tags;
+    strat.lifecycleState = lifecycleState;
+    strat.updatedAt      = nowUtcIso();
+
+    if (!m_repo->updateStrategyCatalog(strat))
+        return false;
+
+    emit strategyCatalogChanged(strategyId);
+    return true;
+}
+
+QJsonObject SystemBackendImpl::strategyCatalogEntry(const QString& strategyId) const
+{
+    DbStrategy strat = m_repo->fetchStrategyCatalog(strategyId);
+    if (!strat.isValid()) return {};
+    return strategyToJson(strat);
+}
+
+QJsonArray SystemBackendImpl::listStrategyCatalog(bool includeArchived) const
+{
+    QJsonArray arr;
+    for (const auto& s : m_repo->listStrategyCatalog(includeArchived))
+        arr.append(strategyToJson(s));
+    return arr;
+}
+
+bool SystemBackendImpl::archiveStrategyCatalogEntry(const QString& strategyId)
+{
+    if (!m_repo->archiveStrategyCatalog(strategyId))
+        return false;
+    emit strategyCatalogChanged(strategyId);
+    return true;
+}
+
+QString SystemBackendImpl::createStrategyVersion(const QString& strategyId,
+                                                   const QJsonObject& config,
+                                                   const QString& notes,
+                                                   const QString& fromVersionId)
+{
+    DbStrategy strat = m_repo->fetchStrategyCatalog(strategyId);
+    if (!strat.isValid()) return {};
+
+    QString versionId = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    QString now       = nowUtcIso();
+
+    DbStrategyVersion ver;
+    ver.versionId            = versionId;
+    ver.strategyId           = strategyId;
+    ver.versionNumber        = m_repo->nextVersionNumber(strategyId);
+    ver.configJson           = QString::fromUtf8(
+        QJsonDocument(config).toJson(QJsonDocument::Compact));
+    ver.notes                = notes;
+    ver.isPublished          = false;
+    ver.createdFromVersionId = fromVersionId;
+    ver.createdAt            = now;
+
+    if (!m_repo->createStrategyVersion(ver))
+        return {};
+
+    // Touch strategy updatedAt
+    strat.updatedAt = now;
+    m_repo->updateStrategyCatalog(strat);
+
+    emit strategyVersionCreated(strategyId, versionId);
+    return versionId;
+}
+
+QJsonObject SystemBackendImpl::strategyVersionInfo(const QString& versionId) const
+{
+    DbStrategyVersion ver = m_repo->fetchStrategyVersion(versionId);
+    if (!ver.isValid()) return {};
+    return versionToJson(ver);
+}
+
+QJsonArray SystemBackendImpl::listStrategyVersions(const QString& strategyId) const
+{
+    QJsonArray arr;
+    for (const auto& v : m_repo->listStrategyVersions(strategyId))
+        arr.append(versionToJson(v));
+    return arr;
+}
+
+bool SystemBackendImpl::publishVersion(const QString& versionId)
+{
+    return m_repo->setVersionPublished(versionId, true);
+}
+
+bool SystemBackendImpl::bindLiveNodeToVersion(const QString& nodeId,
+                                                const QString& strategyId,
+                                                const QString& versionId)
+{
+    m_repo->removeBindingForNode(nodeId);
+
+    QString now = nowUtcIso();
+    DbLiveStrategyBinding binding;
+    binding.bindingId     = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    binding.modelNodeId   = nodeId;
+    binding.strategyDefId = strategyId;
+    binding.versionId     = versionId;
+    binding.createdAt     = now;
+    binding.updatedAt     = now;
+
+    if (!m_repo->createLiveBinding(binding))
+        return false;
+
+    CGenericModelApi* node = findNodeByUuid(nodeId);
+    if (auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(node))
+        adapter->setStrategyDefinitionId(strategyId);
+
+    return true;
+}
+
+QJsonObject SystemBackendImpl::bindingForNode(const QString& nodeId) const
+{
+    DbLiveStrategyBinding binding = m_repo->fetchBindingForNode(nodeId);
+    if (!binding.isValid()) return {};
+
+    QJsonObject result;
+    result["strategyId"]  = binding.strategyDefId;
+    result["versionId"]   = binding.versionId;
+    result["bindingId"]   = binding.bindingId;
+
+    DbStrategy strat = m_repo->fetchStrategyCatalog(binding.strategyDefId);
+    if (strat.isValid())
+        result["strategyName"] = strat.name;
+
+    if (!binding.versionId.isEmpty()) {
+        DbStrategyVersion ver = m_repo->fetchStrategyVersion(binding.versionId);
+        if (ver.isValid()) {
+            result["versionNumber"] = ver.versionNumber;
+            result["configJson"]    = ver.configJson;
+            result["isPublished"]   = ver.isPublished;
+        }
+    }
+
+    return result;
+}
+
+bool SystemBackendImpl::isNodeDivergedFromVersion(const QString& nodeId) const
+{
+    CGenericModelApi* node = findNodeByUuid(nodeId);
+    if (!node) return false;
+
+    DbLiveStrategyBinding binding = m_repo->fetchBindingForNode(nodeId);
+    if (!binding.isValid() || binding.versionId.isEmpty())
+        return false;
+
+    DbStrategyVersion ver = m_repo->fetchStrategyVersion(binding.versionId);
+    if (!ver.isValid())
+        return false;
+
+    QJsonObject rawConfig = ModelTreeMapper::nodeConfigJson(node);
+    QJsonObject canonical = extractCanonicalStrategyConfig(rawConfig);
+    QByteArray  newBytes  = QJsonDocument(canonical).toJson(QJsonDocument::Compact);
+
+    QByteArray existingBytes = QJsonDocument::fromJson(ver.configJson.toUtf8())
+                                   .toJson(QJsonDocument::Compact);
+    return newBytes != existingBytes;
+}
+
+QString SystemBackendImpl::createLiveNodeForExistingCatalog(
+    const QString& portfolioId, ModelType type,
+    const QString& strategyId, const QString& versionId)
+{
+    if (!isStrategyType(type)) return {};
+
+    CGenericModelApi* parent = findNodeByUuid(portfolioId);
+    if (!parent || parent->modelType() != ModelType::PORTFOLIO) return {};
+
+    DbStrategy strat = m_repo->fetchStrategyCatalog(strategyId);
+    if (!strat.isValid()) return {};
+
+    DbStrategyVersion ver = m_repo->fetchStrategyVersion(versionId);
+    if (!ver.isValid() || ver.strategyId != strategyId) return {};
+
+    QUuid id = QUuid::createUuid();
+    QString uuid = id.toString(QUuid::WithoutBraces);
+
+    auto model = CStrategyFactory::createNewStrategy(type);
+    if (!model) return {};
+
+    model->setId(id);
+    model->setName(strat.name);
+
+    ModelNodeRecord rec;
+    rec.uuid       = uuid;
+    rec.parentUuid = portfolioId;
+    rec.modelType  = static_cast<int>(type);
+    rec.name       = model->getName();
+    rec.config     = ModelTreeMapper::nodeConfigJson(model.data());
+    rec.sortOrder  = m_repo->nextSortOrder(portfolioId);
+    rec.isActive   = true;
+    rec.createdAt  = QDateTime::currentDateTimeUtc();
+    rec.updatedAt  = rec.createdAt;
+
+    if (!m_repo->insertNode(rec)) return {};
+
+    model->setParentModel(parent);
+    parent->getModels().append(model);
+    m_uuidIndex.insert(uuid, model.data());
+    wireRuntimeSignals(model.data());
+
+    DbLiveStrategyBinding binding;
+    binding.bindingId      = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    binding.modelNodeId    = uuid;
+    binding.strategyDefId  = strategyId;
+    binding.versionId      = versionId;
+    binding.createdAt      = nowUtcIso();
+    binding.updatedAt      = binding.createdAt;
+    m_repo->createLiveBinding(binding);
+
+    QJsonObject pipeCfg = QJsonDocument::fromJson(ver.configJson.toUtf8()).object();
+    if (!pipeCfg.isEmpty())
+        updatePipelineConfig(uuid, pipeCfg);
+
+    emit nodeCreated(uuid, portfolioId, rec.modelType);
+    return uuid;
+}
+
+// ---------------------------------------------------------------------------
+// Legacy Strategy Catalog (deprecated — delegates to v2 catalog)
 // ---------------------------------------------------------------------------
 
 QString SystemBackendImpl::createStrategyDefinition(const QString& name, int kind,
                                                      const QJsonObject& fullConfig)
 {
-    QString defId = QUuid::createUuid().toString(QUuid::WithoutBraces);
-    QString now   = nowUtcIso();
+    QString stratId = createStrategyCatalogEntry(name, kind);
+    if (stratId.isEmpty()) return {};
 
+    QString versionId = createStrategyVersion(stratId, fullConfig);
+    if (versionId.isEmpty()) return {};
+    publishVersion(versionId);
+
+    // Also write legacy row for backward compat
     DbStrategyDefinition def;
-    def.strategyDefId  = defId;
+    def.strategyDefId  = stratId;
     def.name           = name;
     def.strategyKind   = kind;
     def.configJson     = QString::fromUtf8(
@@ -844,34 +1162,47 @@ QString SystemBackendImpl::createStrategyDefinition(const QString& name, int kin
     def.version        = 1;
     def.lifecycleState = QStringLiteral("draft");
     def.isArchived     = false;
-    def.createdAt      = now;
-    def.updatedAt      = now;
+    def.createdAt      = nowUtcIso();
+    def.updatedAt      = def.createdAt;
+    m_repo->createStrategyDefinition(def);
 
-    if (!m_repo->createStrategyDefinition(def))
-        return {};
-
-    emit strategyDefinitionChanged(defId);
-    return defId;
+    emit strategyDefinitionChanged(stratId);
+    return stratId;
 }
 
 bool SystemBackendImpl::updateStrategyDefinition(const QString& defId,
                                                   const QJsonObject& fullConfig)
 {
-    DbStrategyDefinition def = m_repo->fetchStrategyDefinition(defId);
-    if (!def.isValid()) return false;
+    // Create a new version in the v3 catalog
+    DbStrategy strat = m_repo->fetchStrategyCatalog(defId);
+    if (!strat.isValid()) {
+        // Fall back to legacy-only update
+        DbStrategyDefinition def = m_repo->fetchStrategyDefinition(defId);
+        if (!def.isValid()) return false;
+        QByteArray newBytes = QJsonDocument(fullConfig).toJson(QJsonDocument::Compact);
+        QByteArray existing = QJsonDocument::fromJson(def.configJson.toUtf8())
+                                  .toJson(QJsonDocument::Compact);
+        if (newBytes == existing) return true;
+        def.configJson = QString::fromUtf8(newBytes);
+        def.version   += 1;
+        def.updatedAt  = nowUtcIso();
+        if (!m_repo->updateStrategyDefinition(def)) return false;
+        emit strategyDefinitionChanged(defId);
+        return true;
+    }
 
+    // Compare with latest version
+    DbStrategyVersion latest = m_repo->fetchLatestVersion(defId);
     QByteArray newBytes = QJsonDocument(fullConfig).toJson(QJsonDocument::Compact);
-    QByteArray existing = QJsonDocument::fromJson(def.configJson.toUtf8())
-                              .toJson(QJsonDocument::Compact);
+    if (latest.isValid()) {
+        QByteArray existing = QJsonDocument::fromJson(latest.configJson.toUtf8())
+                                  .toJson(QJsonDocument::Compact);
+        if (newBytes == existing) return true;
+    }
 
-    if (newBytes == existing) return true; // no change
-
-    def.configJson  = QString::fromUtf8(newBytes);
-    def.version    += 1;
-    def.updatedAt   = nowUtcIso();
-
-    if (!m_repo->updateStrategyDefinition(def))
-        return false;
+    QString versionId = createStrategyVersion(defId, fullConfig);
+    if (versionId.isEmpty()) return false;
+    publishVersion(versionId);
 
     emit strategyDefinitionChanged(defId);
     return true;
@@ -879,6 +1210,21 @@ bool SystemBackendImpl::updateStrategyDefinition(const QString& defId,
 
 QJsonObject SystemBackendImpl::strategyDefinition(const QString& defId) const
 {
+    // Try v3 catalog first
+    DbStrategy strat = m_repo->fetchStrategyCatalog(defId);
+    if (strat.isValid()) {
+        QJsonObject obj = strategyToJson(strat);
+        // Add legacy-compatible fields
+        obj["strategyDefId"] = strat.strategyId;
+        DbStrategyVersion latest = m_repo->fetchLatestVersion(defId);
+        if (latest.isValid()) {
+            obj["configJson"] = latest.configJson;
+            obj["version"]    = latest.versionNumber;
+        }
+        return obj;
+    }
+
+    // Fall back to legacy table
     DbStrategyDefinition def = m_repo->fetchStrategyDefinition(defId);
     if (!def.isValid()) return {};
     return definitionToJson(def);
@@ -886,6 +1232,24 @@ QJsonObject SystemBackendImpl::strategyDefinition(const QString& defId) const
 
 QJsonArray SystemBackendImpl::listStrategyDefinitions(bool includeArchived) const
 {
+    // Prefer v3 catalog
+    auto strategies = m_repo->listStrategyCatalog(includeArchived);
+    if (!strategies.isEmpty()) {
+        QJsonArray arr;
+        for (const auto& s : strategies) {
+            QJsonObject obj = strategyToJson(s);
+            obj["strategyDefId"] = s.strategyId;
+            DbStrategyVersion latest = m_repo->fetchLatestVersion(s.strategyId);
+            if (latest.isValid()) {
+                obj["configJson"] = latest.configJson;
+                obj["version"]    = latest.versionNumber;
+            }
+            arr.append(obj);
+        }
+        return arr;
+    }
+
+    // Fall back to legacy
     QJsonArray arr;
     for (const auto& def : m_repo->listStrategyDefinitions(includeArchived))
         arr.append(definitionToJson(def));
@@ -894,45 +1258,39 @@ QJsonArray SystemBackendImpl::listStrategyDefinitions(bool includeArchived) cons
 
 bool SystemBackendImpl::archiveStrategyDefinition(const QString& defId)
 {
-    if (!m_repo->archiveStrategyDefinition(defId))
-        return false;
+    bool ok = m_repo->archiveStrategyCatalog(defId);
+    if (!ok)
+        ok = m_repo->archiveStrategyDefinition(defId);
+    if (!ok) return false;
+
     emit strategyDefinitionChanged(defId);
     return true;
 }
 
 bool SystemBackendImpl::bindLiveNodeToDefinition(const QString& nodeId, const QString& defId)
 {
-    // Remove any existing binding first (one-to-one constraint)
-    m_repo->removeBindingForNode(nodeId);
+    // Find latest version and delegate to v2
+    DbStrategyVersion latest = m_repo->fetchLatestVersion(defId);
+    QString versionId = latest.isValid() ? latest.versionId : QString();
 
-    QString now = nowUtcIso();
-    DbLiveStrategyBinding binding;
-    binding.bindingId     = QUuid::createUuid().toString(QUuid::WithoutBraces);
-    binding.modelNodeId   = nodeId;
-    binding.strategyDefId = defId;
-    binding.createdAt     = now;
-    binding.updatedAt     = now;
-
-    if (!m_repo->createLiveBinding(binding))
-        return false;
-
-    // Update runtime field on in-memory adapter
-    CGenericModelApi* node = findNodeByUuid(nodeId);
-    if (auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(node))
-        adapter->setStrategyDefinitionId(defId);
-
-    return true;
+    return bindLiveNodeToVersion(nodeId, defId, versionId);
 }
 
 QJsonObject SystemBackendImpl::strategyDefinitionForNode(const QString& nodeId) const
 {
-    DbLiveStrategyBinding binding = m_repo->fetchBindingForNode(nodeId);
-    if (!binding.isValid()) return {};
+    QJsonObject binding = bindingForNode(nodeId);
+    if (binding.isEmpty()) return {};
 
-    DbStrategyDefinition def = m_repo->fetchStrategyDefinition(binding.strategyDefId);
-    if (!def.isValid()) return {};
+    // Build legacy-compatible result
+    QString stratId = binding.value("strategyId").toString();
+    QJsonObject result;
+    result["strategyDefId"] = stratId;
+    result["version"]       = binding.value("versionNumber").toInt(1);
+    result["name"]          = binding.value("strategyName").toString();
+    result["versionId"]     = binding.value("versionId").toString();
+    result["configJson"]    = binding.value("configJson").toString();
 
-    return definitionToJson(def);
+    return result;
 }
 
 // ---------------------------------------------------------------------------

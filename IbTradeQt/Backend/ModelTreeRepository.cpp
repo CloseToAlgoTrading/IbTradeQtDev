@@ -4,6 +4,7 @@
 #include <QSqlError>
 #include <QJsonDocument>
 #include <QVariant>
+#include <QUuid>
 
 ModelTreeRepository::ModelTreeRepository(const QString& dbPath, const QString& connectionName)
     : m_dbPath(dbPath)
@@ -75,7 +76,48 @@ bool ModelTreeRepository::initialize()
         return false;
     }
 
+    // v3 tables: strategies + strategy_versions
     ok = q.exec(
+        "CREATE TABLE IF NOT EXISTS strategies ("
+        "  strategy_id      TEXT PRIMARY KEY,"
+        "  name             TEXT NOT NULL DEFAULT '',"
+        "  strategy_kind    INTEGER NOT NULL DEFAULT 0,"
+        "  lifecycle_state  TEXT NOT NULL DEFAULT 'draft',"
+        "  description      TEXT NOT NULL DEFAULT '',"
+        "  tags             TEXT NOT NULL DEFAULT '',"
+        "  is_archived      INTEGER NOT NULL DEFAULT 0,"
+        "  created_at       TEXT NOT NULL,"
+        "  updated_at       TEXT NOT NULL"
+        ")");
+    if (!ok) {
+        qWarning("ModelTreeRepository: create strategies failed: %s",
+                 qPrintable(q.lastError().text()));
+        return false;
+    }
+
+    ok = q.exec(
+        "CREATE TABLE IF NOT EXISTS strategy_versions ("
+        "  version_id              TEXT PRIMARY KEY,"
+        "  strategy_id             TEXT NOT NULL REFERENCES strategies(strategy_id),"
+        "  version_number          INTEGER NOT NULL DEFAULT 1,"
+        "  config_json             TEXT NOT NULL DEFAULT '{}',"
+        "  notes                   TEXT NOT NULL DEFAULT '',"
+        "  is_published            INTEGER NOT NULL DEFAULT 0,"
+        "  created_from_version_id TEXT,"
+        "  created_at              TEXT NOT NULL,"
+        "  UNIQUE(strategy_id, version_number)"
+        ")");
+    if (!ok) {
+        qWarning("ModelTreeRepository: create strategy_versions failed: %s",
+                 qPrintable(q.lastError().text()));
+        return false;
+    }
+
+    q.exec("CREATE INDEX IF NOT EXISTS idx_versions_strategy ON strategy_versions(strategy_id)");
+
+    // legacy strategy_definitions — still created for fresh DBs so existing
+    // code that references it during migration keeps working.
+    q.exec(
         "CREATE TABLE IF NOT EXISTS strategy_definitions ("
         "  strategy_def_id     TEXT PRIMARY KEY,"
         "  name                TEXT NOT NULL DEFAULT '',"
@@ -88,17 +130,13 @@ bool ModelTreeRepository::initialize()
         "  updated_at          TEXT NOT NULL,"
         "  created_from_def_id TEXT"
         ")");
-    if (!ok) {
-        qWarning("ModelTreeRepository: create strategy_definitions failed: %s",
-                 qPrintable(q.lastError().text()));
-        return false;
-    }
 
     ok = q.exec(
         "CREATE TABLE IF NOT EXISTS live_strategy_bindings ("
         "  binding_id      TEXT PRIMARY KEY,"
         "  model_node_id   TEXT NOT NULL REFERENCES model_nodes(uuid) ON DELETE CASCADE,"
-        "  strategy_def_id TEXT NOT NULL REFERENCES strategy_definitions(strategy_def_id),"
+        "  strategy_def_id TEXT NOT NULL,"
+        "  version_id      TEXT NOT NULL DEFAULT '',"
         "  created_at      TEXT NOT NULL,"
         "  updated_at      TEXT NOT NULL,"
         "  UNIQUE(model_node_id)"
@@ -129,11 +167,17 @@ bool ModelTreeRepository::initialize()
 
     q.exec("CREATE INDEX IF NOT EXISTS idx_profiles_owner ON backtest_run_profiles(owner_type, owner_ref_id)");
 
+    // Ensure version_id column exists on live_strategy_bindings (idempotent ALTER).
+    // Must run BEFORE migration so migrateV2toV3() can UPDATE version_id.
+    q.exec("ALTER TABLE live_strategy_bindings ADD COLUMN version_id TEXT DEFAULT ''");
+
+    // --- Schema version management ---
     QString ver = metadata("schema_version");
     if (ver.isEmpty()) {
-        setMetadata("schema_version", "2");
-    } else if (ver == "1") {
-        setMetadata("schema_version", "2");
+        setMetadata("schema_version", "3");
+    } else if (ver == "1" || ver == "2") {
+        if (!migrateV2toV3())
+            qWarning("ModelTreeRepository: v2->v3 migration failed");
     }
 
     return true;
@@ -480,6 +524,7 @@ DbLiveStrategyBinding ModelTreeRepository::bindingFromQuery(const QSqlQuery& q) 
     b.bindingId     = q.value("binding_id").toString();
     b.modelNodeId   = q.value("model_node_id").toString();
     b.strategyDefId = q.value("strategy_def_id").toString();
+    b.versionId     = q.value("version_id").toString();
     b.createdAt     = q.value("created_at").toString();
     b.updatedAt     = q.value("updated_at").toString();
     return b;
@@ -490,11 +535,12 @@ bool ModelTreeRepository::createLiveBinding(const DbLiveStrategyBinding& binding
     QSqlQuery q(db());
     q.prepare(
         "INSERT INTO live_strategy_bindings "
-        "(binding_id, model_node_id, strategy_def_id, created_at, updated_at) "
-        "VALUES (:bid, :nid, :did, :created, :updated)");
+        "(binding_id, model_node_id, strategy_def_id, version_id, created_at, updated_at) "
+        "VALUES (:bid, :nid, :did, :vid, :created, :updated)");
     q.bindValue(":bid",     binding.bindingId);
     q.bindValue(":nid",     binding.modelNodeId);
     q.bindValue(":did",     binding.strategyDefId);
+    q.bindValue(":vid",     binding.versionId);
     q.bindValue(":created", binding.createdAt);
     q.bindValue(":updated", binding.updatedAt);
 
@@ -602,4 +648,360 @@ QList<DbBacktestRunProfile> ModelTreeRepository::listRunProfiles(const QString& 
             results.append(profileFromQuery(q));
     }
     return results;
+}
+
+// ---------------------------------------------------------------------------
+// strategies CRUD (v3 catalog)
+// ---------------------------------------------------------------------------
+
+DbStrategy ModelTreeRepository::strategyCatalogFromQuery(const QSqlQuery& q) const
+{
+    DbStrategy s;
+    s.strategyId     = q.value("strategy_id").toString();
+    s.name           = q.value("name").toString();
+    s.strategyKind   = q.value("strategy_kind").toInt();
+    s.lifecycleState = q.value("lifecycle_state").toString();
+    s.description    = q.value("description").toString();
+    s.tags           = q.value("tags").toString();
+    s.isArchived     = q.value("is_archived").toInt() != 0;
+    s.createdAt      = q.value("created_at").toString();
+    s.updatedAt      = q.value("updated_at").toString();
+    return s;
+}
+
+bool ModelTreeRepository::createStrategyCatalog(const DbStrategy& strategy)
+{
+    QSqlQuery q(db());
+    q.prepare(
+        "INSERT INTO strategies "
+        "(strategy_id, name, strategy_kind, lifecycle_state, description, tags, "
+        " is_archived, created_at, updated_at) "
+        "VALUES (:id, :name, :kind, :state, :desc, :tags, :archived, :created, :updated)");
+    q.bindValue(":id",       strategy.strategyId);
+    q.bindValue(":name",     strategy.name);
+    q.bindValue(":kind",     strategy.strategyKind);
+    q.bindValue(":state",    strategy.lifecycleState);
+    q.bindValue(":desc",     strategy.description);
+    q.bindValue(":tags",     strategy.tags);
+    q.bindValue(":archived", strategy.isArchived ? 1 : 0);
+    q.bindValue(":created",  strategy.createdAt);
+    q.bindValue(":updated",  strategy.updatedAt);
+
+    if (!q.exec()) {
+        qWarning("ModelTreeRepository::createStrategyCatalog failed: %s",
+                 qPrintable(q.lastError().text()));
+        return false;
+    }
+    return true;
+}
+
+DbStrategy ModelTreeRepository::fetchStrategyCatalog(const QString& strategyId) const
+{
+    QSqlQuery q(db());
+    q.prepare("SELECT * FROM strategies WHERE strategy_id = :id");
+    q.bindValue(":id", strategyId);
+
+    if (q.exec() && q.next())
+        return strategyCatalogFromQuery(q);
+    return {};
+}
+
+QList<DbStrategy> ModelTreeRepository::listStrategyCatalog(bool includeArchived) const
+{
+    QList<DbStrategy> results;
+    QSqlQuery q(db());
+
+    if (includeArchived)
+        q.prepare("SELECT * FROM strategies ORDER BY updated_at DESC");
+    else
+        q.prepare("SELECT * FROM strategies WHERE is_archived = 0 ORDER BY updated_at DESC");
+
+    if (q.exec()) {
+        while (q.next())
+            results.append(strategyCatalogFromQuery(q));
+    }
+    return results;
+}
+
+bool ModelTreeRepository::updateStrategyCatalog(const DbStrategy& strategy)
+{
+    QSqlQuery q(db());
+    q.prepare(
+        "UPDATE strategies SET "
+        "name = :name, strategy_kind = :kind, lifecycle_state = :state, "
+        "description = :desc, tags = :tags, is_archived = :archived, "
+        "updated_at = :updated "
+        "WHERE strategy_id = :id");
+    q.bindValue(":id",       strategy.strategyId);
+    q.bindValue(":name",     strategy.name);
+    q.bindValue(":kind",     strategy.strategyKind);
+    q.bindValue(":state",    strategy.lifecycleState);
+    q.bindValue(":desc",     strategy.description);
+    q.bindValue(":tags",     strategy.tags);
+    q.bindValue(":archived", strategy.isArchived ? 1 : 0);
+    q.bindValue(":updated",  strategy.updatedAt);
+
+    if (!q.exec()) {
+        qWarning("ModelTreeRepository::updateStrategyCatalog failed: %s",
+                 qPrintable(q.lastError().text()));
+        return false;
+    }
+    return q.numRowsAffected() > 0;
+}
+
+bool ModelTreeRepository::archiveStrategyCatalog(const QString& strategyId)
+{
+    QSqlQuery q(db());
+    q.prepare(
+        "UPDATE strategies "
+        "SET is_archived = 1, updated_at = :now "
+        "WHERE strategy_id = :id");
+    q.bindValue(":now", QDateTime::currentDateTimeUtc().toString(Qt::ISODate));
+    q.bindValue(":id", strategyId);
+
+    if (!q.exec()) {
+        qWarning("ModelTreeRepository::archiveStrategyCatalog failed: %s",
+                 qPrintable(q.lastError().text()));
+        return false;
+    }
+    return q.numRowsAffected() > 0;
+}
+
+// ---------------------------------------------------------------------------
+// strategy_versions CRUD
+// ---------------------------------------------------------------------------
+
+DbStrategyVersion ModelTreeRepository::versionFromQuery(const QSqlQuery& q) const
+{
+    DbStrategyVersion v;
+    v.versionId            = q.value("version_id").toString();
+    v.strategyId           = q.value("strategy_id").toString();
+    v.versionNumber        = q.value("version_number").toInt();
+    v.configJson           = q.value("config_json").toString();
+    v.notes                = q.value("notes").toString();
+    v.isPublished          = q.value("is_published").toInt() != 0;
+    v.createdFromVersionId = q.value("created_from_version_id").toString();
+    v.createdAt            = q.value("created_at").toString();
+    return v;
+}
+
+bool ModelTreeRepository::createStrategyVersion(const DbStrategyVersion& version)
+{
+    QSqlQuery q(db());
+    q.prepare(
+        "INSERT INTO strategy_versions "
+        "(version_id, strategy_id, version_number, config_json, notes, "
+        " is_published, created_from_version_id, created_at) "
+        "VALUES (:vid, :sid, :vnum, :cfg, :notes, :pub, :from_vid, :created)");
+    q.bindValue(":vid",      version.versionId);
+    q.bindValue(":sid",      version.strategyId);
+    q.bindValue(":vnum",     version.versionNumber);
+    q.bindValue(":cfg",      version.configJson);
+    q.bindValue(":notes",    version.notes);
+    q.bindValue(":pub",      version.isPublished ? 1 : 0);
+    q.bindValue(":from_vid", version.createdFromVersionId.isEmpty()
+                                 ? QVariant() : version.createdFromVersionId);
+    q.bindValue(":created",  version.createdAt);
+
+    if (!q.exec()) {
+        qWarning("ModelTreeRepository::createStrategyVersion failed: %s",
+                 qPrintable(q.lastError().text()));
+        return false;
+    }
+    return true;
+}
+
+DbStrategyVersion ModelTreeRepository::fetchStrategyVersion(const QString& versionId) const
+{
+    QSqlQuery q(db());
+    q.prepare("SELECT * FROM strategy_versions WHERE version_id = :vid");
+    q.bindValue(":vid", versionId);
+
+    if (q.exec() && q.next())
+        return versionFromQuery(q);
+    return {};
+}
+
+QList<DbStrategyVersion> ModelTreeRepository::listStrategyVersions(const QString& strategyId) const
+{
+    QList<DbStrategyVersion> results;
+    QSqlQuery q(db());
+    q.prepare("SELECT * FROM strategy_versions WHERE strategy_id = :sid ORDER BY version_number ASC");
+    q.bindValue(":sid", strategyId);
+
+    if (q.exec()) {
+        while (q.next())
+            results.append(versionFromQuery(q));
+    }
+    return results;
+}
+
+DbStrategyVersion ModelTreeRepository::fetchLatestVersion(const QString& strategyId) const
+{
+    QSqlQuery q(db());
+    q.prepare(
+        "SELECT * FROM strategy_versions "
+        "WHERE strategy_id = :sid "
+        "ORDER BY version_number DESC LIMIT 1");
+    q.bindValue(":sid", strategyId);
+
+    if (q.exec() && q.next())
+        return versionFromQuery(q);
+    return {};
+}
+
+bool ModelTreeRepository::setVersionPublished(const QString& versionId, bool published)
+{
+    QSqlQuery q(db());
+    q.prepare(
+        "UPDATE strategy_versions "
+        "SET is_published = :pub "
+        "WHERE version_id = :vid");
+    q.bindValue(":pub", published ? 1 : 0);
+    q.bindValue(":vid", versionId);
+
+    if (!q.exec()) {
+        qWarning("ModelTreeRepository::setVersionPublished failed: %s",
+                 qPrintable(q.lastError().text()));
+        return false;
+    }
+    return q.numRowsAffected() > 0;
+}
+
+int ModelTreeRepository::nextVersionNumber(const QString& strategyId) const
+{
+    QSqlQuery q(db());
+    q.prepare(
+        "SELECT COALESCE(MAX(version_number), 0) + 1 "
+        "FROM strategy_versions WHERE strategy_id = :sid");
+    q.bindValue(":sid", strategyId);
+
+    if (q.exec() && q.next())
+        return q.value(0).toInt();
+    return 1;
+}
+
+bool ModelTreeRepository::updateBindingVersion(const QString& bindingId, const QString& versionId)
+{
+    QSqlQuery q(db());
+    q.prepare(
+        "UPDATE live_strategy_bindings "
+        "SET version_id = :vid, updated_at = :now "
+        "WHERE binding_id = :bid");
+    q.bindValue(":vid", versionId);
+    q.bindValue(":now", QDateTime::currentDateTimeUtc().toString(Qt::ISODate));
+    q.bindValue(":bid", bindingId);
+
+    if (!q.exec()) {
+        qWarning("ModelTreeRepository::updateBindingVersion failed: %s",
+                 qPrintable(q.lastError().text()));
+        return false;
+    }
+    return q.numRowsAffected() > 0;
+}
+
+// ---------------------------------------------------------------------------
+// v2 → v3 migration
+// ---------------------------------------------------------------------------
+
+bool ModelTreeRepository::migrateV2toV3()
+{
+    QSqlDatabase database = db();
+
+    // Check if strategy_definitions table exists and has data to migrate
+    QSqlQuery check(database);
+    check.exec("SELECT COUNT(*) FROM strategy_definitions");
+    if (!check.next() || check.value(0).toInt() == 0) {
+        setMetadata("schema_version", "3");
+        return true;
+    }
+
+    if (!database.transaction()) {
+        qWarning("migrateV2toV3: failed to start transaction");
+        return false;
+    }
+
+    QSqlQuery q(database);
+
+    // Migrate each strategy_definitions row into strategies + strategy_versions
+    q.exec("SELECT * FROM strategy_definitions");
+    while (q.next()) {
+        DbStrategyDefinition def = definitionFromQuery(q);
+        QString now = QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
+
+        // Insert into strategies (reuse the same defId as strategyId)
+        QSqlQuery ins(database);
+        ins.prepare(
+            "INSERT OR IGNORE INTO strategies "
+            "(strategy_id, name, strategy_kind, lifecycle_state, description, tags, "
+            " is_archived, created_at, updated_at) "
+            "VALUES (:id, :name, :kind, :state, '', '', :archived, :created, :updated)");
+        ins.bindValue(":id",       def.strategyDefId);
+        ins.bindValue(":name",     def.name);
+        ins.bindValue(":kind",     def.strategyKind);
+        ins.bindValue(":state",    def.lifecycleState);
+        ins.bindValue(":archived", def.isArchived ? 1 : 0);
+        ins.bindValue(":created",  def.createdAt);
+        ins.bindValue(":updated",  def.updatedAt);
+        if (!ins.exec()) {
+            qWarning("migrateV2toV3: insert into strategies failed: %s",
+                     qPrintable(ins.lastError().text()));
+        }
+
+        // Create a single version row for the current config
+        QString versionId = QUuid::createUuid().toString(QUuid::WithoutBraces);
+        QSqlQuery insV(database);
+        insV.prepare(
+            "INSERT OR IGNORE INTO strategy_versions "
+            "(version_id, strategy_id, version_number, config_json, notes, "
+            " is_published, created_from_version_id, created_at) "
+            "VALUES (:vid, :sid, :vnum, :cfg, :notes, 1, NULL, :created)");
+        insV.bindValue(":vid",     versionId);
+        insV.bindValue(":sid",     def.strategyDefId);
+        insV.bindValue(":vnum",    def.version);
+        insV.bindValue(":cfg",     def.configJson);
+        insV.bindValue(":notes",   QStringLiteral("Migrated from v2 strategy_definitions"));
+        insV.bindValue(":created", def.createdAt);
+        if (!insV.exec()) {
+            qWarning("migrateV2toV3: insert into strategy_versions failed: %s",
+                     qPrintable(insV.lastError().text()));
+        }
+
+        // Update matching live_strategy_bindings to set version_id
+        QSqlQuery updB(database);
+        updB.prepare(
+            "UPDATE live_strategy_bindings "
+            "SET version_id = :vid "
+            "WHERE strategy_def_id = :did AND (version_id IS NULL OR version_id = '')");
+        updB.bindValue(":vid", versionId);
+        updB.bindValue(":did", def.strategyDefId);
+        updB.exec();
+    }
+
+    // Rename old table to backup
+    q.exec("ALTER TABLE strategy_definitions RENAME TO strategy_definitions_backup");
+
+    // Recreate strategy_definitions (empty) so fresh code referencing it doesn't fail
+    q.exec(
+        "CREATE TABLE IF NOT EXISTS strategy_definitions ("
+        "  strategy_def_id TEXT PRIMARY KEY,"
+        "  name TEXT NOT NULL DEFAULT '',"
+        "  strategy_kind INTEGER NOT NULL DEFAULT 0,"
+        "  config_json TEXT NOT NULL DEFAULT '{}',"
+        "  version INTEGER NOT NULL DEFAULT 1,"
+        "  lifecycle_state TEXT NOT NULL DEFAULT 'draft',"
+        "  is_archived INTEGER NOT NULL DEFAULT 0,"
+        "  created_at TEXT NOT NULL,"
+        "  updated_at TEXT NOT NULL,"
+        "  created_from_def_id TEXT"
+        ")");
+
+    if (!database.commit()) {
+        database.rollback();
+        qWarning("migrateV2toV3: commit failed");
+        return false;
+    }
+
+    setMetadata("schema_version", "3");
+    return true;
 }

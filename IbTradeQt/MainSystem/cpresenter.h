@@ -97,9 +97,10 @@ private slots:
     void onBacktestFinished(const Backtest::BacktestLoadedRun& run);
     void onBacktestFailed(const QString& reason);
 
-    // Rebuild the BacktestStrategySelector list from the current live tree.
-    // Called after any backend mutation (createStrategy, removeNode, loadFromDb).
     void refreshBacktestStrategies();
+    void refreshStrategyCatalog();
+    void openCatalogVersionInBacktest(const QString& catalogStrategyId,
+                                      const QString& catalogVersionId);
 
 private:
     PipelineDiagramWidget*              m_pDiagramWidget     = nullptr;

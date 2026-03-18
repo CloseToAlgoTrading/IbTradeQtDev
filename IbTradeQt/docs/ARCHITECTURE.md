@@ -7,12 +7,13 @@
 4. [Component Architecture](#component-architecture)
 5. [Design Patterns](#design-patterns)
 6. [Strategy Framework Architecture](#strategy-framework-architecture)
-7. [Data Flow Architecture](#data-flow-architecture)
-8. [Threading Architecture](#threading-architecture)
-9. [Database Architecture](#database-architecture)
-10. [UI Architecture](#ui-architecture)
-11. [CLI Architecture](#cli-architecture)
-12. [Key Classes Reference](#key-classes-reference)
+7. [Strategy Catalog and Versioning](#strategy-catalog-and-versioning)
+8. [Data Flow Architecture](#data-flow-architecture)
+9. [Threading Architecture](#threading-architecture)
+10. [Database Architecture](#database-architecture)
+11. [UI Architecture](#ui-architecture)
+12. [CLI Architecture](#cli-architecture)
+13. [Key Classes Reference](#key-classes-reference)
 
 ---
 
@@ -148,6 +149,14 @@ classDiagram
         +importFromJsonFile(path) bool
         +exportToJsonFile(path) bool
         +dataRoot() CBasicRoot*
+        +createStrategyCatalogEntry(name, kind, config, desc) QString
+        +createStrategyVersion(strategyId, config, notes, fromVersionId) QString
+        +listStrategyCatalog(includeArchived) QJsonArray
+        +listStrategyVersions(strategyId) QJsonArray
+        +publishVersion(versionId) bool
+        +bindLiveNodeToVersion(nodeId, strategyId, versionId) bool
+        +createLiveNodeForExistingCatalog(portfolioId, type, strategyId, versionId) QString
+        +isNodeDivergedFromVersion(nodeId) bool
     }
     class SystemBackendImpl {
         -m_root: CBasicRoot*
@@ -181,6 +190,9 @@ classDiagram
 | `strategyStateChanged(uuid, displayState)` | Runtime: strategy state changed |
 | `pnlUpdated(uuid, pnl)` | Runtime: PnL updated |
 | `brokerConnectionChanged(connected)` | Runtime: broker connect/disconnect |
+| `strategyCatalogChanged(strategyId)` | Strategy catalog entry created/updated |
+| `strategyVersionCreated(strategyId, versionId)` | New version snapshot created |
+| `nodeConfigDiverged(nodeId)` | Live node config differs from pinned version |
 
 ### DB-First Mutation Pattern
 
@@ -253,7 +265,7 @@ CREATE TABLE IF NOT EXISTS app_metadata (
 ```
 
 Key metadata entries:
-- `schema_version` — current schema version (value: `"1"`)
+- `schema_version` — current schema version (value: `"3"`)
 - `model_tree_migrated_from_json` — migration flag (value: `"true"` after one-time JSON import)
 
 ### Mapper — `ModelTreeMapper`
@@ -446,6 +458,12 @@ IbTradeQt/
 ├── Adapters/                # Port adapters (live + mock)
 ├── Supervision/             # Runtime lifecycle (Supervisor, StrategyRuntime)
 │
+├── StrategyManagementUI/    # Strategy Management tab (catalog + detail)
+│   ├── StrategyCatalogModel.h/cpp     # QAbstractItemModel for catalog tree
+│   ├── StrategyCatalogPanel.h/cpp     # Left panel: tree + search + filter
+│   ├── StrategyDetailPanel.h/cpp      # Right panel: metadata + versions + actions
+│   └── StrategyManagementPanel.h/cpp  # Splitter container (tab widget)
+│
 ├── DB/                      # Legacy SQLite (positions, trades)
 ├── CObjects/                # Common data objects
 ├── Common/                  # Shared utilities
@@ -636,6 +654,107 @@ classDiagram
 
 ---
 
+## Strategy Catalog and Versioning
+
+The strategy catalog provides centralized strategy management with immutable versioned config snapshots. It is the single source of truth for strategy authoring, versioning, and lifecycle management.
+
+### Schema (v3)
+
+```mermaid
+erDiagram
+    strategies {
+        TEXT strategy_id PK
+        TEXT name
+        INTEGER strategy_kind
+        TEXT lifecycle_state
+        TEXT description
+        TEXT tags
+        INTEGER is_archived
+        TEXT created_at
+        TEXT updated_at
+    }
+    strategy_versions {
+        TEXT version_id PK
+        TEXT strategy_id FK
+        INTEGER version_number
+        TEXT config_json
+        TEXT notes
+        INTEGER is_published
+        TEXT created_from_version_id
+        TEXT created_at
+    }
+    live_strategy_bindings {
+        TEXT binding_id PK
+        TEXT model_node_id FK
+        TEXT strategy_def_id FK
+        TEXT version_id FK
+        TEXT created_at
+        TEXT updated_at
+    }
+    strategies ||--o{ strategy_versions : "has versions"
+    strategies ||--o{ live_strategy_bindings : "bound to live nodes"
+    strategy_versions ||--o{ live_strategy_bindings : "pinned version"
+```
+
+**Key concepts:**
+
+- **Strategy** = long-lived family/container with metadata and lifecycle state (draft, active, testing, retired).
+- **Strategy Version** = immutable config snapshot. Once created, a version's `config_json` never changes. Versions can be marked as `published` (eligible for deployment and shown in pickers by default).
+- **Live binding** pins a live tree node to a specific version. Changing live parameters creates divergence, not a new version.
+- **Backtest runs** reference both `strategy_id` and `version_id` for reproducibility.
+- **Gated versioning**: version creation is always explicit and user-confirmed. The `detectVersionDivergence()` helper detects config drift but never silently creates versions.
+
+### Migration (v2 → v3)
+
+Schema migration in `ModelTreeRepository::initialize()`:
+1. `ALTER TABLE live_strategy_bindings ADD COLUMN version_id` (runs before migration)
+2. For each row in legacy `strategy_definitions`: insert into `strategies` + `strategy_versions` + update bindings
+3. Rename `strategy_definitions` to `strategy_definitions_backup` (kept for rollback safety)
+4. Recreate empty `strategy_definitions` for legacy code compatibility
+5. Set `schema_version = "3"`
+
+### Strategy Management Tab
+
+The **Strategy Management** tab (index 2 in `m_mainTabWidget`) is the single UI surface for strategy authoring and versioning:
+
+```mermaid
+flowchart LR
+    subgraph StrategyManagementPanel[Strategy Management Tab]
+        subgraph Left[StrategyCatalogPanel]
+            Search[Search + Status Filter]
+            Tree[QTreeView\nStrategyCatalogModel]
+            NewBtn[New Strategy]
+        end
+        subgraph Right[StrategyDetailPanel]
+            Meta[Metadata Editor\nname, kind, status, description, tags]
+            VerTable[Version Table\nversion, published, notes, created_at]
+            CfgViewer[Config JSON Viewer\n+ Diff vs Previous toggle]
+            Actions[Action Bar\nNew Version / Publish / Archive\nUse in Live / Open in Backtest]
+        end
+    end
+    Tree -->|strategySelected| Right
+```
+
+- `StrategyCatalogModel` (`QAbstractItemModel`) — flat list with columns: Name, Kind, Status, Versions, Last Updated. Supports sorting and combined filtering via `CatalogFilterProxy` (`QSortFilterProxyModel`).
+- `StrategyDetailPanel` shows metadata, version history, read-only JSON viewer with diff toggle, and action buttons.
+- `StrategyManagementPanel` combines both panels in a `QSplitter`.
+
+### Live Integration
+
+Context menu on portfolio nodes offers:
+- **Add New Strategy** — creates a new catalog entry + v1 + live tree node + binding.
+- **Use Existing Strategy** — picks a published version from the catalog via `QInputDialog`, creates a live tree node bound to the existing catalog entry (via `createLiveNodeForExistingCatalog()`), and loads the version's pipeline config.
+
+When starting a live strategy, if the node's config has diverged from its pinned version, the presenter prompts the user to save a new version before proceeding.
+
+### Backtest Integration
+
+`BacktestStrategySelector` shows both live-tree strategies and a "Catalog Strategies" section with expandable version lists. Selecting a catalog version populates the backtest workspace with that version's config and records `catalogStrategyId` + `catalogVersionId` in the `BacktestRuns` table.
+
+After a backtest run, the presenter compares the run's pipeline config against the pinned version's config. If they differ, the user is prompted to save as a new version.
+
+---
+
 ## Data Flow Architecture
 
 ### IB Connection Flow
@@ -768,7 +887,39 @@ erDiagram
         TEXT key PK
         TEXT value
     }
+    strategies {
+        TEXT strategy_id PK
+        TEXT name
+        INTEGER strategy_kind
+        TEXT lifecycle_state
+        TEXT description
+        TEXT tags
+        INTEGER is_archived
+        TEXT created_at
+        TEXT updated_at
+    }
+    strategy_versions {
+        TEXT version_id PK
+        TEXT strategy_id FK
+        INTEGER version_number
+        TEXT config_json
+        TEXT notes
+        INTEGER is_published
+        TEXT created_from_version_id
+        TEXT created_at
+    }
+    live_strategy_bindings {
+        TEXT binding_id PK
+        TEXT model_node_id FK
+        TEXT strategy_def_id FK
+        TEXT version_id FK
+        TEXT created_at
+        TEXT updated_at
+    }
     model_nodes ||--o{ model_nodes : "parent_uuid"
+    strategies ||--o{ strategy_versions : "has versions"
+    strategies ||--o{ live_strategy_bindings : "bound to live"
+    model_nodes ||--o{ live_strategy_bindings : "live node"
 ```
 
 **config_json rules (hard principle):**
@@ -800,17 +951,18 @@ flowchart TB
             OptionsMenu[Options — Connect/Disconnect]
             ConfigMenu[Configuration — Save/Load]
         end
-        subgraph Central[Central Widget]
-            TreeView["QTreeView\n(SystemTreeModel)"]
-        end
-        subgraph DockRight[Settings Dock]
-            SettingsTree[Settings TreeView]
-        end
-        subgraph DockBottom[Log Dock]
-            LogText[Log TextEdit]
+        subgraph Tabs[Main Tab Widget]
+            Tab0[Live Trading — tree + settings + log]
+            Tab1[Backtest — workspace + results]
+            Tab2[Strategy Management — catalog + detail]
         end
     end
 ```
+
+The main window uses a `QTabWidget` with three tabs:
+- **Live Trading** (index 0) — model tree, settings dock, log dock
+- **Backtest** (index 1) — backtest workspace, strategy selector, results
+- **Strategy Management** (index 2) — `StrategyManagementPanel` (catalog + detail splitter)
 
 ### Backend-Routed UI Mutations
 
@@ -821,7 +973,8 @@ flowchart LR
     subgraph ContextMenu[Tree Context Menu]
         AddAccount[Add Account]
         AddPortfolio[Add Portfolio]
-        AddStrategy[Add Strategy]
+        AddStrategy[Add New Strategy]
+        UseExisting[Use Existing Strategy]
         AddBlock[Add Block]
         RemoveNode[Remove Node]
         Rename[Rename]
@@ -959,6 +1112,15 @@ The `tst_cli_proof.h` test suite validates the CLI workflow with no GUI:
 | `Supervisor` | `Supervision/Supervisor.h` | Health checks, restart policies |
 | `StrategyRuntime` | `Supervision/StrategyRuntime.h` | Per-strategy thread + queue + runner |
 
+### Strategy Management UI
+
+| Class | File | Responsibility |
+|-------|------|----------------|
+| `StrategyCatalogModel` | `StrategyManagementUI/StrategyCatalogModel.h/cpp` | `QAbstractItemModel` — flat list of strategy families with columns |
+| `StrategyCatalogPanel` | `StrategyManagementUI/StrategyCatalogPanel.h/cpp` | Left panel: `QTreeView` + search + status filter + "New Strategy" button |
+| `StrategyDetailPanel` | `StrategyManagementUI/StrategyDetailPanel.h/cpp` | Right panel: metadata editor, version table, JSON viewer + diff, action buttons |
+| `StrategyManagementPanel` | `StrategyManagementUI/StrategyManagementPanel.h/cpp` | `QSplitter` container combining catalog + detail as tab index 2 |
+
 ### Database Layer
 
 | Class | File | Responsibility |
@@ -978,7 +1140,7 @@ The `tst_cli_proof.h` test suite validates the CLI workflow with no GUI:
 
 ## Test Coverage
 
-The test suite (39 suites, all passing) includes dedicated backend tests:
+The test suite includes dedicated backend tests:
 
 | Suite | File | Coverage |
 |-------|------|----------|
@@ -987,6 +1149,7 @@ The test suite (39 suites, all passing) includes dedicated backend tests:
 | `TestPersistence` | `tests/backend/tst_persistence.h` | Schema version, restart persistence, migration |
 | `TestRuntime` | `tests/backend/tst_runtime.h` | Broker state, runtime/persistent separation, backtester integration |
 | `TestCliProof` | `tests/backend/tst_cli_proof.h` | Full CLI workflow without GUI |
+| `TestStrategyCatalog` | `tests/backend/tst_strategy_catalog.h` | Strategy catalog CRUD, v2→v3 migration, versioning, divergence detection, gated versioning, catalog model, backtest integration, full lifecycle |
 
 ---
 

@@ -52,6 +52,10 @@ void DBHandler::initializeBacktestTables() {
     execSilent(ALTER_BACKTEST_RUNS_ADD_SCOPE_TYPE);
     execSilent(ALTER_BACKTEST_RUNS_ADD_SCOPE_REF_ID);
     execSilent(ALTER_BACKTEST_RUNS_ADD_STRATEGY_VERSION);
+
+    // v3 catalog columns (idempotent)
+    execSilent(ALTER_BACKTEST_RUNS_ADD_CATALOG_STRATEGY_ID);
+    execSilent(ALTER_BACKTEST_RUNS_ADD_CATALOG_VERSION_ID);
 }
 
 void DBHandler::disconnectDB() {
@@ -404,6 +408,8 @@ void DBHandler::slotFetchLoadedRun(const QString& runId) {
             run.scopeType           = q.value("scopeType").toString();
             run.scopeRefId          = q.value("scopeRefId").toString();
             run.strategyVersion     = q.value("strategyVersion").toInt();
+            run.catalogStrategyId   = q.value("catalogStrategyId").toString();
+            run.catalogVersionId    = q.value("catalogVersionId").toString();
         }
     }
 
@@ -552,9 +558,11 @@ void DBHandler::slotFetchRunsForDefinition(const QString& strategyDefId) {
         s.strategyDefId   = q.value("strategyDefId").toString();
         s.scopeType       = q.value("scopeType").toString();
         s.scopeRefId      = q.value("scopeRefId").toString();
-        s.strategyVersion = q.value("strategyVersion").isNull() ? 1 : q.value("strategyVersion").toInt();
-        s.totalReturn     = q.value("totalReturn").toDouble();
-        s.sharpeRatio     = q.value("sharpeRatio").toDouble();
+        s.strategyVersion    = q.value("strategyVersion").isNull() ? 1 : q.value("strategyVersion").toInt();
+        s.catalogStrategyId  = q.value("catalogStrategyId").toString();
+        s.catalogVersionId   = q.value("catalogVersionId").toString();
+        s.totalReturn        = q.value("totalReturn").toDouble();
+        s.sharpeRatio        = q.value("sharpeRatio").toDouble();
         result.append(s);
     }
     emit signalRunsForDefinitionFetched(result);

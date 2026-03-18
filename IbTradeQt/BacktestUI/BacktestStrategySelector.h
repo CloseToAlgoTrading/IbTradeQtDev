@@ -24,8 +24,9 @@ class QLabel;
 namespace BacktestUI {
 
 struct StrategyListItem {
-    QString     strategyId;        // live node UUID
-    QString     strategyDefId;     // catalog def UUID (may be empty for legacy nodes)
+    QString     strategyId;        // live node UUID (empty for catalog-only entries)
+    QString     strategyDefId;     // catalog strategy UUID (may be empty for legacy nodes)
+    QString     catalogVersionId;  // catalog version UUID
     int         version    = 1;    // definition version
     QString     name;
     QString     accountName;
@@ -33,25 +34,34 @@ struct StrategyListItem {
     QJsonObject pipelineConfig;
 };
 
+struct CatalogVersionItem {
+    QString strategyId;
+    QString strategyName;
+    QString versionId;
+    int     versionNumber = 1;
+    QString configJson;
+    bool    isPublished   = false;
+};
+
 class BacktestStrategySelector : public QWidget {
     Q_OBJECT
 public:
     explicit BacktestStrategySelector(QWidget* parent = nullptr);
 
-    // Replace the strategy list with a fresh snapshot from CPresenter.
     void populate(const QList<StrategyListItem>& items);
+    void populateCatalog(const QList<CatalogVersionItem>& catalogItems);
 
-    // Programmatically select (highlight) the strategy row for strategyId.
     void highlightStrategy(const QString& strategyId);
 
 signals:
-    // Emitted on double-click or Enter; CPresenter routes this to the backtest panel.
     void strategySelected(const QString& strategyId,
                           const QString& displayName,
                           const QString& portfolioPath,
                           const QJsonObject& pipelineConfig);
 
-    // Emitted when the user clicks the Refresh button.
+    void catalogVersionSelected(const QString& catalogStrategyId,
+                                const QString& catalogVersionId);
+
     void refreshRequested();
 
 private slots:
@@ -69,7 +79,8 @@ private:
     QPushButton* m_refreshButton = nullptr;
     QLabel*      m_countLabel    = nullptr;
 
-    QList<StrategyListItem> m_items; // current full (unfiltered) list
+    QList<StrategyListItem>   m_items;
+    QList<CatalogVersionItem> m_catalogItems;
 };
 
 } // namespace BacktestUI
