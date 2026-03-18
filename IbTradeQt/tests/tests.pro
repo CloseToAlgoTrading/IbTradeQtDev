@@ -213,6 +213,8 @@ HEADERS += \
     backend/tst_persistence.h \
     backend/tst_runtime.h \
     backend/tst_cli_proof.h \
+    backend/tst_strategy_definition.h \
+    integration/tst_adapter_pure_backtest.h \
     ../Backend/ISystemBackend.h \
     ../Backend/SystemBackendImpl.h \
     ../Backend/ModelNodeRecord.h \

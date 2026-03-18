@@ -5,16 +5,20 @@
 #include "mandatoryFieldRegistration.h"
 #include "mandatoryFieldKeys.h"
 #include "Pipeline/PipelineFactory.h"
+#include "Pipeline/StrategyPipelineRunner.h"
 #include "Supervision/Supervisor.h"
 #include "Supervision/StrategyRuntime.h"
 #include "IBComm/MarketDataRouter.h"
 #include "Adapters/MockExecutionAdapter.h"
 #include "Adapters/MockPositionRepository.h"
 #include "Backtest/BacktestDataTypes.h"
+#include "Backtest/SimulatedLedger.h"
+#include "Common/IClock.h"
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QFile>
+#include <memory>
 
 class CPipelineStrategyAdapter : public CBaseModel
 {
@@ -23,13 +27,22 @@ class CPipelineStrategyAdapter : public CBaseModel
 public:
     enum class ExecutionMode { DryRun, Live, Backtest };
 
-    // Per-instance dependency injection for backtest mode.
-    // All fields must be non-null when used with ExecutionMode::Backtest.
+    // Per-instance dependency injection for backtest/test mode.
+    //
+    // When clock is non-null (pure-backtest path):
+    //   start() builds StrategyPipelineRunner directly — no supervisor, no threading.
+    //   Required: execPort, clock, ledger.
+    //
+    // When clock is null and supervisor is non-null (supervised path, legacy tests):
+    //   start() delegates to Supervisor::addStrategy() as before.
+    //   Required: router, supervisor, execPort, posRepo.
     struct BacktestContext {
-        IBComm::MarketDataRouter*        router     = nullptr;
-        Supervision::Supervisor*         supervisor = nullptr;
-        Ports::IOrderExecutionPort*      execPort   = nullptr;
-        Ports::IPositionRepositoryPort*  posRepo    = nullptr;
+        IBComm::MarketDataRouter*        router     = nullptr; // unused in pure-backtest mode
+        Supervision::Supervisor*         supervisor = nullptr; // unused in pure-backtest mode
+        Ports::IOrderExecutionPort*      execPort   = nullptr; // SimulatedExecutionAdapter*
+        Ports::IPositionRepositoryPort*  posRepo    = nullptr; // unused in pure-backtest mode
+        IClock*                          clock      = nullptr; // non-null → pure-backtest path
+        Backtest::SimulatedLedger*       ledger     = nullptr; // positionRepo for runner
     };
 
     explicit CPipelineStrategyAdapter(QObject *parent = nullptr)
@@ -70,13 +83,18 @@ public:
     static IBComm::MarketDataRouter* globalRouter() { return s_globalRouter; }
     static Supervision::Supervisor* globalSupervisor() { return s_globalSupervisor; }
 
-    // Inject per-instance context for backtest mode.
+    // Inject per-instance context for backtest/test mode.
     // Call this before start(). Automatically sets ExecutionMode::Backtest.
     void injectBacktestContext(const BacktestContext& ctx) {
         m_injectedContext    = ctx;
         m_useInjectedContext = true;
         m_execMode           = ExecutionMode::Backtest;
     }
+
+    // --- Strategy catalog identity (runtime-only, not persisted in config_json) ---
+    // Populated by SystemBackendImpl::loadFromDb() from live_strategy_bindings table.
+    QString strategyDefinitionId() const { return m_strategyDefinitionId; }
+    void setStrategyDefinitionId(const QString& defId) { m_strategyDefinitionId = defId; }
 
     ExecutionMode executionMode() const { return m_execMode; }
     void setExecutionMode(ExecutionMode mode) { m_execMode = mode; }
@@ -117,19 +135,49 @@ public:
 
     // --- CGenericModelApi overrides ---
 
+    // Non-owning accessor — used by BacktestSession to wire replayer signals after start().
+    Pipeline::StrategyPipelineRunner* backtestPipelineRunner() const {
+        return m_backtestRunner.get();
+    }
+
     bool start() override {
         if (m_pipelineRunning) return true;
         if (m_pipelineConfig.isEmpty()) return false;
 
         if (m_useInjectedContext) {
-            // Backtest mode — must use injected context; static globals are forbidden
+            if (m_injectedContext.clock != nullptr) {
+                // ── Pure-backtest mode ──────────────────────────────────────────────
+                // Single-threaded, no supervisor. SimulatedClock drives time;
+                // SimulatedLedger serves as positionRepo and ledger.
+                Q_ASSERT_X(m_injectedContext.execPort != nullptr &&
+                           m_injectedContext.ledger   != nullptr,
+                           "CPipelineStrategyAdapter::start",
+                           "Pure-backtest mode requires execPort and ledger");
+
+                Pipeline::BlockGraph graph = Pipeline::PipelineFactory::buildGraph(
+                    m_pipelineConfig, m_injectedContext.execPort);
+
+                m_backtestRunner = std::make_unique<Pipeline::StrategyPipelineRunner>(
+                    graph, m_injectedContext.execPort, m_injectedContext.ledger);
+                m_backtestRunner->wireAlphaSignals();
+
+                for (auto* alpha : m_backtestRunner->graph().alphaBlocks)
+                    alpha->setClock(m_injectedContext.clock);
+
+                m_runtimeName     = getName() + "_bt_"
+                                  + m_uuid.toString(QUuid::WithoutBraces).left(8);
+                m_pipelineRunning = true;
+                return true;
+            }
+
+            // ── Legacy supervised path (used by some existing tests) ────────────
+            // Requires router, supervisor, execPort, posRepo all non-null.
             Q_ASSERT_X(m_injectedContext.router     != nullptr &&
                        m_injectedContext.supervisor  != nullptr &&
                        m_injectedContext.execPort    != nullptr &&
                        m_injectedContext.posRepo     != nullptr,
                        "CPipelineStrategyAdapter::start",
-                       "Backtest mode requires fully injected context — "
-                       "all BacktestContext fields must be non-null");
+                       "Supervised backtest mode requires fully injected context");
 
             QString runtimeName = getName() + "_bt_" + m_uuid.toString(QUuid::WithoutBraces).left(8);
             auto* execPort = m_injectedContext.execPort;
@@ -213,8 +261,8 @@ public:
             }
         }
 
-        int alphaCount = m_pipelineConfig.value("alphas").toArray().size();
-        int riskCount = m_pipelineConfig.value("risks").toArray().size();
+        int alphaCount = m_pipelineConfig.value(Pipeline::Key::Alphas).toArray().size();
+        int riskCount  = m_pipelineConfig.value(Pipeline::Key::Risks).toArray().size();
         info["alpha_blocks"] = alphaCount;
         info["risk_blocks"] = riskCount;
         info["merge_policy"] = m_pipelineConfig.value("mergePolicy").toString("none");
@@ -225,25 +273,35 @@ public:
 
     QJsonObject toJson() const override {
         QJsonObject json = CBaseModel::toJson();
-        json["pipelineConfig"] = m_pipelineConfig;
+        json[Pipeline::Key::PipelineConfig] = m_pipelineConfig;
+        // m_strategyDefinitionId is intentionally NOT written here.
+        // The live_strategy_bindings table is the authoritative source.
         return json;
     }
 
     void fromJson(const QJsonObject& json) override {
         CBaseModel::fromJson(json);
-        if (json.contains("pipelineConfig")) {
-            m_pipelineConfig = json["pipelineConfig"].toObject();
+        if (json.contains(Pipeline::Key::PipelineConfig)) {
+            m_pipelineConfig = json[Pipeline::Key::PipelineConfig].toObject();
             updateParametersFromConfig();
         }
+        // Read as advisory cache only — not authoritative. Authoritative population
+        // happens in SystemBackendImpl::loadFromDb() via the bindings table.
+        if (json.contains("strategyDefinitionId"))
+            m_strategyDefinitionId = json["strategyDefinitionId"].toString();
     }
 
 private:
     void stopPipeline() {
         if (m_pipelineRunning && !m_runtimeName.isEmpty()) {
-            Supervision::Supervisor* activeSupervisor =
-                m_useInjectedContext ? m_injectedContext.supervisor : s_globalSupervisor;
-            if (activeSupervisor) {
-                activeSupervisor->removeStrategy(m_runtimeName);
+            if (m_backtestRunner) {
+                // Pure-backtest mode: just release the runner
+                m_backtestRunner.reset();
+            } else {
+                Supervision::Supervisor* activeSupervisor =
+                    m_useInjectedContext ? m_injectedContext.supervisor : s_globalSupervisor;
+                if (activeSupervisor)
+                    activeSupervisor->removeStrategy(m_runtimeName);
             }
         }
         m_pipelineRunning = false;
@@ -317,10 +375,10 @@ private:
             m_pipelineConfig["backtestProfile"] = profileObj;
         }
 
-        QJsonArray alphas = m_pipelineConfig.value("alphas").toArray();
+        QJsonArray alphas = m_pipelineConfig.value(Pipeline::Key::Alphas).toArray();
         for (int i = 0; i < alphas.size(); ++i) {
             QJsonObject alpha = alphas[i].toObject();
-            QJsonObject cfg = alpha.value("config").toObject();
+            QJsonObject cfg = alpha.value(Pipeline::Key::Config).toObject();
             QString prefix = QString("alpha_%1_").arg(i);
 
             for (auto it = cfg.begin(); it != cfg.end(); ++it) {
@@ -329,15 +387,15 @@ private:
                     cfg[it.key()] = QJsonValue::fromVariant(m_ParametersMap[key]);
                 }
             }
-            alpha["config"] = cfg;
+            alpha[Pipeline::Key::Config] = cfg;
             alphas[i] = alpha;
         }
-        m_pipelineConfig["alphas"] = alphas;
+        m_pipelineConfig[Pipeline::Key::Alphas] = alphas;
 
-        QJsonArray risks = m_pipelineConfig.value("risks").toArray();
+        QJsonArray risks = m_pipelineConfig.value(Pipeline::Key::Risks).toArray();
         for (int i = 0; i < risks.size(); ++i) {
             QJsonObject risk = risks[i].toObject();
-            QJsonObject cfg = risk.value("config").toObject();
+            QJsonObject cfg = risk.value(Pipeline::Key::Config).toObject();
             QString prefix = QString("risk_%1_").arg(i);
 
             for (auto it = cfg.begin(); it != cfg.end(); ++it) {
@@ -346,10 +404,10 @@ private:
                     cfg[it.key()] = QJsonValue::fromVariant(m_ParametersMap[key]);
                 }
             }
-            risk["config"] = cfg;
+            risk[Pipeline::Key::Config] = cfg;
             risks[i] = risk;
         }
-        m_pipelineConfig["risks"] = risks;
+        m_pipelineConfig[Pipeline::Key::Risks] = risks;
     }
 
     void updateInfoFromRuntime() {
@@ -364,6 +422,15 @@ private:
     // Per-instance backtest context (set via injectBacktestContext())
     BacktestContext m_injectedContext;
     bool m_useInjectedContext = false;
+
+    // Pure-backtest runner — non-null only after start() in pure-backtest mode.
+    // BacktestSession accesses this via backtestPipelineRunner().
+    std::unique_ptr<Pipeline::StrategyPipelineRunner> m_backtestRunner;
+
+    // Runtime-only identity field. Not persisted in config_json.
+    // Populated by SystemBackendImpl::loadFromDb() from live_strategy_bindings table.
+    // live_strategy_bindings is the authoritative source for the node→definition mapping.
+    QString m_strategyDefinitionId;
 
     MockExecutionAdapter m_mockExecution;
     MockPositionRepository m_mockPositionRepo;

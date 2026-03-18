@@ -5,7 +5,9 @@
 #include "cstrategyfactory.h"
 #include "cpipelinestrategyadapter.h"
 #include "ModelTreeMapper.h"
+#include "PipelineConstants.h"
 #include <QUuid>
+#include <QDateTime>
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QFile>
@@ -31,6 +33,140 @@ bool SystemBackendImpl::isStrategyType(ModelType type)
         || type == ModelType::STRATEGY_MA
         || type == ModelType::STRATEGY_MOMENTUM
         || type == ModelType::STRATEGY_PIPELINE;
+}
+
+// ---------------------------------------------------------------------------
+// Private helpers
+// ---------------------------------------------------------------------------
+
+QString SystemBackendImpl::nowUtcIso()
+{
+    return QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
+}
+
+QJsonObject SystemBackendImpl::extractCanonicalStrategyConfig(const QJsonObject& raw)
+{
+    QJsonObject canonical;
+    // Whitelist only the truly independent fields that define strategy behaviour.
+    // `parameters` is deliberately excluded: it is a runtime-derived view on top of
+    // `pipelineConfig` (populated via updateParametersFromConfig).  Versioning
+    // `pipelineConfig` alone is sufficient and avoids spurious version bumps caused
+    // by default bt_* / execution_mode entries being added when setPipelineConfig is
+    // called for the first time after model creation.
+    // Excludes: uuid, name, genericInfo, parameters (derived), and deployment-only fields.
+    static const QLatin1StringView keys[] = {
+        Pipeline::Key::PipelineConfig,
+        Pipeline::Key::AssetList,
+    };
+    for (auto k : keys) {
+        if (raw.contains(k))
+            canonical[k] = raw[k];
+    }
+    return canonical;
+}
+
+QJsonObject SystemBackendImpl::definitionToJson(const DbStrategyDefinition& def)
+{
+    QJsonObject obj;
+    obj["strategyDefId"]    = def.strategyDefId;
+    obj["name"]             = def.name;
+    obj["strategyKind"]     = def.strategyKind;
+    obj["configJson"]       = def.configJson;
+    obj["version"]          = def.version;
+    obj["lifecycleState"]   = def.lifecycleState;
+    obj["isArchived"]       = def.isArchived;
+    obj["createdAt"]        = def.createdAt;
+    obj["updatedAt"]        = def.updatedAt;
+    if (!def.createdFromDefId.isEmpty())
+        obj["createdFromDefId"] = def.createdFromDefId;
+    return obj;
+}
+
+void SystemBackendImpl::createDefinitionAndBinding(const QString& nodeUuid,
+                                                    const QString& name,
+                                                    int strategyKind,
+                                                    const QJsonObject& canonicalConfig)
+{
+    QString defId = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    QString now   = nowUtcIso();
+
+    DbStrategyDefinition def;
+    def.strategyDefId  = defId;
+    def.name           = name;
+    def.strategyKind   = strategyKind;
+    def.configJson     = QString::fromUtf8(
+        QJsonDocument(canonicalConfig).toJson(QJsonDocument::Compact));
+    def.version        = 1;
+    def.lifecycleState = QStringLiteral("active");
+    def.isArchived     = false;
+    def.createdAt      = now;
+    def.updatedAt      = now;
+
+    if (!m_repo->createStrategyDefinition(def)) {
+        qWarning("SystemBackendImpl::createDefinitionAndBinding: "
+                 "failed to persist strategy_definitions row for node %s",
+                 qPrintable(nodeUuid));
+        return;
+    }
+
+    DbLiveStrategyBinding binding;
+    binding.bindingId     = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    binding.modelNodeId   = nodeUuid;
+    binding.strategyDefId = defId;
+    binding.createdAt     = now;
+    binding.updatedAt     = now;
+
+    if (!m_repo->createLiveBinding(binding)) {
+        qWarning("SystemBackendImpl::createDefinitionAndBinding: "
+                 "failed to persist live_strategy_bindings row for node %s",
+                 qPrintable(nodeUuid));
+        return;
+    }
+
+    // Populate runtime field on the in-memory adapter
+    CGenericModelApi* node = findNodeByUuid(nodeUuid);
+    if (auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(node))
+        adapter->setStrategyDefinitionId(defId);
+}
+
+void SystemBackendImpl::syncDefinitionFromNode(const QString& strategyNodeUuid)
+{
+    auto nodeOpt = m_repo->fetchNode(strategyNodeUuid);
+    if (!nodeOpt) return;
+
+    // Build raw node config from the in-memory model (most up-to-date after a mutation)
+    CGenericModelApi* node = findNodeByUuid(strategyNodeUuid);
+    if (!node) return;
+
+    QJsonObject rawConfig   = ModelTreeMapper::nodeConfigJson(node);
+    QJsonObject canonical   = extractCanonicalStrategyConfig(rawConfig);
+    QByteArray  newBytes    = QJsonDocument(canonical).toJson(QJsonDocument::Compact);
+
+    DbLiveStrategyBinding binding = m_repo->fetchBindingForNode(strategyNodeUuid);
+    if (!binding.isValid()) {
+        qWarning("[syncDefinitionFromNode] no binding for strategy %s — skipping sync",
+                 qPrintable(strategyNodeUuid));
+        return;
+    }
+
+    DbStrategyDefinition def = m_repo->fetchStrategyDefinition(binding.strategyDefId);
+    if (!def.isValid()) {
+        qWarning("[syncDefinitionFromNode] definition %s missing — skipping sync",
+                 qPrintable(binding.strategyDefId));
+        return;
+    }
+
+    QByteArray existingBytes = QJsonDocument::fromJson(def.configJson.toUtf8())
+                                   .toJson(QJsonDocument::Compact);
+    if (newBytes == existingBytes)
+        return; // Content unchanged — no version bump, no write, no signal
+
+    def.configJson  = QString::fromUtf8(newBytes);
+    def.version    += 1;
+    def.updatedAt   = nowUtcIso();
+
+    m_repo->updateStrategyDefinition(def);
+    emit strategyDefinitionChanged(binding.strategyDefId);
 }
 
 bool SystemBackendImpl::isDescendantOf(CGenericModelApi* node, CGenericModelApi* potentialAncestor)
@@ -205,6 +341,12 @@ QString SystemBackendImpl::createStrategy(const QString& portfolioId, ModelType 
 
     m_uuidIndex.insert(uuid, model.data());
     wireRuntimeSignals(model.data());
+
+    // Auto-create canonical definition + live binding for the new strategy node.
+    QJsonObject rawConfig  = ModelTreeMapper::nodeConfigJson(model.data());
+    QJsonObject canonical  = extractCanonicalStrategyConfig(rawConfig);
+    createDefinitionAndBinding(uuid, model->getName(), static_cast<int>(type), canonical);
+
     emit nodeCreated(uuid, portfolioId, rec.modelType);
     return uuid;
 }
@@ -215,6 +357,13 @@ bool SystemBackendImpl::removeNode(const QString& uuid)
     if (!node || node == m_root) return false;
     CGenericModelApi* parent = node->getParentModel();
     if (!parent) return false;
+
+    // For strategy nodes: remove the live binding but keep the definition intact.
+    // Definition is a research artifact and stays in the catalog until explicitly archived.
+    if (isStrategyType(static_cast<ModelType>(node->modelType()))) {
+        m_repo->removeBindingForNode(uuid);
+        // Definition row is intentionally NOT deleted or auto-archived here.
+    }
 
     if (!m_repo->deleteNode(uuid)) {
         qWarning("SystemBackend: failed to delete node %s", qPrintable(uuid));
@@ -321,23 +470,9 @@ bool SystemBackendImpl::moveNode(const QString& uuid, const QString& newParentUu
 
 QString SystemBackendImpl::categoryToJsonKey(const QString& category, bool& isArray)
 {
-    isArray = false;
-    if (category == "Alpha" || category == "alpha" || category == "alphas") {
-        isArray = true; return "alphas";
-    }
-    if (category == "Risk" || category == "risk" || category == "risks") {
-        isArray = true; return "risks";
-    }
-    if (category == "Selection" || category == "selection" || category == "selections") {
-        isArray = true; return "selections";
-    }
-    if (category == "Rebalance" || category == "rebalance") {
-        isArray = false; return "rebalance";
-    }
-    if (category == "Execution" || category == "execution") {
-        isArray = false; return "execution";
-    }
-    return category;
+    QLatin1StringView key = Pipeline::categoryKey(category);
+    isArray = Pipeline::categoryIsArray(category);
+    return key.isEmpty() ? category : QString(key);
 }
 
 bool SystemBackendImpl::addBlock(const QString& strategyId, const QString& category, const QString& blockId, const QJsonObject& defaultConfig)
@@ -355,20 +490,21 @@ bool SystemBackendImpl::addBlock(const QString& strategyId, const QString& categ
     if (isArray) {
         QJsonArray arr = config.value(key).toArray();
         QJsonObject block;
-        block["blockId"] = blockId;
-        block["config"] = defaultConfig;
+        block[Pipeline::Key::BlockId] = blockId;
+        block[Pipeline::Key::Config]  = defaultConfig;
         arr.append(block);
         config[key] = arr;
     } else {
         QJsonObject block;
-        block["blockId"] = blockId;
-        block["config"] = defaultConfig;
+        block[Pipeline::Key::BlockId] = blockId;
+        block[Pipeline::Key::Config]  = defaultConfig;
         config[key] = block;
     }
 
     adapter->setPipelineConfig(config);
 
     persistNode(node);
+    syncDefinitionFromNode(strategyId);
 
     emit pipelineConfigChanged(strategyId, config);
     return true;
@@ -397,6 +533,7 @@ bool SystemBackendImpl::removeBlock(const QString& strategyId, const QString& ca
 
     adapter->setPipelineConfig(config);
     persistNode(node);
+    syncDefinitionFromNode(strategyId);
 
     emit pipelineConfigChanged(strategyId, config);
     return true;
@@ -428,6 +565,10 @@ bool SystemBackendImpl::updateNodeConfig(const QString& uuid, const QJsonObject&
 
     if (!m_repo->updateNode(rec)) return false;
 
+    // Sync canonical definition for strategy nodes
+    if (isStrategyType(static_cast<ModelType>(node->modelType())))
+        syncDefinitionFromNode(uuid);
+
     emit configChanged(uuid);
     return true;
 }
@@ -450,6 +591,7 @@ bool SystemBackendImpl::updatePipelineConfig(const QString& strategyId, const QJ
 
     adapter->setPipelineConfig(config);
     persistNode(node);
+    syncDefinitionFromNode(strategyId);
 
     emit pipelineConfigChanged(strategyId, config);
     return true;
@@ -594,6 +736,57 @@ bool SystemBackendImpl::loadFromDb()
     m_root = newRoot;
     rebuildUuidIndex();
     wireAllRuntimeSignals();
+
+    // --- Orphan repair + m_strategyDefinitionId population ---
+    // For each strategy node, ensure a canonical definition + binding exist.
+    for (const ModelNodeRecord& rec : records) {
+        if (!isStrategyType(static_cast<ModelType>(rec.modelType)))
+            continue;
+
+        const QString& nodeUuid = rec.uuid;
+        DbLiveStrategyBinding binding = m_repo->fetchBindingForNode(nodeUuid);
+
+        if (!binding.isValid()) {
+            qWarning("[repair] strategy node %s has no binding — auto-creating definition",
+                     qPrintable(nodeUuid));
+            QJsonObject canonical = extractCanonicalStrategyConfig(rec.config);
+            createDefinitionAndBinding(nodeUuid, rec.name,
+                                       rec.modelType, canonical);
+            continue;
+        }
+
+        DbStrategyDefinition def = m_repo->fetchStrategyDefinition(binding.strategyDefId);
+        if (!def.isValid()) {
+            qWarning("[repair] definition %s missing for binding — recreating from node config",
+                     qPrintable(binding.strategyDefId));
+            QJsonObject canonical = extractCanonicalStrategyConfig(rec.config);
+            // Reuse existing defId from the orphaned binding so other references stay valid
+            DbStrategyDefinition restored;
+            restored.strategyDefId  = binding.strategyDefId;
+            restored.name           = rec.name;
+            restored.strategyKind   = rec.modelType;
+            restored.configJson     = QString::fromUtf8(
+                QJsonDocument(canonical).toJson(QJsonDocument::Compact));
+            restored.version        = 1;
+            restored.lifecycleState = QStringLiteral("active");
+            restored.isArchived     = false;
+            restored.createdAt      = nowUtcIso();
+            restored.updatedAt      = restored.createdAt;
+            m_repo->createStrategyDefinition(restored);
+
+            // Populate runtime field
+            CGenericModelApi* node = findNodeByUuid(nodeUuid);
+            if (auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(node))
+                adapter->setStrategyDefinitionId(binding.strategyDefId);
+            continue;
+        }
+
+        // Binding and definition both valid — just populate the runtime field
+        CGenericModelApi* node = findNodeByUuid(nodeUuid);
+        if (auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(node))
+            adapter->setStrategyDefinitionId(binding.strategyDefId);
+    }
+
     emit treeLoaded();
     return true;
 }
@@ -614,6 +807,8 @@ bool SystemBackendImpl::importFromJsonFile(const QString& path)
 
     if (!m_repo->replaceAll(records)) return false;
 
+    // loadFromDb() will run orphan repair for any imported strategy nodes
+    // that lack bindings, creating their canonical definitions automatically.
     return loadFromDb();
 }
 
@@ -628,4 +823,160 @@ bool SystemBackendImpl::exportToJsonFile(const QString& path)
     QJsonDocument doc(rootJson);
     file.write(doc.toJson());
     return true;
+}
+
+// ---------------------------------------------------------------------------
+// Strategy Catalog
+// ---------------------------------------------------------------------------
+
+QString SystemBackendImpl::createStrategyDefinition(const QString& name, int kind,
+                                                     const QJsonObject& fullConfig)
+{
+    QString defId = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    QString now   = nowUtcIso();
+
+    DbStrategyDefinition def;
+    def.strategyDefId  = defId;
+    def.name           = name;
+    def.strategyKind   = kind;
+    def.configJson     = QString::fromUtf8(
+        QJsonDocument(fullConfig).toJson(QJsonDocument::Compact));
+    def.version        = 1;
+    def.lifecycleState = QStringLiteral("draft");
+    def.isArchived     = false;
+    def.createdAt      = now;
+    def.updatedAt      = now;
+
+    if (!m_repo->createStrategyDefinition(def))
+        return {};
+
+    emit strategyDefinitionChanged(defId);
+    return defId;
+}
+
+bool SystemBackendImpl::updateStrategyDefinition(const QString& defId,
+                                                  const QJsonObject& fullConfig)
+{
+    DbStrategyDefinition def = m_repo->fetchStrategyDefinition(defId);
+    if (!def.isValid()) return false;
+
+    QByteArray newBytes = QJsonDocument(fullConfig).toJson(QJsonDocument::Compact);
+    QByteArray existing = QJsonDocument::fromJson(def.configJson.toUtf8())
+                              .toJson(QJsonDocument::Compact);
+
+    if (newBytes == existing) return true; // no change
+
+    def.configJson  = QString::fromUtf8(newBytes);
+    def.version    += 1;
+    def.updatedAt   = nowUtcIso();
+
+    if (!m_repo->updateStrategyDefinition(def))
+        return false;
+
+    emit strategyDefinitionChanged(defId);
+    return true;
+}
+
+QJsonObject SystemBackendImpl::strategyDefinition(const QString& defId) const
+{
+    DbStrategyDefinition def = m_repo->fetchStrategyDefinition(defId);
+    if (!def.isValid()) return {};
+    return definitionToJson(def);
+}
+
+QJsonArray SystemBackendImpl::listStrategyDefinitions(bool includeArchived) const
+{
+    QJsonArray arr;
+    for (const auto& def : m_repo->listStrategyDefinitions(includeArchived))
+        arr.append(definitionToJson(def));
+    return arr;
+}
+
+bool SystemBackendImpl::archiveStrategyDefinition(const QString& defId)
+{
+    if (!m_repo->archiveStrategyDefinition(defId))
+        return false;
+    emit strategyDefinitionChanged(defId);
+    return true;
+}
+
+bool SystemBackendImpl::bindLiveNodeToDefinition(const QString& nodeId, const QString& defId)
+{
+    // Remove any existing binding first (one-to-one constraint)
+    m_repo->removeBindingForNode(nodeId);
+
+    QString now = nowUtcIso();
+    DbLiveStrategyBinding binding;
+    binding.bindingId     = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    binding.modelNodeId   = nodeId;
+    binding.strategyDefId = defId;
+    binding.createdAt     = now;
+    binding.updatedAt     = now;
+
+    if (!m_repo->createLiveBinding(binding))
+        return false;
+
+    // Update runtime field on in-memory adapter
+    CGenericModelApi* node = findNodeByUuid(nodeId);
+    if (auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(node))
+        adapter->setStrategyDefinitionId(defId);
+
+    return true;
+}
+
+QJsonObject SystemBackendImpl::strategyDefinitionForNode(const QString& nodeId) const
+{
+    DbLiveStrategyBinding binding = m_repo->fetchBindingForNode(nodeId);
+    if (!binding.isValid()) return {};
+
+    DbStrategyDefinition def = m_repo->fetchStrategyDefinition(binding.strategyDefId);
+    if (!def.isValid()) return {};
+
+    return definitionToJson(def);
+}
+
+// ---------------------------------------------------------------------------
+// Backtest Run Profiles
+// ---------------------------------------------------------------------------
+
+QString SystemBackendImpl::createBacktestRunProfile(const QString& ownerType,
+                                                     const QString& ownerRefId,
+                                                     const QString& name,
+                                                     const QJsonObject& runConfig)
+{
+    QString profileId = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    QString now       = nowUtcIso();
+
+    DbBacktestRunProfile profile;
+    profile.profileId     = profileId;
+    profile.ownerType     = ownerType;
+    profile.ownerRefId    = ownerRefId;
+    profile.name          = name;
+    profile.runConfigJson = QString::fromUtf8(
+        QJsonDocument(runConfig).toJson(QJsonDocument::Compact));
+    profile.createdAt     = now;
+    profile.updatedAt     = now;
+
+    if (!m_repo->createRunProfile(profile))
+        return {};
+
+    return profileId;
+}
+
+QJsonArray SystemBackendImpl::listBacktestRunProfiles(const QString& ownerType,
+                                                       const QString& ownerRefId) const
+{
+    QJsonArray arr;
+    for (const auto& p : m_repo->listRunProfiles(ownerType, ownerRefId)) {
+        QJsonObject obj;
+        obj["profileId"]     = p.profileId;
+        obj["ownerType"]     = p.ownerType;
+        obj["ownerRefId"]    = p.ownerRefId;
+        obj["name"]          = p.name;
+        obj["runConfigJson"] = p.runConfigJson;
+        obj["createdAt"]     = p.createdAt;
+        obj["updatedAt"]     = p.updatedAt;
+        arr.append(obj);
+    }
+    return arr;
 }

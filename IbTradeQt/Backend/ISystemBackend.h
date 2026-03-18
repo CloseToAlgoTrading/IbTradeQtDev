@@ -59,6 +59,40 @@ public:
     // ---- Access (transition period) ----
     virtual CBasicRoot* dataRoot() const = 0;
 
+    // ---- Strategy Catalog ----
+    // Creates a canonical strategy definition (independent of live tree placement).
+    // Returns the new definition UUID, or empty string on failure.
+    virtual QString     createStrategyDefinition(const QString& name, int kind,
+                                                 const QJsonObject& fullConfig) = 0;
+    // Updates the canonical config of an existing definition.
+    // Version increment and timestamp are computed by the implementation.
+    virtual bool        updateStrategyDefinition(const QString& defId,
+                                                 const QJsonObject& fullConfig) = 0;
+    // Returns a QJsonObject representing the definition, or empty object if not found.
+    virtual QJsonObject strategyDefinition(const QString& defId) const = 0;
+    // Lists all strategy definitions; set includeArchived to true to include archived ones.
+    virtual QJsonArray  listStrategyDefinitions(bool includeArchived = false) const = 0;
+    // Archives a definition (soft delete). Does not remove bindings or run history.
+    virtual bool        archiveStrategyDefinition(const QString& defId) = 0;
+    // Explicitly binds an existing live strategy node to a canonical definition.
+    // Used during import/migration; normally auto-created by createStrategy().
+    virtual bool        bindLiveNodeToDefinition(const QString& nodeId,
+                                                 const QString& defId) = 0;
+    // Returns the definition JSON for the strategy node's bound definition,
+    // or empty object if no binding exists.
+    virtual QJsonObject strategyDefinitionForNode(const QString& nodeId) const = 0;
+
+    // ---- Backtest Run Profiles ----
+    // owner_type: "strategy_definition" | "live_strategy" | "portfolio" | "account"
+    // owner_ref_id: UUID of the owning object.
+    // Returns the new profile UUID, or empty string on failure.
+    virtual QString    createBacktestRunProfile(const QString& ownerType,
+                                                const QString& ownerRefId,
+                                                const QString& name,
+                                                const QJsonObject& runConfig) = 0;
+    virtual QJsonArray listBacktestRunProfiles(const QString& ownerType,
+                                               const QString& ownerRefId) const = 0;
+
 signals:
     void nodeCreated(const QString& uuid, const QString& parentUuid, int modelType);
     void nodeRemoved(const QString& uuid);
@@ -73,6 +107,9 @@ signals:
     void pnlUpdated(const QString& uuid, double pnl);
     void brokerConnectionChanged(bool connected);
     void logMessage(const QString& source, const QString& level, const QString& message);
+
+    // Emitted when a canonical strategy definition's config or metadata changes.
+    void strategyDefinitionChanged(const QString& defId);
 };
 
 #endif // ISYSTEMBACKEND_H

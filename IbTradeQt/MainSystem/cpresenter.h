@@ -23,8 +23,11 @@ class SystemTreeModel;
 class SystemTreeDelegate;
 class ISystemBackend;
 
-namespace BacktestUI { class BacktestWorkspaceDock; }
-namespace Backtest   { class BacktestController;   }
+namespace BacktestUI {
+    class BacktestWorkspaceDock;
+    class BacktestStrategySelector;
+}
+namespace Backtest { class BacktestController; }
 
 class CPresenter : public QObject
 {
@@ -93,6 +96,10 @@ private slots:
     void onLoadRun(const QString& runId);
     void onBacktestFinished(const Backtest::BacktestLoadedRun& run);
     void onBacktestFailed(const QString& reason);
+
+    // Rebuild the BacktestStrategySelector list from the current live tree.
+    // Called after any backend mutation (createStrategy, removeNode, loadFromDb).
+    void refreshBacktestStrategies();
 
 private:
     PipelineDiagramWidget*              m_pDiagramWidget     = nullptr;

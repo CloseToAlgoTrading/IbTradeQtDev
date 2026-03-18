@@ -4,6 +4,7 @@
 #include "Backtest/YahooFinanceDataSource.h"
 #include "Pipeline/PipelineFactory.h"
 #include "Pipeline/StrategyPipelineRunner.h"
+#include "Strategies/Generic/cpipelinestrategyadapter.h"
 #include <QEventLoop>
 #include <QFile>
 #include <QJsonDocument>
@@ -40,6 +41,7 @@ void BacktestSession::run()
                  << "preloaded bars for" << m_preloadedBars.keys();
     } else {
         loadHistoricalData();
+        if (m_loadFailed) return;   // failed() already emitted inside loadHistoricalData()
         if (m_cancelled) {
             emit failed("Cancelled during data load");
             return;
@@ -116,18 +118,20 @@ void BacktestSession::buildObjectGraph()
         }
     }
 
-    // Build the pipeline graph directly (no supervisor/thread needed for backtest)
-    // The strategy runs in the same thread as the replay loop for determinism.
-    m_pipelineRunner = std::make_unique<Pipeline::StrategyPipelineRunner>(
-        Pipeline::PipelineFactory::buildGraph(pipelineConfig, m_execAdapter.get()),
-        m_execAdapter.get(),
-        m_ledger.get());
-    m_pipelineRunner->wireAlphaSignals();
+    // Build the pipeline via CPipelineStrategyAdapter — same interface as live mode.
+    // The adapter constructs StrategyPipelineRunner directly (no supervisor, no thread).
+    m_strategyAdapter = std::make_unique<CPipelineStrategyAdapter>();
+    m_strategyAdapter->setPipelineConfig(pipelineConfig);
 
-    // Inject SimulatedClock into all alpha blocks
-    for (auto* alpha : m_pipelineRunner->graph().alphaBlocks) {
-        alpha->setClock(m_clock.get());
-    }
+    CPipelineStrategyAdapter::BacktestContext ctx;
+    ctx.execPort = m_execAdapter.get();
+    ctx.clock    = m_clock.get();
+    ctx.ledger   = m_ledger.get();
+    m_strategyAdapter->injectBacktestContext(ctx);
+    m_strategyAdapter->start();
+
+    // m_pipelineRunner is a non-owning view — adapter owns the runner.
+    m_pipelineRunner = m_strategyAdapter->backtestPipelineRunner();
 
     // --- Wire signals in priority order (all Qt::DirectConnection, same thread) ---
 
@@ -152,7 +156,7 @@ void BacktestSession::buildObjectGraph()
 
     // Priority 3: strategy barClose — pipeline runner processes bar boundary
     connect(m_replayer.get(), &MarketDataReplayer::barClose,
-            m_pipelineRunner.get(), &Pipeline::StrategyPipelineRunner::onBarClose,
+            m_pipelineRunner, &Pipeline::StrategyPipelineRunner::onBarClose,
             Qt::DirectConnection);
 
     // Priority 4: ledger mark-to-market after strategy has processed barClose
@@ -228,7 +232,8 @@ void BacktestSession::loadHistoricalData()
     }
 
     if (!loadError.isEmpty()) {
-        m_cancelled = true;
+        m_cancelled  = true;
+        m_loadFailed = true;
         emit failed(loadError);
     }
 }

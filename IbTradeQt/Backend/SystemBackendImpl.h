@@ -60,6 +60,26 @@ public:
     // ---- Access ----
     CBasicRoot* dataRoot() const override { return m_root; }
 
+    // ---- Strategy Catalog ----
+    QString     createStrategyDefinition(const QString& name, int kind,
+                                         const QJsonObject& fullConfig) override;
+    bool        updateStrategyDefinition(const QString& defId,
+                                         const QJsonObject& fullConfig) override;
+    QJsonObject strategyDefinition(const QString& defId) const override;
+    QJsonArray  listStrategyDefinitions(bool includeArchived = false) const override;
+    bool        archiveStrategyDefinition(const QString& defId) override;
+    bool        bindLiveNodeToDefinition(const QString& nodeId,
+                                         const QString& defId) override;
+    QJsonObject strategyDefinitionForNode(const QString& nodeId) const override;
+
+    // ---- Backtest Run Profiles ----
+    QString    createBacktestRunProfile(const QString& ownerType,
+                                        const QString& ownerRefId,
+                                        const QString& name,
+                                        const QJsonObject& runConfig) override;
+    QJsonArray listBacktestRunProfiles(const QString& ownerType,
+                                       const QString& ownerRefId) const override;
+
 private:
     CGenericModelApi* findNodeByUuid(const QString& uuid) const;
     void rebuildUuidIndex();
@@ -67,10 +87,20 @@ private:
     void wireRuntimeSignals(CGenericModelApi* node);
     void persistNode(CGenericModelApi* node);
 
+    // Canonical strategy definition sync — the single point for all config mutations.
+    void syncDefinitionFromNode(const QString& strategyNodeUuid);
+    // Extracts the canonical config subset (parameters + pipelineConfig + assetList).
+    static QJsonObject extractCanonicalStrategyConfig(const QJsonObject& rawNodeConfigJson);
+    // Creates definition + binding for a new or orphaned strategy node.
+    void createDefinitionAndBinding(const QString& nodeUuid, const QString& name,
+                                    int strategyKind, const QJsonObject& canonicalConfig);
+    static QString nowUtcIso();
+
     static bool isStrategyType(ModelType type);
     static bool isDescendantOf(CGenericModelApi* node, CGenericModelApi* potentialAncestor);
-
     static QString categoryToJsonKey(const QString& category, bool& isArray);
+
+    static QJsonObject definitionToJson(const DbStrategyDefinition& def);
 
     CBasicRoot* m_root = nullptr;
     ModelTreeRepository* m_repo;

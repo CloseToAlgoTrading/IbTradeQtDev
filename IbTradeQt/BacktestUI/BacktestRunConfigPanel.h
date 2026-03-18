@@ -38,11 +38,15 @@ public:
     // set externally via setStrategyContext() before calling this.
     Backtest::BacktestRunConfig currentConfig() const;
 
-    // Called by BacktestWorkspaceDock after strategy selection
+    // Called by BacktestWorkspaceDock after strategy selection.
+    // strategyDefId and strategyVersion are set from the strategy catalog;
+    // they will be propagated into BacktestRunConfig when the user clicks Run.
     void setStrategyContext(const QString& strategyId,
                             const QString& displayName,
                             const QString& portfolioPath,
-                            const QString& pipelineConfigJson);
+                            const QString& pipelineConfigJson,
+                            const QString& strategyDefId   = {},
+                            int            strategyVersion = 1);
 
     // Progress / status (called by BacktestWorkspaceDock)
     void setProgress(int percent);
@@ -63,6 +67,8 @@ private:
     QString m_displayName;
     QString m_portfolioPath;
     QString m_pipelineConfigJson;
+    QString m_strategyDefId;
+    int     m_strategyVersion = 1;
 
     // Form fields
     QLineEdit*      m_symbolsEdit      = nullptr;

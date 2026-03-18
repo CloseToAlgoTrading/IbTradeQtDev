@@ -1,5 +1,6 @@
 #ifndef BACKTEST_BACKTESTDATATYPES_H
 #define BACKTEST_BACKTESTDATATYPES_H
+#include "BacktestConstants.h"
 
 // BacktestDataTypes.h
 //
@@ -72,16 +73,22 @@ struct BacktestProfile {
 // BacktestRunConfig — one-shot run input, built entirely in the Backtest UI
 // ---------------------------------------------------------------------------
 struct BacktestRunConfig {
-    QString     strategyId;
+    QString     strategyId;          // live node UUID (legacy; kept for backward compat)
     QString     strategyDisplayName;
-    QString     portfolioPath;      // e.g. "Account1/Portfolio2/MACrossover"
-    QString     pipelineConfigJson; // full pipeline JSON snapshot at time of run
+    QString     portfolioPath;       // e.g. "Account1/Portfolio2/MACrossover"
+    QString     pipelineConfigJson;  // full pipeline JSON snapshot at time of run
+
+    // --- canonical scope fields (see scopeRefId truth table in design) ---
+    QString     strategyDefId;       // canonical definition UUID; empty if not yet bound
+    QString     scopeType = QStringLiteral("strategy"); // "strategy" | "portfolio" | "account"
+    QString     scopeRefId;          // UUID of scope object (def UUID or node UUID per scopeType)
+    int         strategyVersion = 1; // definition version snapshot; callers should set this
 
     QStringList symbols;
     QDateTime   startDate;
     QDateTime   endDate;
     double      initialCapital  = 100'000.0;
-    QString     benchmarkSymbol;    // e.g. "SPY"; empty = no benchmark
+    QString     benchmarkSymbol;     // e.g. "SPY"; empty = no benchmark
 
     // Maps to BarResolution enum — stored as string for DB serialisation
     // Supported values: "Tick", "Sec5", "Min1", "Min5", "Min15", "Min30", "Hour1", "Day1"
@@ -110,6 +117,10 @@ struct BacktestRunConfig {
         obj["strategyDisplayName"] = strategyDisplayName;
         obj["portfolioPath"]       = portfolioPath;
         obj["pipelineConfigJson"]  = pipelineConfigJson;
+        obj["strategyDefId"]       = strategyDefId;
+        obj["scopeType"]           = scopeType;
+        obj["scopeRefId"]          = scopeRefId;
+        obj["strategyVersion"]     = strategyVersion;
         QJsonArray syms;
         for (const auto& s : symbols) syms.append(s);
         obj["symbols"]             = syms;
@@ -132,6 +143,10 @@ struct BacktestRunConfig {
         c.strategyDisplayName = obj.value("strategyDisplayName").toString();
         c.portfolioPath       = obj.value("portfolioPath").toString();
         c.pipelineConfigJson  = obj.value("pipelineConfigJson").toString();
+        c.strategyDefId       = obj.value("strategyDefId").toString();
+        c.scopeType           = obj.value("scopeType").toString(QString(Backtest::Scope::Strategy));
+        c.scopeRefId          = obj.value("scopeRefId").toString();
+        c.strategyVersion     = obj.value("strategyVersion").toInt(1);
         QJsonArray syms       = obj.value("symbols").toArray();
         for (const auto& v : syms) c.symbols.append(v.toString());
         c.startDate           = QDateTime::fromString(obj.value("startDate").toString(), Qt::ISODate);
@@ -155,7 +170,7 @@ struct BacktestRunConfig {
 // ---------------------------------------------------------------------------
 struct BacktestRunRecord {
     QString runId;              // UUID generated at run creation
-    QString strategyId;
+    QString strategyId;         // live node UUID (legacy; kept for backward compat)
     QString strategyDisplayName;
     QString portfolioPath;
     QString configJson;         // full BacktestRunConfig serialised to JSON
@@ -169,11 +184,17 @@ struct BacktestRunRecord {
     QString status;             // "Created" | "Running" | "Finished" | "Failed"
     QString errorText;
 
-    qint64  durationMs    = 0;
+    qint64  durationMs      = 0;
     QString engineVersion;      // app version string for reproducibility
     QString dataSourceId;
     QString dataRefreshedAt;    // UTC ISO 8601 — when HistoricalDataManager last fetched
     QString createdAt;          // UTC ISO 8601
+
+    // --- canonical scope fields ---
+    QString strategyDefId;      // canonical definition UUID
+    QString scopeType = QStringLiteral("strategy");  // "strategy" | "portfolio" | "account"
+    QString scopeRefId;         // UUID of scope object (see truth table in design)
+    int     strategyVersion = 1; // definition version snapshot at time of run
 };
 
 // ---------------------------------------------------------------------------

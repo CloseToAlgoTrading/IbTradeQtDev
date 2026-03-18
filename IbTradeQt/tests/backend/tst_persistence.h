@@ -44,8 +44,23 @@ private slots:
 
     void testSchemaVersionSet()
     {
+        // Schema version is now "2" after the strategy definitions migration
         auto repo = makeRepo("_ver");
-        QCOMPARE(repo->metadata("schema_version"), "1");
+        QCOMPARE(repo->metadata("schema_version"), "2");
+    }
+
+    void testSchemaVersionUpgradeFromV1()
+    {
+        // A fresh DB should initialize at v2; simulate a legacy v1 DB by
+        // manually resetting the metadata and re-initializing.
+        auto repo = makeRepo("_v1upgrade");
+        repo->setMetadata("schema_version", "1");
+
+        // Re-init with a second repo instance on the same path to trigger upgrade
+        QString conn2 = "persist_conn_" + m_connSuffix + "_v1upgrade_b";
+        auto repo2 = std::make_unique<ModelTreeRepository>(m_dbPath, conn2);
+        QVERIFY(repo2->initialize());
+        QCOMPARE(repo2->metadata("schema_version"), "2");
     }
 
     void testMigrationViaRecords()

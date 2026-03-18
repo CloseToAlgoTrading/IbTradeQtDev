@@ -18,6 +18,7 @@
 #include "cpipelinestrategyadapter.h"
 #include "IBComClientImpl.h"
 #include "Pipeline/BlockRegistry.h"
+#include "Pipeline/PipelineConstants.h"
 #include "Blocks/MomentumAlphaBlock.h"
 #include "Blocks/MeanReversionAlphaBlock.h"
 #include "Blocks/MovingAverageCrossoverAlphaBlock.h"
@@ -31,42 +32,42 @@ static void registerBuiltinBlocks()
     auto& reg = Pipeline::BlockRegistry::instance();
     if (reg.blockCount() > 0) return;
 
-    reg.registerBlock({"momentum-alpha", "Momentum Alpha", "Alpha",
+    reg.registerBlock({"momentum-alpha", "Momentum Alpha", Pipeline::Category::Alpha,
                        "Momentum-based signal: long when return > threshold",
                        Pipeline::Scope::Strategy, {{"period", 20}, {"threshold", 0.02}},
                        []() -> QObject* { return new Blocks::MomentumAlphaBlock(); }});
 
-    reg.registerBlock({"mean-reversion-alpha", "Mean Reversion Alpha", "Alpha",
+    reg.registerBlock({"mean-reversion-alpha", "Mean Reversion Alpha", Pipeline::Category::Alpha,
                        "Mean reversion: long/short when price deviates from moving average",
                        Pipeline::Scope::Strategy, {{"period", 20}, {"stdDevThreshold", 2.0}},
                        []() -> QObject* { return new Blocks::MeanReversionAlphaBlock(); }});
 
-    reg.registerBlock({"ma-crossover-alpha", "MA Crossover Alpha", "Alpha",
+    reg.registerBlock({"ma-crossover-alpha", "MA Crossover Alpha", Pipeline::Category::Alpha,
                        "Moving average crossover: long when fast MA > slow MA",
                        Pipeline::Scope::Strategy, {{"fastPeriod", 10}, {"slowPeriod", 30}},
                        []() -> QObject* { return new Blocks::MovingAverageCrossoverAlphaBlock(); }});
 
-    reg.registerBlock({"max-position-risk", "Max Position Risk", "Risk",
+    reg.registerBlock({"max-position-risk", "Max Position Risk", Pipeline::Category::Risk,
                        "Limits position size and total exposure",
                        Pipeline::Scope::Strategy, {{"maxPositionSize", 500.0}, {"maxTotalExposure", 3000.0}},
                        []() -> QObject* { return new Blocks::MaxPositionRiskBlock(); }});
 
-    reg.registerBlock({"market-order-execution", "Market Order Execution", "Execution",
+    reg.registerBlock({"market-order-execution", "Market Order Execution", Pipeline::Category::Execution,
                        "Executes market orders",
                        Pipeline::Scope::Strategy, {{"minQuantity", 1.0}},
                        []() -> QObject* { return new Blocks::MarketOrderExecutionBlock(); }});
 
-    reg.registerBlock({"limit-order-execution", "Limit Order Execution", "Execution",
+    reg.registerBlock({"limit-order-execution", "Limit Order Execution", Pipeline::Category::Execution,
                        "Executes limit orders with configurable offset",
                        Pipeline::Scope::Strategy, {{"minQuantity", 1.0}, {"limitOffset", 0.01}},
                        []() -> QObject* { return new Blocks::LimitOrderExecutionBlock(); }});
 
-    reg.registerBlock({"simple-rebalance", "Simple Rebalance", "Rebalance",
+    reg.registerBlock({"simple-rebalance", "Simple Rebalance", Pipeline::Category::Rebalance,
                        "Fixed-quantity rebalancer",
                        Pipeline::Scope::Strategy, {{"defaultQuantity", 100.0}},
                        []() -> QObject* { return new Blocks::SimpleRebalanceBlock(); }});
 
-    reg.registerBlock({"static-list-selection", "Static List Selection", "Selection",
+    reg.registerBlock({"static-list-selection", "Static List Selection", Pipeline::Category::Selection,
                        "Selects from a fixed list of symbols",
                        Pipeline::Scope::Strategy, {{"symbols", "AAPL,MSFT"}},
                        []() -> QObject* { return new Blocks::StaticListSelectionBlock(); }});

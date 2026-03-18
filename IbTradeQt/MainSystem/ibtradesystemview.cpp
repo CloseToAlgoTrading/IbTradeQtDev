@@ -2,6 +2,7 @@
 #include "GlobalStatusBar.h"
 #include "EventLogPanel.h"
 #include "ContextWorkspace.h"
+#include "BacktestUI/BacktestStrategySelector.h"
 #include <time.h>
 #include <QStandardItemModel>
 #include "GlobalDef.h"
@@ -9,6 +10,7 @@
 #include <QSharedPointer>
 #include "ciconhandler.h"
 #include <QSplitter>
+#include <QTabWidget>
 #include <QVBoxLayout>
 
 
@@ -82,6 +84,7 @@ void CIBTradeSystemView::setupConsoleLayout()
     //     -> splitter -> frame_4 -> test_treeView
     ui.test_treeView->setParent(nullptr);
 
+    // ── "Live Trading" tab content ──────────────────────────────────────────
     m_mainSplitter = new QSplitter(Qt::Horizontal, this);
     m_mainSplitter->addWidget(ui.test_treeView);
     m_mainSplitter->addWidget(m_contextWorkspace);
@@ -89,18 +92,60 @@ void CIBTradeSystemView::setupConsoleLayout()
     m_mainSplitter->setStretchFactor(1, 3);
     ui.test_treeView->setMinimumWidth(300);
 
+    // ── "Backtest" tab content ──────────────────────────────────────────────
+    // Left: strategy selector panel
+    m_backtestSelector = new BacktestUI::BacktestStrategySelector(this);
+
+    // Right: placeholder widget — CPresenter will reparent the BacktestWorkspaceDock
+    // inner widget here via addBacktestWorkspace().  We expose it as a plain
+    // QWidget so it can host whatever CPresenter injects.
+    auto* backtestRight = new QWidget(this);
+    backtestRight->setObjectName(QStringLiteral("BacktestRightPane"));
+    auto* backtestRightLayout = new QVBoxLayout(backtestRight);
+    backtestRightLayout->setContentsMargins(0, 0, 0, 0);
+    // "Nothing selected yet" placeholder — replaced when CPresenter injects the dock widget
+    auto* placeholder = new QLabel(
+        QStringLiteral("← Select a strategy to start a backtest"), backtestRight);
+    placeholder->setObjectName(QStringLiteral("BacktestPlaceholderLabel"));
+    placeholder->setAlignment(Qt::AlignCenter);
+    placeholder->setStyleSheet(QStringLiteral("color:#555; font-size:13px;"));
+    backtestRightLayout->addWidget(placeholder);
+
+    auto* backtestSplitter = new QSplitter(Qt::Horizontal, this);
+    backtestSplitter->addWidget(m_backtestSelector);
+    backtestSplitter->addWidget(backtestRight);
+    backtestSplitter->setStretchFactor(0, 0);  // selector: fixed-ish
+    backtestSplitter->setStretchFactor(1, 1);  // workspace: expands
+    backtestSplitter->setHandleWidth(4);
+
+    // ── Main tab widget ─────────────────────────────────────────────────────
+    m_mainTabWidget = new QTabWidget(this);
+    m_mainTabWidget->setTabPosition(QTabWidget::North);
+    m_mainTabWidget->setDocumentMode(false);
+    m_mainTabWidget->setStyleSheet(
+        "QTabWidget::pane { border:none; } "
+        "QTabBar::tab { padding:6px 18px; font-size:12px; } "
+        "QTabBar::tab:selected { font-weight:bold; }");
+    m_mainTabWidget->addTab(m_mainSplitter,    QStringLiteral("Live Trading"));
+    m_mainTabWidget->addTab(backtestSplitter,  QStringLiteral("Backtest"));
+
     // Replace the old central widget content with the new console layout.
-    // Hide old .ui splitter hierarchy -- we keep the widgets alive for
-    // backward compatibility but they are no longer displayed.
+    // Hide old .ui splitter hierarchy.
     ui.splitter_2->hide();
 
     auto* centralLayout = ui.verticalLayout_2;
     centralLayout->addWidget(m_globalStatusBar);
-    centralLayout->addWidget(m_mainSplitter, 1);
+    centralLayout->addWidget(m_mainTabWidget, 1);
 
     // Replace the old logging dock with EventLogPanel
     ui.dockWidget_Logging->hide();
     addDockWidget(Qt::BottomDockWidgetArea, m_eventLogPanel);
+}
+
+void CIBTradeSystemView::switchToBacktestTab()
+{
+    if (m_mainTabWidget)
+        m_mainTabWidget->setCurrentIndex(1);
 }
 
 Ui::IBTradeSystemClass CIBTradeSystemView::getUi()

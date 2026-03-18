@@ -76,6 +76,7 @@ private:
     static BacktestConfig buildBacktestConfig(const BacktestRunConfig& rc);
     static QString engineVersion();
     static QString downsample(const QVector<LedgerSnapshot>& curve, int maxPoints);
+    void cleanupWorker();
 
     QString                   m_dbConnectionName;
     QNetworkAccessManager*    m_networkManager = nullptr;

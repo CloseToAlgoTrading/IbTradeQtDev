@@ -6,6 +6,7 @@
 #include "modelConstants.h"
 #include "cmodelstateimpl.h"
 #include "mandatoryFieldKeys.h"
+#include "PipelineConstants.h"
 
 CBaseModel::CBaseModel(QObject *parent): CProcessingBase_v2(parent)
     , m_Models()
@@ -193,7 +194,7 @@ QJsonObject CBaseModel::toJson() const
     json["info"] = QJsonObject::fromVariantMap(m_InfoMap);
 
     // Serialize m_assetList
-    json["assetList"] = QJsonObject::fromVariantMap(m_assetList);
+    json[Pipeline::Key::AssetList] = QJsonObject::fromVariantMap(m_assetList);
 
     // Serialize m_genericInfo
     json["genericInfo"] = QJsonObject::fromVariantMap(m_genericInfo);
@@ -249,7 +250,7 @@ void CBaseModel::fromJson(const QJsonObject &json)
 
     setParameters(json["parameters"].toObject().toVariantMap());
     m_InfoMap = json["info"].toObject().toVariantMap();
-    m_assetList = json["assetList"].toObject().toVariantMap();
+    m_assetList = json[Pipeline::Key::AssetList].toObject().toVariantMap();
     setGenericInfo(json["genericInfo"].toObject().toVariantMap());
 
     // Backward compat: old configs stored name in "m_Name" and/or info["name"]

@@ -301,10 +301,12 @@ inline QSqlQuery query_insertBacktestRun(const DbBacktestRun& r, const QString& 
         "INSERT INTO BacktestRuns "
         "(runId, strategyId, strategyDisplayName, portfolioPath, configJson, symbols, "
         " startDate, endDate, status, errorText, durationMs, engineVersion, "
-        " dataSourceId, dataRefreshedAt, createdAt) "
+        " dataSourceId, dataRefreshedAt, createdAt, "
+        " strategyDefId, scopeType, scopeRefId, strategyVersion) "
         "VALUES (:runId,:strategyId,:strategyDisplayName,:portfolioPath,:configJson,"
         ":symbols,:startDate,:endDate,:status,:errorText,:durationMs,:engineVersion,"
-        ":dataSourceId,:dataRefreshedAt,:createdAt)");
+        ":dataSourceId,:dataRefreshedAt,:createdAt,"
+        ":strategyDefId,:scopeType,:scopeRefId,:strategyVersion)");
     q.bindValue(":runId",               r.runId);
     q.bindValue(":strategyId",          r.strategyId);
     q.bindValue(":strategyDisplayName", r.strategyDisplayName);
@@ -320,6 +322,10 @@ inline QSqlQuery query_insertBacktestRun(const DbBacktestRun& r, const QString& 
     q.bindValue(":dataSourceId",         r.dataSourceId);
     q.bindValue(":dataRefreshedAt",      r.dataRefreshedAt);
     q.bindValue(":createdAt",            r.createdAt);
+    q.bindValue(":strategyDefId",        r.strategyDefId);
+    q.bindValue(":scopeType",            r.scopeType);
+    q.bindValue(":scopeRefId",           r.scopeRefId);
+    q.bindValue(":strategyVersion",      r.strategyVersion);
     return q;
 }
 
@@ -496,6 +502,86 @@ inline QSqlQuery query_cachedBarRange(const QString& symbol,
     q.bindValue(":symbol",       symbol);
     q.bindValue(":resolution",   resolution);
     q.bindValue(":dataSourceId", dataSourceId);
+    return q;
+}
+
+// ---------------------------------------------------------------------------
+// BacktestRunProfiles DDL
+// owner_type: "strategy_definition" | "live_strategy" | "portfolio" | "account"
+// ---------------------------------------------------------------------------
+
+static const char* const TABLE_BACKTEST_RUN_PROFILES = "backtest_run_profiles";
+static const char* const CREATE_TABLE_BACKTEST_RUN_PROFILES =
+    "CREATE TABLE IF NOT EXISTS backtest_run_profiles ("
+    "profile_id      TEXT PRIMARY KEY, "
+    "owner_type      TEXT NOT NULL, "
+    "owner_ref_id    TEXT NOT NULL, "
+    "name            TEXT NOT NULL DEFAULT '', "
+    "run_config_json TEXT NOT NULL DEFAULT '{}', "
+    "created_at      TEXT NOT NULL, "
+    "updated_at      TEXT NOT NULL)";
+
+// ALTER TABLE migrations to extend BacktestRuns — errors silently ignored on re-run
+static const char* const ALTER_BACKTEST_RUNS_ADD_STRATEGY_DEF_ID =
+    "ALTER TABLE BacktestRuns ADD COLUMN strategyDefId   TEXT    DEFAULT ''";
+static const char* const ALTER_BACKTEST_RUNS_ADD_SCOPE_TYPE =
+    "ALTER TABLE BacktestRuns ADD COLUMN scopeType       TEXT    DEFAULT 'strategy'";
+static const char* const ALTER_BACKTEST_RUNS_ADD_SCOPE_REF_ID =
+    "ALTER TABLE BacktestRuns ADD COLUMN scopeRefId      TEXT    DEFAULT ''";
+static const char* const ALTER_BACKTEST_RUNS_ADD_STRATEGY_VERSION =
+    "ALTER TABLE BacktestRuns ADD COLUMN strategyVersion INTEGER DEFAULT 1";
+
+// ---------------------------------------------------------------------------
+// BacktestRunProfiles query functions
+// ---------------------------------------------------------------------------
+
+inline QSqlQuery query_insertBacktestRunProfile(const DbBacktestRunProfile& p, const QString& conn)
+{
+    QSqlQuery q(QSqlDatabase::database(conn));
+    q.prepare(
+        "INSERT INTO backtest_run_profiles "
+        "(profile_id, owner_type, owner_ref_id, name, run_config_json, created_at, updated_at) "
+        "VALUES (:pid, :otype, :oref, :name, :cfg, :created, :updated)");
+    q.bindValue(":pid",     p.profileId);
+    q.bindValue(":otype",   p.ownerType);
+    q.bindValue(":oref",    p.ownerRefId);
+    q.bindValue(":name",    p.name);
+    q.bindValue(":cfg",     p.runConfigJson);
+    q.bindValue(":created", p.createdAt);
+    q.bindValue(":updated", p.updatedAt);
+    return q;
+}
+
+inline QSqlQuery query_fetchRunProfilesForOwner(const QString& ownerType,
+                                                  const QString& ownerRefId,
+                                                  const QString& conn)
+{
+    QSqlQuery q(QSqlDatabase::database(conn));
+    q.prepare(
+        "SELECT * FROM backtest_run_profiles "
+        "WHERE owner_type = :otype AND owner_ref_id = :oref "
+        "ORDER BY updated_at DESC");
+    q.bindValue(":otype", ownerType);
+    q.bindValue(":oref",  ownerRefId);
+    return q;
+}
+
+// Returns runs for a canonical strategy definition, joining with metrics for display.
+// Ordered newest first.
+inline QSqlQuery query_fetchRunsForDefinition(const QString& strategyDefId, const QString& conn)
+{
+    QSqlQuery q(QSqlDatabase::database(conn));
+    q.prepare(
+        "SELECT r.runId, r.strategyId, r.strategyDefId, r.scopeType, r.scopeRefId, "
+        "       r.symbols, r.startDate, r.endDate, "
+        "       r.status, r.dataSourceId, r.createdAt, r.strategyVersion, "
+        "       COALESCE(m.totalReturn, 0) AS totalReturn, "
+        "       COALESCE(m.sharpeRatio, 0) AS sharpeRatio "
+        "FROM BacktestRuns r "
+        "LEFT JOIN BacktestMetrics m ON r.runId = m.runId "
+        "WHERE r.strategyDefId = :defId "
+        "ORDER BY r.createdAt DESC");
+    q.bindValue(":defId", strategyDefId);
     return q;
 }
 

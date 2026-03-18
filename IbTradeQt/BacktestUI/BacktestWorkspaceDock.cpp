@@ -85,14 +85,20 @@ void BacktestWorkspaceDock::selectStrategy(const QString& strategyId,
                                             const QString& displayName,
                                             const QString& portfolioPath,
                                             const Backtest::BacktestProfile& profile,
-                                            const QString& pipelineConfigJson) {
-    m_currentStrategyId   = strategyId;
-    m_currentDisplayName  = displayName;
-    m_currentPortfolioPath = portfolioPath;
+                                            const QString& pipelineConfigJson,
+                                            const QString& strategyDefId,
+                                            int            strategyVersion) {
+    m_currentStrategyId      = strategyId;
+    m_currentDisplayName     = displayName;
+    m_currentPortfolioPath   = portfolioPath;
+    m_currentStrategyDefId   = strategyDefId;
+    m_currentStrategyVersion = strategyVersion > 0 ? strategyVersion : 1;
 
     updateStrategyHeader();
 
-    m_configPanel->setStrategyContext(strategyId, displayName, portfolioPath, pipelineConfigJson);
+    m_configPanel->setStrategyContext(strategyId, displayName, portfolioPath,
+                                      pipelineConfigJson,
+                                      strategyDefId, m_currentStrategyVersion);
     m_configPanel->applyProfile(profile);
 
     // Clear result tabs since a different strategy is now selected
@@ -103,13 +109,23 @@ void BacktestWorkspaceDock::selectStrategy(const QString& strategyId,
 }
 
 void BacktestWorkspaceDock::updateStrategyHeader() {
+    // Show definition version badge when a catalog binding is known
+    QString versionBadge;
+    if (!m_currentStrategyDefId.isEmpty()) {
+        versionBadge = QString(
+            "<span style='color:#4a90d9; font-size:10px;'>"
+            "&nbsp;|&nbsp;def v%1</span>")
+            .arg(m_currentStrategyVersion);
+    }
     const QString text = QString(
         "<b>%1</b>"
         "<span style='color:#777; font-size:11px;'>&nbsp;&nbsp;%2</span>"
-        "<span style='color:#aaa; font-size:10px;'>&nbsp;|&nbsp;ID: %3</span>")
+        "<span style='color:#aaa; font-size:10px;'>&nbsp;|&nbsp;ID: %3</span>"
+        "%4")
         .arg(m_currentDisplayName)
         .arg(m_currentPortfolioPath)
-        .arg(m_currentStrategyId.left(8));
+        .arg(m_currentStrategyId.left(8))
+        .arg(versionBadge);
     m_headerLabel->setText(text);
 }
 

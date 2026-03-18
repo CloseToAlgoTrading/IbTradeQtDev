@@ -107,20 +107,25 @@ struct DbModelInfo {
 
 struct DbBacktestRun {
     QString runId;
-    QString strategyId;
+    QString strategyId;          // live node UUID (legacy, kept for backward compat)
     QString strategyDisplayName;
     QString portfolioPath;
     QString configJson;
     QString symbols;
     QString startDate;
     QString endDate;
-    QString status;         // "Created" | "Running" | "Finished" | "Failed"
+    QString status;              // "Created" | "Running" | "Finished" | "Failed"
     QString errorText;
-    qint64  durationMs    = 0;
+    qint64  durationMs      = 0;
     QString engineVersion;
     QString dataSourceId;
     QString dataRefreshedAt;
     QString createdAt;
+    // --- new scope/definition fields ---
+    QString strategyDefId;       // canonical definition UUID
+    QString scopeType   = QStringLiteral("strategy");  // "strategy" | "portfolio" | "account"
+    QString scopeRefId;          // UUID of scope object (see scopeRefId truth table in plan)
+    int     strategyVersion = 1; // definition version snapshot at time of run
 };
 
 struct DbBacktestMetrics {
@@ -176,9 +181,58 @@ struct DbBacktestRunSummary {
     QString status;
     QString dataSourceId;
     QString createdAt;
+    // Canonical scope fields (populated by query_fetchRunsForDefinition)
+    QString strategyDefId;
+    QString scopeType;
+    QString scopeRefId;
+    int     strategyVersion = 1;
     // Metrics flattened for display in Run History panel
     double  totalReturn  = 0.0;
     double  sharpeRatio  = 0.0;
+};
+
+// ---------------------------------------------------------------------------
+// Strategy catalog data types (stored in ModelTreeRepository DB)
+// ---------------------------------------------------------------------------
+
+struct DbStrategyDefinition {
+    QString strategyDefId;
+    QString name;
+    int     strategyKind    = 0;
+    QString configJson;        // canonical config: parameters + pipelineConfig + assetList
+    int     version         = 1;
+    QString lifecycleState  = QStringLiteral("draft");
+    bool    isArchived      = false;
+    QString createdAt;
+    QString updatedAt;
+    QString createdFromDefId;  // lineage for cloned/forked definitions; empty for originals
+
+    bool isValid() const { return !strategyDefId.isEmpty(); }
+};
+
+struct DbLiveStrategyBinding {
+    QString bindingId;
+    QString modelNodeId;   // FK → model_nodes.uuid
+    QString strategyDefId; // FK → strategy_definitions.strategy_def_id
+    QString createdAt;
+    QString updatedAt;
+
+    bool isValid() const { return !bindingId.isEmpty(); }
+};
+
+// ---------------------------------------------------------------------------
+// Backtest run profile (stored in ModelTreeRepository DB — accessed synchronously
+// via ISystemBackend::createBacktestRunProfile / listBacktestRunProfiles)
+// ---------------------------------------------------------------------------
+
+struct DbBacktestRunProfile {
+    QString profileId;
+    QString ownerType;    // "strategy_definition" | "live_strategy" | "portfolio" | "account"
+    QString ownerRefId;   // UUID of the owning object described by ownerType
+    QString name;
+    QString runConfigJson;
+    QString createdAt;
+    QString updatedAt;
 };
 
 #endif // DBDATATYPES_H

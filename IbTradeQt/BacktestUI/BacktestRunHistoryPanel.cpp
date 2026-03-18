@@ -1,4 +1,5 @@
 #include "BacktestUI/BacktestRunHistoryPanel.h"
+#include "BacktestConstants.h"
 #include <QTableView>
 #include <QStandardItemModel>
 #include <QHeaderView>
@@ -51,11 +52,11 @@ void BacktestRunHistoryPanel::setRuns(const QList<DbBacktestRunSummary>& runs) {
 
         // Colour code by status
         QColor rowColor = Qt::transparent;
-        if (r.status == QLatin1String("Finished"))
+        if (r.status == Backtest::Status::Finished)
             rowColor = QColor(0xd4, 0xed, 0xda); // light green
-        else if (r.status == QLatin1String("Failed"))
+        else if (r.status == Backtest::Status::Failed)
             rowColor = QColor(0xf8, 0xd7, 0xda); // light red
-        else if (r.status == QLatin1String("Running"))
+        else if (r.status == Backtest::Status::Running)
             rowColor = QColor(0xff, 0xf3, 0xcd); // light yellow
 
         auto makeItem = [&](const QString& text) {

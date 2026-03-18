@@ -17,6 +17,7 @@
 #include "Common/IClock.h"
 #include "Replay/MarketDataReplayer.h"
 #include "Pipeline/StrategyPipelineRunner.h"
+#include "Strategies/Generic/cpipelinestrategyadapter.h"
 
 namespace Backtest {
 
@@ -82,9 +83,16 @@ private:
     std::unique_ptr<SimulatedExecutionAdapter>      m_execAdapter;
     std::unique_ptr<SimulatedLedger>                m_ledger;
     std::unique_ptr<BacktestMetricsCollector>       m_metrics;
-    std::unique_ptr<Pipeline::StrategyPipelineRunner> m_pipelineRunner;
+    // Adapter owns the pipeline runner in pure-backtest mode (Phase 10).
+    // m_pipelineRunner is a non-owning pointer obtained from the adapter after start().
+    std::unique_ptr<CPipelineStrategyAdapter>       m_strategyAdapter;
+    Pipeline::StrategyPipelineRunner*               m_pipelineRunner = nullptr;
     BacktestResult                                  m_result;
-    bool                                            m_cancelled = false;
+    bool                                            m_cancelled  = false;
+    // Separate from m_cancelled: set only when loadHistoricalData() emits failed().
+    // Prevents run() from emitting a second, generic failed() after the specific error
+    // has already been emitted inside loadHistoricalData().
+    bool                                            m_loadFailed = false;
     QJsonObject                                     m_inlinePipelineConfig;
     QMap<QString, QVector<IBComm::HistoricalBar>>   m_preloadedBars;
     QVector<IBComm::HistoricalBar>                  m_preloadedBenchmarkBars;

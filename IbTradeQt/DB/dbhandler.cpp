@@ -34,11 +34,24 @@ void DBHandler::initializeBacktestTables() {
             qWarning() << "DBHandler: failed to create table:" << q.lastError().text();
     };
 
+    // Silence errors for ALTER TABLE when columns already exist
+    auto execSilent = [this](const char* sql) {
+        QSqlQuery q(m_db);
+        q.exec(QLatin1String(sql)); // intentionally ignore return value
+    };
+
     exec(CREATE_TABLE_BACKTEST_RUNS);
     exec(CREATE_TABLE_BACKTEST_METRICS);
     exec(CREATE_TABLE_BACKTEST_TRADES);
     exec(CREATE_TABLE_BACKTEST_EQUITY_CURVE);
     exec(CREATE_TABLE_HISTORICAL_BARS);
+    exec(CREATE_TABLE_BACKTEST_RUN_PROFILES);
+
+    // Extend BacktestRuns with new scope/definition columns (idempotent)
+    execSilent(ALTER_BACKTEST_RUNS_ADD_STRATEGY_DEF_ID);
+    execSilent(ALTER_BACKTEST_RUNS_ADD_SCOPE_TYPE);
+    execSilent(ALTER_BACKTEST_RUNS_ADD_SCOPE_REF_ID);
+    execSilent(ALTER_BACKTEST_RUNS_ADD_STRATEGY_VERSION);
 }
 
 void DBHandler::disconnectDB() {
@@ -387,6 +400,10 @@ void DBHandler::slotFetchLoadedRun(const QString& runId) {
             run.dataSourceId        = q.value("dataSourceId").toString();
             run.dataRefreshedAt     = q.value("dataRefreshedAt").toString();
             run.createdAt           = q.value("createdAt").toString();
+            run.strategyDefId       = q.value("strategyDefId").toString();
+            run.scopeType           = q.value("scopeType").toString();
+            run.scopeRefId          = q.value("scopeRefId").toString();
+            run.strategyVersion     = q.value("strategyVersion").toInt();
         }
     }
 
@@ -480,6 +497,67 @@ void DBHandler::slotFetchCachedBarRange(const QString& symbol, const QString& re
         maxTs = q.value("maxTs").toString();
     }
     emit signalCachedBarRangeFetched(symbol, resolution, dataSourceId, minTs, maxTs);
+}
+
+// ---------------------------------------------------------------------------
+// Backtest run profile slots
+// ---------------------------------------------------------------------------
+
+void DBHandler::slotInsertBacktestRunProfile(const DbBacktestRunProfile& profile) {
+    auto q = query_insertBacktestRunProfile(profile, m_uniqueConnectionName);
+    if (!q.exec())
+        qWarning() << "DBHandler: slotInsertBacktestRunProfile failed:" << q.lastError().text();
+}
+
+void DBHandler::slotFetchRunProfilesForOwner(const QString& ownerType, const QString& ownerRefId) {
+    QList<DbBacktestRunProfile> result;
+    auto q = query_fetchRunProfilesForOwner(ownerType, ownerRefId, m_uniqueConnectionName);
+    if (!q.exec()) {
+        qWarning() << "DBHandler: slotFetchRunProfilesForOwner failed:" << q.lastError().text();
+        emit signalRunProfilesFetched(result);
+        return;
+    }
+    while (q.next()) {
+        DbBacktestRunProfile p;
+        p.profileId     = q.value("profile_id").toString();
+        p.ownerType     = q.value("owner_type").toString();
+        p.ownerRefId    = q.value("owner_ref_id").toString();
+        p.name          = q.value("name").toString();
+        p.runConfigJson = q.value("run_config_json").toString();
+        p.createdAt     = q.value("created_at").toString();
+        p.updatedAt     = q.value("updated_at").toString();
+        result.append(p);
+    }
+    emit signalRunProfilesFetched(result);
+}
+
+void DBHandler::slotFetchRunsForDefinition(const QString& strategyDefId) {
+    QList<DbBacktestRunSummary> result;
+    auto q = query_fetchRunsForDefinition(strategyDefId, m_uniqueConnectionName);
+    if (!q.exec()) {
+        qWarning() << "DBHandler: slotFetchRunsForDefinition failed:" << q.lastError().text();
+        emit signalRunsForDefinitionFetched(result);
+        return;
+    }
+    while (q.next()) {
+        DbBacktestRunSummary s;
+        s.runId           = q.value("runId").toString();
+        s.strategyId      = q.value("strategyId").toString();
+        s.symbols         = q.value("symbols").toString();
+        s.startDate       = q.value("startDate").toString();
+        s.endDate         = q.value("endDate").toString();
+        s.status          = q.value("status").toString();
+        s.dataSourceId    = q.value("dataSourceId").toString();
+        s.createdAt       = q.value("createdAt").toString();
+        s.strategyDefId   = q.value("strategyDefId").toString();
+        s.scopeType       = q.value("scopeType").toString();
+        s.scopeRefId      = q.value("scopeRefId").toString();
+        s.strategyVersion = q.value("strategyVersion").isNull() ? 1 : q.value("strategyVersion").toInt();
+        s.totalReturn     = q.value("totalReturn").toDouble();
+        s.sharpeRatio     = q.value("sharpeRatio").toDouble();
+        result.append(s);
+    }
+    emit signalRunsForDefinitionFetched(result);
 }
 
 

@@ -54,11 +54,15 @@ public:
 
     // Select a strategy for backtesting. Pre-populates form from profile defaults.
     // Must be called before the user can launch a run.
+    // strategyDefId / strategyVersion come from the strategy catalog (may be empty
+    // for legacy nodes that haven't been through loadFromDb orphan repair yet).
     void selectStrategy(const QString& strategyId,
                         const QString& displayName,
                         const QString& portfolioPath,
                         const Backtest::BacktestProfile& profile,
-                        const QString& pipelineConfigJson);
+                        const QString& pipelineConfigJson,
+                        const QString& strategyDefId   = {},
+                        int            strategyVersion = 1);
 
     // Populate all result tabs from a fully-loaded run (from DB or just finished).
     // run.histBars carries the OHLC data needed by the Candlestick chart.
@@ -83,6 +87,8 @@ private:
     QString m_currentStrategyId;
     QString m_currentDisplayName;
     QString m_currentPortfolioPath;
+    QString m_currentStrategyDefId;
+    int     m_currentStrategyVersion = 1;
 
     QLabel*                  m_headerLabel   = nullptr;
 

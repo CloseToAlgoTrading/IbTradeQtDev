@@ -154,6 +154,7 @@ SOURCES += \
     Backtest/HistoricalDataManager.cpp \
     Backtest/BacktestController.cpp \
     BacktestUI/BacktestWorkspaceDock.cpp \
+    BacktestUI/BacktestStrategySelector.cpp \
     BacktestUI/BacktestRunConfigPanel.cpp \
     BacktestUI/BacktestRunHistoryPanel.cpp \
     BacktestUI/EquityChartWidget.cpp \
@@ -295,6 +296,7 @@ HEADERS += \
     Backtest/HistoricalDataManager.h \
     Backtest/BacktestController.h \
     BacktestUI/BacktestWorkspaceDock.h \
+    BacktestUI/BacktestStrategySelector.h \
     BacktestUI/BacktestRunConfigPanel.h \
     BacktestUI/BacktestRunHistoryPanel.h \
     BacktestUI/EquityChartWidget.h \

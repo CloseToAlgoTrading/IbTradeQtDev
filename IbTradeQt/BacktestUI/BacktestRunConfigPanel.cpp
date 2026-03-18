@@ -1,4 +1,5 @@
 #include "BacktestUI/BacktestRunConfigPanel.h"
+#include "BacktestConstants.h"
 #include <QLineEdit>
 #include <QDateEdit>
 #include <QDoubleSpinBox>
@@ -121,11 +122,15 @@ void BacktestRunConfigPanel::applyProfile(const Backtest::BacktestProfile& profi
 void BacktestRunConfigPanel::setStrategyContext(const QString& strategyId,
                                                  const QString& displayName,
                                                  const QString& portfolioPath,
-                                                 const QString& pipelineConfigJson) {
-    m_strategyId        = strategyId;
-    m_displayName       = displayName;
-    m_portfolioPath     = portfolioPath;
+                                                 const QString& pipelineConfigJson,
+                                                 const QString& strategyDefId,
+                                                 int            strategyVersion) {
+    m_strategyId         = strategyId;
+    m_displayName        = displayName;
+    m_portfolioPath      = portfolioPath;
     m_pipelineConfigJson = pipelineConfigJson;
+    m_strategyDefId      = strategyDefId;
+    m_strategyVersion    = strategyVersion > 0 ? strategyVersion : 1;
 }
 
 Backtest::BacktestRunConfig BacktestRunConfigPanel::currentConfig() const {
@@ -134,6 +139,13 @@ Backtest::BacktestRunConfig BacktestRunConfigPanel::currentConfig() const {
     c.strategyDisplayName = m_displayName;
     c.portfolioPath       = m_portfolioPath;
     c.pipelineConfigJson  = m_pipelineConfigJson;
+    // Canonical strategy definition fields — populated when a live strategy node is
+    // selected via "Open in Backtest Workspace". Empty when launched standalone.
+    c.strategyDefId       = m_strategyDefId;
+    c.strategyVersion     = m_strategyVersion;
+    c.scopeType           = QString(Backtest::Scope::Strategy);
+    // scopeRefId: use defId when available (preferred); fall back to live node UUID.
+    c.scopeRefId          = m_strategyDefId.isEmpty() ? m_strategyId : m_strategyDefId;
 
     const QString symsText = m_symbolsEdit->text().trimmed();
     for (const QString& s : symsText.split(',', Qt::SkipEmptyParts))

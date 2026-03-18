@@ -7,6 +7,7 @@
 #include "StrategyPipelineRunner.h"
 #include "BlockRegistry.h"
 #include "BlockGraphSerializer.h"
+#include "PipelineConstants.h"
 #include "../Supervision/StrategyRuntime.h"
 #include "../Blocks/MomentumAlphaBlock.h"
 #include "../Blocks/MeanReversionAlphaBlock.h"
@@ -28,52 +29,52 @@ public:
         BlockGraph graph;
         graph.config = config;
 
-        QJsonArray selectionConfigs = config.value("selection").toArray();
+        QJsonArray selectionConfigs = config.value(Key::Selection).toArray();
         for (const auto& selVal : selectionConfigs) {
             QJsonObject selCfg = selVal.toObject();
-            QString blockId = selCfg.value("blockId").toString();
+            QString blockId = selCfg.value(Key::BlockId).toString();
             ISelectionBlock* sel = createSelectionBlock(blockId);
             if (sel) {
-                sel->setConfig(selCfg.value("config").toObject());
+                sel->setConfig(selCfg.value(Key::Config).toObject());
                 graph.selectionBlocks.append(sel);
             }
         }
 
-        QJsonArray alphaConfigs = config.value("alphas").toArray();
+        QJsonArray alphaConfigs = config.value(Key::Alphas).toArray();
         for (const auto& alphaVal : alphaConfigs) {
             QJsonObject alphaCfg = alphaVal.toObject();
-            QString blockId = alphaCfg.value("blockId").toString();
+            QString blockId = alphaCfg.value(Key::BlockId).toString();
 
             IAlphaBlock* alpha = createAlphaBlock(blockId);
             if (alpha) {
-                alpha->setConfig(alphaCfg.value("config").toObject());
+                alpha->setConfig(alphaCfg.value(Key::Config).toObject());
                 graph.alphaBlocks.append(alpha);
             }
         }
 
-        QString rebalanceId = config.value("rebalance").toObject().value("blockId").toString();
+        QString rebalanceId = config.value(Key::Rebalance).toObject().value(Key::BlockId).toString();
         graph.strategyLevel.rebalance = createRebalanceBlock(rebalanceId);
         if (graph.strategyLevel.rebalance) {
             graph.strategyLevel.rebalance->setConfig(
-                config.value("rebalance").toObject().value("config").toObject());
+                config.value(Key::Rebalance).toObject().value(Key::Config).toObject());
         }
 
-        QJsonArray riskConfigs = config.value("risks").toArray();
+        QJsonArray riskConfigs = config.value(Key::Risks).toArray();
         for (const auto& riskVal : riskConfigs) {
             QJsonObject riskCfg = riskVal.toObject();
-            QString riskId = riskCfg.value("blockId").toString();
+            QString riskId = riskCfg.value(Key::BlockId).toString();
             IRiskBlock* risk = createRiskBlock(riskId);
             if (risk) {
-                risk->setConfig(riskCfg.value("config").toObject());
+                risk->setConfig(riskCfg.value(Key::Config).toObject());
                 graph.strategyLevel.risks.append(risk);
             }
         }
 
-        QString execId = config.value("execution").toObject().value("blockId").toString();
+        QString execId = config.value(Key::Execution).toObject().value(Key::BlockId).toString();
         auto* execBlock = createExecutionBlock(execId);
         if (execBlock) {
             execBlock->setConfig(
-                config.value("execution").toObject().value("config").toObject());
+                config.value(Key::Execution).toObject().value(Key::Config).toObject());
             if (executionPort) {
                 auto* marketExec = qobject_cast<Blocks::MarketOrderExecutionBlock*>(execBlock);
                 if (marketExec) {

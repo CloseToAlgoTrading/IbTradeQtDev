@@ -1,5 +1,6 @@
 #include "Backtest/BacktestController.h"
 #include "Backtest/HistoricalDataManager.h"
+#include "Backtest/BacktestConstants.h"
 #include "DB/dbquery.h"
 #include "DB/dbdatatypes.h"
 #include <QUuid>
@@ -36,12 +37,22 @@ BacktestController::BacktestController(const QString& dbFileName,
 }
 
 BacktestController::~BacktestController() {
-    if (m_workerThread && m_workerThread->isRunning()) {
-        if (m_session) m_session->cancel();
-        m_workerThread->quit();
-        m_workerThread->wait(5000);
+    if (m_workerThread) {
+        m_workerThread->disconnect();
+        if (m_session) m_session->disconnect();
+
+        if (m_workerThread->isRunning()) {
+            if (m_session) m_session->cancel();
+            m_workerThread->quit();
+            m_workerThread->wait(Backtest::kThreadShutdownTimeoutMs);
+        }
+
+        delete m_session;
+        m_session = nullptr;
+
+        delete m_workerThread;
+        m_workerThread = nullptr;
     }
-    delete m_workerThread;
 
     // Close and remove the dedicated DB connection
     {
@@ -76,15 +87,23 @@ void BacktestController::start(const BacktestRunConfig& config) {
     runRecord.symbols             = config.symbolsJoined();
     runRecord.startDate           = config.startDate.toUTC().toString(Qt::ISODate);
     runRecord.endDate             = config.endDate.toUTC().toString(Qt::ISODate);
-    runRecord.status              = QStringLiteral("Created");
+    runRecord.status              = QString(Backtest::Status::Created);
     runRecord.engineVersion       = engineVersion();
     runRecord.dataSourceId        = config.dataSourceId;
     runRecord.createdAt           = QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
+    // Canonical scope fields — caller is responsible for populating these before calling start().
+    // Do NOT set scopeRefId = config.strategyId implicitly (they serve different semantics).
+    runRecord.strategyDefId     = config.strategyDefId;
+    runRecord.scopeType         = config.scopeType.isEmpty()
+                                    ? QString(Backtest::Scope::Strategy)
+                                    : config.scopeType;
+    runRecord.scopeRefId        = config.scopeRefId;
+    runRecord.strategyVersion   = config.strategyVersion > 0 ? config.strategyVersion : 1;
     persistRunRecord(runRecord);
 
     // Transition to Running
-    updateRunStatus("Running", QString(), 0, QString());
-    emit statusChanged(QStringLiteral("Running"));
+    updateRunStatus(QString(Backtest::Status::Running), QString(), 0, QString());
+    emit statusChanged(QString(Backtest::Status::Running));
     m_elapsed.start();
 
     // Build BacktestConfig from the run config
@@ -98,7 +117,7 @@ void BacktestController::start(const BacktestRunConfig& config) {
     }
 
     // Run on a background thread: HistoricalDataManager + BacktestSession
-    m_workerThread = new QThread(this);
+    m_workerThread = new QThread();
 
     // We cannot use HistoricalDataManager on the main thread with an existing
     // DB connection (QSqlDatabase is not thread-safe across threads). Instead,
@@ -203,11 +222,6 @@ void BacktestController::start(const BacktestRunConfig& config) {
 
     m_session->moveToThread(m_workerThread);
 
-    connect(m_workerThread, &QThread::finished,
-            m_session, &QObject::deleteLater);
-    connect(m_workerThread, &QThread::finished,
-            m_workerThread, &QObject::deleteLater);
-
     m_workerThread->start();
 }
 
@@ -222,8 +236,8 @@ void BacktestController::onSessionProgress(int percent) {
 void BacktestController::onSessionFinished(const BacktestResult& result) {
     const qint64 durationMs = m_elapsed.elapsed();
     persistResult(result, m_dataRefreshedAt);
-    updateRunStatus("Finished", QString(), durationMs, m_dataRefreshedAt);
-    emit statusChanged(QStringLiteral("Finished"));
+    updateRunStatus(QString(Backtest::Status::Finished), QString(), durationMs, m_dataRefreshedAt);
+    emit statusChanged(QString(Backtest::Status::Finished));
 
     BacktestLoadedRun loaded;
     loaded.record.runId               = m_currentRunId;
@@ -233,14 +247,16 @@ void BacktestController::onSessionFinished(const BacktestResult& result) {
     loaded.record.symbols             = m_currentConfig.symbolsJoined();
     loaded.record.startDate           = m_currentConfig.startDate.toUTC().toString(Qt::ISODate);
     loaded.record.endDate             = m_currentConfig.endDate.toUTC().toString(Qt::ISODate);
-    loaded.record.status              = QStringLiteral("Finished");
+    loaded.record.status              = QString(Backtest::Status::Finished);
     loaded.record.durationMs          = durationMs;
     loaded.record.dataRefreshedAt     = m_dataRefreshedAt;
+    loaded.record.strategyDefId       = m_currentConfig.strategyDefId;
+    loaded.record.scopeType           = m_currentConfig.scopeType;
+    loaded.record.scopeRefId          = m_currentConfig.scopeRefId;
     loaded.result                     = result;
     loaded.histBars                   = m_lastHistBars;
 
-    m_workerThread = nullptr;
-    m_session      = nullptr;
+    cleanupWorker();
     m_lastHistBars.clear();
 
     emit finished(loaded);
@@ -248,13 +264,23 @@ void BacktestController::onSessionFinished(const BacktestResult& result) {
 
 void BacktestController::onSessionFailed(const QString& reason) {
     const qint64 durationMs = m_elapsed.elapsed();
-    updateRunStatus("Failed", reason, durationMs, m_dataRefreshedAt);
-    emit statusChanged(QStringLiteral("Failed"));
+    updateRunStatus(QString(Backtest::Status::Failed), reason, durationMs, m_dataRefreshedAt);
+    emit statusChanged(QString(Backtest::Status::Failed));
 
-    m_workerThread = nullptr;
-    m_session      = nullptr;
+    cleanupWorker();
 
     emit failed(reason);
+}
+
+void BacktestController::cleanupWorker() {
+    if (m_workerThread) {
+        m_workerThread->quit();
+        m_workerThread->wait(Backtest::kThreadShutdownTimeoutMs);
+        delete m_session;
+        m_session = nullptr;
+        delete m_workerThread;
+        m_workerThread = nullptr;
+    }
 }
 
 // ---------------------------------------------------------------------------

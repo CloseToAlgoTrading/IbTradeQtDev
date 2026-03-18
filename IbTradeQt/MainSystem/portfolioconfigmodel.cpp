@@ -3,6 +3,7 @@
 #include "PortfolioModelDefines.h"
 #include "cpipelinestrategyadapter.h"
 #include "Backtest/BacktestDataTypes.h"
+#include "Pipeline/PipelineConstants.h"
 
 #include <QVariantMap>
 #include <tuple>
@@ -537,8 +538,8 @@ void CPortfolioConfigModel::addBlockViaDialog(const QString& category, const QSt
         QJsonObject config = adapter->pipelineConfig();
 
         QJsonObject entry;
-        entry["blockId"] = blockId;
-        entry["config"] = defaultCfg;
+        entry[Pipeline::Key::BlockId] = blockId;
+        entry[Pipeline::Key::Config]  = defaultCfg;
 
         if (isArray) {
             QJsonArray arr = config.value(jsonKey).toArray();
@@ -557,27 +558,27 @@ void CPortfolioConfigModel::addBlockViaDialog(const QString& category, const QSt
 
 void CPortfolioConfigModel::slotOnClickAddSelectionModel()
 {
-    addBlockViaDialog("Selection", "selection", false, PM_ITEM_SELECTION_MODEL);
+    addBlockViaDialog(Pipeline::Category::Selection, Pipeline::Key::Selection, false, PM_ITEM_SELECTION_MODEL);
 }
 
 void CPortfolioConfigModel::slotOnClickAddAlphaModel()
 {
-    addBlockViaDialog("Alpha", "alphas", true, PM_ITEM_ALFA_MODEL);
+    addBlockViaDialog(Pipeline::Category::Alpha, Pipeline::Key::Alphas, true, PM_ITEM_ALFA_MODEL);
 }
 
 void CPortfolioConfigModel::slotOnClickAddRebalanceModel()
 {
-    addBlockViaDialog("Rebalance", "rebalance", false, PM_ITEM_REBALANCE_MODEL);
+    addBlockViaDialog(Pipeline::Category::Rebalance, Pipeline::Key::Rebalance, false, PM_ITEM_REBALANCE_MODEL);
 }
 
 void CPortfolioConfigModel::slotOnClickAddRiskModel()
 {
-    addBlockViaDialog("Risk", "risks", true, PM_ITEM_RISK_MODEL);
+    addBlockViaDialog(Pipeline::Category::Risk, Pipeline::Key::Risks, true, PM_ITEM_RISK_MODEL);
 }
 
 void CPortfolioConfigModel::slotOnClickAddExecutionModel()
 {
-    addBlockViaDialog("Execution", "execution", false, PM_ITEM_EXECUTION_MODEL);
+    addBlockViaDialog(Pipeline::Category::Execution, Pipeline::Key::Execution, false, PM_ITEM_EXECUTION_MODEL);
 }
 
 

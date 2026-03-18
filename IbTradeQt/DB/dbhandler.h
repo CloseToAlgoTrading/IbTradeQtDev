@@ -42,6 +42,10 @@ signals:
                                      const QString& minTs,
                                      const QString& maxTs);
 
+    // Backtest run profile signals
+    void signalRunProfilesFetched(const QList<DbBacktestRunProfile>& profiles);
+    void signalRunsForDefinitionFetched(const QList<DbBacktestRunSummary>& runs);
+
 public slots:
     // Live trading slots (existing)
     void slotAddPositionQuery(const OpenPosition& position);
@@ -72,6 +76,11 @@ public slots:
                                   const QString& fromUtc, const QString& toUtc);
     void slotFetchCachedBarRange(const QString& symbol, const QString& resolution,
                                   const QString& dataSourceId);
+
+    // Backtest run profile slots
+    void slotInsertBacktestRunProfile(const DbBacktestRunProfile& profile);
+    void slotFetchRunProfilesForOwner(const QString& ownerType, const QString& ownerRefId);
+    void slotFetchRunsForDefinition(const QString& strategyDefId);
 
 private:
     QSqlDatabase m_db;
