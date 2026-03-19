@@ -129,9 +129,13 @@ void CPresenter::MapSignals()
         QAction* addAccount = menu.addAction("Add New Account");
 
         QAction* addPortfolio     = nullptr;
+        QAction* addNewStrategy   = nullptr;
         QAction* useExistingStrat = nullptr;
         QAction* removeNode       = nullptr;
         QAction* openBacktest     = nullptr;
+
+        // Block-add actions for pipeline strategies (category -> chosen action)
+        QMap<QString, QAction*> addBlockActions;
 
         CGenericModelApi* clickedModel = nullptr;
         ModelType clickedType = ModelType::ROOT;
@@ -145,6 +149,7 @@ void CPresenter::MapSignals()
                 addPortfolio = menu.addAction("Add New Portfolio");
             }
             if (clickedType == ModelType::PORTFOLIO) {
+                addNewStrategy = menu.addAction("Add New Strategy");
                 useExistingStrat = menu.addAction("Use Existing Strategy...");
             }
 
@@ -156,6 +161,36 @@ void CPresenter::MapSignals()
 
             if (isStrategy) {
                 openBacktest = menu.addAction("Open in Backtest Workspace");
+
+                // Build "Add Block" sub-menus from the BlockRegistry
+                menu.addSeparator();
+                static const QVector<QPair<QString, QString>> blockCategories = {
+                    { Pipeline::Category::Selection, "Add Selection Model" },
+                    { Pipeline::Category::Alpha,     "Add Alpha Model"     },
+                    { Pipeline::Category::Rebalance, "Add Rebalance Model" },
+                    { Pipeline::Category::Risk,      "Add Risk Model"      },
+                    { Pipeline::Category::Execution,  "Add Execution Model" },
+                };
+
+                auto& registry = Pipeline::BlockRegistry::instance();
+                for (const auto& [category, label] : blockCategories) {
+                    auto blocks = registry.blocksByCategory(category);
+                    if (blocks.isEmpty()) {
+                        QAction* act = menu.addAction(label + "...");
+                        act->setEnabled(false);
+                    } else if (blocks.size() == 1) {
+                        QAction* act = menu.addAction(label + ": " + blocks.first().name);
+                        addBlockActions[category + "|" + blocks.first().id] = act;
+                    } else {
+                        QMenu* sub = menu.addMenu(label);
+                        for (const auto& desc : blocks) {
+                            QAction* act = sub->addAction(desc.name);
+                            if (!desc.description.isEmpty())
+                                act->setToolTip(desc.description);
+                            addBlockActions[category + "|" + desc.id] = act;
+                        }
+                    }
+                }
             }
 
             if (clickedModel) {
@@ -182,8 +217,12 @@ void CPresenter::MapSignals()
             backend->createPortfolio(accountId, "Portfolio");
             rebuildTree();
         }
+        else if (chosen == addNewStrategy && clickedModel && backend) {
+            QString portfolioId = clickedModel->getId().toString(QUuid::WithoutBraces);
+            backend->createStrategy(portfolioId, ModelType::STRATEGY_PIPELINE);
+            rebuildTree();
+        }
         else if (chosen == useExistingStrat && clickedModel && backend) {
-            // Show a picker listing published versions from the catalog
             QJsonArray catalog = backend->listStrategyCatalog(false);
             QStringList choices;
             QMap<int, QPair<QString, QString>> indexMap;
@@ -238,6 +277,25 @@ void CPresenter::MapSignals()
             QString uuid = clickedModel->getId().toString(QUuid::WithoutBraces);
             backend->removeNode(uuid);
             rebuildTree();
+        }
+        else {
+            // Check if the chosen action is a block-add action
+            for (auto it = addBlockActions.constBegin(); it != addBlockActions.constEnd(); ++it) {
+                if (it.value() == chosen && clickedModel && backend) {
+                    QStringList parts = it.key().split('|');
+                    if (parts.size() == 2) {
+                        QString category = parts[0];
+                        QString blockId  = parts[1];
+                        QString strategyId = clickedModel->getId().toString(QUuid::WithoutBraces);
+                        auto& registry = Pipeline::BlockRegistry::instance();
+                        auto desc = registry.descriptor(blockId);
+                        QJsonObject defaultCfg = desc ? desc->defaultConfig : QJsonObject{};
+                        backend->addBlock(strategyId, category, blockId, defaultCfg);
+                        rebuildTree();
+                    }
+                    break;
+                }
+            }
         }
     });
 

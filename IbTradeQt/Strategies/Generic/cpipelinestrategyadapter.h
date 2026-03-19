@@ -6,6 +6,7 @@
 #include "mandatoryFieldKeys.h"
 #include "Pipeline/PipelineFactory.h"
 #include "Pipeline/StrategyPipelineRunner.h"
+#include "Pipeline/UniverseResolver.h"
 #include "Supervision/Supervisor.h"
 #include "Supervision/StrategyRuntime.h"
 #include "IBComm/MarketDataRouter.h"
@@ -154,15 +155,24 @@ public:
                            "CPipelineStrategyAdapter::start",
                            "Pure-backtest mode requires execPort and ledger");
 
-                Pipeline::BlockGraph graph = Pipeline::PipelineFactory::buildGraph(
+                Pipeline::PipelineDefinition def = Pipeline::PipelineFactory::buildDefinition(
                     m_pipelineConfig, m_injectedContext.execPort);
 
                 m_backtestRunner = std::make_unique<Pipeline::StrategyPipelineRunner>(
-                    graph, m_injectedContext.execPort, m_injectedContext.ledger);
+                    def.graph, def.runtimePolicy,
+                    m_injectedContext.execPort, m_injectedContext.ledger,
+                    m_injectedContext.clock);
                 m_backtestRunner->wireAlphaSignals();
 
                 for (auto* alpha : m_backtestRunner->graph().alphaBlocks)
                     alpha->setClock(m_injectedContext.clock);
+
+                // Seed universe from selection config
+                {
+                    auto resolved = Pipeline::UniverseResolver::resolve(m_pipelineConfig);
+                    if (resolved.mode == Pipeline::UniverseResolutionResult::Mode::ExplicitStaticSymbols)
+                        m_backtestRunner->setUniverse(resolved.symbols);
+                }
 
                 m_runtimeName     = getName() + "_bt_"
                                   + m_uuid.toString(QUuid::WithoutBraces).left(8);

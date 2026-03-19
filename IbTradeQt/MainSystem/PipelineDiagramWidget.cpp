@@ -1,4 +1,5 @@
 #include "PipelineDiagramWidget.h"
+#include "Pipeline/StrategyRuntimePolicy.h"
 
 static const int kBlockHeight = 36;
 static const int kBlockPadding = 14;
@@ -30,7 +31,10 @@ void PipelineDiagramWidget::setPipelineConfig(const QJsonObject& config)
     m_viewMode = PipelineView;
     m_config = config;
     rebuildBlocks();
-    setMinimumHeight(kBlockHeight + 2 * kVerticalMargin);
+    int h = kBlockHeight + 2 * kVerticalMargin;
+    if (!m_policySummary.isEmpty())
+        h += 20;
+    setMinimumHeight(h);
     update();
 }
 
@@ -70,6 +74,7 @@ void PipelineDiagramWidget::clear()
 void PipelineDiagramWidget::rebuildBlocks()
 {
     m_blocks.clear();
+    m_policySummary = buildPolicySummary(m_config);
 
     if (m_config.contains("selection")) {
         QJsonObject sel = m_config["selection"].toObject();
@@ -182,6 +187,15 @@ void PipelineDiagramWidget::paintPipeline(QPainter& p)
             x += kArrowWidth;
         }
     }
+
+    if (!m_policySummary.isEmpty()) {
+        QFont annotFont = p.font();
+        annotFont.setPointSize(8);
+        p.setFont(annotFont);
+        p.setPen(QColor(160, 160, 160));
+        int annotY = y + kBlockHeight + 6;
+        p.drawText(QRect(0, annotY, width(), 16), Qt::AlignCenter, m_policySummary);
+    }
 }
 
 void PipelineDiagramWidget::paintAccountView(QPainter& p)
@@ -289,9 +303,12 @@ void PipelineDiagramWidget::paintPortfolioView(QPainter& p)
         if (cfg.contains("execution"))
             pipeLabels << cfg["execution"].toObject().value("blockId").toString("Exec");
 
+        QString policySuffix = buildPolicySummary(cfg);
         QString detail = pipeLabels.isEmpty()
             ? "(no blocks)"
             : pipeLabels.join(" > ");
+        if (!policySuffix.isEmpty())
+            detail += QStringLiteral("  [%1]").arg(policySuffix);
 
         p.drawText(stratRect.adjusted(8, stratRect.height() / 2, -4, -2),
                    Qt::AlignVCenter | Qt::AlignLeft, detail);
@@ -303,4 +320,17 @@ void PipelineDiagramWidget::paintPortfolioView(QPainter& p)
         p.setPen(QColor(200, 200, 200));
         p.drawText(QRect(cx, sy, containerW, 28), Qt::AlignCenter, "(no strategies)");
     }
+}
+
+QString PipelineDiagramWidget::buildPolicySummary(const QJsonObject& config)
+{
+    QJsonObject policyObj = config.value("runtimePolicy").toObject();
+    if (policyObj.isEmpty())
+        return {};
+
+    auto p = Pipeline::StrategyRuntimePolicy::fromJson(policyObj);
+    if (p.isDefault())
+        return {};
+
+    return p.summary();
 }

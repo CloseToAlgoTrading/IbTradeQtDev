@@ -104,6 +104,12 @@ Expected<Ports::OrderResult, Error> SimulatedExecutionAdapter::getOrderStatus(in
     });
 }
 
+Expected<void, Error> SimulatedExecutionAdapter::cancelAllPending()
+{
+    m_pendingOrders.clear();
+    return {};
+}
+
 void SimulatedExecutionAdapter::onNextTickOpen(const IBComm::MarketTick& openTick)
 {
     if (m_pendingOrders.isEmpty()) return;

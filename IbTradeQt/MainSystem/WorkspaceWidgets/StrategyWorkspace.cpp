@@ -3,11 +3,14 @@
 #include "MetricsStrip.h"
 #include "WorkspaceHeader.h"
 #include "BlockInspectorPanel.h"
+#include "RuntimePolicyEditor.h"
 #include "cgenericmodelApi.h"
 #include "cbasemodel.h"
 #include "cpipelinestrategyadapter.h"
 #include "ModelStateUtils.h"
 #include "mandatoryFieldKeys.h"
+#include "Pipeline/UniverseResolver.h"
+#include "Pipeline/StrategyRuntimePolicy.h"
 #include <QFormLayout>
 #include <QVBoxLayout>
 #include <QStackedWidget>
@@ -24,6 +27,7 @@ StrategyWorkspace::StrategyWorkspace(QWidget* parent)
     buildOverviewTab();
     buildPropertiesTab();
     buildAssetsTab();
+    buildPolicyTab();
     buildInfoTab();
     buildLogsTab();
 }
@@ -44,12 +48,20 @@ void StrategyWorkspace::buildOverviewTab()
     m_ovWarnings     = new QLabel("", m_overviewWidget);
     m_ovWarnings->setStyleSheet("color: #eab308;");
 
+    m_ovEvalMode  = new QLabel("Evaluation: --", m_overviewWidget);
+    m_ovEvalMode->setStyleSheet("color: #888; font-size: 12px;");
+    m_ovRebalMode = new QLabel("Rebalance: --", m_overviewWidget);
+    m_ovRebalMode->setStyleSheet("color: #888; font-size: 12px;");
+
     layout->addWidget(new QLabel("<b>State</b>", m_overviewWidget));
     layout->addWidget(m_ovStateSummary);
     layout->addWidget(new QLabel("<b>Current Position</b>", m_overviewWidget));
     layout->addWidget(m_ovCurrentPos);
     layout->addWidget(new QLabel("<b>Latest Signal</b>", m_overviewWidget));
     layout->addWidget(m_ovLatestSignal);
+    layout->addWidget(new QLabel("<b>Runtime Policy</b>", m_overviewWidget));
+    layout->addWidget(m_ovEvalMode);
+    layout->addWidget(m_ovRebalMode);
     layout->addWidget(m_ovWarnings);
     layout->addStretch();
 
@@ -158,9 +170,27 @@ void StrategyWorkspace::buildAssetsTab()
         adapter->setPipelineConfig(cfg);
     });
     layout->addWidget(m_assetsEdit);
+
+    m_universeInfoLabel = new QLabel(m_assetsWidget);
+    m_universeInfoLabel->setWordWrap(true);
+    m_universeInfoLabel->setStyleSheet("color: #888; font-size: 11px; font-style: italic;");
+    layout->addWidget(m_universeInfoLabel);
+
     layout->addStretch();
 
     addTab("Assets", m_assetsWidget);
+}
+
+void StrategyWorkspace::buildPolicyTab()
+{
+    m_policyEditor = new RuntimePolicyEditor(this);
+    m_policyEditor->setReadOnly(true);
+
+    auto* scroll = new QScrollArea(this);
+    scroll->setWidgetResizable(true);
+    scroll->setWidget(m_policyEditor);
+
+    addTab("Policy", scroll);
 }
 
 // ---- Public API ----
@@ -219,6 +249,7 @@ void StrategyWorkspace::onContextSet()
     setHeaderInfo(m_boundModel->getName(), breadcrumb, ds);
     refreshProperties();
     refreshAssets();
+    refreshPolicy();
     restoreStrategyProperties();
     m_tabWidget->setCurrentIndex(0);
 }
@@ -230,6 +261,8 @@ void StrategyWorkspace::onContextCleared()
     m_ovStateSummary->setText("--");
     m_ovCurrentPos->setText("Positions: --");
     m_ovLatestSignal->setText("Last signal: --");
+    m_ovEvalMode->setText("Evaluation: --");
+    m_ovRebalMode->setText("Rebalance: --");
     m_ovWarnings->clear();
     m_logsText->clear();
 
@@ -308,6 +341,20 @@ void StrategyWorkspace::refreshOverview()
         m_ovWarnings->setText(QStringLiteral("Status: %1").arg(status));
     else
         m_ovWarnings->clear();
+
+    auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(m_boundModel);
+    if (adapter) {
+        auto p = Pipeline::StrategyRuntimePolicy::fromJson(
+            adapter->pipelineConfig().value("runtimePolicy").toObject());
+        m_ovEvalMode->setText(QStringLiteral("Evaluation: %1").arg(
+            Pipeline::StrategyRuntimePolicy::evalModeLabel(p.evaluationMode)
+            + (p.evaluationMode != Pipeline::StrategyRuntimePolicy::EvaluationMode::EveryBarClose
+                ? QStringLiteral(" (%1)").arg(p.evaluationIntervalN) : QString())));
+        m_ovRebalMode->setText(QStringLiteral("Rebalance: %1").arg(
+            Pipeline::StrategyRuntimePolicy::rebalModeLabel(p.rebalanceMode)
+            + (p.rebalanceMode != Pipeline::StrategyRuntimePolicy::RebalanceMode::Immediate
+                ? QStringLiteral(" (%1)").arg(p.rebalanceIntervalN) : QString())));
+    }
 }
 
 void StrategyWorkspace::refreshProperties()
@@ -375,4 +422,17 @@ void StrategyWorkspace::refreshAssets()
     }
 
     m_assetsEdit->setText(allSymbols.join(", "));
+
+    auto resolved = Pipeline::UniverseResolver::resolve(cfg);
+    m_universeInfoLabel->setText(resolved.reason);
+}
+
+void StrategyWorkspace::refreshPolicy()
+{
+    if (!m_boundModel || !m_policyEditor) return;
+
+    auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(m_boundModel);
+    if (!adapter) return;
+
+    m_policyEditor->loadFromJson(adapter->pipelineConfig());
 }

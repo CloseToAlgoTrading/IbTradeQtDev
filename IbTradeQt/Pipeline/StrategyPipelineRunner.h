@@ -8,6 +8,7 @@
 #include <QUuid>
 #include <QDebug>
 #include "Contracts.h"
+#include "StrategyRuntimePolicy.h"
 #include "ISelectionBlock.h"
 #include "IAlphaBlock.h"
 #include "IRebalanceBlock.h"
@@ -18,6 +19,7 @@
 #include "../IBComm/MarketDataRouter.h"
 #include "../Ports/IOrderExecutionPort.h"
 #include "../Ports/IPositionRepositoryPort.h"
+#include "../Common/IClock.h"
 
 namespace Pipeline {
 
@@ -55,6 +57,14 @@ struct BlockGraph {
 //                 stop) that re-enter the pipeline immediately.
 //   5. Execution: places market orders for approved intents.
 //
+// Runtime orchestration:
+//   StrategyRuntimePolicy controls two independent cadences:
+//     - Evaluation cadence: when selection + alpha run
+//     - Rebalance cadence: when signals are converted into portfolio changes
+//   Alpha signals can be accumulated between rebalance windows.
+//   Risk blocks receive ticks independently and can trigger an emergency path
+//   that bypasses normal evaluation/rebalance gating.
+//
 // Multi-asset synchronisation:
 //   With daily bars, AMD and NVDA both close at the same timestamp.  The replayer
 //   emits all ticks for a timestamp before any barClose, then emits one barClose
@@ -74,6 +84,21 @@ public:
         , m_graph(graph)
         , m_executionPort(executionPort)
         , m_positionRepo(positionRepo)
+    {}
+
+    explicit StrategyPipelineRunner(
+        const BlockGraph& graph,
+        const StrategyRuntimePolicy& policy,
+        Ports::IOrderExecutionPort* executionPort,
+        Ports::IPositionRepositoryPort* positionRepo,
+        IClock* clock = nullptr,
+        QObject* parent = nullptr)
+        : QObject(parent)
+        , m_graph(graph)
+        , m_runtimePolicy(policy)
+        , m_executionPort(executionPort)
+        , m_positionRepo(positionRepo)
+        , m_clock(clock)
     {}
 
     // Wire any QObject that has tick(MarketTick) and barClose(QString,QDateTime) signals.
@@ -136,26 +161,36 @@ public:
         m_universe = universe;
     }
 
+    void setClock(IClock* clock) { m_clock = clock; }
+
+    void setRuntimePolicy(const StrategyRuntimePolicy& policy) {
+        m_runtimePolicy = policy;
+    }
+
     int strategyId() const {
         return m_graph.config.value("strategyId").toInt(0);
     }
 
     const BlockGraph& graph() const { return m_graph; }
+    const StrategyRuntimePolicy& runtimePolicy() const { return m_runtimePolicy; }
+    const RuntimeState& runtimeState() const { return m_runtimeState; }
     const QVector<Signal>& collectedSignals() const { return m_collectedSignals; }
     const QVector<ExecutionIntent>& lastIntents() const { return m_lastIntents; }
 
+    QDateTime now() const {
+        return m_clock ? m_clock->now() : QDateTime::currentDateTime();
+    }
+
 public slots:
-    // Accumulate alpha signals as they arrive during the bar.
     void onAlphaSignal(const Pipeline::Signal& signal) {
         m_collectedSignals.append(signal);
     }
 
     // Risk blocks may emit proactive signals (stop-loss, trailing stop) on any
     // tick.  These bypass the normal bar-close cycle and trigger an immediate
-    // pipeline run so the exit order reaches the market without delay.
+    // emergency pipeline run so the exit order reaches the market without delay.
     void onRiskProactiveSignal(const Pipeline::Signal& signal) {
-        QVector<Signal> urgentSignals{signal};
-        runPipelineWithSignals(urgentSignals);
+        runEmergencyRiskPipeline(signal);
     }
 
     // Called once per symbol per bar close.  We deduplicate on timestamp so the
@@ -168,24 +203,65 @@ public slots:
         m_lastBarCloseTs = timestamp;
 
         runPipeline();
-        m_collectedSignals.clear();
     }
 
-    // Run the full pipeline with the currently accumulated signals.
+    // Run the full pipeline with evaluation and rebalance gating.
     void runPipeline() {
         const QString corrId = QUuid::createUuid().toString(QUuid::WithoutBraces);
+        const QDateTime ts = now();
 
-        // 1. Selection: determine tradeable universe
+        m_runtimeState.totalBarsSeen++;
+
+        // --- Evaluation gate ---
+        // Increment first: counts events since last completed evaluation.
+        // N=1 fires every event (1 >= 1). N=3 fires every 3rd event.
+        m_runtimeState.barsSinceEvaluation++;
+        if (!m_runtimePolicy.shouldEvaluateNow(m_runtimeState, ts)) {
+            return;
+        }
+        m_runtimeState.barsSinceEvaluation = 0;
+        m_runtimeState.lastEvaluationTime = ts;
+
+        // 1. Selection
         QVector<QString> universe = runSelection();
 
-        // 2. Alpha signals are already in m_collectedSignals (accumulated via onAlphaSignal)
+        // 2. Alpha (always runs when evaluation is allowed)
         QVector<Signal> alphaSignals = mergeSignals(m_collectedSignals, corrId);
+        m_collectedSignals.clear();
 
-        // 3. Rebalance: convert signals → target positions across the full universe
+        // --- Rebalance gate (same increment-before-check pattern) ---
+        m_runtimeState.barsSinceRebalance++;
+        if (!m_runtimePolicy.shouldRebalanceNow(m_runtimeState, ts)) {
+            if (m_runtimePolicy.accumulateAlphaSignals) {
+                for (const auto& sig : alphaSignals) {
+                    m_runtimeState.pendingSignals.append(
+                        {sig, ts, m_runtimeState.totalBarsSeen});
+                }
+            }
+            emit pipelineCompleted(corrId, 0);
+            return;
+        }
+        m_runtimeState.barsSinceRebalance = 0;
+        m_runtimeState.lastRebalanceTime = ts;
+
+        // Drain accumulated signals (expire stale ones if policy says so)
+        QVector<Signal> allSignals;
+        for (const auto& ps : m_runtimeState.pendingSignals) {
+            if (m_runtimePolicy.signalExpiryBars > 0
+                && (m_runtimeState.totalBarsSeen - ps.createdBarIndex)
+                    > m_runtimePolicy.signalExpiryBars)
+                continue; // expired
+            allSignals.append(ps.signal);
+        }
+        allSignals += alphaSignals;
+        m_runtimeState.pendingSignals.clear();
+
+        // 3. Rebalance -- allocation only, no timing logic
         QMap<QString, double> currentPos = getCurrentPositions();
-        QVector<TargetPosition> targets = runMultiLevelRebalance(alphaSignals, universe, currentPos, corrId);
+        QVector<TargetPosition> targets = runMultiLevelRebalance(
+            allSignals, universe, currentPos, corrId);
 
-        // 4. Risk: approve / reject / modify targets; pass current positions for context
+        // 4. Risk -- validate/modify targets
         QVector<ExecutionIntent> intents = runMultiLevelRisk(targets, currentPos, corrId);
         m_lastIntents = intents;
 
@@ -195,7 +271,7 @@ public slots:
         emit pipelineCompleted(corrId, intents.size());
     }
 
-    // Inject signals externally (used by tests and for risk proactive signals).
+    // Inject signals externally (used by tests).
     void runPipelineWithSignals(const QVector<Signal>& inputSignals) {
         const QString corrId = QUuid::createUuid().toString(QUuid::WithoutBraces);
 
@@ -210,13 +286,36 @@ public slots:
         emit pipelineCompleted(corrId, intents.size());
     }
 
+    // Dedicated emergency path for proactive risk signals. Bypasses evaluation
+    // and rebalance gating. Does not run selection or alpha. Does not use
+    // pending/accumulated alpha signals or standard rebalance allocation.
+    // buildEmergencyTargets() produces pre-risk candidate targets, then
+    // runMultiLevelRisk() validates/adjusts them exactly once.
+    void runEmergencyRiskPipeline(const Pipeline::Signal& riskSignal) {
+        const QString corrId = QUuid::createUuid().toString(QUuid::WithoutBraces);
+        const QDateTime ts = now();
+
+        if (m_runtimePolicy.riskCanCancelPendingOrders && m_executionPort)
+            (void)m_executionPort->cancelAllPending();
+
+        QMap<QString, double> currentPos = getCurrentPositions();
+        QVector<TargetPosition> candidates =
+            buildEmergencyTargets(riskSignal, currentPos, ts, corrId);
+
+        QVector<ExecutionIntent> intents =
+            runMultiLevelRisk(candidates, currentPos, corrId);
+        m_lastIntents = intents;
+
+        executeIntents(intents);
+        emit pipelineCompleted(corrId, intents.size());
+    }
+
 signals:
     void pipelineCompleted(const QString& correlationId, int intentCount);
     void riskRejection(const QString& symbol, const QString& reason);
     void executionError(const QString& symbol, const QString& error);
 
 private:
-    // Collect all risk blocks across all levels for convenience.
     QVector<IRiskBlock*> allRiskBlocks() const {
         QVector<IRiskBlock*> all;
         all += m_graph.strategyLevel.risks;
@@ -235,8 +334,6 @@ private:
         return candidates;
     }
 
-    // Merge multiple alpha signals for the same symbol into one (when multiple
-    // alpha blocks are configured).
     QVector<Signal> mergeSignals(const QVector<Signal>& alphaSignals, const QString& corrId) {
         if (m_graph.alphaBlocks.size() <= 1 || !m_graph.mergePolicy) {
             return alphaSignals;
@@ -256,11 +353,10 @@ private:
         return merged;
     }
 
-    // 3. Rebalance layer — each level gets the full universe so it can size
-    //    positions across all assets, not just those that generated a signal.
+    // 3. Rebalance layer
     QVector<TargetPosition> runMultiLevelRebalance(
         const QVector<Signal>& alphaSignals,
-        const QVector<QString>& /*universe*/,  // passed for future portfolio-level rebalancers
+        const QVector<QString>& /*universe*/,
         const QMap<QString, double>& currentPos,
         const QString& corrId)
     {
@@ -282,8 +378,7 @@ private:
         return targets;
     }
 
-    // 4. Risk layer — passes current positions so risk blocks can compute
-    //    exposure, drawdown, etc.
+    // 4. Risk layer
     QVector<ExecutionIntent> runMultiLevelRisk(
         const QVector<TargetPosition>& targets,
         const QMap<QString, double>& currentPos,
@@ -298,10 +393,11 @@ private:
         for (auto* risk : m_graph.accountLevel.risks)
             approved = applyRiskBlock(risk, approved, currentPos);
 
+        const QDateTime ts = now();
         QVector<ExecutionIntent> intents;
         for (const auto& target : approved) {
             const double delta = target.deltaQuantity();
-            if (qFuzzyIsNull(delta)) continue;  // nothing to trade
+            if (qFuzzyIsNull(delta)) continue;
 
             ExecutionIntent intent;
             intent.symbol      = target.symbol;
@@ -309,7 +405,7 @@ private:
             intent.orderType   = ExecutionIntent::Market;
             intent.riskApproval = "Approved";
             intent.correlationId = target.correlationId.isEmpty() ? corrId : target.correlationId;
-            intent.timestamp   = QDateTime::currentDateTime();
+            intent.timestamp   = ts;
             intents.append(intent);
         }
         return intents;
@@ -345,6 +441,32 @@ private:
         return approved;
     }
 
+    // Build pre-risk candidate targets from a proactive risk signal.
+    // The risk block decides what the override means; the runner does
+    // not hardcode a single-symbol-to-zero model.
+    QVector<TargetPosition> buildEmergencyTargets(
+        const Signal& riskSignal,
+        const QMap<QString, double>& currentPos,
+        const QDateTime& ts,
+        const QString& corrId)
+    {
+        QVector<TargetPosition> candidates;
+
+        if (riskSignal.direction == Signal::Sell && !riskSignal.symbol.isEmpty()) {
+            TargetPosition tp;
+            tp.symbol = riskSignal.symbol;
+            tp.targetQuantity = 0.0;
+            tp.currentQuantity = currentPos.value(riskSignal.symbol, 0.0);
+            tp.reason = "Emergency risk: " + riskSignal.alphaBlockId;
+            tp.correlationId = corrId;
+            tp.timestamp = ts;
+            tp.emergencyOriginBlockId = riskSignal.alphaBlockId;
+            candidates.append(tp);
+        }
+
+        return candidates;
+    }
+
     // 5. Execution layer
     void executeIntents(const QVector<ExecutionIntent>& intents) {
         if (intents.isEmpty()) return;
@@ -378,12 +500,15 @@ private:
     }
 
     BlockGraph                      m_graph;
+    StrategyRuntimePolicy           m_runtimePolicy;
+    RuntimeState                    m_runtimeState;
     QVector<QString>                m_universe;
     Ports::IOrderExecutionPort*     m_executionPort;
     Ports::IPositionRepositoryPort* m_positionRepo;
+    IClock*                         m_clock = nullptr;
     QVector<Signal>                 m_collectedSignals;
     QVector<ExecutionIntent>        m_lastIntents;
-    QDateTime                       m_lastBarCloseTs;  // dedup: run once per timestamp
+    QDateTime                       m_lastBarCloseTs;
 };
 
 } // namespace Pipeline

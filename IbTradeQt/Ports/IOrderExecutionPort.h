@@ -26,6 +26,8 @@ public:
     virtual Expected<void, Error> cancelOrder(int orderId) = 0;
 
     virtual Expected<OrderResult, Error> getOrderStatus(int orderId) = 0;
+
+    virtual Expected<void, Error> cancelAllPending() { return {}; }
 };
 
 } // namespace Ports

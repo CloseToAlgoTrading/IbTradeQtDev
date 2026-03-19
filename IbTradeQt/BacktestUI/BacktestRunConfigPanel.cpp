@@ -1,5 +1,8 @@
 #include "BacktestUI/BacktestRunConfigPanel.h"
 #include "BacktestConstants.h"
+#include "Pipeline/UniverseResolver.h"
+#include "RuntimePolicyEditor.h"
+#include <QJsonDocument>
 #include <QLineEdit>
 #include <QDateEdit>
 #include <QDoubleSpinBox>
@@ -11,6 +14,7 @@
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QGroupBox>
+#include <QScrollArea>
 #include <QDate>
 
 namespace BacktestUI {
@@ -79,9 +83,15 @@ void BacktestRunConfigPanel::buildForm() {
     m_statusLabel = new QLabel(QStringLiteral("Ready"));
     m_statusLabel->setStyleSheet(QStringLiteral("color: gray; font-style: italic;"));
 
+    // Universe resolution info
+    m_universeLabel = new QLabel;
+    m_universeLabel->setStyleSheet(QStringLiteral("color: #888; font-size: 11px; font-style: italic;"));
+    m_universeLabel->setWordWrap(true);
+
     // --- Layout ---
     auto* form = new QFormLayout();
     form->addRow(QStringLiteral("Symbols:"),      m_symbolsEdit);
+    form->addRow(QString(), m_universeLabel);
     form->addRow(QStringLiteral("Start Date:"),   m_startDateEdit);
     form->addRow(QStringLiteral("End Date:"),      m_endDateEdit);
     form->addRow(QStringLiteral("Capital:"),       m_capitalSpin);
@@ -95,13 +105,36 @@ void BacktestRunConfigPanel::buildForm() {
     auto* group = new QGroupBox(QStringLiteral("Run Configuration"));
     group->setLayout(form);
 
+    // Runtime policy editor
+    m_policyEditor = new RuntimePolicyEditor(this);
+
+    auto* policyGroup = new QGroupBox(QStringLiteral("Runtime Policy"));
+    auto* policyLayout = new QVBoxLayout(policyGroup);
+    policyLayout->setContentsMargins(4, 4, 4, 4);
+    policyLayout->addWidget(m_policyEditor);
+
+    // Wrap the config groups in a scroll area so their combined minimum
+    // height does not force the entire main window to a fixed size.
+    // (QTabWidget reports the max minimumSizeHint across ALL tabs.)
+    auto* scrollContent = new QWidget;
+    auto* scrollLayout = new QVBoxLayout(scrollContent);
+    scrollLayout->setContentsMargins(0, 0, 0, 0);
+    scrollLayout->addWidget(group);
+    scrollLayout->addWidget(policyGroup);
+    scrollLayout->addStretch();
+
+    auto* scrollArea = new QScrollArea;
+    scrollArea->setWidgetResizable(true);
+    scrollArea->setFrameShape(QFrame::NoFrame);
+    scrollArea->setWidget(scrollContent);
+
     auto* btnRow = new QHBoxLayout();
     btnRow->addWidget(m_runButton);
     btnRow->addWidget(m_statusLabel);
 
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(4, 4, 4, 4);
-    layout->addWidget(group);
+    layout->addWidget(scrollArea, 1);
     layout->addLayout(btnRow);
     layout->addWidget(m_progressBar);
 
@@ -131,6 +164,27 @@ void BacktestRunConfigPanel::setStrategyContext(const QString& strategyId,
     m_pipelineConfigJson = pipelineConfigJson;
     m_strategyDefId      = strategyDefId;
     m_strategyVersion    = strategyVersion > 0 ? strategyVersion : 1;
+
+    // Auto-populate symbols and runtime policy from pipeline config.
+    if (!pipelineConfigJson.isEmpty()) {
+        QJsonObject cfg = QJsonDocument::fromJson(pipelineConfigJson.toUtf8()).object();
+
+        auto resolved = Pipeline::UniverseResolver::resolve(cfg);
+        if (resolved.mode == Pipeline::UniverseResolutionResult::Mode::ExplicitStaticSymbols
+            && !resolved.symbols.isEmpty()) {
+            QStringList syms;
+            for (const auto& s : resolved.symbols) syms.append(s);
+            m_symbolsEdit->setText(syms.join(','));
+            m_symbolsEdit->setReadOnly(true);
+            m_symbolsEdit->setToolTip(resolved.reason);
+        } else {
+            m_symbolsEdit->setReadOnly(false);
+            m_symbolsEdit->setToolTip(resolved.reason);
+        }
+        m_universeLabel->setText(resolved.reason);
+
+        m_policyEditor->loadFromJson(cfg);
+    }
 }
 
 Backtest::BacktestRunConfig BacktestRunConfigPanel::currentConfig() const {
@@ -138,7 +192,15 @@ Backtest::BacktestRunConfig BacktestRunConfigPanel::currentConfig() const {
     c.strategyId          = m_strategyId;
     c.strategyDisplayName = m_displayName;
     c.portfolioPath       = m_portfolioPath;
-    c.pipelineConfigJson  = m_pipelineConfigJson;
+
+    // Merge the runtime policy editor values into the pipeline config JSON
+    if (!m_pipelineConfigJson.isEmpty()) {
+        QJsonObject cfg = QJsonDocument::fromJson(m_pipelineConfigJson.toUtf8()).object();
+        cfg = m_policyEditor->applyToJson(cfg);
+        c.pipelineConfigJson = QString::fromUtf8(QJsonDocument(cfg).toJson(QJsonDocument::Compact));
+    } else {
+        c.pipelineConfigJson = m_pipelineConfigJson;
+    }
     // Canonical strategy definition fields — populated when a live strategy node is
     // selected via "Open in Backtest Workspace". Empty when launched standalone.
     c.strategyDefId       = m_strategyDefId;

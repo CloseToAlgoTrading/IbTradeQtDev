@@ -67,6 +67,7 @@ public:
     QString reason;
     QString correlationId;
     QDateTime timestamp;
+    QString emergencyOriginBlockId; // empty for normal targets; set by buildEmergencyTargets()
 
     double deltaQuantity() const { return targetQuantity - currentQuantity; }
 
@@ -78,6 +79,8 @@ public:
         obj["reason"] = reason;
         obj["correlationId"] = correlationId;
         obj["timestamp"] = timestamp.toString(Qt::ISODateWithMs);
+        if (!emergencyOriginBlockId.isEmpty())
+            obj["emergencyOriginBlockId"] = emergencyOriginBlockId;
         return obj;
     }
 
@@ -89,6 +92,7 @@ public:
         tp.reason = obj["reason"].toString();
         tp.correlationId = obj["correlationId"].toString();
         tp.timestamp = QDateTime::fromString(obj["timestamp"].toString(), Qt::ISODateWithMs);
+        tp.emergencyOriginBlockId = obj["emergencyOriginBlockId"].toString();
         return tp;
     }
 };

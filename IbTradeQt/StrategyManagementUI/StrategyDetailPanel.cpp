@@ -1,5 +1,6 @@
 #include "StrategyDetailPanel.h"
 #include "BlockInspectorPanel.h"
+#include "RuntimePolicyEditor.h"
 
 #include <QLabel>
 #include <QLineEdit>
@@ -17,6 +18,7 @@
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QTabWidget>
+#include <QScrollArea>
 
 namespace StrategyMgmt {
 
@@ -100,6 +102,21 @@ void StrategyDetailPanel::buildUi()
     jsonLayout->addWidget(m_configViewer);
 
     m_configTabs->addTab(jsonTab, QStringLiteral("Raw JSON"));
+
+    // Runtime Policy tab (wrapped in scroll area to avoid
+    // inflating the QTabWidget's minimum size)
+    m_policyEditor = new RuntimePolicyEditor;
+    auto* policyScroll = new QScrollArea;
+    policyScroll->setWidgetResizable(true);
+    policyScroll->setFrameShape(QFrame::NoFrame);
+    policyScroll->setWidget(m_policyEditor);
+    m_configTabs->addTab(policyScroll, QStringLiteral("Runtime Policy"));
+
+    connect(m_policyEditor, &RuntimePolicyEditor::policyChanged,
+            this, [this]() {
+        m_workingConfig = m_policyEditor->applyToJson(m_workingConfig);
+        markDirty();
+    });
 
     m_inspector = new BlockInspectorPanel;
 
@@ -264,6 +281,8 @@ void StrategyDetailPanel::onVersionSelected(int row, int)
     m_configDirty = false;
     m_newVersionBtn->setText(QStringLiteral("Save as New Version"));
     hideBlockDetails();
+
+    m_policyEditor->loadFromJson(m_workingConfig);
 
     QString currentText = doc.toJson(QJsonDocument::Indented);
 

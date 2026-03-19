@@ -4,6 +4,7 @@
 #include "Backtest/YahooFinanceDataSource.h"
 #include "Pipeline/PipelineFactory.h"
 #include "Pipeline/StrategyPipelineRunner.h"
+#include "Pipeline/UniverseResolver.h"
 #include "Strategies/Generic/cpipelinestrategyadapter.h"
 #include <QEventLoop>
 #include <QFile>
@@ -133,6 +134,25 @@ void BacktestSession::buildObjectGraph()
     // m_pipelineRunner is a non-owning view — adapter owns the runner.
     m_pipelineRunner = m_strategyAdapter->backtestPipelineRunner();
 
+    // Seed the universe from the pipeline selection config or from
+    // the data-source symbols so the pipeline has an explicit universe.
+    {
+        auto resolved = Pipeline::UniverseResolver::resolve(pipelineConfig);
+        QVector<QString> universe;
+        if (resolved.mode == Pipeline::UniverseResolutionResult::Mode::ExplicitStaticSymbols) {
+            universe = resolved.symbols;
+        } else {
+            for (const auto& sym : m_config.symbols)
+                universe.append(sym);
+        }
+        if (universe.isEmpty()) {
+            emit failed("Cannot determine tradeable universe: selection block requires "
+                        "explicit symbols but none were resolved.");
+            return;
+        }
+        m_pipelineRunner->setUniverse(universe);
+    }
+
     // --- Wire signals in priority order (all Qt::DirectConnection, same thread) ---
 
     // Priority 0: price cache updated before any consumer sees the tick
@@ -151,6 +171,16 @@ void BacktestSession::buildObjectGraph()
     for (auto* alpha : m_pipelineRunner->graph().alphaBlocks) {
         connect(m_replayer.get(), &MarketDataReplayer::tick,
                 alpha, &Pipeline::IAlphaBlock::onTick,
+                Qt::DirectConnection);
+    }
+
+    // Priority 2.5: risk blocks receive ticks for proactive monitoring (stop-loss, etc.)
+    auto allRisks = m_pipelineRunner->graph().strategyLevel.risks
+                  + m_pipelineRunner->graph().portfolioLevel.risks
+                  + m_pipelineRunner->graph().accountLevel.risks;
+    for (auto* risk : allRisks) {
+        connect(m_replayer.get(), &MarketDataReplayer::tick,
+                risk, [risk](const IBComm::MarketTick& t){ risk->onTick(t); },
                 Qt::DirectConnection);
     }
 

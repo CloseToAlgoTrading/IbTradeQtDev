@@ -15,6 +15,7 @@ class QTableWidget;
 class QPlainTextEdit;
 class QTabWidget;
 class BlockInspectorPanel;
+class RuntimePolicyEditor;
 
 namespace StrategyMgmt {
 
@@ -85,6 +86,9 @@ private:
     // Block inspector (dynamic tab, shown on block selection)
     BlockInspectorPanel*  m_inspector     = nullptr;
     int                   m_inspectorTabIdx = -1;
+
+    // Runtime policy editor (permanent tab)
+    RuntimePolicyEditor*  m_policyEditor  = nullptr;
 
     // Config tabs
     QTabWidget*     m_configTabs    = nullptr;

@@ -119,7 +119,8 @@ SOURCES += \
     ../StrategyManagementUI/StrategyDetailPanel.cpp \
     ../StrategyManagementUI/StrategyManagementPanel.cpp \
     ../Pipeline/PipelineTreeUtils.cpp \
-    ../MainSystem/WorkspaceWidgets/BlockInspectorPanel.cpp
+    ../MainSystem/WorkspaceWidgets/BlockInspectorPanel.cpp \
+    ../MainSystem/WorkspaceWidgets/RuntimePolicyEditor.cpp
 
 HEADERS += \
     ../Pipeline/Contracts.h \
@@ -143,6 +144,9 @@ HEADERS += \
     ../Replay/MarketDataReplayer.h \
     ../Pipeline/BlockRegistry.h \
     ../Pipeline/StrategyPipelineRunner.h \
+    ../Pipeline/StrategyRuntimePolicy.h \
+    ../Pipeline/PipelineDefinition.h \
+    ../Pipeline/UniverseResolver.h \
     ../Pipeline/BlockGraphSerializer.h \
     ../Blocks/MomentumAlphaBlock.h \
     ../Blocks/MaxPositionRiskBlock.h \
@@ -225,6 +229,7 @@ HEADERS += \
     backend/tst_strategy_definition.h \
     backend/tst_strategy_catalog.h \
     integration/tst_adapter_pure_backtest.h \
+    parity/tst_pipeline_parity.h \
     ../Backend/ISystemBackend.h \
     ../Backend/SystemBackendImpl.h \
     ../Backend/ModelNodeRecord.h \
@@ -276,4 +281,6 @@ HEADERS += \
     ../StrategyManagementUI/StrategyDetailPanel.h \
     ../StrategyManagementUI/StrategyManagementPanel.h \
     ../Pipeline/PipelineTreeUtils.h \
-    ../MainSystem/WorkspaceWidgets/BlockInspectorPanel.h
+    ../MainSystem/WorkspaceWidgets/BlockInspectorPanel.h \
+    ../MainSystem/WorkspaceWidgets/RuntimePolicyEditor.h \
+    ui/tst_runtime_policy_editor.h

@@ -21,6 +21,7 @@ class QComboBox;
 class QProgressBar;
 class QLabel;
 class QPushButton;
+class RuntimePolicyEditor;
 
 namespace BacktestUI {
 
@@ -88,6 +89,9 @@ private:
     QPushButton*    m_runButton        = nullptr;
     QProgressBar*   m_progressBar      = nullptr;
     QLabel*         m_statusLabel      = nullptr;
+    QLabel*         m_universeLabel    = nullptr;
+
+    RuntimePolicyEditor* m_policyEditor = nullptr;
 };
 
 } // namespace BacktestUI

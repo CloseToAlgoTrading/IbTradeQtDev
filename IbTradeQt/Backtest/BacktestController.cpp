@@ -1,6 +1,7 @@
 #include "Backtest/BacktestController.h"
 #include "Backtest/HistoricalDataManager.h"
 #include "Backtest/BacktestConstants.h"
+#include "Pipeline/UniverseResolver.h"
 #include "DB/dbquery.h"
 #include "DB/dbdatatypes.h"
 #include <QUuid>
@@ -108,15 +109,28 @@ void BacktestController::start(const BacktestRunConfig& config) {
     emit statusChanged(QString(Backtest::Status::Running));
     m_elapsed.start();
 
-    // Build BacktestConfig from the run config
-    BacktestConfig btConfig = buildBacktestConfig(config);
-
     // Inline pipeline JSON — parse from stored string
     QJsonObject pipelineJson;
     if (!config.pipelineConfigJson.isEmpty()) {
         pipelineJson = QJsonDocument::fromJson(
             config.pipelineConfigJson.toUtf8()).object();
     }
+
+    // Resolve symbols from the pipeline selection config if the run config
+    // has no explicit symbols. This ensures data fetching matches the pipeline.
+    BacktestRunConfig resolvedConfig = config;
+    if (resolvedConfig.symbols.isEmpty() && !pipelineJson.isEmpty()) {
+        auto resolved = Pipeline::UniverseResolver::resolve(pipelineJson);
+        if (resolved.mode == Pipeline::UniverseResolutionResult::Mode::ExplicitStaticSymbols) {
+            for (const auto& sym : resolved.symbols)
+                resolvedConfig.symbols.append(sym);
+            qDebug() << "BacktestController: resolved symbols from pipeline config:"
+                     << resolvedConfig.symbols;
+        }
+    }
+
+    // Build BacktestConfig from the (possibly enriched) run config
+    BacktestConfig btConfig = buildBacktestConfig(resolvedConfig);
 
     // Run on a background thread: HistoricalDataManager + BacktestSession
     m_workerThread = new QThread();

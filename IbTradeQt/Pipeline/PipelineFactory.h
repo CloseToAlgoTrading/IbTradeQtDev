@@ -5,6 +5,8 @@
 #include <QJsonArray>
 #include <QDebug>
 #include "StrategyPipelineRunner.h"
+#include "StrategyRuntimePolicy.h"
+#include "PipelineDefinition.h"
 #include "BlockRegistry.h"
 #include "BlockGraphSerializer.h"
 #include "PipelineConstants.h"
@@ -90,6 +92,17 @@ public:
         return graph;
     }
 
+    static PipelineDefinition buildDefinition(
+        const QJsonObject& config,
+        Ports::IOrderExecutionPort* executionPort = nullptr)
+    {
+        PipelineDefinition def;
+        def.graph = buildGraph(config, executionPort);
+        def.runtimePolicy = StrategyRuntimePolicy::fromJson(
+            config.value("runtimePolicy").toObject());
+        return def;
+    }
+
     static Supervision::StrategyRuntime* createRuntime(
         const QString& name,
         const QJsonObject& config,
@@ -97,10 +110,10 @@ public:
         Ports::IPositionRepositoryPort* positionRepo,
         IBComm::MarketDataRouter* router = nullptr)
     {
-        BlockGraph graph = buildGraph(config, executionPort);
+        PipelineDefinition def = buildDefinition(config, executionPort);
 
         auto* runtime = new Supervision::StrategyRuntime(
-            name, graph, executionPort, positionRepo);
+            name, std::move(def), executionPort, positionRepo);
 
         if (router) {
             runtime->connectToMarketData(router);

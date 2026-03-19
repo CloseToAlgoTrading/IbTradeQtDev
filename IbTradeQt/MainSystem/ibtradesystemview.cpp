@@ -54,6 +54,7 @@ CIBTradeSystemView::CIBTradeSystemView(QWidget *parent)
 
 	ui.statusBar->addWidget(m_pTimeLabel);
     ui.statusBar->addPermanentWidget(m_pConnectLabel);
+    ui.statusBar->setSizeGripEnabled(true);
 
     m_pConnectLabel->setPixmap(m_ih.loadIconFromResourceTheme("NotConnected").pixmap(16));
     m_pConnectLabel->setToolTip("Disconnected");
@@ -133,8 +134,8 @@ void CIBTradeSystemView::setupConsoleLayout()
     m_mainTabWidget->addTab(backtestSplitter,     QStringLiteral("Backtest"));
     m_mainTabWidget->addTab(m_strategyMgmtPanel,  QStringLiteral("Strategy Management"));
 
-    // Replace the old central widget content with the new console layout.
-    // Hide old .ui splitter hierarchy.
+    // Remove and hide the old .ui splitter hierarchy.
+    ui.verticalLayout_2->removeWidget(ui.splitter_2);
     ui.splitter_2->hide();
 
     auto* centralLayout = ui.verticalLayout_2;
@@ -142,6 +143,7 @@ void CIBTradeSystemView::setupConsoleLayout()
     centralLayout->addWidget(m_mainTabWidget, 1);
 
     // Replace the old logging dock with EventLogPanel
+    removeDockWidget(ui.dockWidget_Logging);
     ui.dockWidget_Logging->hide();
     addDockWidget(Qt::BottomDockWidgetArea, m_eventLogPanel);
 }
@@ -236,7 +238,6 @@ void CIBTradeSystemView::slotRecvConnectButtonState(bool isConnect)
 
 void CIBTradeSystemView::slotClearLog()
 {
-    ui.textEdit->clear();
     if (m_eventLogPanel)
         m_eventLogPanel->clearAll();
 }
@@ -245,8 +246,6 @@ void CIBTradeSystemView::slotShowLog()
 {
     if (m_eventLogPanel)
         m_eventLogPanel->show();
-    else
-        ui.dockWidget_Logging->show();
 }
 
 void CIBTradeSystemView::slotshowSettings()

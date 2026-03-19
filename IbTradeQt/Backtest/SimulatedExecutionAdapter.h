@@ -33,6 +33,8 @@ public:
 
     Expected<Ports::OrderResult, Error> getOrderStatus(int orderId) override;
 
+    Expected<void, Error> cancelAllPending() override;
+
     // Called by BacktestSession replay loop at the start of each new tick.
     // Flushes any pending orders queued during the previous barClose event.
     void onNextTickOpen(const IBComm::MarketTick& openTick);

@@ -1,4 +1,4 @@
-#include <QCoreApplication>
+#include <QApplication>
 #include <QtTest>
 
 #include "phase1/tst_contracts.h"
@@ -33,10 +33,12 @@
 #include "backend/tst_strategy_definition.h"
 #include "backend/tst_strategy_catalog.h"
 #include "integration/tst_adapter_pure_backtest.h"
+#include "parity/tst_pipeline_parity.h"
+#include "ui/tst_runtime_policy_editor.h"
 
 int main(int argc, char *argv[])
 {
-    QCoreApplication app(argc, argv);
+    QApplication app(argc, argv);
     int status = 0;
 
     // Phase 1
@@ -128,6 +130,12 @@ int main(int argc, char *argv[])
 
     // Phase 10 — Adapter pure-backtest mode + config parity
     { TestAdapterPureBacktest tc;            status |= QTest::qExec(&tc, argc, argv); }
+
+    // Pipeline Parity — live/backtest semantic parity verification
+    { TestPipelineParity tc;                 status |= QTest::qExec(&tc, argc, argv); }
+
+    // UI — RuntimePolicyEditor widget tests
+    { TestRuntimePolicyEditor tc;            status |= QTest::qExec(&tc, argc, argv); }
 
     return status;
 }

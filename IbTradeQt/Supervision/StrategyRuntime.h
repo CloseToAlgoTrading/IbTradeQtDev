@@ -8,6 +8,7 @@
 #include <QDebug>
 #include <atomic>
 #include "../Pipeline/StrategyPipelineRunner.h"
+#include "../Pipeline/PipelineDefinition.h"
 #include "../IBComm/MarketDataRouter.h"
 #include "../Ports/IOrderExecutionPort.h"
 #include "../Ports/IPositionRepositoryPort.h"
@@ -30,21 +31,23 @@ public:
         , m_executionPort(executionPort)
         , m_positionRepo(positionRepo)
     {
-        m_thread = new QThread();
-        m_thread->setObjectName("Strategy-" + name);
+        initThread();
+    }
 
-        m_runner = new Pipeline::StrategyPipelineRunner(
-            m_graph, m_executionPort, m_positionRepo);
-        m_runner->wireAlphaSignals();
-
-        m_runner->moveToThread(m_thread);
-
-        for (auto* alpha : m_graph.alphaBlocks) {
-            alpha->moveToThread(m_thread);
-        }
-
-        connect(m_thread, &QThread::finished,
-                this, &StrategyRuntime::onThreadFinished);
+    explicit StrategyRuntime(
+        const QString& name,
+        Pipeline::PipelineDefinition definition,
+        Ports::IOrderExecutionPort* executionPort,
+        Ports::IPositionRepositoryPort* positionRepo,
+        QObject* parent = nullptr)
+        : QObject(parent)
+        , m_name(name)
+        , m_graph(std::move(definition.graph))
+        , m_runtimePolicy(definition.runtimePolicy)
+        , m_executionPort(executionPort)
+        , m_positionRepo(positionRepo)
+    {
+        initThread();
     }
 
     ~StrategyRuntime() override {
@@ -66,17 +69,44 @@ public:
                     alpha, &Pipeline::IAlphaBlock::onTickByTick,
                     Qt::QueuedConnection);
         }
+
+        auto allRisks = m_graph.strategyLevel.risks
+                      + m_graph.portfolioLevel.risks
+                      + m_graph.accountLevel.risks;
+        for (auto* risk : allRisks) {
+            connect(router, &IBComm::MarketDataRouter::tick,
+                    risk, [risk](const IBComm::MarketTick& t){ risk->onTick(t); },
+                    Qt::QueuedConnection);
+        }
+
         connect(router, &IBComm::MarketDataRouter::barClose,
                 m_runner, &Pipeline::StrategyPipelineRunner::onBarClose,
                 Qt::QueuedConnection);
     }
 
-    void connectToMockRouter(QObject* mockRouter) {
+    template<typename RouterT>
+    void connectToMockRouter(RouterT* mockRouter) {
         for (auto* alpha : m_graph.alphaBlocks) {
-            connect(mockRouter, SIGNAL(tick(IBComm::MarketTick)),
-                    alpha, SLOT(onTick(IBComm::MarketTick)),
+            connect(mockRouter, &RouterT::tick,
+                    alpha, &Pipeline::IAlphaBlock::onTick,
+                    Qt::DirectConnection);
+            connect(mockRouter, &RouterT::barClose,
+                    alpha, &Pipeline::IAlphaBlock::onBarClose,
                     Qt::DirectConnection);
         }
+
+        auto allRisks = m_graph.strategyLevel.risks
+                      + m_graph.portfolioLevel.risks
+                      + m_graph.accountLevel.risks;
+        for (auto* risk : allRisks) {
+            connect(mockRouter, &RouterT::tick,
+                    risk, [risk](const IBComm::MarketTick& t){ risk->onTick(t); },
+                    Qt::DirectConnection);
+        }
+
+        connect(mockRouter, &RouterT::barClose,
+                m_runner, &Pipeline::StrategyPipelineRunner::onBarClose,
+                Qt::DirectConnection);
     }
 
     void start() {
@@ -135,6 +165,7 @@ public:
 
     Pipeline::StrategyPipelineRunner* runner() { return m_runner; }
     const Pipeline::BlockGraph& graph() const { return m_graph; }
+    const Pipeline::StrategyRuntimePolicy& runtimePolicy() const { return m_runtimePolicy; }
 
 signals:
     void started(const QString& name);
@@ -148,9 +179,28 @@ private slots:
         }
     }
 
+    void initThread() {
+        m_thread = new QThread();
+        m_thread->setObjectName("Strategy-" + m_name);
+
+        m_runner = new Pipeline::StrategyPipelineRunner(
+            m_graph, m_runtimePolicy, m_executionPort, m_positionRepo);
+        m_runner->wireAlphaSignals();
+
+        m_runner->moveToThread(m_thread);
+
+        for (auto* alpha : m_graph.alphaBlocks) {
+            alpha->moveToThread(m_thread);
+        }
+
+        connect(m_thread, &QThread::finished,
+                this, &StrategyRuntime::onThreadFinished);
+    }
+
 private:
     QString m_name;
     Pipeline::BlockGraph m_graph;
+    Pipeline::StrategyRuntimePolicy m_runtimePolicy;
     Ports::IOrderExecutionPort* m_executionPort;
     Ports::IPositionRepositoryPort* m_positionRepo;
 

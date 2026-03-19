@@ -9,6 +9,7 @@ class QLineEdit;
 class QTextEdit;
 class EventLogPanel;
 class BlockInspectorPanel;
+class RuntimePolicyEditor;
 
 class StrategyWorkspace : public WorkspaceBase
 {
@@ -32,11 +33,13 @@ private:
     void buildInfoTab();
     void buildLogsTab();
     void buildAssetsTab();
+    void buildPolicyTab();
 
     void refreshOverview();
     void refreshProperties();
     void refreshInfo();
     void refreshAssets();
+    void refreshPolicy();
 
     // Overview
     QWidget*     m_overviewWidget   = nullptr;
@@ -44,6 +47,8 @@ private:
     QLabel*      m_ovCurrentPos     = nullptr;
     QLabel*      m_ovLatestSignal   = nullptr;
     QLabel*      m_ovWarnings       = nullptr;
+    QLabel*      m_ovEvalMode       = nullptr;
+    QLabel*      m_ovRebalMode      = nullptr;
 
     // Properties
     QWidget*     m_propertiesWidget = nullptr;
@@ -60,6 +65,10 @@ private:
     // Assets
     QWidget*     m_assetsWidget     = nullptr;
     QLineEdit*   m_assetsEdit       = nullptr;
+    QLabel*      m_universeInfoLabel = nullptr;
+
+    // Policy
+    RuntimePolicyEditor* m_policyEditor = nullptr;
 
     // Block inspector (shown inside Properties tab when a block is selected)
     BlockInspectorPanel* m_inspector   = nullptr;

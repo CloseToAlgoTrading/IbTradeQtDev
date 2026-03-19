@@ -172,6 +172,7 @@ SOURCES += \
     MainSystem/WorkspaceWidgets/AccountWorkspace.cpp \
     MainSystem/WorkspaceWidgets/PortfolioWorkspace.cpp \
     MainSystem/WorkspaceWidgets/BlockInspectorPanel.cpp \
+    MainSystem/WorkspaceWidgets/RuntimePolicyEditor.cpp \
     Pipeline/PipelineTreeUtils.cpp \
     MainSystem/AlertService.cpp \
     Backend/ModelTreeRepository.cpp \
@@ -321,6 +322,7 @@ HEADERS += \
     MainSystem/WorkspaceWidgets/AccountWorkspace.h \
     MainSystem/WorkspaceWidgets/PortfolioWorkspace.h \
     MainSystem/WorkspaceWidgets/BlockInspectorPanel.h \
+    MainSystem/WorkspaceWidgets/RuntimePolicyEditor.h \
     MainSystem/AlertService.h \
     Backend/ModelNodeRecord.h \
     Backend/ModelTreeRepository.h \

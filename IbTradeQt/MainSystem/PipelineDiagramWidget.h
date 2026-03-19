@@ -45,6 +45,7 @@ private:
     ViewMode m_viewMode = Empty;
     QVector<BlockInfo> m_blocks;
     QJsonObject m_config;
+    QString m_policySummary;
 
     QString m_accountName;
     QStringList m_portfolioNames;
@@ -56,6 +57,8 @@ private:
     void paintPipeline(QPainter& p);
     void paintAccountView(QPainter& p);
     void paintPortfolioView(QPainter& p);
+
+    static QString buildPolicySummary(const QJsonObject& config);
 };
 
 #endif // PIPELINEDIAGRAMWIDGET_H
