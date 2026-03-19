@@ -83,7 +83,7 @@ private:
     // Version table
     QTableWidget*   m_versionTable  = nullptr;
 
-    // Block inspector (dynamic tab, shown on block selection)
+    // Block inspector (permanent tab for viewing/editing block parameters)
     BlockInspectorPanel*  m_inspector     = nullptr;
     int                   m_inspectorTabIdx = -1;
 

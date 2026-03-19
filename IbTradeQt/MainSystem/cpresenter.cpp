@@ -505,6 +505,78 @@ void CPresenter::MapSignals()
 
         connect(smPanel, &StrategyMgmt::StrategyManagementPanel::openInBacktestRequested,
                 this, &CPresenter::openCatalogVersionInBacktest);
+
+        connect(smPanel, &StrategyMgmt::StrategyManagementPanel::addBlockRequested,
+                this, [this](const QString& strategyId, const QString& category,
+                             const QString& blockId, const QJsonObject& defaultConfig) {
+            if (!m_backend) return;
+
+            // Get the latest version config, modify it, and save as new version
+            QJsonArray versions = m_backend->listStrategyVersions(strategyId);
+            QJsonObject latestConfig;
+            if (!versions.isEmpty()) {
+                QString cfgStr = versions.last().toObject().value("configJson").toString();
+                latestConfig = QJsonDocument::fromJson(cfgStr.toUtf8()).object();
+            }
+
+            bool isArray = Pipeline::categoryIsArray(category);
+            QLatin1StringView key = Pipeline::categoryKey(category);
+            if (key.isEmpty()) return;
+
+            QJsonObject block;
+            block[Pipeline::Key::BlockId] = blockId;
+            block[Pipeline::Key::Config]  = defaultConfig;
+
+            if (isArray) {
+                QJsonArray arr = latestConfig.value(key).toArray();
+                arr.append(block);
+                latestConfig[key] = arr;
+            } else {
+                latestConfig[key] = block;
+            }
+
+            m_backend->createStrategyVersion(strategyId, latestConfig,
+                QStringLiteral("Added %1 block: %2").arg(category, blockId));
+
+            refreshStrategyCatalog();
+            QJsonObject entry = m_backend->strategyCatalogEntry(strategyId);
+            QJsonArray newVersions = m_backend->listStrategyVersions(strategyId);
+            pIbtsView->strategyManagementPanel()->showStrategyDetail(entry, newVersions);
+        });
+
+        connect(smPanel, &StrategyMgmt::StrategyManagementPanel::removeBlockRequested,
+                this, [this](const QString& strategyId, const QString& category,
+                             int blockIndex) {
+            if (!m_backend) return;
+
+            QJsonArray versions = m_backend->listStrategyVersions(strategyId);
+            QJsonObject latestConfig;
+            if (!versions.isEmpty()) {
+                QString cfgStr = versions.last().toObject().value("configJson").toString();
+                latestConfig = QJsonDocument::fromJson(cfgStr.toUtf8()).object();
+            }
+
+            bool isArray = Pipeline::categoryIsArray(category);
+            QLatin1StringView key = Pipeline::categoryKey(category);
+            if (key.isEmpty()) return;
+
+            if (isArray) {
+                QJsonArray arr = latestConfig.value(key).toArray();
+                if (blockIndex >= 0 && blockIndex < arr.size())
+                    arr.removeAt(blockIndex);
+                latestConfig[key] = arr;
+            } else {
+                latestConfig.remove(key);
+            }
+
+            m_backend->createStrategyVersion(strategyId, latestConfig,
+                QStringLiteral("Removed %1 block").arg(category));
+
+            refreshStrategyCatalog();
+            QJsonObject entry = m_backend->strategyCatalogEntry(strategyId);
+            QJsonArray newVersions = m_backend->listStrategyVersions(strategyId);
+            pIbtsView->strategyManagementPanel()->showStrategyDetail(entry, newVersions);
+        });
     }
 
     // Backend catalog signals → refresh

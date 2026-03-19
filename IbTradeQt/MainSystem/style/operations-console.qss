@@ -55,8 +55,8 @@ QMainWindow {
     color: #fff;
 }
 
-/* ── Tree View ── */
-QTreeView {
+/* ── Tree View (shared across Live, Backtest, Catalog panels) ── */
+QTreeView, QTreeWidget {
     background-color: #1b1b1b;
     alternate-background-color: #1f1f1f;
     color: #d0d0d0;
@@ -67,22 +67,34 @@ QTreeView {
     outline: 0;
 }
 
-QTreeView::item {
+QTreeView::item, QTreeWidget::item {
     height: 26px;
     padding: 2px 4px;
     border: none;
 }
 
-QTreeView::item:selected {
+QTreeView::item:selected, QTreeWidget::item:selected {
     background-color: #2a3a50;
 }
 
-QTreeView::item:hover:!selected {
+QTreeView::item:hover:!selected, QTreeWidget::item:hover:!selected {
     background-color: #232323;
 }
 
-QTreeView::branch {
+QTreeView::branch, QTreeWidget::branch {
     background: transparent;
+}
+
+QTreeView::branch:has-children:closed,
+QTreeWidget::branch:has-children:closed {
+    border-image: none;
+    image: none;
+}
+
+QTreeView::branch:has-children:open,
+QTreeWidget::branch:has-children:open {
+    border-image: none;
+    image: none;
 }
 
 QHeaderView::section {

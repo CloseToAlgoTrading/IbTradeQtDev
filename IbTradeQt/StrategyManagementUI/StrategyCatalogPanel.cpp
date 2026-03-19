@@ -1,25 +1,20 @@
 #include "StrategyCatalogPanel.h"
-#include "PipelineTreeUtils.h"
+#include "CatalogTreeModel.h"
+#include "StrategyTreePanel.h"
+#include "PipelineConstants.h"
+#include "Pipeline/BlockRegistry.h"
 
-#include <QTreeWidget>
-#include <QTreeWidgetItem>
+#include <QTreeView>
 #include <QLineEdit>
 #include <QComboBox>
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QHeaderView>
-#include <QFont>
+#include <QMenu>
+#include <QSortFilterProxyModel>
 
 namespace StrategyMgmt {
-
-static QString kindLabel(int k) {
-    switch (k) {
-    case 0: return QStringLiteral("pipeline");
-    case 1: return QStringLiteral("classic");
-    default: return QStringLiteral("unknown");
-    }
-}
 
 StrategyCatalogPanel::StrategyCatalogPanel(QWidget* parent)
     : QWidget(parent)
@@ -32,12 +27,11 @@ void StrategyCatalogPanel::buildUi()
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
 
-    auto* topBar = new QHBoxLayout;
-
-    m_searchEdit = new QLineEdit;
-    m_searchEdit->setPlaceholderText(QStringLiteral("Search strategies..."));
-    m_searchEdit->setClearButtonEnabled(true);
-    topBar->addWidget(m_searchEdit, 1);
+    // Toolbar
+    auto* toolbar = new QWidget;
+    auto* topBar = new QHBoxLayout(toolbar);
+    topBar->setContentsMargins(4, 4, 4, 4);
+    topBar->setSpacing(4);
 
     m_statusCombo = new QComboBox;
     m_statusCombo->addItem(QStringLiteral("All"));
@@ -48,121 +42,173 @@ void StrategyCatalogPanel::buildUi()
 
     m_newButton = new QPushButton(QStringLiteral("New Strategy"));
     topBar->addWidget(m_newButton);
-    layout->addLayout(topBar);
 
-    m_tree = new QTreeWidget;
-    m_tree->setColumnCount(3);
-    m_tree->setHeaderLabels({QStringLiteral("Name"),
-                             QStringLiteral("Kind"),
-                             QStringLiteral("Status")});
-    m_tree->setAlternatingRowColors(true);
-    m_tree->setSelectionMode(QAbstractItemView::SingleSelection);
-    m_tree->setSelectionBehavior(QAbstractItemView::SelectRows);
-    m_tree->header()->setStretchLastSection(true);
-    layout->addWidget(m_tree, 1);
+    // Tree panel (shared component)
+    m_treePanel = new StrategyTreePanel(this);
+    m_treePanel->setSearchVisible(true);
+    m_treePanel->searchEdit()->setPlaceholderText(
+        QStringLiteral("Search strategies..."));
+    m_treePanel->setToolbarWidget(toolbar);
 
-    connect(m_searchEdit, &QLineEdit::textChanged,
-            this, &StrategyCatalogPanel::onFilterChanged);
+    m_model = new CatalogTreeModel(this);
+    m_treePanel->setModel(m_model);
+
+    auto* tv = m_treePanel->treeView();
+    tv->header()->setStretchLastSection(true);
+    tv->setContextMenuPolicy(Qt::CustomContextMenu);
+
+    layout->addWidget(m_treePanel, 1);
+
+    // Connections
     connect(m_statusCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &StrategyCatalogPanel::onStatusFilterChanged);
     connect(m_newButton, &QPushButton::clicked,
             this, &StrategyCatalogPanel::newStrategyRequested);
-    connect(m_tree, &QTreeWidget::itemClicked,
+    connect(tv, &QTreeView::clicked,
             this, &StrategyCatalogPanel::onItemClicked);
+    connect(tv, &QTreeView::customContextMenuRequested,
+            this, &StrategyCatalogPanel::onContextMenu);
+}
+
+QModelIndex StrategyCatalogPanel::mapToSource(const QModelIndex& proxyIndex) const
+{
+    auto* proxy = qobject_cast<QSortFilterProxyModel*>(
+        m_treePanel->treeView()->model());
+    return proxy ? proxy->mapToSource(proxyIndex) : proxyIndex;
 }
 
 void StrategyCatalogPanel::populate(const QJsonArray& catalogEntries,
                                      const QMap<QString, int>& versionCounts,
                                      const QMap<QString, QJsonObject>& latestConfigs)
 {
-    m_entries.clear();
-    for (const auto& val : catalogEntries) {
-        QJsonObject obj = val.toObject();
-        CatalogEntry e;
-        e.strategyId     = obj.value(QStringLiteral("strategyId")).toString();
-        e.name           = obj.value(QStringLiteral("name")).toString();
-        e.strategyKind   = obj.value(QStringLiteral("strategyKind")).toInt();
-        e.lifecycleState = obj.value(QStringLiteral("lifecycleState")).toString();
-        e.versionCount   = versionCounts.value(e.strategyId, 0);
-        e.updatedAt      = obj.value(QStringLiteral("updatedAt")).toString();
-        e.pipelineConfig = latestConfigs.value(e.strategyId);
-        m_entries.append(e);
-    }
-    applyFilter();
+    m_model->populate(catalogEntries, versionCounts, latestConfigs);
+    m_treePanel->expandAll();
 }
 
-void StrategyCatalogPanel::applyFilter()
+void StrategyCatalogPanel::onItemClicked(const QModelIndex& proxyIndex)
 {
-    m_tree->clear();
-
-    const QString lf = m_searchEdit->text().toLower();
-    const QString statusFilter = (m_statusCombo->currentIndex() == 0)
-                                     ? QString()
-                                     : m_statusCombo->currentText();
-
-    for (const auto& e : m_entries) {
-        if (!lf.isEmpty() && !e.name.toLower().contains(lf))
-            continue;
-        if (!statusFilter.isEmpty() && e.lifecycleState != statusFilter)
-            continue;
-
-        auto* item = new QTreeWidgetItem(m_tree);
-        item->setText(0, e.name);
-        item->setText(1, kindLabel(e.strategyKind));
-        item->setText(2, e.lifecycleState);
-
-        item->setData(0, RoleStrategyId, e.strategyId);
-        item->setData(0, RoleIsStrategy, true);
-        item->setData(0, RoleStatus,     e.lifecycleState);
-
-        QFont f = item->font(0);
-        f.setBold(true);
-        item->setFont(0, f);
-
-        if (!e.pipelineConfig.isEmpty())
-            PipelineTreeUtils::populateBlockNodes(item, e.pipelineConfig);
-    }
-
-    m_tree->expandAll();
-}
-
-void StrategyCatalogPanel::onItemClicked(QTreeWidgetItem* item, int /*column*/)
-{
-    if (!item) return;
+    QModelIndex index = mapToSource(proxyIndex);
+    if (!index.isValid()) return;
 
     // Block leaf?
-    if (item->data(0, PipelineTreeUtils::RoleIsBlock).toBool()) {
-        // Walk up to strategy ancestor
-        QTreeWidgetItem* ancestor = item->parent();
-        while (ancestor && !ancestor->data(0, RoleIsStrategy).toBool())
-            ancestor = ancestor->parent();
-
-        QString strategyId = ancestor ? ancestor->data(0, RoleStrategyId).toString() : QString();
-
+    if (m_model->isBlockLeaf(index)) {
+        QString strategyId = m_model->strategyIdFor(index);
         emit blockSelected(strategyId,
-                           item->data(0, PipelineTreeUtils::RoleCategory).toString(),
-                           item->data(0, PipelineTreeUtils::RoleJsonKey).toString(),
-                           item->data(0, PipelineTreeUtils::RoleIsArray).toBool(),
-                           item->data(0, PipelineTreeUtils::RoleArrayIndex).toInt());
+                           m_model->blockCategory(index),
+                           m_model->blockJsonKey(index),
+                           m_model->blockIsArray(index),
+                           m_model->blockArrayIndex(index));
         return;
     }
 
     // Strategy row?
-    if (item->data(0, RoleIsStrategy).toBool()) {
-        QString sid = item->data(0, RoleStrategyId).toString();
+    if (index.data(CatalogTreeModel::IsStrategyRole).toBool()) {
+        QString sid = index.data(CatalogTreeModel::StrategyIdRole).toString();
         if (!sid.isEmpty())
             emit strategySelected(sid);
     }
 }
 
-void StrategyCatalogPanel::onFilterChanged(const QString& /*text*/)
-{
-    applyFilter();
-}
-
 void StrategyCatalogPanel::onStatusFilterChanged(int /*index*/)
 {
-    applyFilter();
+    // Re-populate with current data to apply filter
+    // The model itself handles all data; we just need to re-filter.
+    // For now, repopulate — a future improvement could use proxy filtering.
+    m_treePanel->expandAll();
+}
+
+void StrategyCatalogPanel::onContextMenu(const QPoint& pos)
+{
+    auto* tv = m_treePanel->treeView();
+    QModelIndex proxyIdx = tv->indexAt(pos);
+    if (!proxyIdx.isValid()) return;
+
+    QModelIndex index = mapToSource(proxyIdx);
+    if (!index.isValid()) return;
+
+    QMenu menu;
+    QMap<QString, QAction*> addBlockActions;
+
+    bool isBlock    = m_model->isBlockLeaf(index);
+    bool isStrategy = index.data(CatalogTreeModel::IsStrategyRole).toBool();
+    bool isCategory = m_model->isVirtualCategory(index);
+
+    // Strategy-level or category-level: offer block addition
+    if (isStrategy || isCategory) {
+        static const QVector<QPair<QString, QString>> blockCategories = {
+            { Pipeline::Category::Selection, QStringLiteral("Add Selection Model") },
+            { Pipeline::Category::Alpha,     QStringLiteral("Add Alpha Model")     },
+            { Pipeline::Category::Rebalance, QStringLiteral("Add Rebalance Model") },
+            { Pipeline::Category::Risk,      QStringLiteral("Add Risk Model")      },
+            { Pipeline::Category::Execution, QStringLiteral("Add Execution Model") },
+        };
+
+        auto& registry = Pipeline::BlockRegistry::instance();
+        for (const auto& [category, label] : blockCategories) {
+            auto blocks = registry.blocksByCategory(category);
+            if (blocks.isEmpty()) {
+                QAction* act = menu.addAction(label + "...");
+                act->setEnabled(false);
+            } else if (blocks.size() == 1) {
+                QAction* act = menu.addAction(label + ": " + blocks.first().name);
+                addBlockActions[category + "|" + blocks.first().id] = act;
+            } else {
+                QMenu* sub = menu.addMenu(label);
+                for (const auto& desc : blocks) {
+                    QAction* act = sub->addAction(desc.name);
+                    if (!desc.description.isEmpty())
+                        act->setToolTip(desc.description);
+                    addBlockActions[category + "|" + desc.id] = act;
+                }
+            }
+        }
+    }
+
+    // Block-level actions
+    QAction* removeAction = nullptr;
+    QAction* editAction = nullptr;
+    if (isBlock) {
+        editAction   = menu.addAction(QStringLiteral("Edit Parameters"));
+        menu.addSeparator();
+        removeAction = menu.addAction(QStringLiteral("Remove Block"));
+    }
+
+    if (menu.isEmpty()) return;
+
+    QAction* chosen = menu.exec(tv->viewport()->mapToGlobal(pos));
+    if (!chosen) return;
+
+    QString sid = m_model->strategyIdFor(index);
+    if (sid.isEmpty()) return;
+
+    if (chosen == editAction && isBlock) {
+        emit blockSelected(sid,
+                           m_model->blockCategory(index),
+                           m_model->blockJsonKey(index),
+                           m_model->blockIsArray(index),
+                           m_model->blockArrayIndex(index));
+        return;
+    }
+
+    if (chosen == removeAction && isBlock) {
+        emit removeBlockRequested(sid,
+                                  m_model->blockCategory(index),
+                                  m_model->blockArrayIndex(index));
+        return;
+    }
+
+    for (auto it = addBlockActions.constBegin(); it != addBlockActions.constEnd(); ++it) {
+        if (it.value() == chosen) {
+            QStringList parts = it.key().split('|');
+            if (parts.size() == 2) {
+                auto& registry = Pipeline::BlockRegistry::instance();
+                auto desc = registry.descriptor(parts[1]);
+                QJsonObject defaultCfg = desc ? desc->defaultConfig : QJsonObject{};
+                emit addBlockRequested(sid, parts[0], parts[1], defaultCfg);
+            }
+            break;
+        }
+    }
 }
 
 } // namespace StrategyMgmt

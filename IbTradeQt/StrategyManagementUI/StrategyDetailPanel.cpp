@@ -119,6 +119,11 @@ void StrategyDetailPanel::buildUi()
     });
 
     m_inspector = new BlockInspectorPanel;
+    auto* inspectorScroll = new QScrollArea;
+    inspectorScroll->setWidgetResizable(true);
+    inspectorScroll->setFrameShape(QFrame::NoFrame);
+    inspectorScroll->setWidget(m_inspector);
+    m_inspectorTabIdx = m_configTabs->addTab(inspectorScroll, QStringLiteral("Block Details"));
 
     // Inspector param edits update working config
     connect(m_inspector, &BlockInspectorPanel::configChanged,
@@ -251,19 +256,13 @@ void StrategyDetailPanel::showBlockDetails(const QString& category,
 {
     if (m_workingConfig.isEmpty()) return;
 
-    if (m_inspectorTabIdx < 0) {
-        m_inspectorTabIdx = m_configTabs->addTab(m_inspector, QStringLiteral("Block Details"));
-    }
     m_configTabs->setCurrentIndex(m_inspectorTabIdx);
     m_inspector->showBlock(m_workingConfig, category, jsonKey, isArray, arrayIndex);
 }
 
 void StrategyDetailPanel::hideBlockDetails()
 {
-    if (m_inspectorTabIdx >= 0) {
-        m_configTabs->removeTab(m_inspectorTabIdx);
-        m_inspectorTabIdx = -1;
-    }
+    m_inspector->clear();
 }
 
 void StrategyDetailPanel::onVersionSelected(int row, int)

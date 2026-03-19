@@ -41,6 +41,7 @@ INCLUDEPATH += \
     $$PWD/../DB \
     $$PWD/../IBComm \
     $$PWD/../CObjects \
+    $$PWD/../SharedUI \
     $$PWD/../StrategyManagementUI \
     $$PWD/../MainSystem \
     $$PWD/../MainSystem/WorkspaceWidgets \
@@ -114,7 +115,11 @@ SOURCES += \
     ../Backtest/BacktestMetricsCollector.cpp \
     ../Backtest/BacktestSession.cpp \
     ../Backtest/YahooFinanceDataSource.cpp \
+    ../SharedUI/StrategyTreeDelegate.cpp \
+    ../SharedUI/AbstractPipelineTreeModel.cpp \
+    ../SharedUI/StrategyTreePanel.cpp \
     ../StrategyManagementUI/StrategyCatalogModel.cpp \
+    ../StrategyManagementUI/CatalogTreeModel.cpp \
     ../StrategyManagementUI/StrategyCatalogPanel.cpp \
     ../StrategyManagementUI/StrategyDetailPanel.cpp \
     ../StrategyManagementUI/StrategyManagementPanel.cpp \
@@ -276,7 +281,11 @@ HEADERS += \
     ../Common/globalsettings.h \
     ../ReqManager/globalreqmanager.h \
     ../ReqManager/ReqManager.h \
+    ../SharedUI/StrategyTreeDelegate.h \
+    ../SharedUI/AbstractPipelineTreeModel.h \
+    ../SharedUI/StrategyTreePanel.h \
     ../StrategyManagementUI/StrategyCatalogModel.h \
+    ../StrategyManagementUI/CatalogTreeModel.h \
     ../StrategyManagementUI/StrategyCatalogPanel.h \
     ../StrategyManagementUI/StrategyDetailPanel.h \
     ../StrategyManagementUI/StrategyManagementPanel.h \

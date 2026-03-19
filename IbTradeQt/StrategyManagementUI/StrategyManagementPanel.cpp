@@ -60,6 +60,12 @@ void StrategyManagementPanel::buildUi()
                          bool isArray, int arrayIndex) {
         m_detailPanel->showBlockDetails(category, jsonKey, isArray, arrayIndex);
     });
+
+    // Forward add/remove block signals from catalog tree context menu
+    connect(m_catalogPanel, &StrategyCatalogPanel::addBlockRequested,
+            this, &StrategyManagementPanel::addBlockRequested);
+    connect(m_catalogPanel, &StrategyCatalogPanel::removeBlockRequested,
+            this, &StrategyManagementPanel::removeBlockRequested);
 }
 
 void StrategyManagementPanel::populateCatalog(const QJsonArray& catalogEntries,

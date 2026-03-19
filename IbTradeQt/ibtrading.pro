@@ -178,7 +178,12 @@ SOURCES += \
     Backend/ModelTreeRepository.cpp \
     Backend/ModelTreeMapper.cpp \
     Backend/SystemBackendImpl.cpp \
+    SharedUI/StrategyTreeDelegate.cpp \
+    SharedUI/AbstractPipelineTreeModel.cpp \
+    SharedUI/StrategyTreePanel.cpp \
+    BacktestUI/BacktestTreeModel.cpp \
     StrategyManagementUI/StrategyCatalogModel.cpp \
+    StrategyManagementUI/CatalogTreeModel.cpp \
     StrategyManagementUI/StrategyCatalogPanel.cpp \
     StrategyManagementUI/StrategyDetailPanel.cpp \
     StrategyManagementUI/StrategyManagementPanel.cpp
@@ -329,7 +334,12 @@ HEADERS += \
     Backend/ModelTreeMapper.h \
     Backend/ISystemBackend.h \
     Backend/SystemBackendImpl.h \
+    SharedUI/StrategyTreeDelegate.h \
+    SharedUI/AbstractPipelineTreeModel.h \
+    SharedUI/StrategyTreePanel.h \
+    BacktestUI/BacktestTreeModel.h \
     StrategyManagementUI/StrategyCatalogModel.h \
+    StrategyManagementUI/CatalogTreeModel.h \
     StrategyManagementUI/StrategyCatalogPanel.h \
     StrategyManagementUI/StrategyDetailPanel.h \
     StrategyManagementUI/StrategyManagementPanel.h \
@@ -474,6 +484,7 @@ INCLUDEPATH += \
     $$PWD/AboutDialog \
     $$PWD/Strategies/Generic \
     $$PWD/Backend \
+    $$PWD/SharedUI \
     $$PWD/StrategyManagementUI \
     $$PWD/Strategies/StateMachine \
     $$PWD/GeneratedIncludes \

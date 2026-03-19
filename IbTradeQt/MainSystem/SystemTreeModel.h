@@ -1,7 +1,7 @@
 #ifndef SYSTEMTREEMODEL_H
 #define SYSTEMTREEMODEL_H
 
-#include <QAbstractItemModel>
+#include "AbstractPipelineTreeModel.h"
 #include <QHash>
 #include <QTimer>
 #include "cmodelstate.h"
@@ -10,7 +10,7 @@
 class CBasicRoot;
 class ISystemBackend;
 
-class SystemTreeModel : public QAbstractItemModel
+class SystemTreeModel : public AbstractPipelineTreeModel
 {
     Q_OBJECT
 public:
@@ -38,17 +38,9 @@ public:
 
     CGenericModelApi* modelAt(const QModelIndex& index) const;
     CGenericModelApi* parentModelAt(const QModelIndex& index) const;
-
-    bool isVirtualBlock(const QModelIndex& index) const;
-    bool isVirtualCategory(const QModelIndex& index) const;
-    QString virtualBlockId(const QModelIndex& index) const;
-    QString virtualCategory(const QModelIndex& index) const;
     CGenericModelApi* parentStrategyOf(const QModelIndex& index) const;
 
     // QAbstractItemModel interface
-    QModelIndex index(int row, int column, const QModelIndex& parent = {}) const override;
-    QModelIndex parent(const QModelIndex& child) const override;
-    int rowCount(const QModelIndex& parent = {}) const override;
     int columnCount(const QModelIndex& parent = {}) const override;
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
     bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole) override;
@@ -59,22 +51,8 @@ public slots:
     void rebuildFromRoot();
 
 private:
-    struct TreeNode {
-        CGenericModelApi* model = nullptr;
-        TreeNode* parent = nullptr;
-        QList<TreeNode*> children;
-        QString path;
+    static CGenericModelApi* modelFromNode(TreeNode* n);
 
-        QString virtualName;
-        QString virtualCategory;
-        bool isVirtual = false;
-        bool isVirtualCat = false;
-
-        ~TreeNode() { qDeleteAll(children); }
-    };
-
-    TreeNode* nodeFromIndex(const QModelIndex& index) const;
-    QModelIndex indexForNode(TreeNode* node, int column = 0) const;
     void buildSubtree(TreeNode* parentNode, CGenericModelApi* model);
     void connectModelSignals(CGenericModelApi* model, TreeNode* node);
     void disconnectModelSignals(TreeNode* node);
@@ -85,7 +63,6 @@ private:
 
     ISystemBackend* m_backend = nullptr;
     CBasicRoot* m_root = nullptr;
-    TreeNode* m_rootNode = nullptr;
     QTimer m_pollTimer;
 
     QHash<QString, TreeNode*> m_pathIndex;

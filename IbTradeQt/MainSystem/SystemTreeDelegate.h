@@ -1,18 +1,16 @@
 #ifndef SYSTEMTREEDELEGATE_H
 #define SYSTEMTREEDELEGATE_H
 
-#include <QStyledItemDelegate>
+// Backward-compatibility wrapper — all painting logic now lives in
+// StrategyTreeDelegate (SharedUI/).
+#include "StrategyTreeDelegate.h"
 
-class SystemTreeDelegate : public QStyledItemDelegate
+class SystemTreeDelegate : public StrategyTreeDelegate
 {
     Q_OBJECT
 public:
-    explicit SystemTreeDelegate(QObject* parent = nullptr);
-
-    void paint(QPainter* painter, const QStyleOptionViewItem& option,
-               const QModelIndex& index) const override;
-    QSize sizeHint(const QStyleOptionViewItem& option,
-                   const QModelIndex& index) const override;
+    explicit SystemTreeDelegate(QObject* parent = nullptr)
+        : StrategyTreeDelegate(parent) {}
 };
 
 #endif // SYSTEMTREEDELEGATE_H

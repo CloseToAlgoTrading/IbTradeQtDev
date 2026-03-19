@@ -6,13 +6,13 @@
 #include <QJsonObject>
 #include <QMap>
 
-class QTreeWidget;
-class QTreeWidgetItem;
-class QLineEdit;
+class StrategyTreePanel;
 class QComboBox;
 class QPushButton;
 
 namespace StrategyMgmt {
+
+class CatalogTreeModel;
 
 class StrategyCatalogPanel : public QWidget
 {
@@ -31,38 +31,30 @@ signals:
                        const QString& category, const QString& jsonKey,
                        bool isArray, int arrayIndex);
     void newStrategyRequested();
+    void addBlockRequested(const QString& strategyId,
+                           const QString& category,
+                           const QString& blockId,
+                           const QJsonObject& defaultConfig);
+    void removeBlockRequested(const QString& strategyId,
+                              const QString& category,
+                              int blockIndex);
 
 private slots:
-    void onItemClicked(QTreeWidgetItem* item, int column);
-    void onFilterChanged(const QString& text);
+    void onItemClicked(const QModelIndex& proxyIndex);
     void onStatusFilterChanged(int index);
+    void onContextMenu(const QPoint& pos);
 
 private:
     void buildUi();
-    void applyFilter();
+    QModelIndex mapToSource(const QModelIndex& proxyIndex) const;
 
-    enum ItemRole {
-        RoleStrategyId  = Qt::UserRole + 50,
-        RoleIsStrategy  = Qt::UserRole + 51,
-        RoleStatus      = Qt::UserRole + 52,
-    };
+    StrategyTreePanel* m_treePanel   = nullptr;
+    CatalogTreeModel*  m_model       = nullptr;
+    QComboBox*         m_statusCombo = nullptr;
+    QPushButton*       m_newButton   = nullptr;
 
-    struct CatalogEntry {
-        QString     strategyId;
-        QString     name;
-        int         strategyKind = 0;
-        QString     lifecycleState;
-        int         versionCount = 0;
-        QString     updatedAt;
-        QJsonObject pipelineConfig;
-    };
-
-    QList<CatalogEntry> m_entries;
-
-    QTreeWidget* m_tree        = nullptr;
-    QLineEdit*   m_searchEdit  = nullptr;
-    QComboBox*   m_statusCombo = nullptr;
-    QPushButton* m_newButton   = nullptr;
+    // Status filter — applied via the search proxy
+    QString m_currentStatusFilter;
 };
 
 } // namespace StrategyMgmt

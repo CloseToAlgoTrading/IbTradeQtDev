@@ -26,12 +26,11 @@ static bool isStrategyType(ModelType t)
 // ---- construction / destruction ----
 
 SystemTreeModel::SystemTreeModel(QObject* parent)
-    : QAbstractItemModel(parent)
+    : AbstractPipelineTreeModel(parent)
 {
     connect(&m_pollTimer, &QTimer::timeout, this, [this]() {
-        if (!m_rootNode) return;
-        // Refresh metric columns (PnL) for every visible row
-        if (m_rootNode->children.isEmpty()) return;
+        if (!rootNode()) return;
+        if (rootNode()->children.isEmpty()) return;
         emit dataChanged(index(0, ColPnL),
                          index(rowCount() - 1, ColPnL),
                          {Qt::DisplayRole, Qt::ForegroundRole});
@@ -41,8 +40,12 @@ SystemTreeModel::SystemTreeModel(QObject* parent)
 
 SystemTreeModel::~SystemTreeModel()
 {
-    disconnectModelSignals(m_rootNode);
-    delete m_rootNode;
+    disconnectModelSignals(rootNode());
+}
+
+CGenericModelApi* SystemTreeModel::modelFromNode(TreeNode* n)
+{
+    return n ? static_cast<CGenericModelApi*>(n->modelPtr) : nullptr;
 }
 
 // ---- public interface ----
@@ -55,68 +58,36 @@ void SystemTreeModel::setRoot(CBasicRoot* root)
 
 CGenericModelApi* SystemTreeModel::modelAt(const QModelIndex& index) const
 {
-    auto* n = nodeFromIndex(index);
-    return n ? n->model : nullptr;
+    return modelFromNode(nodeFromIndex(index));
 }
 
 CGenericModelApi* SystemTreeModel::parentModelAt(const QModelIndex& index) const
 {
     auto* n = nodeFromIndex(index);
-    if (n && n->parent && n->parent != m_rootNode)
-        return n->parent->model;
+    if (n && n->parent && n->parent != rootNode())
+        return modelFromNode(n->parent);
     return nullptr;
-}
-
-bool SystemTreeModel::isVirtualBlock(const QModelIndex& index) const
-{
-    auto* n = nodeFromIndex(index);
-    return n && n->isVirtual && !n->isVirtualCat;
-}
-
-bool SystemTreeModel::isVirtualCategory(const QModelIndex& index) const
-{
-    auto* n = nodeFromIndex(index);
-    return n && n->isVirtual && n->isVirtualCat;
-}
-
-QString SystemTreeModel::virtualBlockId(const QModelIndex& index) const
-{
-    auto* n = nodeFromIndex(index);
-    return (n && n->isVirtual && !n->isVirtualCat) ? n->virtualName : QString();
-}
-
-QString SystemTreeModel::virtualCategory(const QModelIndex& index) const
-{
-    auto* n = nodeFromIndex(index);
-    if (!n || !n->isVirtual) return {};
-    if (n->isVirtualCat) return n->virtualCategory;
-    return n->virtualCategory;
 }
 
 CGenericModelApi* SystemTreeModel::parentStrategyOf(const QModelIndex& index) const
 {
     auto* n = nodeFromIndex(index);
     if (!n || !n->isVirtual) return nullptr;
-    // block leaf -> category -> strategy
     if (!n->isVirtualCat && n->parent && n->parent->parent)
-        return n->parent->parent->model;
-    // category -> strategy
+        return modelFromNode(n->parent->parent);
     if (n->isVirtualCat && n->parent)
-        return n->parent->model;
+        return modelFromNode(n->parent);
     return nullptr;
 }
 
 // ---- model rebuild ----
 
-// Disconnect all model→this signal connections accumulated by connectModelSignals
-// for the given subtree.  Must be called before freeing TreeNodes so that stale
-// lambdas (which capture raw TreeNode* pointers) are never invoked after the
-// nodes are deleted.
 void SystemTreeModel::disconnectModelSignals(TreeNode* node)
 {
     if (!node) return;
-    if (node->model && !node->isVirtual) {
-        auto* baseModel = dynamic_cast<CBaseModel*>(node->model);
+    auto* model = modelFromNode(node);
+    if (model && !node->isVirtual) {
+        auto* baseModel = dynamic_cast<CBaseModel*>(model);
         if (baseModel)
             QObject::disconnect(baseModel, nullptr, this, nullptr);
     }
@@ -127,20 +98,17 @@ void SystemTreeModel::disconnectModelSignals(TreeNode* node)
 void SystemTreeModel::rebuildFromRoot()
 {
     beginResetModel();
-    // Disconnect stale lambdas BEFORE the nodes are freed.
-    disconnectModelSignals(m_rootNode);
-    delete m_rootNode;
-    m_rootNode = nullptr;
+    disconnectModelSignals(rootNode());
     m_pathIndex.clear();
 
-    if (m_root) {
-        m_rootNode = new TreeNode;
-        m_rootNode->model = m_root;
-        m_rootNode->path = "root";
+    auto* root = new TreeNode;
+    root->modelPtr = m_root;
+    root->path = "root";
+    setRootNode(root);
 
-        for (auto& account : m_root->getModels()) {
-            buildSubtree(m_rootNode, account.data());
-        }
+    if (m_root) {
+        for (auto& account : m_root->getModels())
+            buildSubtree(root, account.data());
     }
     endResetModel();
 }
@@ -150,7 +118,7 @@ void SystemTreeModel::buildSubtree(TreeNode* parentNode, CGenericModelApi* model
     if (!model) return;
 
     auto* node = new TreeNode;
-    node->model = model;
+    node->modelPtr = model;
     node->parent = parentNode;
     node->path = buildModelPath(model);
     parentNode->children.append(node);
@@ -160,62 +128,14 @@ void SystemTreeModel::buildSubtree(TreeNode* parentNode, CGenericModelApi* model
 
     ModelType mt = model->modelType();
     if (mt == ModelType::ACCOUNT || mt == ModelType::PORTFOLIO) {
-        for (auto& child : model->getModels()) {
+        for (auto& child : model->getModels())
             buildSubtree(node, child.data());
-        }
     }
 
     if (mt == ModelType::STRATEGY_PIPELINE) {
         auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(model);
-        if (adapter) {
-            const QJsonObject& cfg = adapter->pipelineConfig();
-
-            auto addCategory = [&](const QJsonValue& val, const QString& category) {
-                auto* catNode = new TreeNode;
-                catNode->isVirtual = true;
-                catNode->isVirtualCat = true;
-                catNode->virtualCategory = category;
-                catNode->virtualName = category;
-                catNode->parent = node;
-                catNode->path = node->path + "/" + category;
-                node->children.append(catNode);
-
-                if (val.isArray()) {
-                    for (const auto& entry : val.toArray()) {
-                        QJsonObject obj = entry.toObject();
-                        QString blockId = obj.value("blockId").toString();
-                        if (blockId.isEmpty()) blockId = obj.value("type").toString();
-                        if (blockId.isEmpty()) continue;
-                        auto* vnode = new TreeNode;
-                        vnode->isVirtual = true;
-                        vnode->virtualCategory = category;
-                        vnode->virtualName = blockId;
-                        vnode->parent = catNode;
-                        vnode->path = catNode->path + "/" + blockId;
-                        catNode->children.append(vnode);
-                    }
-                } else if (val.isObject() && !val.toObject().isEmpty()) {
-                    QJsonObject obj = val.toObject();
-                    QString blockId = obj.value("blockId").toString();
-                    if (blockId.isEmpty()) blockId = obj.value("type").toString();
-                    if (!blockId.isEmpty()) {
-                        auto* vnode = new TreeNode;
-                        vnode->isVirtual = true;
-                        vnode->virtualCategory = category;
-                        vnode->virtualName = blockId;
-                        vnode->parent = catNode;
-                        vnode->path = catNode->path + "/" + blockId;
-                        catNode->children.append(vnode);
-                    }
-                }
-            };
-
-            addCategory(cfg.value("selection"),  "Selection");
-            addCategory(cfg.value("alphas"),     "Alpha");
-            addCategory(cfg.value("risks"),      "Risk");
-            addCategory(cfg.value("rebalance"),  "Rebalance");
-            addCategory(cfg.value("execution"),  "Execution");
-        }
+        if (adapter)
+            addPipelineCategories(node, adapter->pipelineConfig());
     }
 }
 
@@ -229,8 +149,7 @@ void SystemTreeModel::connectModelSignals(CGenericModelApi* model, TreeNode* nod
         QModelIndex idx = indexForNode(node, ColStatus);
         if (idx.isValid())
             emit dataChanged(idx, idx, {Qt::DisplayRole, Qt::ForegroundRole, DisplayStateRole});
-        // Also update parent aggregated status
-        if (node->parent && node->parent != m_rootNode) {
+        if (node->parent && node->parent != rootNode()) {
             QModelIndex parentIdx = indexForNode(node->parent, ColStatus);
             if (parentIdx.isValid())
                 emit dataChanged(parentIdx, parentIdx, {Qt::DisplayRole, Qt::ForegroundRole, DisplayStateRole});
@@ -239,7 +158,7 @@ void SystemTreeModel::connectModelSignals(CGenericModelApi* model, TreeNode* nod
 
     connect(baseModel, &QObject::destroyed, this, [this, node]() {
         m_pathIndex.remove(node->path);
-        node->model = nullptr;
+        node->modelPtr = nullptr;
         QModelIndex idx = indexForNode(node, 0);
         if (idx.isValid())
             emit dataChanged(idx, idx.sibling(idx.row(), ColumnCount - 1));
@@ -263,39 +182,6 @@ QString SystemTreeModel::buildModelPath(CGenericModelApi* model) const
 
 // ---- QAbstractItemModel interface ----
 
-QModelIndex SystemTreeModel::index(int row, int column, const QModelIndex& parent) const
-{
-    if (!m_rootNode || column < 0 || column >= ColumnCount)
-        return {};
-
-    TreeNode* parentNode = parent.isValid() ? nodeFromIndex(parent) : m_rootNode;
-    if (!parentNode || row < 0 || row >= parentNode->children.size())
-        return {};
-
-    return createIndex(row, column, parentNode->children.at(row));
-}
-
-QModelIndex SystemTreeModel::parent(const QModelIndex& child) const
-{
-    if (!child.isValid()) return {};
-    auto* node = nodeFromIndex(child);
-    if (!node || !node->parent || node->parent == m_rootNode)
-        return {};
-
-    TreeNode* grandparent = node->parent->parent;
-    if (!grandparent) return {};
-
-    int row = grandparent->children.indexOf(node->parent);
-    return createIndex(row, 0, node->parent);
-}
-
-int SystemTreeModel::rowCount(const QModelIndex& parent) const
-{
-    if (!m_rootNode) return 0;
-    TreeNode* node = parent.isValid() ? nodeFromIndex(parent) : m_rootNode;
-    return node ? node->children.size() : 0;
-}
-
 int SystemTreeModel::columnCount(const QModelIndex&) const
 {
     return ColumnCount;
@@ -306,39 +192,38 @@ QVariant SystemTreeModel::data(const QModelIndex& index, int role) const
     auto* node = nodeFromIndex(index);
     if (!node) return {};
 
+    // Virtual pipeline nodes — delegate to base helper
     if (node->isVirtual) {
+        // Supplement: show category label in the Status column for block leaves
         int col = index.column();
-        if (node->isVirtualCat) {
-            if (col == ColName && role == Qt::DisplayRole)
-                return node->virtualCategory;
-            if (col == ColName && role == Qt::FontRole) {
-                QFont f;
-                f.setBold(true);
-                return f;
-            }
-            if (col == ColName && role == Qt::ForegroundRole)
-                return QColor(160, 180, 210);
+        if (!node->isVirtualCat && col == ColStatus) {
+            if (role == Qt::DisplayRole) return node->virtualCategory;
+            if (role == Qt::ForegroundRole) return QColor(136, 136, 136);
+            if (role == StrategyTreeRoles::ColumnTypeRole)
+                return static_cast<int>(ColumnPaintType::PlainText);
             return {};
         }
-        if (col == ColName && role == Qt::DisplayRole)
-            return node->virtualName;
-        if (col == ColName && role == Qt::DecorationRole) {
-            static CIconHandler ih;
-            return ih.loadIconFromResourceTheme("Parameter");
-        }
-        if (col == ColName && role == Qt::ForegroundRole)
-            return QColor(136, 170, 210);
-        if (col == ColStatus && role == Qt::DisplayRole)
-            return node->virtualCategory;
-        if (col == ColStatus && role == Qt::ForegroundRole)
-            return QColor(136, 136, 136);
-        return {};
+        // ColumnTypeRole for non-name columns
+        if (col != 0 && role == StrategyTreeRoles::ColumnTypeRole)
+            return static_cast<int>(ColumnPaintType::PlainText);
+        return virtualNodeData(node, col, role);
     }
 
-    if (!node->model) return {};
+    auto* model = modelFromNode(node);
+    if (!model) return {};
 
-    CGenericModelApi* model = node->model;
     int col = index.column();
+
+    // ColumnTypeRole — tells the delegate how to paint this cell
+    if (role == StrategyTreeRoles::ColumnTypeRole) {
+        switch (col) {
+        case ColName:    return static_cast<int>(ColumnPaintType::NameWithIcon);
+        case ColEnabled: return static_cast<int>(ColumnPaintType::Checkbox);
+        case ColStatus:  return static_cast<int>(ColumnPaintType::StatusText);
+        case ColPnL:     return static_cast<int>(ColumnPaintType::NumericValue);
+        }
+        return static_cast<int>(ColumnPaintType::PlainText);
+    }
 
     if (role == ModelPtrRole)
         return QVariant::fromValue(reinterpret_cast<quintptr>(model));
@@ -412,16 +297,16 @@ bool SystemTreeModel::setData(const QModelIndex& index, const QVariant& value, i
         return false;
 
     auto* node = nodeFromIndex(index);
-    if (!node || !node->model) return false;
+    auto* model = modelFromNode(node);
+    if (!model) return false;
 
     bool newState = (value.toInt() == Qt::Checked);
-    QString uuid = node->model->getId().toString(QUuid::WithoutBraces);
+    QString uuid = model->getId().toString(QUuid::WithoutBraces);
 
-    if (m_backend) {
+    if (m_backend)
         m_backend->setNodeActive(uuid, newState);
-    } else {
-        node->model->setActivationState(newState);
-    }
+    else
+        model->setActivationState(newState);
 
     emit dataChanged(index, index, {Qt::CheckStateRole});
     return true;
@@ -456,29 +341,12 @@ Qt::ItemFlags SystemTreeModel::flags(const QModelIndex& index) const
     return f;
 }
 
-// ---- helpers ----
-
-SystemTreeModel::TreeNode* SystemTreeModel::nodeFromIndex(const QModelIndex& index) const
-{
-    if (!index.isValid()) return nullptr;
-    return static_cast<TreeNode*>(index.internalPointer());
-}
-
-QModelIndex SystemTreeModel::indexForNode(TreeNode* node, int column) const
-{
-    if (!node || node == m_rootNode) return {};
-    TreeNode* parent = node->parent;
-    if (!parent) return {};
-    int row = parent->children.indexOf(node);
-    if (row < 0) return {};
-    return createIndex(row, column, node);
-}
-
-// ---- D9: Aggregation ----
+// ---- Aggregation ----
 
 DisplayState SystemTreeModel::resolveAggregatedStatus(TreeNode* node) const
 {
-    auto* baseModel = dynamic_cast<CBaseModel*>(node->model);
+    auto* model = modelFromNode(node);
+    auto* baseModel = dynamic_cast<CBaseModel*>(model);
     if (baseModel && node->children.isEmpty())
         return baseModel->resolveDisplayState();
 
@@ -494,7 +362,8 @@ DisplayState SystemTreeModel::resolveAggregatedStatus(TreeNode* node) const
 
     for (auto* child : node->children) {
         DisplayState cs;
-        auto* childBase = dynamic_cast<CBaseModel*>(child->model);
+        auto* childModel = modelFromNode(child);
+        auto* childBase = dynamic_cast<CBaseModel*>(childModel);
         if (childBase)
             cs = childBase->resolveDisplayState();
         else
@@ -527,10 +396,11 @@ DisplayState SystemTreeModel::resolveAggregatedStatus(TreeNode* node) const
 
 double SystemTreeModel::resolveAggregatedPnL(TreeNode* node) const
 {
-    if (!node->model) return 0.0;
+    auto* model = modelFromNode(node);
+    if (!model) return 0.0;
 
     if (node->children.isEmpty()) {
-        QVariantMap info = node->model->genericInfo();
+        QVariantMap info = model->genericInfo();
         if (info.contains(MandatoryInfo::Strategy::DailyPnL))
             return info[MandatoryInfo::Strategy::DailyPnL].toDouble();
         if (info.contains(MandatoryInfo::Portfolio::DailyPnL))
