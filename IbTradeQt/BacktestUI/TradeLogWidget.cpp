@@ -3,12 +3,8 @@
 #include <QStandardItemModel>
 #include <QHeaderView>
 #include <QVBoxLayout>
-#include <QColor>
 
 namespace BacktestUI {
-
-static const QColor kBuyColor  { 0xd4, 0xed, 0xda }; // light green
-static const QColor kSellColor { 0xf8, 0xd7, 0xda }; // light red
 
 TradeLogWidget::TradeLogWidget(QWidget* parent)
     : QWidget(parent)
@@ -31,11 +27,12 @@ void TradeLogWidget::setupModel() {
     });
 
     m_table = new QTableView(this);
+    m_table->setObjectName(QStringLiteral("BacktestTradeLogTable"));
     m_table->setModel(m_model);
     m_table->setSortingEnabled(true);
     m_table->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
-    m_table->setAlternatingRowColors(false);
+    m_table->setAlternatingRowColors(true);
     m_table->horizontalHeader()->setStretchLastSection(true);
     m_table->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
     m_table->verticalHeader()->setVisible(false);
@@ -51,16 +48,13 @@ void TradeLogWidget::setFills(const QVector<Backtest::FilledOrder>& fills) {
 
     for (int i = 0; i < fills.size(); ++i) {
         const auto& f = fills[i];
-        const bool isBuy = f.quantity > 0;
-        const QColor rowColor = isBuy ? kBuyColor : kSellColor;
-
         auto setItem = [&](int col, const QString& text) {
             auto* item = new QStandardItem(text);
-            item->setBackground(rowColor);
             item->setData(Qt::AlignCenter, Qt::TextAlignmentRole);
             m_model->setItem(i, col, item);
         };
 
+        const bool isBuy = f.quantity > 0;
         setItem(ColDate,   f.timestamp.toLocalTime().toString("yyyy-MM-dd hh:mm"));
         setItem(ColSymbol, f.symbol);
         setItem(ColSide,   isBuy ? QStringLiteral("BUY") : QStringLiteral("SELL"));
@@ -76,12 +70,8 @@ void TradeLogWidget::setDbTrades(const QList<DbBacktestTrade>& trades) {
 
     for (int i = 0; i < trades.size(); ++i) {
         const auto& t = trades[i];
-        const bool isBuy = (t.side == QLatin1String("BUY"));
-        const QColor rowColor = isBuy ? kBuyColor : kSellColor;
-
         auto setItem = [&](int col, const QString& text) {
             auto* item = new QStandardItem(text);
-            item->setBackground(rowColor);
             item->setData(Qt::AlignCenter, Qt::TextAlignmentRole);
             m_model->setItem(i, col, item);
         };

@@ -427,7 +427,7 @@ IbTradeQt/
 │   ├── cmainmodel.h/cpp               # Application model
 │   ├── SystemTreeModel.h/cpp          # QAbstractItemModel for tree view
 │   ├── SystemTreeDelegate.h/cpp       # Delegate (uses StrategyTreeDelegate)
-│   ├── style/operations-console.qss   # Main stylesheet (tree font, etc.)
+│   ├── style/operations-console.qss   # Main stylesheet (global UI; see docs/THEMING.md)
 │   └── portfolioconfigmodel.h/cpp     # Legacy tree model (kept for reference)
 │
 ├── SharedUI/                # Shared UI components (presenters, models, ViewModels)
@@ -1055,7 +1055,7 @@ Add Block / Remove Block are available only in the **Strategy Management** tab (
 
 ### Tree View Styling
 
-Tree views use a finance-suitable monospace font (Consolas, 11px) defined in `MainSystem/style/operations-console.qss`. The `StrategyTreeDelegate` applies `opt.font` from the styled widget so QSS font settings are respected during custom painting. Tab content styling uses `QTabWidget#MainTabWidget` selector. See [UI_DECOUPLING.md](UI_DECOUPLING.md) for details.
+Tree views use a finance-suitable monospace font (Consolas, 11px) defined in `MainSystem/style/operations-console.qss`. The `StrategyTreeDelegate` applies `opt.font` from the styled widget so QSS font settings are respected during custom painting. Tab content styling uses `QTabWidget#MainTabWidget` selector. Full palette and label/input rules are documented in [THEMING.md](THEMING.md). See also [UI_DECOUPLING.md](UI_DECOUPLING.md).
 
 ### SystemTreeModel
 

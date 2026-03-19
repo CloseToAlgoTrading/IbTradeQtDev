@@ -21,5 +21,6 @@
     </qresource>
     <qresource prefix="/style">
         <file alias="operations-console.qss">MainSystem/style/operations-console.qss</file>
+        <file alias="icons/checkbox-check.svg">MainSystem/style/icons/checkbox-check.svg</file>
     </qresource>
 </RCC>

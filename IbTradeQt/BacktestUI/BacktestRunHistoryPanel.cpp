@@ -1,11 +1,9 @@
 #include "BacktestUI/BacktestRunHistoryPanel.h"
-#include "BacktestConstants.h"
 #include <QTableView>
 #include <QStandardItemModel>
 #include <QHeaderView>
 #include <QVBoxLayout>
 #include <QDateTime>
-#include <QColor>
 
 namespace BacktestUI {
 
@@ -24,6 +22,7 @@ BacktestRunHistoryPanel::BacktestRunHistoryPanel(QWidget* parent)
     });
 
     m_table = new QTableView(this);
+    m_table->setObjectName(QStringLiteral("BacktestRunHistoryTable"));
     m_table->setModel(m_model);
     m_table->setSortingEnabled(true);
     m_table->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -50,19 +49,8 @@ void BacktestRunHistoryPanel::setRuns(const QList<DbBacktestRunSummary>& runs) {
     for (int i = 0; i < runs.size(); ++i) {
         const auto& r = runs[i];
 
-        // Colour code by status
-        QColor rowColor = Qt::transparent;
-        if (r.status == Backtest::Status::Finished)
-            rowColor = QColor(0xd4, 0xed, 0xda); // light green
-        else if (r.status == Backtest::Status::Failed)
-            rowColor = QColor(0xf8, 0xd7, 0xda); // light red
-        else if (r.status == Backtest::Status::Running)
-            rowColor = QColor(0xff, 0xf3, 0xcd); // light yellow
-
         auto makeItem = [&](const QString& text) {
             auto* item = new QStandardItem(text);
-            if (rowColor != Qt::transparent)
-                item->setBackground(rowColor);
             item->setData(Qt::AlignCenter, Qt::TextAlignmentRole);
             return item;
         };

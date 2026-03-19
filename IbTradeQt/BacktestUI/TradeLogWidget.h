@@ -4,7 +4,7 @@
 // TradeLogWidget — sortable table of all fills from a backtest run.
 //
 // Columns: Date | Symbol | Side | Qty | Fill Price | P&L (approx)
-// Rows are colour-coded: green tint for BUY, red tint for SELL.
+// Appearance: global QTableView QSS (+ objectName BacktestTradeLogTable for overrides).
 // The model is sortable by clicking any column header.
 
 #include <QWidget>

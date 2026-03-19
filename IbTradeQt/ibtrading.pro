@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui charts sql printsupport network
+QT       += core gui charts sql printsupport network svg
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
