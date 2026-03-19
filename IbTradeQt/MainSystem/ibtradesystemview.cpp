@@ -124,10 +124,7 @@ void CIBTradeSystemView::setupConsoleLayout()
     m_mainTabWidget = new QTabWidget(this);
     m_mainTabWidget->setTabPosition(QTabWidget::North);
     m_mainTabWidget->setDocumentMode(false);
-    m_mainTabWidget->setStyleSheet(
-        "QTabWidget::pane { border:none; } "
-        "QTabBar::tab { padding:6px 18px; font-size:12px; } "
-        "QTabBar::tab:selected { font-weight:bold; }");
+    m_mainTabWidget->setObjectName(QStringLiteral("MainTabWidget"));
     m_strategyMgmtPanel = new StrategyMgmt::StrategyManagementPanel(this);
 
     m_mainTabWidget->addTab(m_mainSplitter,      QStringLiteral("Live Trading"));

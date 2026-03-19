@@ -11,7 +11,6 @@
 #include "cbasicaccount.h"
 #include "cbasicportfolio.h"
 #include "cbasicroot.h"
-#include "Pipeline/BlockRegistry.h"
 #include "Pipeline/PipelineConstants.h"
 #include <QInputDialog>
 #include <QMessageBox>
@@ -28,20 +27,18 @@
 #include <QMenu>
 #include <QPoint>
 #include <QUuid>
-#include "Backtest/BacktestController.h"
+#include "BacktestWorkspaceCoordinator.h"
+#include "StrategyManagementCoordinator.h"
 #include "BacktestUI/BacktestWorkspaceDock.h"
 #include "BacktestUI/BacktestStrategySelector.h"
 #include "StrategyManagementUI/StrategyManagementPanel.h"
 #include "StrategyManagementUI/StrategyDetailPanel.h"
-#include "DB/dbquery.h"
-#include <QtSql/QSqlDatabase>
 #include <QJsonDocument>
 
 
 CPresenter::CPresenter(QObject *parent)
 	: QObject(parent)
     , m_pLog(LOGGER)
-    //, m_DataProvider()
     , m_pDataProvider(QSharedPointer<CBrokerDataProvider>::create())
     , pIbtsView(nullptr)
     , pGuiModel(nullptr)
@@ -50,19 +47,11 @@ CPresenter::CPresenter(QObject *parent)
     , threadAlfaTime(new QThread)
     , workerAlfaTime(new AlphaModGetTime(parent, *m_pDataProvider.data()))
     , pAboutDlgPresenter(new AboutDlgPresener(parent))
-    // , pPairTradingPresenter(new PairTradingPresenter(parent, *m_pDataProvider.data()))
-    // , pAutoDeltaAligPresenter(new AutoDeltaAligPresenter(parent, *m_pDataProvider.data()))
-    // , pDBStorePresenter(new DBStorePresenter(parent, *m_pDataProvider.data()))
 {
-	
-    //
-
     QSharedPointer<IBComClientImpl> pClient = QSharedPointer<IBComClientImpl>::create();
 
-   //Define Data Provider
     m_pDataProvider->setClien(pClient);
 
-    // Pipeline integration: create MarketDataRouter and wire to IBComClientImpl
     m_pMarketDataRouter = new IBComm::MarketDataRouter(this);
     pClient->setMarketDataRouter(m_pMarketDataRouter);
 
@@ -72,7 +61,6 @@ CPresenter::CPresenter(QObject *parent)
 
     QThread::currentThread()->setObjectName("mainThread");
     threadIBClient->setObjectName("myThread");
-
 }
 
 CPresenter::~CPresenter()
@@ -83,43 +71,19 @@ CPresenter::~CPresenter()
 
 void CPresenter::MapSignals()
 {
-	//MAP GUI Signals/Slots
-	//Click connect button
     QObject::connect(pIbtsView->getUi().actionConnect, &QAction::triggered, this, &CPresenter::onClickMyButton);
 
-    // //click Pair Trader button
- //    QObject::connect(pIbtsView->getUi().actionPair_Trader, &QAction::triggered, this, &CPresenter::onClickPairTraderButton);
-
- //    //click Auto Delta button
- //    QObject::connect(pIbtsView->getUi().actionAuto_Delta, &QAction::triggered, this, &CPresenter::onClickAutoDeltaButton);
-
- //    //click DBStore button
- //    QObject::connect(pIbtsView->getUi().actionDBStore, &QAction::triggered, this, &CPresenter::onClickDBStoreButton);
-
-
-
-	//Click received Time button
-	QObject::connect(workerAlfaTime, SIGNAL(signalTimeReceived(long)), pIbtsView, SLOT(slotOnTimeReceived(long)));
-	//Received info about connection button state
-	QObject::connect(this, SIGNAL(signalClickConnect(bool)), pIbtsView, SLOT(slotRecvConnectButtonState(bool)));
-
-	//Logger connection to main gui
-	QObject::connect(&LOGGER, SIGNAL(signalAddLogMsg(QString)), pIbtsView, SLOT(slotOnLogMsgReceived(QString)));
-
-    // QObject::connect(workerAlfaTime, &AlphaModGetTime::signalPlanResetSubscribtion,
-    //                  pDBStorePresenter.data(), &DBStorePresenter::signalResetSubscribtion, Qt::QueuedConnection);
-
-    // QObject::connect(workerAlfaTime, &AlphaModGetTime::signalPlanResetSubscribtion,
-    //                  pAutoDeltaAligPresenter->getPM().data(), &CProcessingBase::signalRestartSubscription, Qt::QueuedConnection);
-
+    QObject::connect(workerAlfaTime, SIGNAL(signalTimeReceived(long)), pIbtsView, SLOT(slotOnTimeReceived(long)));
+    QObject::connect(this, SIGNAL(signalClickConnect(bool)), pIbtsView, SLOT(slotRecvConnectButtonState(bool)));
+    QObject::connect(&LOGGER, SIGNAL(signalAddLogMsg(QString)), pIbtsView, SLOT(slotOnLogMsgReceived(QString)));
 
     QTreeView * pTreeView = this->pIbtsView->getPortfolioConfigTreeView();
     CPortfolioConfigModel *pPConfigModel = this->getPGuiModel()->pPortfolioConfigModel();
 
-    // Context menu driven by SystemTreeModel, mutations routed through ISystemBackend
     auto* sysModel = m_pSystemTreeModel;
     auto* backend = m_backend;
 
+    // ── Context menu (tree right-click) ──────────────────────────────────
     QObject::connect(pTreeView, &QTreeView::customContextMenuRequested,
                      this->pIbtsView, [pTreeView, sysModel, pPConfigModel, backend, this](const QPoint& pos) {
         QModelIndex index = pTreeView->indexAt(pos);
@@ -133,9 +97,6 @@ void CPresenter::MapSignals()
         QAction* useExistingStrat = nullptr;
         QAction* removeNode       = nullptr;
         QAction* openBacktest     = nullptr;
-
-        // Block-add actions for pipeline strategies (category -> chosen action)
-        QMap<QString, QAction*> addBlockActions;
 
         CGenericModelApi* clickedModel = nullptr;
         ModelType clickedType = ModelType::ROOT;
@@ -161,36 +122,6 @@ void CPresenter::MapSignals()
 
             if (isStrategy) {
                 openBacktest = menu.addAction("Open in Backtest Workspace");
-
-                // Build "Add Block" sub-menus from the BlockRegistry
-                menu.addSeparator();
-                static const QVector<QPair<QString, QString>> blockCategories = {
-                    { Pipeline::Category::Selection, "Add Selection Model" },
-                    { Pipeline::Category::Alpha,     "Add Alpha Model"     },
-                    { Pipeline::Category::Rebalance, "Add Rebalance Model" },
-                    { Pipeline::Category::Risk,      "Add Risk Model"      },
-                    { Pipeline::Category::Execution,  "Add Execution Model" },
-                };
-
-                auto& registry = Pipeline::BlockRegistry::instance();
-                for (const auto& [category, label] : blockCategories) {
-                    auto blocks = registry.blocksByCategory(category);
-                    if (blocks.isEmpty()) {
-                        QAction* act = menu.addAction(label + "...");
-                        act->setEnabled(false);
-                    } else if (blocks.size() == 1) {
-                        QAction* act = menu.addAction(label + ": " + blocks.first().name);
-                        addBlockActions[category + "|" + blocks.first().id] = act;
-                    } else {
-                        QMenu* sub = menu.addMenu(label);
-                        for (const auto& desc : blocks) {
-                            QAction* act = sub->addAction(desc.name);
-                            if (!desc.description.isEmpty())
-                                act->setToolTip(desc.description);
-                            addBlockActions[category + "|" + desc.id] = act;
-                        }
-                    }
-                }
             }
 
             if (clickedModel) {
@@ -278,27 +209,9 @@ void CPresenter::MapSignals()
             backend->removeNode(uuid);
             rebuildTree();
         }
-        else {
-            // Check if the chosen action is a block-add action
-            for (auto it = addBlockActions.constBegin(); it != addBlockActions.constEnd(); ++it) {
-                if (it.value() == chosen && clickedModel && backend) {
-                    QStringList parts = it.key().split('|');
-                    if (parts.size() == 2) {
-                        QString category = parts[0];
-                        QString blockId  = parts[1];
-                        QString strategyId = clickedModel->getId().toString(QUuid::WithoutBraces);
-                        auto& registry = Pipeline::BlockRegistry::instance();
-                        auto desc = registry.descriptor(blockId);
-                        QJsonObject defaultCfg = desc ? desc->defaultConfig : QJsonObject{};
-                        backend->addBlock(strategyId, category, blockId, defaultCfg);
-                        rebuildTree();
-                    }
-                    break;
-                }
-            }
-        }
     });
 
+    // ── Diagram dock ─────────────────────────────────────────────────────
     m_pDiagramWidget = new PipelineDiagramWidget();
     m_pDiagramDock = new QDockWidget("Diagram View", this->pIbtsView);
     m_pDiagramDock->setWidget(m_pDiagramWidget);
@@ -306,285 +219,69 @@ void CPresenter::MapSignals()
     this->pIbtsView->addDockWidget(Qt::BottomDockWidgetArea, m_pDiagramDock);
     m_pDiagramDock->hide();
 
-    // ── Backtest Workspace (embedded in Backtest tab, not as a floating dock) ──
-    //
-    // The BacktestWorkspaceDock is created and its inner widget is extracted so it
-    // can be placed inside the "Backtest" tab's right pane.  The dock wrapper itself
-    // is kept alive as the parent object for signal wiring purposes but is never
-    // shown as a floating window.
-    m_pBacktestDock = new BacktestUI::BacktestWorkspaceDock(this->pIbtsView);
-    m_pBacktestDock->hide();   // dock frame hidden — content embedded in tab
+    // ── Backtest Workspace (delegated to BacktestWorkspaceCoordinator) ───
+    m_backtestCoord = new BacktestWorkspaceCoordinator(this);
+    m_backtestCoord->setView(pIbtsView);
+    m_backtestCoord->setBackend(m_backend);
 
-    // Inject the dock's inner widget into the pre-built right pane placeholder.
+    auto* btDock = new BacktestUI::BacktestWorkspaceDock(this->pIbtsView);
+    btDock->hide();
+    m_backtestCoord->setDock(btDock);
+
     auto* backtestRightPane = this->pIbtsView->findChild<QWidget*>(
         QStringLiteral("BacktestRightPane"));
-    if (backtestRightPane && m_pBacktestDock->widget()) {
+    if (backtestRightPane && btDock->widget()) {
         QLayout* paneLayout = backtestRightPane->layout();
-        // Remove the placeholder label
         while (QLayoutItem* item = paneLayout->takeAt(0)) {
             if (item->widget()) item->widget()->deleteLater();
             delete item;
         }
-        // Re-parent the dock's content widget directly into the pane
-        QWidget* btContent = m_pBacktestDock->widget();
+        QWidget* btContent = btDock->widget();
         btContent->setParent(backtestRightPane);
         paneLayout->addWidget(btContent);
     }
 
-    // Open in Backtest Workspace: context menu → presenter → dock
     QObject::connect(pPConfigModel, &CPortfolioConfigModel::openInBacktestWorkspace,
-                     this, &CPresenter::onOpenInBacktestWorkspace,
-                     Qt::QueuedConnection);
+                     m_backtestCoord, [this](const QString& id, const QString& name,
+                                             const QString& path, const QJsonObject& cfg) {
+        m_backtestCoord->openStrategy(id, name, path, cfg);
+    }, Qt::QueuedConnection);
 
-    // Dock → presenter wiring
-    QObject::connect(m_pBacktestDock, &BacktestUI::BacktestWorkspaceDock::runRequested,
-                     this, [this](const Backtest::BacktestRunConfig& config) {
-        if (!m_pBacktestController) return;
-        m_pBacktestDock->setRunning(true);
-        m_pBacktestController->start(config);
+    m_backtestCoord->wireSignals();
+
+    // ── Strategy Management (delegated to StrategyManagementCoordinator) ─
+    m_stratMgmtCoord = new StrategyManagementCoordinator(this);
+    m_stratMgmtCoord->setView(pIbtsView);
+    m_stratMgmtCoord->setBackend(m_backend);
+    m_stratMgmtCoord->setPanel(pIbtsView->strategyManagementPanel());
+    m_stratMgmtCoord->wireSignals();
+
+    connect(m_stratMgmtCoord, &StrategyManagementCoordinator::openInBacktest,
+            m_backtestCoord, &BacktestWorkspaceCoordinator::openCatalogVersion);
+
+    connect(m_backtestCoord, &BacktestWorkspaceCoordinator::catalogRefreshNeeded,
+            m_stratMgmtCoord, &StrategyManagementCoordinator::refreshCatalog);
+
+    connect(m_stratMgmtCoord, &StrategyManagementCoordinator::refreshLiveTree,
+            this, [this, pPConfigModel]() {
+        if (pPConfigModel) {
+            pPConfigModel->setupModelData();
+            pIbtsView->slotUpdateTreeViewAll();
+        }
     });
 
-    QObject::connect(m_pBacktestDock, &BacktestUI::BacktestWorkspaceDock::loadRunRequested,
-                     this, &CPresenter::onLoadRun);
-
-    // ── BacktestStrategySelector wiring ──────────────────────────────────────
-    auto* selector = this->pIbtsView->backtestStrategySelector();
-    if (selector) {
-        // Double-click / Open button in selector → open in backtest panel
-        connect(selector, &BacktestUI::BacktestStrategySelector::strategySelected,
-                this, [this](const QString& strategyId,
-                              const QString& displayName,
-                              const QString& portfolioPath,
-                              const QJsonObject& pipelineConfig) {
-            onOpenInBacktestWorkspace(strategyId, displayName, portfolioPath, pipelineConfig);
-        });
-
-        connect(selector, &BacktestUI::BacktestStrategySelector::catalogVersionSelected,
-                this, &CPresenter::openCatalogVersionInBacktest);
-
-        connect(selector, &BacktestUI::BacktestStrategySelector::blockSelected,
-                this, [this](const QString& category, const QString& jsonKey,
-                              bool isArray, int arrayIndex,
-                              const QJsonObject& pipelineConfig) {
-            if (m_pBacktestDock)
-                m_pBacktestDock->showBlockDetails(category, jsonKey, isArray, arrayIndex, pipelineConfig);
-        });
-
-        connect(selector, &BacktestUI::BacktestStrategySelector::refreshRequested,
-                this, &CPresenter::refreshBacktestStrategies);
-    }
-
-    // Populate on first show (when Backtest tab is activated)
+    // ── Tab switch → refresh ─────────────────────────────────────────────
     if (auto* tabs = this->pIbtsView->mainTabWidget()) {
         connect(tabs, &QTabWidget::currentChanged, this, [this](int index) {
-            if (index == 1)  // Backtest tab
-                refreshBacktestStrategies();
-            else if (index == 2)  // Strategy Management tab
-                refreshStrategyCatalog();
+            if (index == 1)
+                m_backtestCoord->refreshStrategies();
+            else if (index == 2)
+                m_stratMgmtCoord->refreshCatalog();
         });
     }
 
-    // ── Strategy Management panel wiring ─────────────────────────────────
-    if (auto* smPanel = this->pIbtsView->strategyManagementPanel()) {
-        connect(smPanel, &StrategyMgmt::StrategyManagementPanel::strategySelected,
-                this, [this](const QString& strategyId) {
-            if (!m_backend) return;
-            QJsonObject entry = m_backend->strategyCatalogEntry(strategyId);
-            QJsonArray versions = m_backend->listStrategyVersions(strategyId);
-            pIbtsView->strategyManagementPanel()->showStrategyDetail(entry, versions);
-        });
-
-        connect(smPanel, &StrategyMgmt::StrategyManagementPanel::newStrategyRequested,
-                this, [this]() {
-            if (!m_backend) return;
-            QString name = QInputDialog::getText(pIbtsView, QStringLiteral("New Strategy"),
-                                                  QStringLiteral("Strategy name:"));
-            if (name.isEmpty()) return;
-
-            QJsonArray existing = m_backend->listStrategyCatalog(true);
-            for (const auto& e : existing) {
-                if (e.toObject().value("name").toString() == name) {
-                    auto answer = QMessageBox::question(
-                        pIbtsView,
-                        QStringLiteral("Duplicate Name"),
-                        QStringLiteral("A strategy named '%1' already exists. Create anyway?").arg(name),
-                        QMessageBox::Yes | QMessageBox::No,
-                        QMessageBox::No);
-                    if (answer != QMessageBox::Yes)
-                        return;
-                    break;
-                }
-            }
-
-            m_backend->createStrategyCatalogEntry(name, static_cast<int>(ModelType::STRATEGY_PIPELINE));
-            refreshStrategyCatalog();
-        });
-
-        connect(smPanel, &StrategyMgmt::StrategyManagementPanel::metadataChanged,
-                this, [this](const QString& sid, const QString& name,
-                             const QString& desc, const QString& tags,
-                             const QString& state) {
-            if (!m_backend) return;
-            m_backend->updateStrategyCatalogMeta(sid, name, desc, tags, state);
-            refreshStrategyCatalog();
-        });
-
-        connect(smPanel, &StrategyMgmt::StrategyManagementPanel::newVersionRequested,
-                this, [this](const QString& strategyId, const QJsonObject& pipelineConfig) {
-            if (!m_backend) return;
-            QString notes = QInputDialog::getText(pIbtsView,
-                QStringLiteral("New Version"),
-                QStringLiteral("Notes for this version:"));
-            m_backend->createStrategyVersion(strategyId, pipelineConfig, notes);
-            refreshStrategyCatalog();
-            QJsonObject entry = m_backend->strategyCatalogEntry(strategyId);
-            QJsonArray versions = m_backend->listStrategyVersions(strategyId);
-            pIbtsView->strategyManagementPanel()->showStrategyDetail(entry, versions);
-        });
-
-        connect(smPanel, &StrategyMgmt::StrategyManagementPanel::publishRequested,
-                this, [this](const QString& strategyId, const QString& versionId) {
-            if (!m_backend) return;
-            m_backend->publishVersion(versionId);
-            QJsonObject entry = m_backend->strategyCatalogEntry(strategyId);
-            QJsonArray versions = m_backend->listStrategyVersions(strategyId);
-            pIbtsView->strategyManagementPanel()->showStrategyDetail(entry, versions);
-        });
-
-        connect(smPanel, &StrategyMgmt::StrategyManagementPanel::archiveRequested,
-                this, [this](const QString& strategyId) {
-            if (!m_backend) return;
-            m_backend->archiveStrategyCatalogEntry(strategyId);
-            refreshStrategyCatalog();
-            pIbtsView->strategyManagementPanel()->detailPanel()->clear();
-        });
-
-        connect(smPanel, &StrategyMgmt::StrategyManagementPanel::useInLiveRequested,
-                this, [this, pPConfigModel](const QString& catalogStrategyId, const QString& catalogVersionId) {
-            if (!m_backend) return;
-            CGenericModelApi* root = m_backend->dataRoot();
-            if (!root) return;
-
-            QStringList portfolioLabels;
-            QStringList portfolioIds;
-            for (auto& acct : root->getModels())
-                for (auto& port : acct->getModels()) {
-                    QString pid = port->getId().toString(QUuid::WithoutBraces);
-                    portfolioLabels << acct->getName() + QStringLiteral(" / ") + port->getName();
-                    portfolioIds << pid;
-                }
-
-            if (portfolioIds.isEmpty()) {
-                QMessageBox::warning(pIbtsView, QStringLiteral("No Portfolios"),
-                    QStringLiteral("Create an account and portfolio first."));
-                return;
-            }
-
-            bool ok = false;
-            QString chosen = QInputDialog::getItem(
-                pIbtsView, QStringLiteral("Select Portfolio"),
-                QStringLiteral("Deploy strategy to portfolio:"),
-                portfolioLabels, 0, false, &ok);
-            if (!ok) return;
-
-            int idx = portfolioLabels.indexOf(chosen);
-            if (idx < 0) return;
-            QString portfolioId = portfolioIds.at(idx);
-
-            QString nodeId = m_backend->createLiveNodeForExistingCatalog(
-                portfolioId, ModelType::STRATEGY_PIPELINE,
-                catalogStrategyId, catalogVersionId);
-            if (nodeId.isEmpty()) return;
-
-            // Refresh the live tree
-            if (pPConfigModel) {
-                pPConfigModel->setupModelData();
-                pIbtsView->slotUpdateTreeViewAll();
-            }
-        });
-
-        connect(smPanel, &StrategyMgmt::StrategyManagementPanel::openInBacktestRequested,
-                this, &CPresenter::openCatalogVersionInBacktest);
-
-        connect(smPanel, &StrategyMgmt::StrategyManagementPanel::addBlockRequested,
-                this, [this](const QString& strategyId, const QString& category,
-                             const QString& blockId, const QJsonObject& defaultConfig) {
-            if (!m_backend) return;
-
-            // Get the latest version config, modify it, and save as new version
-            QJsonArray versions = m_backend->listStrategyVersions(strategyId);
-            QJsonObject latestConfig;
-            if (!versions.isEmpty()) {
-                QString cfgStr = versions.last().toObject().value("configJson").toString();
-                latestConfig = QJsonDocument::fromJson(cfgStr.toUtf8()).object();
-            }
-
-            bool isArray = Pipeline::categoryIsArray(category);
-            QLatin1StringView key = Pipeline::categoryKey(category);
-            if (key.isEmpty()) return;
-
-            QJsonObject block;
-            block[Pipeline::Key::BlockId] = blockId;
-            block[Pipeline::Key::Config]  = defaultConfig;
-
-            if (isArray) {
-                QJsonArray arr = latestConfig.value(key).toArray();
-                arr.append(block);
-                latestConfig[key] = arr;
-            } else {
-                latestConfig[key] = block;
-            }
-
-            m_backend->createStrategyVersion(strategyId, latestConfig,
-                QStringLiteral("Added %1 block: %2").arg(category, blockId));
-
-            refreshStrategyCatalog();
-            QJsonObject entry = m_backend->strategyCatalogEntry(strategyId);
-            QJsonArray newVersions = m_backend->listStrategyVersions(strategyId);
-            pIbtsView->strategyManagementPanel()->showStrategyDetail(entry, newVersions);
-        });
-
-        connect(smPanel, &StrategyMgmt::StrategyManagementPanel::removeBlockRequested,
-                this, [this](const QString& strategyId, const QString& category,
-                             int blockIndex) {
-            if (!m_backend) return;
-
-            QJsonArray versions = m_backend->listStrategyVersions(strategyId);
-            QJsonObject latestConfig;
-            if (!versions.isEmpty()) {
-                QString cfgStr = versions.last().toObject().value("configJson").toString();
-                latestConfig = QJsonDocument::fromJson(cfgStr.toUtf8()).object();
-            }
-
-            bool isArray = Pipeline::categoryIsArray(category);
-            QLatin1StringView key = Pipeline::categoryKey(category);
-            if (key.isEmpty()) return;
-
-            if (isArray) {
-                QJsonArray arr = latestConfig.value(key).toArray();
-                if (blockIndex >= 0 && blockIndex < arr.size())
-                    arr.removeAt(blockIndex);
-                latestConfig[key] = arr;
-            } else {
-                latestConfig.remove(key);
-            }
-
-            m_backend->createStrategyVersion(strategyId, latestConfig,
-                QStringLiteral("Removed %1 block").arg(category));
-
-            refreshStrategyCatalog();
-            QJsonObject entry = m_backend->strategyCatalogEntry(strategyId);
-            QJsonArray newVersions = m_backend->listStrategyVersions(strategyId);
-            pIbtsView->strategyManagementPanel()->showStrategyDetail(entry, newVersions);
-        });
-    }
-
-    // Backend catalog signals → refresh
+    // ── Backend divergence signal ────────────────────────────────────────
     if (m_backend) {
-        connect(m_backend, &ISystemBackend::strategyCatalogChanged,
-                this, [this](const QString&) { refreshStrategyCatalog(); });
-        connect(m_backend, &ISystemBackend::strategyVersionCreated,
-                this, [this](const QString&, const QString&) { refreshStrategyCatalog(); });
         connect(m_backend, &ISystemBackend::nodeConfigDiverged,
                 this, [this](const QString& nodeId) {
             if (!m_backend || !m_backend->isBrokerConnected()) return;
@@ -592,15 +289,14 @@ void CPresenter::MapSignals()
             if (!root) return;
 
             QString nodeName = nodeId;
-            auto findName = [&]() -> bool {
+            auto findName = [&]() {
                 for (auto& acct : root->getModels())
                     for (auto& port : acct->getModels())
                         for (auto& strat : port->getModels())
                             if (strat->getId().toString(QUuid::WithoutBraces) == nodeId) {
                                 nodeName = strat->getName();
-                                return true;
+                                return;
                             }
-                return false;
             };
             findName();
 
@@ -613,7 +309,7 @@ void CPresenter::MapSignals()
         });
     }
 
-    // Reconnect selection changed to account for the new model that was set in setPGuiModel()
+    // ── Selection changed ────────────────────────────────────────────────
     if (pTreeView->selectionModel()) {
         QObject::connect(pTreeView->selectionModel(), &QItemSelectionModel::currentChanged,
                          this, &CPresenter::onTreeSelectionChanged);
@@ -625,65 +321,30 @@ void CPresenter::MapSignals()
     QObject::connect(pPConfigModel, SIGNAL(signalUpdateData(QModelIndex)), this->pIbtsView, SLOT(slotUpdateTreeView(QModelIndex)));
     QObject::connect(pPConfigModel, &CPortfolioConfigModel::signalUpdateDataAll, this->pIbtsView, &CIBTradeSystemView::slotUpdateTreeViewAll, Qt::QueuedConnection);
 
-
     this->pIbtsView->mapSignals();
 
-    // Wire AlertService to GlobalStatusBar (D2: owned, not singleton)
     if (pGuiModel && pGuiModel->alertService() && pIbtsView->globalStatusBar()) {
         QObject::connect(pGuiModel->alertService(), &AlertService::countChanged,
                          pIbtsView->globalStatusBar(), &GlobalStatusBar::setAlertCount);
     }
 
-    // Wire global actions from GlobalStatusBar
     if (pIbtsView->globalStatusBar()) {
         QObject::connect(pIbtsView->globalStatusBar(), &GlobalStatusBar::reconnectClicked,
                          this, &CPresenter::onClickMyButton);
     }
-
-
-
-	/////////---------------
-	//ReqManager temp;
-
-	//temp.debugPrintList();
-	//temp.addReqIds(1, RT_REQ_REL_DATA);
-	//temp.debugPrintList();
-	//temp.addReqIds(1, RT_REQ_REL_DATA);
-	//temp.debugPrintList();
-	//temp.addReqIds(1, RT_REQ_CUR_TIME);
-	//temp.debugPrintList();
-	//temp.addReqIds(2, RT_REQ_CUR_TIME);
-	//temp.addReqIds(3, RT_REQ_CUR_TIME);
-	//temp.debugPrintList();
-	//temp.removeReqIds(2, RT_REQ_CUR_TIME);
-	//temp.removeReqIds(2, RT_REQ_CUR_TIME);
-	//temp.debugPrintList();
-	//temp.isPresent(1, RT_REQ_REL_DATA);
-	//temp.isPresent(1, RT_TICK_PRICE);
-	//temp.isPresent(1, RT_MKT_DEPTH);
-    // pPairTradingPresenter->init();
-    // pAutoDeltaAligPresenter->init();
-    // pDBStorePresenter->init();
-
 }
 
 void CPresenter::addView(CIBTradeSystemView * mw)
 {
 	this->pIbtsView = mw;
-
 }
 
 
-
-/*! 
-*  Connect button processing
-*/
 void CPresenter::onClickMyButton()
 {
     static bool buttonState = false;
     if ((false == buttonState) && (!m_pDataProvider->getClien()->isConnectedAPI()))
     {
-        // Before connecting, check all live strategy nodes for config divergence
         if (m_backend) {
             QStringList divergedNames;
             CGenericModelApi* root = m_backend->dataRoot();
@@ -762,26 +423,14 @@ void CPresenter::onClickMyButton()
 
 void CPresenter::onClickPairTraderButton()
 {
-    // if (!pPairTradingPresenter.isNull())
-    // {
-    // 	pPairTradingPresenter->showDlg();
-    // }
 }
 
 void CPresenter::onClickAutoDeltaButton()
 {
-    // if (!pAutoDeltaAligPresenter.isNull())
-    // {
-    //     pAutoDeltaAligPresenter->showDlg();
-    // }
 }
 
 void CPresenter::onClickDBStoreButton()
 {
-    // if (!pDBStorePresenter.isNull())
-    // {
-    //     pDBStorePresenter->showDlg();
-    // }
 }
 
 QSharedPointer<CBrokerDataProvider> CPresenter::getDataProvider() const
@@ -808,7 +457,6 @@ void CPresenter::setPGuiModel(CMainModel *newPGuiModel)
    this->getPGuiModel()->pPortfolioConfigModel()->setBrokerDataProvider(this->m_pDataProvider);
    this->getPGuiModel()->pPortfolioConfigModel()->setupModelData();
 
-   // Set up SystemTreeModel (operations console tree replacing old config tree)
    m_pSystemTreeModel = new SystemTreeModel(this);
    m_pSystemTreeDelegate = new SystemTreeDelegate(this);
    m_pSystemTreeModel->setBackend(m_backend);
@@ -827,7 +475,8 @@ void CPresenter::setPGuiModel(CMainModel *newPGuiModel)
    treeView->header()->setSectionResizeMode(SystemTreeModel::ColName, QHeaderView::Stretch);
    treeView->expandAll();
 
-   refreshStrategyCatalog();
+   if (m_stratMgmtCoord)
+       m_stratMgmtCoord->refreshCatalog();
 }
 
 
@@ -837,422 +486,7 @@ CIBTradeSystemView *CPresenter::getPIbtsView() const
 }
 
 // ---------------------------------------------------------------------------
-// Backtest workspace slots
-// ---------------------------------------------------------------------------
-
-void CPresenter::onOpenInBacktestWorkspace(const QString& strategyId,
-                                            const QString& displayName,
-                                            const QString& portfolioPath,
-                                            const QJsonObject& pipelineConfig)
-{
-    if (!m_pBacktestDock) return;
-
-    QString strategyDefId;
-    QString catalogVersionId;
-    int     strategyVersion = 1;
-    if (m_backend) {
-        QJsonObject defJson = m_backend->strategyDefinitionForNode(strategyId);
-        if (!defJson.isEmpty()) {
-            strategyDefId    = defJson.value("strategyDefId").toString();
-            strategyVersion  = defJson.value("version").toInt(1);
-            catalogVersionId = defJson.value("versionId").toString();
-        }
-    }
-
-    // Re-create the controller for this strategy (one controller per active run).
-    // Any previous run is abandoned (no cooperative cancel in v1 — the old thread
-    // will finish on its own and its signals will be ignored after reconnect).
-    delete m_pBacktestController;
-    m_pBacktestController = new Backtest::BacktestController(
-        QStringLiteral("myLocalDb.sqlite"), nullptr, this);
-
-    connect(m_pBacktestController, &Backtest::BacktestController::progressChanged,
-            m_pBacktestDock, &BacktestUI::BacktestWorkspaceDock::setProgress);
-    connect(m_pBacktestController, &Backtest::BacktestController::statusChanged,
-            m_pBacktestDock, &BacktestUI::BacktestWorkspaceDock::setStatus);
-    connect(m_pBacktestController, &Backtest::BacktestController::finished,
-            this, &CPresenter::onBacktestFinished);
-    connect(m_pBacktestController, &Backtest::BacktestController::failed,
-            this, &CPresenter::onBacktestFailed);
-
-    // Determine profile from the pipeline config JSON
-    Backtest::BacktestProfile profile =
-        Backtest::BacktestProfile::fromJson(
-            pipelineConfig.value("backtestProfile").toObject());
-
-    const QString pipelineConfigJson = QString::fromUtf8(
-        QJsonDocument(pipelineConfig).toJson(QJsonDocument::Compact));
-
-    m_pBacktestDock->selectStrategy(strategyId, displayName, portfolioPath,
-                                     profile, pipelineConfigJson,
-                                     strategyDefId, strategyVersion,
-                                     catalogVersionId);
-
-    // Switch to the Backtest tab and highlight the strategy in the selector.
-    pIbtsView->switchToBacktestTab();
-    if (auto* sel = pIbtsView->backtestStrategySelector())
-        sel->highlightStrategy(strategyId);
-
-    // Fetch run history from DB.
-    // When a definition ID is known, query by definition (includes runs from all live
-    // node UUIDs that were bound to the same definition — preserves history after
-    // remove + re-add of a strategy). Fall back to legacy node-UUID query otherwise.
-    if (m_pBacktestController) {
-        const QString conn = m_pBacktestController->dbConnectionName();
-
-        auto populateHistory = [&](QSqlQuery q) {
-            QList<DbBacktestRunSummary> summaries;
-            if (q.exec()) {
-                while (q.next()) {
-                    DbBacktestRunSummary s;
-                    s.runId        = q.value("runId").toString();
-                    s.strategyId   = q.value("strategyId").toString();
-                    s.symbols      = q.value("symbols").toString();
-                    s.startDate    = q.value("startDate").toString();
-                    s.endDate      = q.value("endDate").toString();
-                    s.status       = q.value("status").toString();
-                    s.dataSourceId = q.value("dataSourceId").toString();
-                    s.createdAt    = q.value("createdAt").toString();
-                    s.totalReturn  = q.value("totalReturn").toDouble();
-                    s.sharpeRatio  = q.value("sharpeRatio").toDouble();
-                    // Scope fields (may be empty for old runs)
-                    s.strategyDefId   = q.value("strategyDefId").toString();
-                    s.scopeType       = q.value("scopeType").toString();
-                    s.scopeRefId      = q.value("scopeRefId").toString();
-                    s.strategyVersion = q.value("strategyVersion").isNull()
-                                            ? 1 : q.value("strategyVersion").toInt();
-                    summaries.append(s);
-                }
-            }
-            m_pBacktestDock->setRunHistory(summaries);
-        };
-
-        if (!strategyDefId.isEmpty())
-            populateHistory(query_fetchRunsForDefinition(strategyDefId, conn));
-        else
-            populateHistory(query_fetchRunsForStrategy(strategyId, conn));
-    }
-}
-
-void CPresenter::refreshBacktestStrategies()
-{
-    auto* selector = pIbtsView ? pIbtsView->backtestStrategySelector() : nullptr;
-    if (!selector || !m_backend) return;
-
-    CGenericModelApi* root = m_backend->dataRoot();
-    if (!root) {
-        selector->populate({});
-        return;
-    }
-
-    QList<BacktestUI::StrategyListItem> items;
-
-    // Walk Account → Portfolio → Strategy tree
-    for (auto& accountPtr : root->getModels()) {
-        CGenericModelApi* account = accountPtr.data();
-        const QString accountName = account->getName();
-
-        for (auto& portfolioPtr : account->getModels()) {
-            CGenericModelApi* portfolio = portfolioPtr.data();
-            const QString portfolioName = portfolio->getName();
-
-            for (auto& stratPtr : portfolio->getModels()) {
-                CGenericModelApi* strat = stratPtr.data();
-                if (strat->modelType() != ModelType::STRATEGY_PIPELINE) continue;
-
-                const QString stratId = strat->getId().toString(QUuid::WithoutBraces);
-
-                BacktestUI::StrategyListItem item;
-                item.strategyId   = stratId;
-                item.name         = strat->getName();
-                item.accountName  = accountName;
-                item.portfolioName = portfolioName;
-                item.pipelineConfig = m_backend->pipelineConfig(stratId);
-
-                // Look up the catalog definition for version badge
-                QJsonObject defJson = m_backend->strategyDefinitionForNode(stratId);
-                if (!defJson.isEmpty()) {
-                    item.strategyDefId      = defJson.value("strategyDefId").toString();
-                    item.version            = defJson.value("version").toInt(1);
-                    item.catalogVersionId   = defJson.value("versionId").toString();
-                }
-
-                items.append(item);
-            }
-        }
-    }
-
-    selector->populate(items);
-
-    // Also populate catalog strategies for the version picker
-    QList<BacktestUI::CatalogVersionItem> catalogItems;
-    QJsonArray catalog = m_backend->listStrategyCatalog(false);
-    for (const QJsonValue& c : catalog) {
-        QJsonObject sObj = c.toObject();
-        QString stratId   = sObj.value("strategyId").toString();
-        QString stratName = sObj.value("name").toString();
-
-        QJsonArray versions = m_backend->listStrategyVersions(stratId);
-        for (const QJsonValue& v : versions) {
-            QJsonObject vObj = v.toObject();
-            BacktestUI::CatalogVersionItem ci;
-            ci.strategyId    = stratId;
-            ci.strategyName  = stratName;
-            ci.versionId     = vObj.value("versionId").toString();
-            ci.versionNumber = vObj.value("versionNumber").toInt(1);
-            ci.configJson    = vObj.value("configJson").toString();
-            ci.isPublished   = vObj.value("isPublished").toBool();
-            catalogItems.append(ci);
-        }
-    }
-    selector->populateCatalog(catalogItems);
-}
-
-void CPresenter::openCatalogVersionInBacktest(const QString& catalogStrategyId,
-                                               const QString& catalogVersionId)
-{
-    if (!m_backend || !m_pBacktestDock) return;
-
-    QJsonArray versions = m_backend->listStrategyVersions(catalogStrategyId);
-    QJsonObject verJson;
-    for (const QJsonValue& v : versions) {
-        QJsonObject obj = v.toObject();
-        if (obj.value("versionId").toString() == catalogVersionId) {
-            verJson = obj;
-            break;
-        }
-    }
-    if (verJson.isEmpty()) return;
-
-    QJsonArray catalog = m_backend->listStrategyCatalog(true);
-    QString displayName = QStringLiteral("Strategy");
-    for (const QJsonValue& c : catalog) {
-        QJsonObject obj = c.toObject();
-        if (obj.value("strategyId").toString() == catalogStrategyId) {
-            displayName = obj.value("name").toString(displayName);
-            break;
-        }
-    }
-
-    int versionNumber = verJson.value("versionNumber").toInt(1);
-    QString configJson = verJson.value("configJson").toString();
-
-    delete m_pBacktestController;
-    m_pBacktestController = new Backtest::BacktestController(
-        QStringLiteral("myLocalDb.sqlite"), nullptr, this);
-
-    connect(m_pBacktestController, &Backtest::BacktestController::progressChanged,
-            m_pBacktestDock, &BacktestUI::BacktestWorkspaceDock::setProgress);
-    connect(m_pBacktestController, &Backtest::BacktestController::statusChanged,
-            m_pBacktestDock, &BacktestUI::BacktestWorkspaceDock::setStatus);
-    connect(m_pBacktestController, &Backtest::BacktestController::finished,
-            this, &CPresenter::onBacktestFinished);
-    connect(m_pBacktestController, &Backtest::BacktestController::failed,
-            this, &CPresenter::onBacktestFailed);
-
-    QJsonDocument configDoc = QJsonDocument::fromJson(configJson.toUtf8());
-    QJsonObject configObj = configDoc.object();
-    Backtest::BacktestProfile profile =
-        Backtest::BacktestProfile::fromJson(
-            configObj.value("backtestProfile").toObject());
-
-    m_pBacktestDock->selectStrategy(
-        QString(),
-        displayName + QStringLiteral(" v") + QString::number(versionNumber),
-        QString(),
-        profile,
-        configJson,
-        catalogStrategyId,
-        versionNumber,
-        catalogVersionId);
-
-    pIbtsView->switchToBacktestTab();
-}
-
-void CPresenter::refreshStrategyCatalog()
-{
-    auto* smPanel = pIbtsView ? pIbtsView->strategyManagementPanel() : nullptr;
-    if (!smPanel || !m_backend) return;
-
-    QJsonArray entries = m_backend->listStrategyCatalog(true);
-
-    QMap<QString, int> versionCounts;
-    QMap<QString, QJsonObject> latestConfigs;
-    for (const auto& e : entries) {
-        QString sid = e.toObject().value("strategyId").toString();
-        QJsonArray versions = m_backend->listStrategyVersions(sid);
-        versionCounts[sid] = versions.size();
-        if (!versions.isEmpty()) {
-            QString cfgStr = versions.last().toObject().value("configJson").toString();
-            latestConfigs[sid] = QJsonDocument::fromJson(cfgStr.toUtf8()).object();
-        }
-    }
-
-    smPanel->populateCatalog(entries, versionCounts, latestConfigs);
-}
-
-void CPresenter::onLoadRun(const QString& runId) {
-    if (!m_pBacktestDock || !m_pBacktestController) return;
-
-    const QString conn = m_pBacktestController->dbConnectionName();
-    QSqlDatabase db = QSqlDatabase::database(conn);
-    if (!db.isOpen()) return;
-
-    Backtest::BacktestLoadedRun loaded;
-
-    // Run record
-    {
-        auto q = query_fetchBacktestRun(runId, conn);
-        if (q.exec() && q.next()) {
-            loaded.record.runId               = q.value("runId").toString();
-            loaded.record.strategyId          = q.value("strategyId").toString();
-            loaded.record.strategyDisplayName = q.value("strategyDisplayName").toString();
-            loaded.record.portfolioPath       = q.value("portfolioPath").toString();
-            loaded.record.symbols             = q.value("symbols").toString();
-            loaded.record.startDate           = q.value("startDate").toString();
-            loaded.record.endDate             = q.value("endDate").toString();
-            loaded.record.status              = q.value("status").toString();
-        }
-    }
-
-    // Metrics → result fields
-    {
-        auto q = query_fetchBacktestMetrics(runId, conn);
-        if (q.exec() && q.next()) {
-            loaded.result.totalReturn      = q.value("totalReturn").toDouble();
-            loaded.result.annualizedReturn = q.value("annualizedReturn").toDouble();
-            loaded.result.sharpeRatio      = q.value("sharpeRatio").toDouble();
-            loaded.result.maxDrawdown      = q.value("maxDrawdown").toDouble();
-            loaded.result.winRate          = q.value("winRate").toDouble();
-            loaded.result.totalTrades      = q.value("totalTrades").toInt();
-            loaded.result.initialCapital   = q.value("initialCapital").toDouble();
-            loaded.result.finalCapital     = q.value("finalCapital").toDouble();
-            loaded.result.alphaVsBenchmark = q.value("alpha").toDouble();
-        }
-    }
-
-    // Equity curve → LedgerSnapshot vector
-    {
-        auto q = query_fetchEquityCurve(runId, conn);
-        if (q.exec()) {
-            while (q.next()) {
-                Backtest::LedgerSnapshot s;
-                s.timestamp      = QDateTime::fromString(q.value("timestamp").toString(), Qt::ISODate);
-                s.portfolioValue = q.value("value").toDouble();
-                loaded.result.equityCurve.append(s);
-
-                Backtest::LedgerSnapshot bm;
-                bm.timestamp      = s.timestamp;
-                bm.portfolioValue = q.value("benchmarkValue").toDouble();
-                loaded.result.benchmark.equityCurve.append(bm);
-            }
-        }
-    }
-
-    // Trade log → FilledOrder vector
-    {
-        auto q = query_fetchBacktestTrades(runId, conn);
-        if (q.exec()) {
-            int id = 0;
-            while (q.next()) {
-                Backtest::FilledOrder f;
-                f.orderId   = ++id;
-                f.symbol    = q.value("symbol").toString();
-                f.quantity  = (q.value("side").toString() == QLatin1String("BUY"))
-                    ? q.value("quantity").toDouble()
-                    : -q.value("quantity").toDouble();
-                f.fillPrice = q.value("fillPrice").toDouble();
-                f.timestamp = QDateTime::fromString(q.value("timestamp").toString(), Qt::ISODate);
-                loaded.result.tradeLog.append(f);
-            }
-        }
-    }
-
-    m_pBacktestDock->displayResult(loaded);
-}
-
-void CPresenter::onBacktestFinished(const Backtest::BacktestLoadedRun& run) {
-    if (!m_pBacktestDock) return;
-    m_pBacktestDock->setRunning(false);
-    m_pBacktestDock->displayResult(run);
-
-    // Refresh run history
-    const QString conn = m_pBacktestController ? m_pBacktestController->dbConnectionName()
-                                               : QStringLiteral("myLocalDb.sqlite");
-    auto q = query_fetchRunsForStrategy(run.record.strategyId, conn);
-    if (q.exec()) {
-        QList<DbBacktestRunSummary> summaries;
-        while (q.next()) {
-            DbBacktestRunSummary s;
-            s.runId        = q.value("runId").toString();
-            s.strategyId   = q.value("strategyId").toString();
-            s.symbols      = q.value("symbols").toString();
-            s.startDate    = q.value("startDate").toString();
-            s.endDate      = q.value("endDate").toString();
-            s.status       = q.value("status").toString();
-            s.dataSourceId = q.value("dataSourceId").toString();
-            s.createdAt    = q.value("createdAt").toString();
-            s.totalReturn  = q.value("totalReturn").toDouble();
-            s.sharpeRatio  = q.value("sharpeRatio").toDouble();
-            summaries.append(s);
-        }
-        m_pBacktestDock->setRunHistory(summaries);
-    }
-
-    // Post-run: compare pipeline config used in this run vs the pinned catalog version config.
-    if (m_backend
-        && !run.record.catalogStrategyId.isEmpty()
-        && !run.record.catalogVersionId.isEmpty())
-    {
-        QJsonObject versionInfo = m_backend->strategyVersionInfo(run.record.catalogVersionId);
-        QString versionConfigJson = versionInfo.value("configJson").toString();
-
-        // Extract only the pipeline config from the full run config for comparison,
-        // since the version stores pipeline config, not the full backtest run config.
-        QJsonObject fullRunConfig = QJsonDocument::fromJson(run.record.configJson.toUtf8()).object();
-        QString runPipelineJson = fullRunConfig.value("pipelineConfigJson").toString();
-
-        QJsonDocument runPipelineDoc = QJsonDocument::fromJson(runPipelineJson.toUtf8());
-        QJsonDocument verConfigDoc   = QJsonDocument::fromJson(versionConfigJson.toUtf8());
-
-        if (runPipelineDoc != verConfigDoc
-            && !runPipelineDoc.isEmpty() && !verConfigDoc.isEmpty())
-        {
-            auto answer = QMessageBox::question(
-                pIbtsView,
-                QStringLiteral("Save as New Version?"),
-                QStringLiteral(
-                    "The backtest ran with a pipeline configuration that differs from the pinned version.\n\n"
-                    "Would you like to save the run configuration as a new strategy version?"),
-                QMessageBox::Yes | QMessageBox::No,
-                QMessageBox::No);
-
-            if (answer == QMessageBox::Yes) {
-                QJsonObject pipelineConfig = runPipelineDoc.object();
-                QString newVerId = m_backend->createStrategyVersion(
-                    run.record.catalogStrategyId,
-                    pipelineConfig,
-                    QStringLiteral("Saved from backtest run ") + run.record.runId);
-                if (!newVerId.isEmpty()) {
-                    QMessageBox::information(
-                        pIbtsView,
-                        QStringLiteral("Version Created"),
-                        QStringLiteral("New version created successfully."));
-                    refreshStrategyCatalog();
-                }
-            }
-        }
-    }
-}
-
-void CPresenter::onBacktestFailed(const QString& reason) {
-    if (!m_pBacktestDock) return;
-    m_pBacktestDock->setRunning(false);
-    m_pBacktestDock->setStatus(QStringLiteral("Failed: ") + reason);
-}
-
-// ---------------------------------------------------------------------------
-// onTreeSelectionChanged (existing, unchanged)
+// Tree selection routing (remains in CPresenter as the thin router)
 // ---------------------------------------------------------------------------
 
 void CPresenter::onTreeSelectionChanged(const QModelIndex& current, const QModelIndex& /*previous*/)
@@ -1264,7 +498,6 @@ void CPresenter::onTreeSelectionChanged(const QModelIndex& current, const QModel
         return;
     }
 
-    // Virtual category nodes (Selection, Alpha, etc.) -- show parent strategy
     if (m_pSystemTreeModel->isVirtualCategory(current)) {
         CGenericModelApi* parentStrategy = m_pSystemTreeModel->parentStrategyOf(current);
         if (parentStrategy && pIbtsView->contextWorkspace()) {
@@ -1275,7 +508,6 @@ void CPresenter::onTreeSelectionChanged(const QModelIndex& current, const QModel
         return;
     }
 
-    // Virtual block leaf nodes
     if (m_pSystemTreeModel->isVirtualBlock(current)) {
         CGenericModelApi* parentStrategy = m_pSystemTreeModel->parentStrategyOf(current);
         auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(parentStrategy);
@@ -1363,4 +595,3 @@ void CPresenter::onTreeSelectionChanged(const QModelIndex& current, const QModel
         }
     }
 }
-

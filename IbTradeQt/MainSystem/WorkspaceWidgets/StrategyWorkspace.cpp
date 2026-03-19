@@ -1,4 +1,5 @@
 #include "StrategyWorkspace.h"
+#include "StrategyWorkspacePresenter.h"
 #include "LayoutConstants.h"
 #include "MetricsStrip.h"
 #include "WorkspaceHeader.h"
@@ -24,6 +25,8 @@
 StrategyWorkspace::StrategyWorkspace(QWidget* parent)
     : WorkspaceBase(parent)
 {
+    m_presenter = new StrategyWorkspacePresenter(this);
+
     buildOverviewTab();
     buildPropertiesTab();
     buildAssetsTab();
@@ -230,6 +233,8 @@ void StrategyWorkspace::restoreStrategyProperties()
 
 void StrategyWorkspace::onContextSet()
 {
+    m_presenter->bind(m_boundModel, m_parentModel);
+
     auto* baseModel = dynamic_cast<CBaseModel*>(m_boundModel);
     if (baseModel) {
         m_connections.append(
@@ -256,6 +261,8 @@ void StrategyWorkspace::onContextSet()
 
 void StrategyWorkspace::onContextCleared()
 {
+    m_presenter->unbind();
+
     m_header->clear();
     m_metricsStrip->clear();
     m_ovStateSummary->setText("--");

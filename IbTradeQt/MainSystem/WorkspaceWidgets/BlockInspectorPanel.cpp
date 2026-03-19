@@ -1,4 +1,5 @@
 #include "BlockInspectorPanel.h"
+#include "BlockInspectorPresenter.h"
 #include "PipelineConstants.h"
 #include "BlockRegistry.h"
 
@@ -15,6 +16,7 @@
 BlockInspectorPanel::BlockInspectorPanel(QWidget* parent)
     : QWidget(parent)
 {
+    m_presenter = new BlockInspectorPresenter(this);
     buildUi();
 }
 

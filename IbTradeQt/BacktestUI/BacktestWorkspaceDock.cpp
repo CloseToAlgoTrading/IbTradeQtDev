@@ -1,4 +1,5 @@
 #include "BacktestUI/BacktestWorkspaceDock.h"
+#include "BacktestPresenter.h"
 #include "BacktestUI/BacktestRunConfigPanel.h"
 #include "BacktestUI/BacktestRunHistoryPanel.h"
 #include "BacktestUI/EquityChartWidget.h"
@@ -20,6 +21,7 @@ namespace BacktestUI {
 BacktestWorkspaceDock::BacktestWorkspaceDock(QWidget* parent)
     : QDockWidget(QStringLiteral("Backtest Workspace"), parent)
 {
+    m_btPresenter = new BacktestPresenter(this);
     setFeatures(QDockWidget::DockWidgetMovable  |
                 QDockWidget::DockWidgetFloatable |
                 QDockWidget::DockWidgetClosable);

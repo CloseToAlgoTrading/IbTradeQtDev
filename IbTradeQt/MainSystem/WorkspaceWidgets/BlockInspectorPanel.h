@@ -9,6 +9,7 @@ class QScrollArea;
 class QLabel;
 class QPlainTextEdit;
 class QCheckBox;
+class BlockInspectorPresenter;
 
 // Single source of truth for block parameter editing, block info display,
 // and JSON diff.  Driven externally by tree selection -- does not contain
@@ -52,6 +53,8 @@ private:
     QJsonObject     m_config;
     QJsonObject     m_comparisonConfig;
     bool            m_readOnly = false;
+
+    BlockInspectorPresenter* m_presenter = nullptr;
 };
 
 #endif // BLOCKINSPECTORPANEL_H

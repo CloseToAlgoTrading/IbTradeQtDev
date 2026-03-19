@@ -2,11 +2,11 @@
 #include <QPainter>
 #include <QApplication>
 
-static constexpr int RowHeight      = 26;
-static constexpr int IconSize       = 18;
-static constexpr int IconLeftPad    = 4;
-static constexpr int TextLeftPad    = 4;
-static constexpr int CellPadH      = 4;
+static constexpr int RowHeight      = 22;
+static constexpr int IconSize       = 14;
+static constexpr int IconLeftPad    = 3;
+static constexpr int TextLeftPad    = 3;
+static constexpr int CellPadH      = 3;
 
 static const QColor kSelectionBg    {42, 58, 80};
 static const QColor kHoverBg        {35, 35, 35};
@@ -131,6 +131,8 @@ void StrategyTreeDelegate::paint(QPainter* painter,
 
     QStyleOptionViewItem opt = option;
     initStyleOption(&opt, index);
+
+    painter->setFont(opt.font);
 
     paintBackground(painter, opt);
 

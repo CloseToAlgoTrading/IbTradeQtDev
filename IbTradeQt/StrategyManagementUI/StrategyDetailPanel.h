@@ -16,6 +16,7 @@ class QPlainTextEdit;
 class QTabWidget;
 class BlockInspectorPanel;
 class RuntimePolicyEditor;
+class StrategyDetailPresenter;
 
 namespace StrategyMgmt {
 
@@ -108,6 +109,8 @@ private:
     QJsonArray      m_currentVersions;
     QJsonObject     m_workingConfig;
     bool            m_configDirty = false;
+
+    StrategyDetailPresenter* m_detailPresenter = nullptr;
 };
 
 } // namespace StrategyMgmt

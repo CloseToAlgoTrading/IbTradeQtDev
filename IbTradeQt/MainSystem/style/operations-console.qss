@@ -3,7 +3,7 @@
    Data colors (green/red) reserved for P&L and status only. */
 
 * {
-    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    font-family: "Roboto Condensed", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
 }
 
 QMainWindow {
@@ -55,6 +55,23 @@ QMainWindow {
     color: #fff;
 }
 
+/* ── Main tab widget (Live, Backtest, Strategy Management) ── */
+QTabWidget#MainTabWidget::pane {
+    border: none;
+}
+QTabWidget#MainTabWidget QTabBar::tab {
+    padding: 6px 18px;
+    font-size: 12px;
+}
+QTabWidget#MainTabWidget QTabBar::tab:selected {
+    font-weight: bold;
+}
+QTabWidget#MainTabWidget QTreeView,
+QTabWidget#MainTabWidget QTreeWidget {
+    font-family: "Consolas", "SF Mono", "Roboto Mono", "DejaVu Sans Mono", monospace;
+    font-size: 11px;
+}
+
 /* ── Tree View (shared across Live, Backtest, Catalog panels) ── */
 QTreeView, QTreeWidget {
     background-color: #1b1b1b;
@@ -63,13 +80,14 @@ QTreeView, QTreeWidget {
     border: none;
     selection-background-color: #2a3a50;
     selection-color: #e8e8e8;
-    font-size: 12px;
+    font-family: "Consolas", "SF Mono", "Roboto Mono", "DejaVu Sans Mono", monospace;
+    font-size: 11px;
     outline: 0;
 }
 
 QTreeView::item, QTreeWidget::item {
-    height: 26px;
-    padding: 2px 4px;
+    height: 20px;
+    padding: 1px 3px;
     border: none;
 }
 
@@ -103,10 +121,12 @@ QHeaderView::section {
     border: none;
     border-right: 1px solid #2a2a2a;
     border-bottom: 1px solid #2a2a2a;
-    padding: 4px 8px;
-    font-size: 11px;
+    padding: 3px 6px;
+    font-family: "Consolas", "SF Mono", "Roboto Mono", "DejaVu Sans Mono", monospace;
+    font-size: 10px;
     font-weight: 600;
     text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 /* ── Context Workspace ── */

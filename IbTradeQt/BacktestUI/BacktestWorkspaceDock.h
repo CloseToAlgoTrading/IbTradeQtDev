@@ -12,6 +12,7 @@ class QTabWidget;
 class QWidget;
 class QSplitter;
 class BlockInspectorPanel;
+class BacktestPresenter;
 
 namespace BacktestUI {
 
@@ -76,6 +77,7 @@ private:
     TradeLogWidget*          m_tradeLog        = nullptr;
 
     QJsonObject              m_pipelineConfig;
+    BacktestPresenter*       m_btPresenter    = nullptr;
 };
 
 } // namespace BacktestUI

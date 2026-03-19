@@ -345,6 +345,14 @@ graph TB
         Presenter[CPresenter]
         MainView[CIBTradeSystemView]
         TreeModel[SystemTreeModel]
+        BacktestCoord[BacktestWorkspaceCoordinator]
+        StratMgmtCoord[StrategyManagementCoordinator]
+    end
+
+    subgraph SharedUI
+        ViewModels[ViewModels.h]
+        Presenters[WorkspacePresenterBase\nStrategyWorkspacePresenter\nBlockInspectorPresenter\nBacktestPresenter\nStrategyDetailPresenter]
+        Delegate[StrategyTreeDelegate]
     end
 
     subgraph Backend
@@ -370,22 +378,20 @@ graph TB
         SubModels[Sub-Models\nSelection/Alpha/Risk/Exec]
     end
 
-    subgraph DB
-        DBMgr[DBManager]
-        DBHndlr[DBHandler]
-    end
-
-    subgraph Common
-        ProcessingBase[CProcessingBase_v2]
-    end
-
     AppController --> Presenter
     AppController --> IBackend
-    AppController --> Repo
 
     Presenter --> IBackend
     Presenter --> MainView
+    Presenter --> BacktestCoord
+    Presenter --> StratMgmtCoord
     TreeModel --> IBackend
+
+    BacktestCoord --> IBackend
+    StratMgmtCoord --> IBackend
+
+    Presenter --> Presenters
+    MainView --> Delegate
 
     IBackend --> BackendImpl
     BackendImpl --> Repo
@@ -394,14 +400,11 @@ graph TB
 
     BasicRoot --> PipelineAdapter
     PipelineAdapter --> SubModels
-    PipelineAdapter --> ProcessingBase
+    PipelineAdapter --> BrokerProvider
 
     BrokerProvider --> IBClientImpl
     BrokerProvider --> Routers
-    Routers --> ProcessingBase
-
-    PipelineAdapter --> DBMgr
-    DBMgr --> DBHndlr
+    Routers --> PipelineAdapter
 ```
 
 ### Directory Structure
@@ -417,11 +420,28 @@ IbTradeQt/
 │
 ├── MainSystem/              # Application core (MVP)
 │   ├── capplicationcontroller.h/cpp   # Lifecycle, backend init, migration
-│   ├── cpresenter.h/cpp               # MVP Presenter — routes to ISystemBackend
+│   ├── cpresenter.h/cpp               # Thin router — delegates to coordinators
+│   ├── BacktestWorkspaceCoordinator.h/cpp   # Backtest tab wiring
+│   ├── StrategyManagementCoordinator.h/cpp  # Strategy Management tab wiring
 │   ├── ibtradesystemview.h/cpp/.ui    # Main window
 │   ├── cmainmodel.h/cpp               # Application model
 │   ├── SystemTreeModel.h/cpp          # QAbstractItemModel for tree view
+│   ├── SystemTreeDelegate.h/cpp       # Delegate (uses StrategyTreeDelegate)
+│   ├── style/operations-console.qss   # Main stylesheet (tree font, etc.)
 │   └── portfolioconfigmodel.h/cpp     # Legacy tree model (kept for reference)
+│
+├── SharedUI/                # Shared UI components (presenters, models, ViewModels)
+│   ├── ViewModels.h                   # DTOs for Presenter→View
+│   ├── IWorkspaceView.h               # View interface
+│   ├── WorkspacePresenterBase.h/cpp   # Base presenter
+│   ├── StrategyWorkspacePresenter.h/cpp
+│   ├── BacktestPresenter.h/cpp
+│   ├── BlockInspectorPresenter.h/cpp
+│   ├── StrategyDetailPresenter.h/cpp
+│   ├── PipelineDiagramModel.h/cpp
+│   ├── StrategyTreeDelegate.h/cpp     # Column-aware tree painting
+│   ├── AbstractPipelineTreeModel.h    # Abstract tree model
+│   └── StrategyTreePanel.h/cpp        # Reusable tree panel
 │
 ├── cli/                     # Standalone CLI client (NEW)
 │   ├── main.cpp                       # CLI entry point
@@ -951,59 +971,91 @@ flowchart TB
             OptionsMenu[Options — Connect/Disconnect]
             ConfigMenu[Configuration — Save/Load]
         end
-        subgraph Tabs[Main Tab Widget]
-            Tab0[Live Trading — tree + settings + log]
+        subgraph Tabs[Main Tab Widget #MainTabWidget]
+            Tab0[Live Trading — tree + context workspace]
             Tab1[Backtest — workspace + results]
             Tab2[Strategy Management — catalog + detail]
         end
     end
 ```
 
-The main window uses a `QTabWidget` with three tabs:
-- **Live Trading** (index 0) — model tree, settings dock, log dock
+The main window uses a `QTabWidget` (object name `MainTabWidget`) with three tabs:
+- **Live Trading** (index 0) — model tree, context workspace, diagram dock
 - **Backtest** (index 1) — backtest workspace, strategy selector, results
 - **Strategy Management** (index 2) — `StrategyManagementPanel` (catalog + detail splitter)
 
-### Backend-Routed UI Mutations
+### CPresenter and Coordinators
 
-All tree mutations in `CPresenter::MapSignals()` route through `ISystemBackend`:
+`CPresenter` is a thin router that delegates to specialized coordinators:
+
+```mermaid
+flowchart TB
+    subgraph CPresenter[CPresenter]
+        TreeSelect[Tree selection routing]
+        ContextMenu[Context menu]
+        Diagram[Diagram dock]
+        CrossWire[Coordinator cross-wiring]
+    end
+
+    subgraph BacktestCoord[BacktestWorkspaceCoordinator]
+        BTController[BacktestController lifecycle]
+        BTRun[Run / Load / Finish]
+        BTSelector[Strategy selector wiring]
+    end
+
+    subgraph StratMgmtCoord[StrategyManagementCoordinator]
+        SMCatalog[Catalog refresh]
+        SMDeploy[Deploy to live]
+        SMBacktest[Open in Backtest]
+    end
+
+    CPresenter --> BacktestCoord
+    CPresenter --> StratMgmtCoord
+    StratMgmtCoord -->|openInBacktest| BacktestCoord
+    BacktestCoord -->|catalogRefreshNeeded| StratMgmtCoord
+```
+
+See [UI_DECOUPLING.md](UI_DECOUPLING.md) for full presenter/coordinator architecture and diagrams.
+
+### Backend-Routed UI Mutations (Live Trading Tree)
+
+The Live Trading tree context menu routes through `ISystemBackend`. **Block add/remove is not available** in the Live tree — only in Strategy Management:
 
 ```mermaid
 flowchart LR
-    subgraph ContextMenu[Tree Context Menu]
+    subgraph ContextMenu[Live Tree Context Menu]
         AddAccount[Add Account]
         AddPortfolio[Add Portfolio]
         AddStrategy[Add New Strategy]
         UseExisting[Use Existing Strategy]
-        AddBlock[Add Block]
         RemoveNode[Remove Node]
-        Rename[Rename]
-        StartStrategy[Start Strategy]
         OpenBacktest[Open in Backtest]
     end
 
     subgraph Presenter[CPresenter]
-        RebuildTree[rebuildTree lambda\nrebuilds SystemTreeModel]
+        RebuildTree[rebuildTree lambda]
     end
 
     subgraph Backend[ISystemBackend]
         Create[createAccount/Portfolio/Strategy]
         Remove[removeNode]
-        RenameOp[renameNode]
-        AddBlockOp[addBlock]
-        StartOp[startStrategy]
+        CreateLive[createLiveNodeForExistingCatalog]
         PipelineCfg[pipelineConfig]
     end
 
     AddAccount --> Create --> RebuildTree
     AddPortfolio --> Create --> RebuildTree
     AddStrategy --> Create --> RebuildTree
-    AddBlock --> AddBlockOp --> RebuildTree
+    UseExisting --> CreateLive --> RebuildTree
     RemoveNode --> Remove --> RebuildTree
-    Rename --> RenameOp --> RebuildTree
-    StartStrategy --> StartOp
     OpenBacktest --> PipelineCfg
 ```
+
+Add Block / Remove Block are available only in the **Strategy Management** tab (see `StrategyManagementCoordinator`).
+
+### Tree View Styling
+
+Tree views use a finance-suitable monospace font (Consolas, 11px) defined in `MainSystem/style/operations-console.qss`. The `StrategyTreeDelegate` applies `opt.font` from the styled widget so QSS font settings are respected during custom painting. Tab content styling uses `QTabWidget#MainTabWidget` selector. See [UI_DECOUPLING.md](UI_DECOUPLING.md) for details.
 
 ### SystemTreeModel
 
@@ -1068,9 +1120,23 @@ The `tst_cli_proof.h` test suite validates the CLI workflow with no GUI:
 | Class | File | Responsibility |
 |-------|------|----------------|
 | `CApplicationController` | `MainSystem/capplicationcontroller.h/cpp` | Lifecycle, backend init, migration from JSON |
-| `CPresenter` | `MainSystem/cpresenter.h/cpp` | MVP presenter — routes all mutations to `ISystemBackend` |
+| `CPresenter` | `MainSystem/cpresenter.h/cpp` | Thin router — tree selection, context menu, coordinator cross-wiring |
+| `BacktestWorkspaceCoordinator` | `MainSystem/BacktestWorkspaceCoordinator.h/cpp` | Backtest tab wiring, controller lifecycle, run/load/finish |
+| `StrategyManagementCoordinator` | `MainSystem/StrategyManagementCoordinator.h/cpp` | Strategy Management tab wiring, catalog, deploy, open in backtest |
 | `CIBTradeSystemView` | `MainSystem/ibtradesystemview.h/cpp` | Main window |
 | `SystemTreeModel` | `MainSystem/SystemTreeModel.h/cpp` | `QAbstractItemModel` for tree view — routes `setData` through backend |
+
+### SharedUI (Presenters, ViewModels, Delegate)
+
+| Class | File | Responsibility |
+|-------|------|----------------|
+| `VM` (namespace) | `SharedUI/ViewModels.h` | DTOs for Presenter→View data transfer |
+| `WorkspacePresenterBase` | `SharedUI/WorkspacePresenterBase.h/cpp` | Base presenter with bind/unbind, refresh |
+| `StrategyWorkspacePresenter` | `SharedUI/StrategyWorkspacePresenter.h/cpp` | Metrics, overview, properties for strategy workspace |
+| `BacktestPresenter` | `SharedUI/BacktestPresenter.h/cpp` | Fills→TradeRow, run history, chart data conversion |
+| `BlockInspectorPresenter` | `SharedUI/BlockInspectorPresenter.h/cpp` | Block parameter resolution, edit application |
+| `StrategyDetailPresenter` | `SharedUI/StrategyDetailPresenter.h/cpp` | Catalog entry loading, version rows, metadata |
+| `StrategyTreeDelegate` | `SharedUI/StrategyTreeDelegate.h/cpp` | Column-aware tree painting, applies QSS font |
 
 ### IB Communication
 
@@ -1153,4 +1219,4 @@ The test suite includes dedicated backend tests:
 
 ---
 
-*See [PIPELINE_ARCHITECTURE.md](PIPELINE_ARCHITECTURE.md) for the LEGO pipeline block system and [BACKTESTER_DESIGN.md](BACKTESTER_DESIGN.md) for the backtester design.*
+*See [PIPELINE_ARCHITECTURE.md](PIPELINE_ARCHITECTURE.md) for the LEGO pipeline block system, [BACKTESTER_DESIGN.md](BACKTESTER_DESIGN.md) for the backtester design, and [UI_DECOUPLING.md](UI_DECOUPLING.md) for the UI decoupling architecture (presenters, coordinators, ViewModels, styling).*

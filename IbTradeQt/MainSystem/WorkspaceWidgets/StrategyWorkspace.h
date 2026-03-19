@@ -10,6 +10,7 @@ class QTextEdit;
 class EventLogPanel;
 class BlockInspectorPanel;
 class RuntimePolicyEditor;
+class StrategyWorkspacePresenter;
 
 class StrategyWorkspace : public WorkspaceBase
 {
@@ -21,6 +22,8 @@ public:
                                const QString& jsonKey,
                                bool isArray, int arrayIndex);
     void restoreStrategyProperties();
+
+    StrategyWorkspacePresenter* presenter() const { return m_presenter; }
 
 protected:
     void onContextSet() override;
@@ -74,6 +77,8 @@ private:
     BlockInspectorPanel* m_inspector   = nullptr;
     bool                 m_showingBlock = false;
     QWidget*             m_propertiesScroll = nullptr;
+
+    StrategyWorkspacePresenter* m_presenter = nullptr;
 };
 
 #endif // STRATEGYWORKSPACE_H

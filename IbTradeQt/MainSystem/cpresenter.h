@@ -13,7 +13,6 @@
 #include "AboutDlgPresener.h"
 
 #include "MarketDataRouter.h"
-#include "Backtest/BacktestDataTypes.h"
 #include <QJsonObject>
 
 class CMainModel;
@@ -22,12 +21,8 @@ class QDockWidget;
 class SystemTreeModel;
 class SystemTreeDelegate;
 class ISystemBackend;
-
-namespace BacktestUI {
-    class BacktestWorkspaceDock;
-    class BacktestStrategySelector;
-}
-namespace Backtest { class BacktestController; }
+class BacktestWorkspaceCoordinator;
+class StrategyManagementCoordinator;
 
 class CPresenter : public QObject
 {
@@ -88,30 +83,17 @@ private:
 private slots:
     void onTreeSelectionChanged(const QModelIndex& current, const QModelIndex& previous);
 
-    // Backtest workspace slots
-    void onOpenInBacktestWorkspace(const QString& strategyId,
-                                   const QString& displayName,
-                                   const QString& portfolioPath,
-                                   const QJsonObject& pipelineConfig);
-    void onLoadRun(const QString& runId);
-    void onBacktestFinished(const Backtest::BacktestLoadedRun& run);
-    void onBacktestFailed(const QString& reason);
-
-    void refreshBacktestStrategies();
-    void refreshStrategyCatalog();
-    void openCatalogVersionInBacktest(const QString& catalogStrategyId,
-                                      const QString& catalogVersionId);
-
 private:
     PipelineDiagramWidget*              m_pDiagramWidget     = nullptr;
     QDockWidget*                        m_pDiagramDock       = nullptr;
-    BacktestUI::BacktestWorkspaceDock*  m_pBacktestDock      = nullptr;
-    Backtest::BacktestController*       m_pBacktestController = nullptr;
 	QScopedPointer<AboutDlgPresener> pAboutDlgPresenter;
 
     ISystemBackend*     m_backend             = nullptr;
     SystemTreeModel*    m_pSystemTreeModel    = nullptr;
     SystemTreeDelegate* m_pSystemTreeDelegate = nullptr;
+
+    BacktestWorkspaceCoordinator*     m_backtestCoord  = nullptr;
+    StrategyManagementCoordinator*    m_stratMgmtCoord = nullptr;
 };
 
 #endif // CPRESENTER_H

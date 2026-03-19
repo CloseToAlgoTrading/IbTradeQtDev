@@ -49,10 +49,27 @@ void WorkspaceHeader::setBreadcrumb(const QString& breadcrumb)
 void WorkspaceHeader::setState(DisplayState state)
 {
     auto info = ModelStateUtils::stateDisplay(state);
-    m_stateBadge->setText(QStringLiteral("  %1 %2  ").arg(info.indicator, info.label));
+    applyStateBadge(info.label, info.indicator, info.color);
+}
+
+void WorkspaceHeader::setStateFromVM(const QString& label, const QString& indicator, const QColor& color)
+{
+    applyStateBadge(label, indicator, color);
+}
+
+void WorkspaceHeader::applyHeader(const VM::WorkspaceHeader& header)
+{
+    m_titleLabel->setText(header.title);
+    m_breadcrumbLabel->setText(header.breadcrumb);
+    applyStateBadge(header.stateLabel, header.stateIndicator, header.stateColor);
+}
+
+void WorkspaceHeader::applyStateBadge(const QString& label, const QString& indicator, const QColor& color)
+{
+    m_stateBadge->setText(QStringLiteral("  %1 %2  ").arg(indicator, label));
     m_stateBadge->setStyleSheet(
         QStringLiteral("background-color: %1; color: white; border-radius: 4px; padding: 2px 8px; font-size: 11px;")
-            .arg(info.color.darker(130).name()));
+            .arg(color.darker(130).name()));
 }
 
 void WorkspaceHeader::clear()

@@ -99,6 +99,17 @@ See `DISPATCHER_RETIREMENT_AUDIT.md` for the complete per-message-type migration
 
 ## Recently Completed
 
+### UI Decoupling and Coordinator Refactor (March 2026)
+
+- **CPresenter decomposition**: Extracted `BacktestWorkspaceCoordinator` and `StrategyManagementCoordinator`; CPresenter is now a thin router (~455 lines vs ~1366 before)
+- **ViewModels (DTOs)**: `SharedUI/ViewModels.h` with `VM::WorkspaceHeader`, `VM::ParameterRow`, `VM::TradeRow`, etc.
+- **Per-workspace presenters**: `StrategyWorkspacePresenter`, `BacktestPresenter`, `BlockInspectorPresenter`, `StrategyDetailPresenter`, `PipelineDiagramModel`
+- **Live vs Strategy Management split**: Add/Remove block context menu actions removed from Live Trading tree; only Strategy Management tab allows block composition
+- **Tree view styling**: QSS-based finance font (Consolas/monospace 11px), row height 22px, `StrategyTreeDelegate` applies `opt.font` from QSS
+- **Tab widget styling**: All styles in `operations-console.qss` via `QTabWidget#MainTabWidget` selector; no inline `setStyleSheet` in code
+
+See [UI_DECOUPLING.md](UI_DECOUPLING.md) for full architecture and diagrams.
+
 ### Strategy Catalog and Management (March 2026)
 
 Two-stage implementation of a dedicated Strategy Management tab:

@@ -117,6 +117,8 @@ SOURCES += \
     IBComm/IBworker.cpp \
     Logger/MyLogger.cpp \
     MainSystem/cpresenter.cpp \
+    MainSystem/BacktestWorkspaceCoordinator.cpp \
+    MainSystem/StrategyManagementCoordinator.cpp \
     ReqManager/globalreqmanager.cpp \
     ReqManager/ReqManager.cpp \
     Brokers/IB/src/ContractCondition.cpp \
@@ -181,6 +183,12 @@ SOURCES += \
     SharedUI/StrategyTreeDelegate.cpp \
     SharedUI/AbstractPipelineTreeModel.cpp \
     SharedUI/StrategyTreePanel.cpp \
+    SharedUI/WorkspacePresenterBase.cpp \
+    SharedUI/StrategyWorkspacePresenter.cpp \
+    SharedUI/BacktestPresenter.cpp \
+    SharedUI/PipelineDiagramModel.cpp \
+    SharedUI/BlockInspectorPresenter.cpp \
+    SharedUI/StrategyDetailPresenter.cpp \
     BacktestUI/BacktestTreeModel.cpp \
     StrategyManagementUI/StrategyCatalogModel.cpp \
     StrategyManagementUI/CatalogTreeModel.cpp \
@@ -337,6 +345,14 @@ HEADERS += \
     SharedUI/StrategyTreeDelegate.h \
     SharedUI/AbstractPipelineTreeModel.h \
     SharedUI/StrategyTreePanel.h \
+    SharedUI/ViewModels.h \
+    SharedUI/IWorkspaceView.h \
+    SharedUI/WorkspacePresenterBase.h \
+    SharedUI/StrategyWorkspacePresenter.h \
+    SharedUI/BacktestPresenter.h \
+    SharedUI/PipelineDiagramModel.h \
+    SharedUI/BlockInspectorPresenter.h \
+    SharedUI/StrategyDetailPresenter.h \
     BacktestUI/BacktestTreeModel.h \
     StrategyManagementUI/StrategyCatalogModel.h \
     StrategyManagementUI/CatalogTreeModel.h \
@@ -383,6 +399,8 @@ HEADERS += \
     IBComm/IBworker.h \
     Logger/MyLogger.h \
     MainSystem/cpresenter.h \
+    MainSystem/BacktestWorkspaceCoordinator.h \
+    MainSystem/StrategyManagementCoordinator.h \
     ReqManager/globalreqmanager.h \
     ReqManager/ReqManager.h \
     Brokers/IB/Shared/standardincludes.h \

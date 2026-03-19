@@ -3,11 +3,10 @@
 
 #include <QWidget>
 #include <QJsonObject>
-#include <QJsonArray>
-#include <QPainter>
-#include <QPaintEvent>
-#include <QFontMetrics>
 #include <QVector>
+#include "ViewModels.h"
+
+class PipelineDiagramModel;
 
 struct StrategyDiagramInfo {
     QString name;
@@ -25,6 +24,8 @@ public:
     void setPortfolioView(const QString& portfolioName, const QVector<StrategyDiagramInfo>& strategies);
     void clear();
 
+    PipelineDiagramModel* diagramModel() const { return m_model; }
+
     QSize minimumSizeHint() const override { return {400, 80}; }
     QSize sizeHint() const override { return {600, 120}; }
 
@@ -35,30 +36,11 @@ protected:
     void paintEvent(QPaintEvent* event) override;
 
 private:
-    enum ViewMode { Empty, PipelineView, AccountView, PortfolioView };
+    PipelineDiagramModel* m_model;
 
-    struct BlockInfo {
-        QString label;
-        QColor color;
-    };
-
-    ViewMode m_viewMode = Empty;
-    QVector<BlockInfo> m_blocks;
-    QJsonObject m_config;
-    QString m_policySummary;
-
-    QString m_accountName;
-    QStringList m_portfolioNames;
-
-    QString m_portfolioName;
-    QVector<StrategyDiagramInfo> m_strategies;
-
-    void rebuildBlocks();
     void paintPipeline(QPainter& p);
     void paintAccountView(QPainter& p);
     void paintPortfolioView(QPainter& p);
-
-    static QString buildPolicySummary(const QJsonObject& config);
 };
 
 #endif // PIPELINEDIAGRAMWIDGET_H

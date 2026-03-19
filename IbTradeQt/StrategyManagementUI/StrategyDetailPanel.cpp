@@ -1,4 +1,5 @@
 #include "StrategyDetailPanel.h"
+#include "StrategyDetailPresenter.h"
 #include "BlockInspectorPanel.h"
 #include "RuntimePolicyEditor.h"
 
@@ -25,6 +26,7 @@ namespace StrategyMgmt {
 StrategyDetailPanel::StrategyDetailPanel(QWidget* parent)
     : QWidget(parent)
 {
+    m_detailPresenter = new StrategyDetailPresenter(this);
     buildUi();
 }
 
