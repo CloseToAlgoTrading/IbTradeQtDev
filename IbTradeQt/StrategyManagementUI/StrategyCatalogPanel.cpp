@@ -1,43 +1,25 @@
 #include "StrategyCatalogPanel.h"
-#include "StrategyCatalogModel.h"
+#include "PipelineTreeUtils.h"
 
-#include <QTreeView>
+#include <QTreeWidget>
+#include <QTreeWidgetItem>
 #include <QLineEdit>
 #include <QComboBox>
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QHeaderView>
-#include <QSortFilterProxyModel>
+#include <QFont>
 
 namespace StrategyMgmt {
 
-class CatalogFilterProxy : public QSortFilterProxyModel {
-public:
-    using QSortFilterProxyModel::QSortFilterProxyModel;
-
-    void setSearchText(const QString& text)  { m_search = text.toLower(); invalidateFilter(); }
-    void setStatusFilter(const QString& st)  { m_status = st; invalidateFilter(); }
-
-protected:
-    bool filterAcceptsRow(int row, const QModelIndex& parent) const override {
-        auto idx = [&](int col) { return sourceModel()->index(row, col, parent); };
-
-        if (!m_status.isEmpty()) {
-            QString rowStatus = idx(StrategyCatalogModel::ColStatus).data().toString();
-            if (rowStatus != m_status) return false;
-        }
-        if (!m_search.isEmpty()) {
-            QString name = idx(StrategyCatalogModel::ColName).data().toString().toLower();
-            if (!name.contains(m_search)) return false;
-        }
-        return true;
+static QString kindLabel(int k) {
+    switch (k) {
+    case 0: return QStringLiteral("pipeline");
+    case 1: return QStringLiteral("classic");
+    default: return QStringLiteral("unknown");
     }
-
-private:
-    QString m_search;
-    QString m_status;
-};
+}
 
 StrategyCatalogPanel::StrategyCatalogPanel(QWidget* parent)
     : QWidget(parent)
@@ -50,7 +32,6 @@ void StrategyCatalogPanel::buildUi()
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
 
-    // Top bar: search + status filter + New button
     auto* topBar = new QHBoxLayout;
 
     m_searchEdit = new QLineEdit;
@@ -69,66 +50,119 @@ void StrategyCatalogPanel::buildUi()
     topBar->addWidget(m_newButton);
     layout->addLayout(topBar);
 
-    // Model + proxy
-    m_model = new StrategyCatalogModel(this);
-    m_proxyModel = new CatalogFilterProxy(this);
-    m_proxyModel->setSourceModel(m_model);
-    m_proxyModel->setSortCaseSensitivity(Qt::CaseInsensitive);
+    m_tree = new QTreeWidget;
+    m_tree->setColumnCount(3);
+    m_tree->setHeaderLabels({QStringLiteral("Name"),
+                             QStringLiteral("Kind"),
+                             QStringLiteral("Status")});
+    m_tree->setAlternatingRowColors(true);
+    m_tree->setSelectionMode(QAbstractItemView::SingleSelection);
+    m_tree->setSelectionBehavior(QAbstractItemView::SelectRows);
+    m_tree->header()->setStretchLastSection(true);
+    layout->addWidget(m_tree, 1);
 
-    // Tree view
-    m_treeView = new QTreeView;
-    m_treeView->setModel(m_proxyModel);
-    m_treeView->setRootIsDecorated(false);
-    m_treeView->setAlternatingRowColors(true);
-    m_treeView->setSortingEnabled(true);
-    m_treeView->sortByColumn(StrategyCatalogModel::ColLastUpdated, Qt::DescendingOrder);
-    m_treeView->header()->setStretchLastSection(true);
-    m_treeView->setSelectionMode(QAbstractItemView::SingleSelection);
-    m_treeView->setSelectionBehavior(QAbstractItemView::SelectRows);
-    layout->addWidget(m_treeView, 1);
-
-    // Connections
     connect(m_searchEdit, &QLineEdit::textChanged,
             this, &StrategyCatalogPanel::onFilterChanged);
     connect(m_statusCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &StrategyCatalogPanel::onStatusFilterChanged);
     connect(m_newButton, &QPushButton::clicked,
             this, &StrategyCatalogPanel::newStrategyRequested);
-    connect(m_treeView->selectionModel(), &QItemSelectionModel::currentRowChanged,
-            this, [this]{ onSelectionChanged(); });
+    connect(m_tree, &QTreeWidget::itemClicked,
+            this, &StrategyCatalogPanel::onItemClicked);
 }
 
 void StrategyCatalogPanel::populate(const QJsonArray& catalogEntries,
-                                     const QMap<QString, int>& versionCounts)
+                                     const QMap<QString, int>& versionCounts,
+                                     const QMap<QString, QJsonObject>& latestConfigs)
 {
-    m_model->resetData(catalogEntries, versionCounts);
-
-    // Reconnect selection signal (model reset clears selection model)
-    disconnect(m_treeView->selectionModel(), nullptr, this, nullptr);
-    connect(m_treeView->selectionModel(), &QItemSelectionModel::currentRowChanged,
-            this, [this]{ onSelectionChanged(); });
+    m_entries.clear();
+    for (const auto& val : catalogEntries) {
+        QJsonObject obj = val.toObject();
+        CatalogEntry e;
+        e.strategyId     = obj.value(QStringLiteral("strategyId")).toString();
+        e.name           = obj.value(QStringLiteral("name")).toString();
+        e.strategyKind   = obj.value(QStringLiteral("strategyKind")).toInt();
+        e.lifecycleState = obj.value(QStringLiteral("lifecycleState")).toString();
+        e.versionCount   = versionCounts.value(e.strategyId, 0);
+        e.updatedAt      = obj.value(QStringLiteral("updatedAt")).toString();
+        e.pipelineConfig = latestConfigs.value(e.strategyId);
+        m_entries.append(e);
+    }
+    applyFilter();
 }
 
-void StrategyCatalogPanel::onSelectionChanged()
+void StrategyCatalogPanel::applyFilter()
 {
-    QModelIndex proxyIdx = m_treeView->currentIndex();
-    if (!proxyIdx.isValid()) return;
+    m_tree->clear();
 
-    QModelIndex srcIdx = m_proxyModel->mapToSource(proxyIdx);
-    QString strategyId = m_model->data(srcIdx, StrategyCatalogModel::StrategyIdRole).toString();
-    if (!strategyId.isEmpty())
-        emit strategySelected(strategyId);
+    const QString lf = m_searchEdit->text().toLower();
+    const QString statusFilter = (m_statusCombo->currentIndex() == 0)
+                                     ? QString()
+                                     : m_statusCombo->currentText();
+
+    for (const auto& e : m_entries) {
+        if (!lf.isEmpty() && !e.name.toLower().contains(lf))
+            continue;
+        if (!statusFilter.isEmpty() && e.lifecycleState != statusFilter)
+            continue;
+
+        auto* item = new QTreeWidgetItem(m_tree);
+        item->setText(0, e.name);
+        item->setText(1, kindLabel(e.strategyKind));
+        item->setText(2, e.lifecycleState);
+
+        item->setData(0, RoleStrategyId, e.strategyId);
+        item->setData(0, RoleIsStrategy, true);
+        item->setData(0, RoleStatus,     e.lifecycleState);
+
+        QFont f = item->font(0);
+        f.setBold(true);
+        item->setFont(0, f);
+
+        if (!e.pipelineConfig.isEmpty())
+            PipelineTreeUtils::populateBlockNodes(item, e.pipelineConfig);
+    }
+
+    m_tree->expandAll();
 }
 
-void StrategyCatalogPanel::onFilterChanged(const QString& text)
+void StrategyCatalogPanel::onItemClicked(QTreeWidgetItem* item, int /*column*/)
 {
-    static_cast<CatalogFilterProxy*>(m_proxyModel)->setSearchText(text);
+    if (!item) return;
+
+    // Block leaf?
+    if (item->data(0, PipelineTreeUtils::RoleIsBlock).toBool()) {
+        // Walk up to strategy ancestor
+        QTreeWidgetItem* ancestor = item->parent();
+        while (ancestor && !ancestor->data(0, RoleIsStrategy).toBool())
+            ancestor = ancestor->parent();
+
+        QString strategyId = ancestor ? ancestor->data(0, RoleStrategyId).toString() : QString();
+
+        emit blockSelected(strategyId,
+                           item->data(0, PipelineTreeUtils::RoleCategory).toString(),
+                           item->data(0, PipelineTreeUtils::RoleJsonKey).toString(),
+                           item->data(0, PipelineTreeUtils::RoleIsArray).toBool(),
+                           item->data(0, PipelineTreeUtils::RoleArrayIndex).toInt());
+        return;
+    }
+
+    // Strategy row?
+    if (item->data(0, RoleIsStrategy).toBool()) {
+        QString sid = item->data(0, RoleStrategyId).toString();
+        if (!sid.isEmpty())
+            emit strategySelected(sid);
+    }
 }
 
-void StrategyCatalogPanel::onStatusFilterChanged(int index)
+void StrategyCatalogPanel::onFilterChanged(const QString& /*text*/)
 {
-    QString status = (index == 0) ? QString() : m_statusCombo->currentText();
-    static_cast<CatalogFilterProxy*>(m_proxyModel)->setStatusFilter(status);
+    applyFilter();
+}
+
+void StrategyCatalogPanel::onStatusFilterChanged(int /*index*/)
+{
+    applyFilter();
 }
 
 } // namespace StrategyMgmt

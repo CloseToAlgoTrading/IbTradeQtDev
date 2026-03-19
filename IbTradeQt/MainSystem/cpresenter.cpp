@@ -246,6 +246,7 @@ void CPresenter::MapSignals()
     m_pDiagramDock->setWidget(m_pDiagramWidget);
     m_pDiagramDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable);
     this->pIbtsView->addDockWidget(Qt::BottomDockWidgetArea, m_pDiagramDock);
+    m_pDiagramDock->hide();
 
     // ── Backtest Workspace (embedded in Backtest tab, not as a floating dock) ──
     //
@@ -303,6 +304,14 @@ void CPresenter::MapSignals()
         connect(selector, &BacktestUI::BacktestStrategySelector::catalogVersionSelected,
                 this, &CPresenter::openCatalogVersionInBacktest);
 
+        connect(selector, &BacktestUI::BacktestStrategySelector::blockSelected,
+                this, [this](const QString& category, const QString& jsonKey,
+                              bool isArray, int arrayIndex,
+                              const QJsonObject& pipelineConfig) {
+            if (m_pBacktestDock)
+                m_pBacktestDock->showBlockDetails(category, jsonKey, isArray, arrayIndex, pipelineConfig);
+        });
+
         connect(selector, &BacktestUI::BacktestStrategySelector::refreshRequested,
                 this, &CPresenter::refreshBacktestStrategies);
     }
@@ -333,6 +342,22 @@ void CPresenter::MapSignals()
             QString name = QInputDialog::getText(pIbtsView, QStringLiteral("New Strategy"),
                                                   QStringLiteral("Strategy name:"));
             if (name.isEmpty()) return;
+
+            QJsonArray existing = m_backend->listStrategyCatalog(true);
+            for (const auto& e : existing) {
+                if (e.toObject().value("name").toString() == name) {
+                    auto answer = QMessageBox::question(
+                        pIbtsView,
+                        QStringLiteral("Duplicate Name"),
+                        QStringLiteral("A strategy named '%1' already exists. Create anyway?").arg(name),
+                        QMessageBox::Yes | QMessageBox::No,
+                        QMessageBox::No);
+                    if (answer != QMessageBox::Yes)
+                        return;
+                    break;
+                }
+            }
+
             m_backend->createStrategyCatalogEntry(name, static_cast<int>(ModelType::STRATEGY_PIPELINE));
             refreshStrategyCatalog();
         });
@@ -922,13 +947,18 @@ void CPresenter::refreshStrategyCatalog()
     QJsonArray entries = m_backend->listStrategyCatalog(true);
 
     QMap<QString, int> versionCounts;
+    QMap<QString, QJsonObject> latestConfigs;
     for (const auto& e : entries) {
         QString sid = e.toObject().value("strategyId").toString();
         QJsonArray versions = m_backend->listStrategyVersions(sid);
         versionCounts[sid] = versions.size();
+        if (!versions.isEmpty()) {
+            QString cfgStr = versions.last().toObject().value("configJson").toString();
+            latestConfigs[sid] = QJsonDocument::fromJson(cfgStr.toUtf8()).object();
+        }
     }
 
-    smPanel->populateCatalog(entries, versionCounts);
+    smPanel->populateCatalog(entries, versionCounts, latestConfigs);
 }
 
 void CPresenter::onLoadRun(const QString& runId) {
@@ -1104,7 +1134,18 @@ void CPresenter::onTreeSelectionChanged(const QModelIndex& current, const QModel
         return;
     }
 
-    // Handle virtual block nodes first
+    // Virtual category nodes (Selection, Alpha, etc.) -- show parent strategy
+    if (m_pSystemTreeModel->isVirtualCategory(current)) {
+        CGenericModelApi* parentStrategy = m_pSystemTreeModel->parentStrategyOf(current);
+        if (parentStrategy && pIbtsView->contextWorkspace()) {
+            CGenericModelApi* parentModel = parentStrategy->getParentModel();
+            pIbtsView->contextWorkspace()->showStrategyWorkspace(parentStrategy, parentModel);
+            pIbtsView->contextWorkspace()->restoreStrategyProperties();
+        }
+        return;
+    }
+
+    // Virtual block leaf nodes
     if (m_pSystemTreeModel->isVirtualBlock(current)) {
         CGenericModelApi* parentStrategy = m_pSystemTreeModel->parentStrategyOf(current);
         auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(parentStrategy);
@@ -1119,7 +1160,7 @@ void CPresenter::onTreeSelectionChanged(const QModelIndex& current, const QModel
             const QString jsonKey = QString(Pipeline::categoryKey(category));
             const bool isArray    = Pipeline::categoryIsArray(category);
 
-            int arrayIndex = -1;
+            int arrayIndex = 0;
             if (isArray) {
                 QJsonArray arr = adapter->pipelineConfig().value(jsonKey).toArray();
                 for (int i = 0; i < arr.size(); ++i) {
@@ -1130,8 +1171,9 @@ void CPresenter::onTreeSelectionChanged(const QModelIndex& current, const QModel
                 }
             }
 
-            pIbtsView->contextWorkspace()->showBlockWorkspace(
-                adapter, category, blockId, jsonKey, arrayIndex);
+            CGenericModelApi* parentModel = parentStrategy->getParentModel();
+            pIbtsView->contextWorkspace()->showStrategyWorkspace(parentStrategy, parentModel);
+            pIbtsView->contextWorkspace()->showBlockInProperties(category, jsonKey, isArray, arrayIndex);
         }
         return;
     }

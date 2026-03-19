@@ -171,8 +171,8 @@ SOURCES += \
     MainSystem/WorkspaceWidgets/StrategyWorkspace.cpp \
     MainSystem/WorkspaceWidgets/AccountWorkspace.cpp \
     MainSystem/WorkspaceWidgets/PortfolioWorkspace.cpp \
-    MainSystem/WorkspaceWidgets/BlockWorkspace.cpp \
-    MainSystem/WorkspaceWidgets/PipelineConfigEditor.cpp \
+    MainSystem/WorkspaceWidgets/BlockInspectorPanel.cpp \
+    Pipeline/PipelineTreeUtils.cpp \
     MainSystem/AlertService.cpp \
     Backend/ModelTreeRepository.cpp \
     Backend/ModelTreeMapper.cpp \
@@ -213,6 +213,7 @@ HEADERS += \
     Testing/IntegrationTestHarness.h \
     Replay/MarketDataRecorder.h \
     Replay/MarketDataReplayer.h \
+    Pipeline/PipelineTreeUtils.h \
     Pipeline/BlockRegistry.h \
     Pipeline/StrategyPipelineRunner.h \
     Pipeline/BlockGraphSerializer.h \
@@ -319,8 +320,7 @@ HEADERS += \
     MainSystem/WorkspaceWidgets/StrategyWorkspace.h \
     MainSystem/WorkspaceWidgets/AccountWorkspace.h \
     MainSystem/WorkspaceWidgets/PortfolioWorkspace.h \
-    MainSystem/WorkspaceWidgets/BlockWorkspace.h \
-    MainSystem/WorkspaceWidgets/PipelineConfigEditor.h \
+    MainSystem/WorkspaceWidgets/BlockInspectorPanel.h \
     MainSystem/AlertService.h \
     Backend/ModelNodeRecord.h \
     Backend/ModelTreeRepository.h \

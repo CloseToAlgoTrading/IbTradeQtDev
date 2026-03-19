@@ -62,6 +62,10 @@ signals:
     void catalogVersionSelected(const QString& catalogStrategyId,
                                 const QString& catalogVersionId);
 
+    void blockSelected(const QString& category, const QString& jsonKey,
+                       bool isArray, int arrayIndex,
+                       const QJsonObject& pipelineConfig);
+
     void refreshRequested();
 
 private slots:

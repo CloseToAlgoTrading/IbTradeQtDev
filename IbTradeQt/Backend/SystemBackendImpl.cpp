@@ -803,6 +803,11 @@ bool SystemBackendImpl::loadFromDb()
             adapter->setStrategyDefinitionId(binding.strategyDefId);
     }
 
+    // Remove catalog entries that no live binding references (accumulated orphans)
+    int orphansRemoved = m_repo->removeOrphanedCatalogEntries();
+    if (orphansRemoved > 0)
+        qWarning("[repair] removed %d orphaned catalog entries", orphansRemoved);
+
     emit treeLoaded();
     return true;
 }

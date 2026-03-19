@@ -13,12 +13,11 @@ class QCheckBox;
 class QPushButton;
 class QTableWidget;
 class QPlainTextEdit;
-class PipelineConfigEditor;
+class QTabWidget;
+class BlockInspectorPanel;
 
 namespace StrategyMgmt {
 
-// Right panel of the Strategy Management tab showing metadata, version list,
-// pipeline block editor, version detail, and action buttons.
 class StrategyDetailPanel : public QWidget
 {
     Q_OBJECT
@@ -29,7 +28,10 @@ public:
     void showStrategy(const QJsonObject& catalogEntry, const QJsonArray& versions);
     void clear();
 
-    // Current working pipeline config (may differ from the selected version).
+    void showBlockDetails(const QString& category, const QString& jsonKey,
+                          bool isArray, int arrayIndex);
+    void hideBlockDetails();
+
     QJsonObject workingConfig() const { return m_workingConfig; }
     bool isConfigDirty() const { return m_configDirty; }
 
@@ -63,20 +65,13 @@ private slots:
     void onArchive();
     void onUseInLive();
     void onOpenInBacktest();
-    void onAddBlock();
-    void onRemoveBlock();
 
 private:
     void buildUi();
     QString selectedVersionId() const;
-    void refreshBlocksTable();
-    void applyBlockToWorkingConfig(const QString& category,
-                                   const QString& blockId,
-                                   const QJsonObject& defaultConfig);
-    void removeBlockFromWorkingConfig(const QString& category, int index);
     void markDirty();
 
-    // Header / metadata
+    // Metadata
     QLineEdit*      m_nameEdit      = nullptr;
     QLabel*         m_kindLabel     = nullptr;
     QComboBox*      m_statusCombo   = nullptr;
@@ -87,14 +82,14 @@ private:
     // Version table
     QTableWidget*   m_versionTable  = nullptr;
 
-    // Pipeline block editor (full visual editor for the working config)
-    PipelineConfigEditor* m_pipelineEditor = nullptr;
+    // Block inspector (dynamic tab, shown on block selection)
+    BlockInspectorPanel*  m_inspector     = nullptr;
+    int                   m_inspectorTabIdx = -1;
 
-    // Pipeline block add/remove buttons
-    QPushButton*    m_addBlockBtn   = nullptr;
-    QPushButton*    m_removeBlockBtn = nullptr;
+    // Config tabs
+    QTabWidget*     m_configTabs    = nullptr;
 
-    // Version detail viewer (raw JSON, toggled via diff checkbox)
+    // Raw JSON viewer (version-level)
     QCheckBox*      m_diffToggle    = nullptr;
     QPlainTextEdit* m_configViewer  = nullptr;
 

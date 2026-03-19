@@ -180,6 +180,13 @@ bool ModelTreeRepository::initialize()
             qWarning("ModelTreeRepository: v2->v3 migration failed");
     }
 
+    // --- Repair broken FK on live_strategy_bindings ---
+    // The v2→v3 migration renames strategy_definitions to strategy_definitions_backup.
+    // SQLite silently rewrites the FK in live_strategy_bindings to reference the
+    // backup table, making all subsequent binding INSERTs fail the FK check.
+    // Detect and fix by recreating the table without the stale FK.
+    repairBindingsTableForeignKey();
+
     return true;
 }
 
@@ -767,6 +774,39 @@ bool ModelTreeRepository::archiveStrategyCatalog(const QString& strategyId)
     return q.numRowsAffected() > 0;
 }
 
+int ModelTreeRepository::removeOrphanedCatalogEntries()
+{
+    QSqlQuery q(db());
+    // Delete catalog entries that no live binding references
+    bool ok = q.exec(
+        "DELETE FROM strategies "
+        "WHERE strategy_id NOT IN ("
+        "  SELECT DISTINCT strategy_def_id FROM live_strategy_bindings"
+        ")");
+    if (!ok) {
+        qWarning("ModelTreeRepository::removeOrphanedCatalogEntries failed: %s",
+                 qPrintable(q.lastError().text()));
+        return 0;
+    }
+    int removed = q.numRowsAffected();
+
+    // Also clean up orphaned versions whose strategy_id no longer exists
+    q.exec(
+        "DELETE FROM strategy_versions "
+        "WHERE strategy_id NOT IN (SELECT strategy_id FROM strategies)");
+
+    // And orphaned legacy definitions
+    q.exec(
+        "DELETE FROM strategy_definitions "
+        "WHERE strategy_def_id NOT IN ("
+        "  SELECT DISTINCT strategy_def_id FROM live_strategy_bindings"
+        ") AND strategy_def_id NOT IN ("
+        "  SELECT strategy_id FROM strategies"
+        ")");
+
+    return removed;
+}
+
 // ---------------------------------------------------------------------------
 // strategy_versions CRUD
 // ---------------------------------------------------------------------------
@@ -978,7 +1018,11 @@ bool ModelTreeRepository::migrateV2toV3()
         updB.exec();
     }
 
-    // Rename old table to backup
+    // Rename old table to backup.
+    // IMPORTANT: SQLite automatically rewrites FK references in other tables
+    // when a table is renamed, so live_strategy_bindings.strategy_def_id will
+    // now point to strategy_definitions_backup. The repairBindingsTableForeignKey()
+    // method (called after migration) corrects this.
     q.exec("ALTER TABLE strategy_definitions RENAME TO strategy_definitions_backup");
 
     // Recreate strategy_definitions (empty) so fresh code referencing it doesn't fail
@@ -1004,4 +1048,56 @@ bool ModelTreeRepository::migrateV2toV3()
 
     setMetadata("schema_version", "3");
     return true;
+}
+
+void ModelTreeRepository::repairBindingsTableForeignKey()
+{
+    QSqlDatabase database = db();
+
+    // Check if live_strategy_bindings has a stale FK to strategy_definitions_backup.
+    // SQLite's ALTER TABLE RENAME propagates to FK references automatically,
+    // so after migrateV2toV3() renames strategy_definitions → strategy_definitions_backup,
+    // the FK in live_strategy_bindings silently changes to reference the backup table.
+    QSqlQuery check(database);
+    check.exec("SELECT sql FROM sqlite_master WHERE name='live_strategy_bindings'");
+    if (!check.next()) return;
+
+    QString createSql = check.value(0).toString();
+    if (!createSql.contains("strategy_definitions_backup"))
+        return;
+
+    qWarning("[schema-repair] live_strategy_bindings has stale FK to "
+             "strategy_definitions_backup — recreating table");
+
+    if (!database.transaction()) return;
+
+    QSqlQuery q(database);
+    q.exec("PRAGMA foreign_keys = OFF");
+
+    // Copy existing data (if any)
+    q.exec("ALTER TABLE live_strategy_bindings RENAME TO _bindings_old");
+    q.exec(
+        "CREATE TABLE live_strategy_bindings ("
+        "  binding_id      TEXT PRIMARY KEY,"
+        "  model_node_id   TEXT NOT NULL REFERENCES model_nodes(uuid) ON DELETE CASCADE,"
+        "  strategy_def_id TEXT NOT NULL,"
+        "  version_id      TEXT NOT NULL DEFAULT '',"
+        "  created_at      TEXT NOT NULL,"
+        "  updated_at      TEXT NOT NULL,"
+        "  UNIQUE(model_node_id)"
+        ")");
+    q.exec("INSERT INTO live_strategy_bindings "
+           "SELECT binding_id, model_node_id, strategy_def_id, "
+           "       COALESCE(version_id,''), created_at, updated_at "
+           "FROM _bindings_old");
+    q.exec("DROP TABLE _bindings_old");
+    q.exec("CREATE INDEX IF NOT EXISTS idx_bindings_def "
+           "ON live_strategy_bindings(strategy_def_id)");
+
+    q.exec("PRAGMA foreign_keys = ON");
+
+    if (!database.commit()) {
+        database.rollback();
+        qWarning("[schema-repair] commit failed, rolling back");
+    }
 }

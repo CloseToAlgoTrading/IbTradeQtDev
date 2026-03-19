@@ -52,12 +52,21 @@ void StrategyManagementPanel::buildUi()
             this, &StrategyManagementPanel::addBlockRequested);
     connect(m_detailPanel, &StrategyDetailPanel::removeBlockRequested,
             this, &StrategyManagementPanel::removeBlockRequested);
+
+    // Block selection in catalog tree drives detail panel inspector
+    connect(m_catalogPanel, &StrategyCatalogPanel::blockSelected,
+            this, [this](const QString& /*strategyId*/,
+                         const QString& category, const QString& jsonKey,
+                         bool isArray, int arrayIndex) {
+        m_detailPanel->showBlockDetails(category, jsonKey, isArray, arrayIndex);
+    });
 }
 
 void StrategyManagementPanel::populateCatalog(const QJsonArray& catalogEntries,
-                                                const QMap<QString, int>& versionCounts)
+                                                const QMap<QString, int>& versionCounts,
+                                                const QMap<QString, QJsonObject>& latestConfigs)
 {
-    m_catalogPanel->populate(catalogEntries, versionCounts);
+    m_catalogPanel->populate(catalogEntries, versionCounts, latestConfigs);
 }
 
 void StrategyManagementPanel::showStrategyDetail(const QJsonObject& catalogEntry,

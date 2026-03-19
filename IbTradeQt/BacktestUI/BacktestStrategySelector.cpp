@@ -1,4 +1,5 @@
 #include "BacktestUI/BacktestStrategySelector.h"
+#include "PipelineTreeUtils.h"
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 #include <QLineEdit>
@@ -9,6 +10,7 @@
 #include <QHeaderView>
 #include <QKeyEvent>
 #include <QFont>
+#include <QJsonDocument>
 
 namespace BacktestUI {
 
@@ -209,6 +211,9 @@ void BacktestStrategySelector::applyFilter(const QString& filter)
             si->setText(1, QString("v%1").arg(item.version));
             si->setForeground(1, QColor(QStringLiteral("#4a90d9")));
         }
+
+        if (!item.pipelineConfig.isEmpty())
+            PipelineTreeUtils::populateBlockNodes(si, item.pipelineConfig);
     }
 
     // Catalog Strategies section
@@ -258,6 +263,12 @@ void BacktestStrategySelector::applyFilter(const QString& filter)
                     ci.strategyName + QStringLiteral(" v") + QString::number(ci.versionNumber));
         vi->setForeground(0, QColor(QStringLiteral("#e0e6f0")));
         vi->setForeground(1, QColor(QStringLiteral("#d4a04a")));
+
+        if (!ci.configJson.isEmpty()) {
+            QJsonObject pipeCfg = QJsonDocument::fromJson(ci.configJson.toUtf8()).object();
+            if (!pipeCfg.isEmpty())
+                PipelineTreeUtils::populateBlockNodes(vi, pipeCfg);
+        }
     }
 
     m_tree->expandAll();
@@ -283,7 +294,41 @@ void BacktestStrategySelector::highlightStrategy(const QString& strategyId)
 
 void BacktestStrategySelector::onItemDoubleClicked(QTreeWidgetItem* item, int /*col*/)
 {
-    if (!item || !item->data(0, RoleIsStrategy).toBool()) return;
+    if (!item) return;
+
+    // Block leaf node?
+    if (item->data(0, PipelineTreeUtils::RoleIsBlock).toBool()) {
+        QString category  = item->data(0, PipelineTreeUtils::RoleCategory).toString();
+        QString jsonKey   = item->data(0, PipelineTreeUtils::RoleJsonKey).toString();
+        bool isArray      = item->data(0, PipelineTreeUtils::RoleIsArray).toBool();
+        int arrayIndex    = item->data(0, PipelineTreeUtils::RoleArrayIndex).toInt();
+
+        // Walk up to the strategy/version ancestor to get the pipeline config
+        QTreeWidgetItem* ancestor = item->parent();
+        while (ancestor && !ancestor->data(0, RoleIsStrategy).toBool())
+            ancestor = ancestor->parent();
+
+        QJsonObject pipeCfg;
+        if (ancestor) {
+            if (ancestor->data(0, RoleIsCatalogEntry).toBool()) {
+                // catalog version -- find in m_catalogItems
+                QString verId = ancestor->data(0, RoleCatalogVerId).toString();
+                for (const auto& ci : m_catalogItems) {
+                    if (ci.versionId == verId) {
+                        pipeCfg = QJsonDocument::fromJson(ci.configJson.toUtf8()).object();
+                        break;
+                    }
+                }
+            } else {
+                pipeCfg = ancestor->data(0, RolePipelineJson).toJsonObject();
+            }
+        }
+
+        emit blockSelected(category, jsonKey, isArray, arrayIndex, pipeCfg);
+        return;
+    }
+
+    if (!item->data(0, RoleIsStrategy).toBool()) return;
 
     if (item->data(0, RoleIsCatalogEntry).toBool()) {
         const QString catStratId = item->data(0, RoleCatalogStratId).toString();
@@ -310,7 +355,6 @@ void BacktestStrategySelector::onSelectClicked()
     auto sel = m_tree->selectedItems();
     if (sel.isEmpty()) return;
     auto* item = sel.first();
-    if (!item->data(0, RoleIsStrategy).toBool()) return;
     onItemDoubleClicked(item, 0);
 }
 

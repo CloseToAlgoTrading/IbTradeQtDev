@@ -1,32 +1,6 @@
 #ifndef BACKTESTUI_BACKTESTWORKSPACEDOCK_H
 #define BACKTESTUI_BACKTESTWORKSPACEDOCK_H
 
-// BacktestWorkspaceDock — dedicated QDockWidget for the Backtest Workflow.
-//
-// This dock is a pure view — it does NOT own BacktestController.
-// CPresenter owns the controller; the dock only receives display calls.
-//
-// Layout:
-//   ┌─ Backtest Workspace ─────────────────────────────────────────┐
-//   │  Strategy: [name]    Portfolio: [path]    ID: [uuid prefix]  │
-//   ├──────────────────────────────────────────────────────────────┤
-//   │  BacktestRunConfigPanel (form + Run button + progress bar)   │
-//   ├──────────────────────────────────────────────────────────────┤
-//   │  [ Run History | Equity Curve | Candlestick | Trade Log ]    │
-//   │  <tab content>                                               │
-//   └──────────────────────────────────────────────────────────────┘
-//
-// Public interface (called by CPresenter only):
-//   selectStrategy()  — switch to a new strategy, pre-populate form defaults
-//   displayResult()   — populate all tabs from a loaded or just-finished run
-//   setProgress()     — relay progress from BacktestController to config panel
-//   setStatus()       — relay status string from BacktestController
-//   setRunning()      — enable/disable Run button
-//
-// Signals forwarded to CPresenter:
-//   runRequested(BacktestRunConfig)  — user clicked Run
-//   loadRunRequested(runId)          — user selected a past run in history panel
-
 #include <QDockWidget>
 #include <QMap>
 #include <QList>
@@ -37,7 +11,7 @@ class QLabel;
 class QTabWidget;
 class QWidget;
 class QSplitter;
-class PipelineConfigEditor;
+class BlockInspectorPanel;
 
 namespace BacktestUI {
 
@@ -69,6 +43,11 @@ public:
     void setStatus(const QString& status);
     void setRunning(bool running);
 
+    void showBlockDetails(const QString& category, const QString& jsonKey,
+                          bool isArray, int arrayIndex,
+                          const QJsonObject& pipelineConfig);
+    void hideBlockDetails();
+
 signals:
     void runRequested(const Backtest::BacktestRunConfig& config);
     void loadRunRequested(const QString& runId);
@@ -87,13 +66,16 @@ private:
 
     QTabWidget*              m_configTabs      = nullptr;
     BacktestRunConfigPanel*  m_configPanel     = nullptr;
-    PipelineConfigEditor*    m_pipelineEditor  = nullptr;
+    BlockInspectorPanel*     m_inspector       = nullptr;
+    int                      m_inspectorTabIdx = -1;
     QTabWidget*              m_tabWidget       = nullptr;
 
     BacktestRunHistoryPanel* m_historyPanel    = nullptr;
     EquityChartWidget*       m_equityChart     = nullptr;
     BacktestCandlestickWidget* m_candleChart   = nullptr;
     TradeLogWidget*          m_tradeLog        = nullptr;
+
+    QJsonObject              m_pipelineConfig;
 };
 
 } // namespace BacktestUI

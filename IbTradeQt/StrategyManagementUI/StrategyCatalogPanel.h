@@ -3,20 +3,17 @@
 
 #include <QWidget>
 #include <QJsonArray>
+#include <QJsonObject>
 #include <QMap>
 
-class QTreeView;
+class QTreeWidget;
+class QTreeWidgetItem;
 class QLineEdit;
 class QComboBox;
 class QPushButton;
-class QSortFilterProxyModel;
 
 namespace StrategyMgmt {
 
-class StrategyCatalogModel;
-
-// Left panel of the Strategy Management tab: search, filter, and flat list
-// of strategy families with columns: Name, Kind, Status, Versions, Last Updated.
 class StrategyCatalogPanel : public QWidget
 {
     Q_OBJECT
@@ -24,30 +21,48 @@ class StrategyCatalogPanel : public QWidget
 public:
     explicit StrategyCatalogPanel(QWidget* parent = nullptr);
 
-    // Populate from backend data. versionCounts maps strategyId → version count.
     void populate(const QJsonArray& catalogEntries,
-                  const QMap<QString, int>& versionCounts);
-
-    StrategyCatalogModel* model() const { return m_model; }
+                  const QMap<QString, int>& versionCounts,
+                  const QMap<QString, QJsonObject>& latestConfigs);
 
 signals:
     void strategySelected(const QString& strategyId);
+    void blockSelected(const QString& strategyId,
+                       const QString& category, const QString& jsonKey,
+                       bool isArray, int arrayIndex);
     void newStrategyRequested();
 
 private slots:
-    void onSelectionChanged();
+    void onItemClicked(QTreeWidgetItem* item, int column);
     void onFilterChanged(const QString& text);
     void onStatusFilterChanged(int index);
 
 private:
     void buildUi();
+    void applyFilter();
 
-    StrategyCatalogModel*    m_model       = nullptr;
-    QSortFilterProxyModel*   m_proxyModel  = nullptr;
-    QTreeView*               m_treeView    = nullptr;
-    QLineEdit*               m_searchEdit  = nullptr;
-    QComboBox*               m_statusCombo = nullptr;
-    QPushButton*             m_newButton   = nullptr;
+    enum ItemRole {
+        RoleStrategyId  = Qt::UserRole + 50,
+        RoleIsStrategy  = Qt::UserRole + 51,
+        RoleStatus      = Qt::UserRole + 52,
+    };
+
+    struct CatalogEntry {
+        QString     strategyId;
+        QString     name;
+        int         strategyKind = 0;
+        QString     lifecycleState;
+        int         versionCount = 0;
+        QString     updatedAt;
+        QJsonObject pipelineConfig;
+    };
+
+    QList<CatalogEntry> m_entries;
+
+    QTreeWidget* m_tree        = nullptr;
+    QLineEdit*   m_searchEdit  = nullptr;
+    QComboBox*   m_statusCombo = nullptr;
+    QPushButton* m_newButton   = nullptr;
 };
 
 } // namespace StrategyMgmt

@@ -8,12 +8,18 @@ class QLabel;
 class QLineEdit;
 class QTextEdit;
 class EventLogPanel;
+class BlockInspectorPanel;
 
 class StrategyWorkspace : public WorkspaceBase
 {
     Q_OBJECT
 public:
     explicit StrategyWorkspace(QWidget* parent = nullptr);
+
+    void showBlockInProperties(const QString& category,
+                               const QString& jsonKey,
+                               bool isArray, int arrayIndex);
+    void restoreStrategyProperties();
 
 protected:
     void onContextSet() override;
@@ -26,7 +32,6 @@ private:
     void buildInfoTab();
     void buildLogsTab();
     void buildAssetsTab();
-    void buildBacktestTab();
 
     void refreshOverview();
     void refreshProperties();
@@ -56,8 +61,10 @@ private:
     QWidget*     m_assetsWidget     = nullptr;
     QLineEdit*   m_assetsEdit       = nullptr;
 
-    // Backtest placeholder
-    QWidget*     m_backtestWidget   = nullptr;
+    // Block inspector (shown inside Properties tab when a block is selected)
+    BlockInspectorPanel* m_inspector   = nullptr;
+    bool                 m_showingBlock = false;
+    QWidget*             m_propertiesScroll = nullptr;
 };
 
 #endif // STRATEGYWORKSPACE_H

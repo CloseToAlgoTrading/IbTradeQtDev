@@ -2,6 +2,7 @@
 #include "LayoutConstants.h"
 #include "MetricsStrip.h"
 #include "WorkspaceHeader.h"
+#include "BlockInspectorPanel.h"
 #include "cgenericmodelApi.h"
 #include "cbasemodel.h"
 #include "cpipelinestrategyadapter.h"
@@ -9,6 +10,7 @@
 #include "mandatoryFieldKeys.h"
 #include <QFormLayout>
 #include <QVBoxLayout>
+#include <QStackedWidget>
 #include <QLabel>
 #include <QLineEdit>
 #include <QTextEdit>
@@ -24,7 +26,6 @@ StrategyWorkspace::StrategyWorkspace(QWidget* parent)
     buildAssetsTab();
     buildInfoTab();
     buildLogsTab();
-    buildBacktestTab();
 }
 
 // ---- Tab construction ----
@@ -57,14 +58,25 @@ void StrategyWorkspace::buildOverviewTab()
 
 void StrategyWorkspace::buildPropertiesTab()
 {
-    auto* scroll = new QScrollArea(this);
+    auto* stack = new QStackedWidget(this);
+
+    auto* scroll = new QScrollArea(stack);
     scroll->setWidgetResizable(true);
     m_propertiesWidget = new QWidget(scroll);
     m_propertiesForm = new QFormLayout(m_propertiesWidget);
     m_propertiesForm->setContentsMargins(Layout::TabContentMargin, Layout::TabContentMargin,
                                           Layout::TabContentMargin, Layout::TabContentMargin);
     scroll->setWidget(m_propertiesWidget);
-    addTab("Properties", scroll);
+    m_propertiesScroll = scroll;
+
+    m_inspector = new BlockInspectorPanel(stack);
+    m_inspector->setReadOnly(true);
+
+    stack->addWidget(scroll);
+    stack->addWidget(m_inspector);
+    stack->setCurrentWidget(scroll);
+
+    addTab("Properties", stack);
 }
 
 void StrategyWorkspace::buildInfoTab()
@@ -151,19 +163,37 @@ void StrategyWorkspace::buildAssetsTab()
     addTab("Assets", m_assetsWidget);
 }
 
-void StrategyWorkspace::buildBacktestTab()
+// ---- Public API ----
+
+void StrategyWorkspace::showBlockInProperties(const QString& category,
+                                               const QString& jsonKey,
+                                               bool isArray, int arrayIndex)
 {
-    m_backtestWidget = new QWidget(this);
-    auto* layout = new QVBoxLayout(m_backtestWidget);
-    layout->setContentsMargins(Layout::TabContentMargin, Layout::TabContentMargin,
-                               Layout::TabContentMargin, Layout::TabContentMargin);
-    auto* placeholder = new QLabel("Backtest workspace will be embedded here.\n"
-                                    "Use the existing Backtest Workspace dock for now.",
-                                    m_backtestWidget);
-    placeholder->setAlignment(Qt::AlignCenter);
-    placeholder->setStyleSheet("color: #8888a0; font-size: 12px;");
-    layout->addWidget(placeholder);
-    addTab("Backtest", m_backtestWidget);
+    if (!m_inspector || !m_boundModel) return;
+
+    auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(m_boundModel);
+    if (!adapter) return;
+
+    m_inspector->showBlock(adapter->pipelineConfig(),
+                           category, jsonKey, isArray, arrayIndex);
+
+    auto* stack = qobject_cast<QStackedWidget*>(m_inspector->parentWidget());
+    if (stack) stack->setCurrentWidget(m_inspector);
+    m_showingBlock = true;
+
+    int propertiesIdx = m_tabWidget->indexOf(stack);
+    if (propertiesIdx >= 0)
+        m_tabWidget->setCurrentIndex(propertiesIdx);
+}
+
+void StrategyWorkspace::restoreStrategyProperties()
+{
+    if (!m_showingBlock) return;
+
+    auto* stack = qobject_cast<QStackedWidget*>(m_inspector->parentWidget());
+    if (stack) stack->setCurrentWidget(m_propertiesScroll);
+    m_showingBlock = false;
+    m_inspector->clear();
 }
 
 // ---- Lifecycle ----
@@ -179,7 +209,6 @@ void StrategyWorkspace::onContextSet()
             }));
     }
 
-    // Set header
     QString breadcrumb;
     if (m_parentModel)
         breadcrumb = m_parentModel->getName();
@@ -190,6 +219,7 @@ void StrategyWorkspace::onContextSet()
     setHeaderInfo(m_boundModel->getName(), breadcrumb, ds);
     refreshProperties();
     refreshAssets();
+    restoreStrategyProperties();
     m_tabWidget->setCurrentIndex(0);
 }
 
@@ -210,6 +240,7 @@ void StrategyWorkspace::onContextCleared()
         m_infoForm->removeRow(0);
 
     if (m_assetsEdit) m_assetsEdit->clear();
+    restoreStrategyProperties();
 }
 
 // ---- Data refresh ----

@@ -40,6 +40,7 @@ public:
     CGenericModelApi* parentModelAt(const QModelIndex& index) const;
 
     bool isVirtualBlock(const QModelIndex& index) const;
+    bool isVirtualCategory(const QModelIndex& index) const;
     QString virtualBlockId(const QModelIndex& index) const;
     QString virtualCategory(const QModelIndex& index) const;
     CGenericModelApi* parentStrategyOf(const QModelIndex& index) const;
@@ -67,6 +68,7 @@ private:
         QString virtualName;
         QString virtualCategory;
         bool isVirtual = false;
+        bool isVirtualCat = false;
 
         ~TreeNode() { qDeleteAll(children); }
     };

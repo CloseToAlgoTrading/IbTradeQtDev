@@ -9,7 +9,6 @@ class CPipelineStrategyAdapter;
 class StrategyWorkspace;
 class AccountWorkspace;
 class PortfolioWorkspace;
-class BlockWorkspace;
 
 class ContextWorkspace : public QStackedWidget
 {
@@ -21,23 +20,21 @@ public:
     void showStrategyWorkspace(CGenericModelApi* model, CGenericModelApi* parent);
     void showAccountWorkspace(CGenericModelApi* model);
     void showPortfolioWorkspace(CGenericModelApi* model, CGenericModelApi* parent);
-    void showBlockWorkspace(CPipelineStrategyAdapter* adapter,
-                            const QString& category,
-                            const QString& blockId,
-                            const QString& jsonKey,
-                            int arrayIndex);
+
+    void showBlockInProperties(const QString& category,
+                               const QString& jsonKey,
+                               bool isArray, int arrayIndex);
+    void restoreStrategyProperties();
 
     StrategyWorkspace*  strategyWorkspace()  const { return m_strategyWS; }
     AccountWorkspace*   accountWorkspace()   const { return m_accountWS; }
     PortfolioWorkspace* portfolioWorkspace() const { return m_portfolioWS; }
-    BlockWorkspace*     blockWorkspace()     const { return m_blockWS; }
 
 private:
     QWidget*            m_emptyPage;
     StrategyWorkspace*  m_strategyWS;
     AccountWorkspace*   m_accountWS;
     PortfolioWorkspace* m_portfolioWS;
-    BlockWorkspace*     m_blockWS;
 };
 
 #endif // CONTEXTWORKSPACE_H

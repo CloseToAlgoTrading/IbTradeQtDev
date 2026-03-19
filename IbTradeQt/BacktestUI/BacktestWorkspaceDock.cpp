@@ -4,7 +4,7 @@
 #include "BacktestUI/EquityChartWidget.h"
 #include "BacktestUI/BacktestCandlestickWidget.h"
 #include "BacktestUI/TradeLogWidget.h"
-#include "PipelineConfigEditor.h"
+#include "BlockInspectorPanel.h"
 #include <QLabel>
 #include <QTabWidget>
 #include <QVBoxLayout>
@@ -13,6 +13,7 @@
 #include <QFont>
 #include <QSizePolicy>
 #include <QJsonDocument>
+#include <QJsonObject>
 
 namespace BacktestUI {
 
@@ -32,7 +33,6 @@ void BacktestWorkspaceDock::buildDock() {
     outerLayout->setContentsMargins(6, 6, 6, 6);
     outerLayout->setSpacing(4);
 
-    // Strategy header (fixed height)
     m_headerLabel = new QLabel(QStringLiteral("No strategy selected"));
     m_headerLabel->setStyleSheet(
         QStringLiteral("font-weight: bold; font-size: 13px; "
@@ -41,25 +41,23 @@ void BacktestWorkspaceDock::buildDock() {
     m_headerLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     outerLayout->addWidget(m_headerLabel);
 
-    // Vertical splitter: config area (top) | results tabs (bottom)
     auto* splitter = new QSplitter(Qt::Vertical, container);
     splitter->setChildrenCollapsible(false);
 
-    // Top: tabbed config area (Run Configuration | Pipeline Blocks)
+    // Top: tabbed config area
     m_configTabs = new QTabWidget();
     m_configTabs->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
     m_configPanel = new BacktestRunConfigPanel();
     m_configTabs->addTab(m_configPanel, QStringLiteral("Run Configuration"));
 
-    m_pipelineEditor = new PipelineConfigEditor();
-    m_configTabs->addTab(m_pipelineEditor, QStringLiteral("Pipeline Blocks"));
+    m_inspector = new BlockInspectorPanel();
+    m_inspector->setDiffPanelVisible(true);
 
-    splitter->addWidget(m_configTabs);
-
-    // When user edits pipeline params, update the stored config JSON
-    connect(m_pipelineEditor, &PipelineConfigEditor::configChanged,
+    // Inspector param edits update stored config and run config panel
+    connect(m_inspector, &BlockInspectorPanel::configChanged,
             this, [this](const QJsonObject& newConfig) {
+        m_pipelineConfig = newConfig;
         QString json = QString::fromUtf8(
             QJsonDocument(newConfig).toJson(QJsonDocument::Compact));
         m_configPanel->setStrategyContext(
@@ -67,6 +65,8 @@ void BacktestWorkspaceDock::buildDock() {
             m_currentPortfolioPath, json,
             m_currentStrategyDefId, m_currentStrategyVersion);
     });
+
+    splitter->addWidget(m_configTabs);
 
     // Bottom: results tabs
     m_tabWidget = new QTabWidget();
@@ -89,7 +89,6 @@ void BacktestWorkspaceDock::buildDock() {
     outerLayout->addWidget(splitter, 1);
     setWidget(container);
 
-    // Wire internal signals upward to CPresenter
     connect(m_configPanel, &BacktestRunConfigPanel::runRequested,
             this, &BacktestWorkspaceDock::runRequested);
 
@@ -119,11 +118,9 @@ void BacktestWorkspaceDock::selectStrategy(const QString& strategyId,
     m_configPanel->setCatalogVersionId(catalogVersionId);
     m_configPanel->applyProfile(profile);
 
-    // Populate the pipeline editor with the strategy's config
-    QJsonObject pipelineCfg = QJsonDocument::fromJson(pipelineConfigJson.toUtf8()).object();
-    m_pipelineEditor->setPipelineConfig(pipelineCfg);
+    m_pipelineConfig = QJsonDocument::fromJson(pipelineConfigJson.toUtf8()).object();
+    hideBlockDetails();
 
-    // Clear result tabs since a different strategy is now selected
     m_equityChart->clear();
     m_candleChart->clear();
     m_tradeLog->clear();
@@ -191,6 +188,25 @@ void BacktestWorkspaceDock::setStatus(const QString& status) {
 
 void BacktestWorkspaceDock::setRunning(bool running) {
     m_configPanel->setRunning(running);
+}
+
+void BacktestWorkspaceDock::showBlockDetails(const QString& category,
+                                              const QString& jsonKey,
+                                              bool isArray, int arrayIndex,
+                                              const QJsonObject& pipelineConfig) {
+    m_pipelineConfig = pipelineConfig;
+    if (m_inspectorTabIdx < 0) {
+        m_inspectorTabIdx = m_configTabs->addTab(m_inspector, QStringLiteral("Block Details"));
+    }
+    m_configTabs->setCurrentIndex(m_inspectorTabIdx);
+    m_inspector->showBlock(m_pipelineConfig, category, jsonKey, isArray, arrayIndex);
+}
+
+void BacktestWorkspaceDock::hideBlockDetails() {
+    if (m_inspectorTabIdx >= 0) {
+        m_configTabs->removeTab(m_inspectorTabIdx);
+        m_inspectorTabIdx = -1;
+    }
 }
 
 } // namespace BacktestUI

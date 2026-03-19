@@ -44,6 +44,7 @@ public:
     QList<DbStrategy> listStrategyCatalog(bool includeArchived = false) const;
     bool updateStrategyCatalog(const DbStrategy& strategy);
     bool archiveStrategyCatalog(const QString& strategyId);
+    int  removeOrphanedCatalogEntries();
 
     // ---- strategy_versions CRUD ----
     bool createStrategyVersion(const DbStrategyVersion& version);
@@ -79,6 +80,7 @@ private:
     DbBacktestRunProfile profileFromQuery(const class QSqlQuery& query) const;
 
     bool migrateV2toV3();
+    void repairBindingsTableForeignKey();
 
     QString m_dbPath;
     QString m_connectionName;

@@ -118,7 +118,8 @@ SOURCES += \
     ../StrategyManagementUI/StrategyCatalogPanel.cpp \
     ../StrategyManagementUI/StrategyDetailPanel.cpp \
     ../StrategyManagementUI/StrategyManagementPanel.cpp \
-    ../MainSystem/WorkspaceWidgets/PipelineConfigEditor.cpp
+    ../Pipeline/PipelineTreeUtils.cpp \
+    ../MainSystem/WorkspaceWidgets/BlockInspectorPanel.cpp
 
 HEADERS += \
     ../Pipeline/Contracts.h \
@@ -274,4 +275,5 @@ HEADERS += \
     ../StrategyManagementUI/StrategyCatalogPanel.h \
     ../StrategyManagementUI/StrategyDetailPanel.h \
     ../StrategyManagementUI/StrategyManagementPanel.h \
-    ../MainSystem/WorkspaceWidgets/PipelineConfigEditor.h
+    ../Pipeline/PipelineTreeUtils.h \
+    ../MainSystem/WorkspaceWidgets/BlockInspectorPanel.h

@@ -6,6 +6,7 @@
 #include "mandatoryFieldKeys.h"
 #include "ciconhandler.h"
 #include <QColor>
+#include <QFont>
 #include <QJsonArray>
 
 static bool isStrategyType(ModelType t)
@@ -69,25 +70,38 @@ CGenericModelApi* SystemTreeModel::parentModelAt(const QModelIndex& index) const
 bool SystemTreeModel::isVirtualBlock(const QModelIndex& index) const
 {
     auto* n = nodeFromIndex(index);
-    return n && n->isVirtual;
+    return n && n->isVirtual && !n->isVirtualCat;
+}
+
+bool SystemTreeModel::isVirtualCategory(const QModelIndex& index) const
+{
+    auto* n = nodeFromIndex(index);
+    return n && n->isVirtual && n->isVirtualCat;
 }
 
 QString SystemTreeModel::virtualBlockId(const QModelIndex& index) const
 {
     auto* n = nodeFromIndex(index);
-    return (n && n->isVirtual) ? n->virtualName : QString();
+    return (n && n->isVirtual && !n->isVirtualCat) ? n->virtualName : QString();
 }
 
 QString SystemTreeModel::virtualCategory(const QModelIndex& index) const
 {
     auto* n = nodeFromIndex(index);
-    return (n && n->isVirtual) ? n->virtualCategory : QString();
+    if (!n || !n->isVirtual) return {};
+    if (n->isVirtualCat) return n->virtualCategory;
+    return n->virtualCategory;
 }
 
 CGenericModelApi* SystemTreeModel::parentStrategyOf(const QModelIndex& index) const
 {
     auto* n = nodeFromIndex(index);
-    if (n && n->isVirtual && n->parent)
+    if (!n || !n->isVirtual) return nullptr;
+    // block leaf -> category -> strategy
+    if (!n->isVirtualCat && n->parent && n->parent->parent)
+        return n->parent->parent->model;
+    // category -> strategy
+    if (n->isVirtualCat && n->parent)
         return n->parent->model;
     return nullptr;
 }
@@ -156,7 +170,16 @@ void SystemTreeModel::buildSubtree(TreeNode* parentNode, CGenericModelApi* model
         if (adapter) {
             const QJsonObject& cfg = adapter->pipelineConfig();
 
-            auto addFromValue = [&](const QJsonValue& val, const QString& category) {
+            auto addCategory = [&](const QJsonValue& val, const QString& category) {
+                auto* catNode = new TreeNode;
+                catNode->isVirtual = true;
+                catNode->isVirtualCat = true;
+                catNode->virtualCategory = category;
+                catNode->virtualName = category;
+                catNode->parent = node;
+                catNode->path = node->path + "/" + category;
+                node->children.append(catNode);
+
                 if (val.isArray()) {
                     for (const auto& entry : val.toArray()) {
                         QJsonObject obj = entry.toObject();
@@ -167,30 +190,31 @@ void SystemTreeModel::buildSubtree(TreeNode* parentNode, CGenericModelApi* model
                         vnode->isVirtual = true;
                         vnode->virtualCategory = category;
                         vnode->virtualName = blockId;
-                        vnode->parent = node;
-                        vnode->path = node->path + "/" + category + "/" + blockId;
-                        node->children.append(vnode);
+                        vnode->parent = catNode;
+                        vnode->path = catNode->path + "/" + blockId;
+                        catNode->children.append(vnode);
                     }
                 } else if (val.isObject() && !val.toObject().isEmpty()) {
                     QJsonObject obj = val.toObject();
                     QString blockId = obj.value("blockId").toString();
                     if (blockId.isEmpty()) blockId = obj.value("type").toString();
-                    if (blockId.isEmpty()) return;
-                    auto* vnode = new TreeNode;
-                    vnode->isVirtual = true;
-                    vnode->virtualCategory = category;
-                    vnode->virtualName = blockId;
-                    vnode->parent = node;
-                    vnode->path = node->path + "/" + category + "/" + blockId;
-                    node->children.append(vnode);
+                    if (!blockId.isEmpty()) {
+                        auto* vnode = new TreeNode;
+                        vnode->isVirtual = true;
+                        vnode->virtualCategory = category;
+                        vnode->virtualName = blockId;
+                        vnode->parent = catNode;
+                        vnode->path = catNode->path + "/" + blockId;
+                        catNode->children.append(vnode);
+                    }
                 }
             };
 
-            addFromValue(cfg.value("selection"),  "Selection");
-            addFromValue(cfg.value("alphas"),     "Alpha");
-            addFromValue(cfg.value("risks"),      "Risk");
-            addFromValue(cfg.value("rebalance"),  "Rebalance");
-            addFromValue(cfg.value("execution"),  "Execution");
+            addCategory(cfg.value("selection"),  "Selection");
+            addCategory(cfg.value("alphas"),     "Alpha");
+            addCategory(cfg.value("risks"),      "Risk");
+            addCategory(cfg.value("rebalance"),  "Rebalance");
+            addCategory(cfg.value("execution"),  "Execution");
         }
     }
 }
@@ -284,8 +308,20 @@ QVariant SystemTreeModel::data(const QModelIndex& index, int role) const
 
     if (node->isVirtual) {
         int col = index.column();
+        if (node->isVirtualCat) {
+            if (col == ColName && role == Qt::DisplayRole)
+                return node->virtualCategory;
+            if (col == ColName && role == Qt::FontRole) {
+                QFont f;
+                f.setBold(true);
+                return f;
+            }
+            if (col == ColName && role == Qt::ForegroundRole)
+                return QColor(160, 180, 210);
+            return {};
+        }
         if (col == ColName && role == Qt::DisplayRole)
-            return QStringLiteral("[%1] %2").arg(node->virtualCategory, node->virtualName);
+            return node->virtualName;
         if (col == ColName && role == Qt::DecorationRole) {
             static CIconHandler ih;
             return ih.loadIconFromResourceTheme("Parameter");
@@ -408,8 +444,11 @@ QVariant SystemTreeModel::headerData(int section, Qt::Orientation orientation, i
 Qt::ItemFlags SystemTreeModel::flags(const QModelIndex& index) const
 {
     auto* node = nodeFromIndex(index);
-    if (node && node->isVirtual)
+    if (node && node->isVirtual) {
+        if (node->isVirtualCat)
+            return Qt::ItemIsEnabled;
         return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
+    }
 
     Qt::ItemFlags f = QAbstractItemModel::flags(index);
     if (index.column() == ColEnabled)

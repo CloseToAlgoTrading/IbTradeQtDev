@@ -23,9 +23,9 @@ public:
     StrategyCatalogPanel* catalogPanel() const { return m_catalogPanel; }
     StrategyDetailPanel*  detailPanel()  const { return m_detailPanel; }
 
-    // Populate catalog from backend data.
     void populateCatalog(const QJsonArray& catalogEntries,
-                         const QMap<QString, int>& versionCounts);
+                         const QMap<QString, int>& versionCounts,
+                         const QMap<QString, QJsonObject>& latestConfigs);
 
     // Show details for a specific strategy.
     void showStrategyDetail(const QJsonObject& catalogEntry,

@@ -6,6 +6,8 @@
 #include <QTemporaryFile>
 #include <QUuid>
 #include <QJsonDocument>
+#include <QSqlDatabase>
+#include <QSqlQuery>
 #include "Backend/ModelTreeRepository.h"
 #include "Backend/SystemBackendImpl.h"
 #include "DB/dbdatatypes.h"
@@ -338,6 +340,125 @@ private slots:
         DbLiveStrategyBinding secondBinding = m_repo->fetchBindingForNode("orphan-node-2");
         QVERIFY(secondBinding.isValid());
         QCOMPARE(firstBinding.bindingId, secondBinding.bindingId);
+    }
+
+    void testNoDuplicateStrategiesAcrossRestarts() {
+        // Simulate the exact production flow: separate repo+backend per session
+        m_dbPath = QDir::tempPath() + "/test_stratdef_restart_"
+                 + QUuid::createUuid().toString(QUuid::WithoutBraces) + ".sqlite";
+
+        QString stratNodeUuid;
+
+        // --- Session 1: create account → portfolio → strategy ---
+        {
+            auto repo = std::make_unique<ModelTreeRepository>(
+                m_dbPath,
+                "restart_s1_" + QUuid::createUuid().toString(QUuid::WithoutBraces));
+            QVERIFY(repo->initialize());
+            auto backend = std::make_unique<SystemBackendImpl>(repo.get());
+
+            QString acctId = backend->createAccount("A");
+            QString portId = backend->createPortfolio(acctId, "P");
+            stratNodeUuid  = backend->createStrategy(portId, ModelType::STRATEGY_PIPELINE);
+            QVERIFY(!stratNodeUuid.isEmpty());
+
+            DbLiveStrategyBinding b = repo->fetchBindingForNode(stratNodeUuid);
+            QVERIFY2(b.isValid(), "Session 1: binding must exist after createStrategy");
+            QCOMPARE(repo->listStrategyCatalog().size(), 1);
+        }
+
+        // --- Session 2: fresh repo+backend on same DB, loadFromDb ---
+        {
+            auto repo = std::make_unique<ModelTreeRepository>(
+                m_dbPath,
+                "restart_s2_" + QUuid::createUuid().toString(QUuid::WithoutBraces));
+            QVERIFY(repo->initialize());
+            auto backend = std::make_unique<SystemBackendImpl>(repo.get());
+            QVERIFY(backend->loadFromDb());
+
+            DbLiveStrategyBinding b = repo->fetchBindingForNode(stratNodeUuid);
+            QVERIFY2(b.isValid(), "Session 2: binding must survive restart");
+            QCOMPARE(repo->listStrategyCatalog().size(), 1);
+        }
+
+        // --- Session 3: another restart, still no duplicates ---
+        {
+            auto repo = std::make_unique<ModelTreeRepository>(
+                m_dbPath,
+                "restart_s3_" + QUuid::createUuid().toString(QUuid::WithoutBraces));
+            QVERIFY(repo->initialize());
+            auto backend = std::make_unique<SystemBackendImpl>(repo.get());
+            QVERIFY(backend->loadFromDb());
+
+            QCOMPARE(repo->listStrategyCatalog().size(), 1);
+        }
+    }
+
+    void testBindingFKRepairAfterMigration() {
+        // Simulate the exact production scenario: a DB that went through v2→v3
+        // migration where strategy_definitions was renamed to strategy_definitions_backup,
+        // causing SQLite to rewrite the FK in live_strategy_bindings.
+        m_dbPath = QDir::tempPath() + "/test_fk_repair_"
+                 + QUuid::createUuid().toString(QUuid::WithoutBraces) + ".sqlite";
+
+        QString connName = "fk_repair_" + QUuid::createUuid().toString(QUuid::WithoutBraces);
+
+        // Manually create a DB with the broken FK to simulate post-migration state
+        {
+            QSqlDatabase database = QSqlDatabase::addDatabase("QSQLITE", connName);
+            database.setDatabaseName(m_dbPath);
+            QVERIFY(database.open());
+            QSqlQuery q(database);
+            q.exec("PRAGMA foreign_keys = ON");
+            q.exec("CREATE TABLE model_nodes (uuid TEXT PRIMARY KEY, parent_uuid TEXT, "
+                   "model_type INTEGER, name TEXT, config_json TEXT, sort_order INTEGER, "
+                   "is_active INTEGER, created_at TEXT, updated_at TEXT)");
+            q.exec("CREATE TABLE app_metadata (key TEXT PRIMARY KEY, value TEXT)");
+            q.exec("INSERT INTO app_metadata VALUES ('schema_version','3')");
+            q.exec("CREATE TABLE strategies (strategy_id TEXT PRIMARY KEY, name TEXT, "
+                   "strategy_kind INTEGER, lifecycle_state TEXT, description TEXT, tags TEXT, "
+                   "is_archived INTEGER, created_at TEXT, updated_at TEXT)");
+            q.exec("CREATE TABLE strategy_versions (version_id TEXT PRIMARY KEY, "
+                   "strategy_id TEXT, version_number INTEGER, config_json TEXT, notes TEXT, "
+                   "is_published INTEGER, created_from_version_id TEXT, created_at TEXT)");
+            q.exec("CREATE TABLE strategy_definitions_backup (strategy_def_id TEXT PRIMARY KEY, "
+                   "name TEXT, strategy_kind INTEGER, config_json TEXT, version INTEGER, "
+                   "lifecycle_state TEXT, is_archived INTEGER, created_at TEXT, updated_at TEXT, "
+                   "created_from_def_id TEXT)");
+            q.exec("CREATE TABLE strategy_definitions (strategy_def_id TEXT PRIMARY KEY, "
+                   "name TEXT, strategy_kind INTEGER, config_json TEXT, version INTEGER, "
+                   "lifecycle_state TEXT, is_archived INTEGER, created_at TEXT, updated_at TEXT, "
+                   "created_from_def_id TEXT)");
+            // The broken FK: references strategy_definitions_backup instead of strategies
+            q.exec("CREATE TABLE live_strategy_bindings ("
+                   "binding_id TEXT PRIMARY KEY, "
+                   "model_node_id TEXT NOT NULL REFERENCES model_nodes(uuid) ON DELETE CASCADE, "
+                   "strategy_def_id TEXT NOT NULL REFERENCES strategy_definitions_backup(strategy_def_id), "
+                   "version_id TEXT DEFAULT '', "
+                   "created_at TEXT NOT NULL, updated_at TEXT NOT NULL, "
+                   "UNIQUE(model_node_id))");
+            // Insert a strategy node
+            q.exec("INSERT INTO model_nodes VALUES ('test-node','', 13, 'MA', '{}', 0, 1, "
+                   "'2026-03-18T12:00:00Z', '2026-03-18T12:00:00Z')");
+            database.close();
+        }
+        QSqlDatabase::removeDatabase(connName);
+
+        // Now open via ModelTreeRepository::initialize() — which should detect
+        // the broken FK and repair it
+        {
+            auto repo = std::make_unique<ModelTreeRepository>(
+                m_dbPath,
+                "fk_s2_" + QUuid::createUuid().toString(QUuid::WithoutBraces));
+            QVERIFY(repo->initialize());
+
+            auto backend = std::make_unique<SystemBackendImpl>(repo.get());
+            QVERIFY(backend->loadFromDb());
+
+            DbLiveStrategyBinding b = repo->fetchBindingForNode("test-node");
+            QVERIFY2(b.isValid(), "After FK repair, binding creation must succeed");
+            QCOMPARE(repo->listStrategyCatalog().size(), 1);
+        }
     }
 
     // ---- Backtest run profiles ----

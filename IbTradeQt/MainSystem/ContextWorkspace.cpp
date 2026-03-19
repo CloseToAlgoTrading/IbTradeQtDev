@@ -2,7 +2,6 @@
 #include "WorkspaceWidgets/StrategyWorkspace.h"
 #include "WorkspaceWidgets/AccountWorkspace.h"
 #include "WorkspaceWidgets/PortfolioWorkspace.h"
-#include "WorkspaceWidgets/BlockWorkspace.h"
 #include <QLabel>
 #include <QVBoxLayout>
 
@@ -21,13 +20,11 @@ ContextWorkspace::ContextWorkspace(QWidget *parent)
     m_strategyWS  = new StrategyWorkspace(this);
     m_accountWS   = new AccountWorkspace(this);
     m_portfolioWS = new PortfolioWorkspace(this);
-    m_blockWS     = new BlockWorkspace(this);
 
     addWidget(m_emptyPage);
     addWidget(m_strategyWS);
     addWidget(m_accountWS);
     addWidget(m_portfolioWS);
-    addWidget(m_blockWS);
     showEmpty();
 }
 
@@ -54,12 +51,15 @@ void ContextWorkspace::showPortfolioWorkspace(CGenericModelApi* model, CGenericM
     setCurrentWidget(m_portfolioWS);
 }
 
-void ContextWorkspace::showBlockWorkspace(CPipelineStrategyAdapter* adapter,
-                                           const QString& category,
-                                           const QString& blockId,
-                                           const QString& jsonKey,
-                                           int arrayIndex)
+void ContextWorkspace::showBlockInProperties(const QString& category,
+                                              const QString& jsonKey,
+                                              bool isArray, int arrayIndex)
 {
-    m_blockWS->setBlockContext(adapter, category, blockId, jsonKey, arrayIndex);
-    setCurrentWidget(m_blockWS);
+    setCurrentWidget(m_strategyWS);
+    m_strategyWS->showBlockInProperties(category, jsonKey, isArray, arrayIndex);
+}
+
+void ContextWorkspace::restoreStrategyProperties()
+{
+    m_strategyWS->restoreStrategyProperties();
 }
