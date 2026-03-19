@@ -1,8 +1,10 @@
 #include "WorkspaceHeader.h"
 #include "LayoutConstants.h"
 #include "ModelStateUtils.h"
+#include "ThemePalette.h"
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QLatin1String>
 
 WorkspaceHeader::WorkspaceHeader(QWidget* parent)
     : QWidget(parent)
@@ -23,7 +25,6 @@ WorkspaceHeader::WorkspaceHeader(QWidget* parent)
 
     m_breadcrumbLabel = new QLabel(this);
     m_breadcrumbLabel->setObjectName("wsBreadcrumb");
-    m_breadcrumbLabel->setStyleSheet("color: #8888a0; font-size: 11px;");
 
     m_stateBadge = new QLabel(this);
     m_stateBadge->setObjectName("wsStateBadge");
@@ -67,9 +68,11 @@ void WorkspaceHeader::applyHeader(const VM::WorkspaceHeader& header)
 void WorkspaceHeader::applyStateBadge(const QString& label, const QString& indicator, const QColor& color)
 {
     m_stateBadge->setText(QStringLiteral("  %1 %2  ").arg(indicator, label));
-    m_stateBadge->setStyleSheet(
-        QStringLiteral("background-color: %1; color: white; border-radius: 4px; padding: 2px 8px; font-size: 11px;")
-            .arg(color.darker(130).name()));
+    // Chrome (radius, padding) also in operations-console.qss #wsStateBadge; colors are runtime-only.
+    m_stateBadge->setStyleSheet(QStringLiteral(
+        "QLabel#wsStateBadge { background-color: %1; color: %2; border-radius: 4px; padding: 2px 8px; "
+        "font-size: 11px; min-height: 22px; }")
+        .arg(color.darker(130).name(), QLatin1String(UiTheme::kTextOnAccent)));
 }
 
 void WorkspaceHeader::clear()

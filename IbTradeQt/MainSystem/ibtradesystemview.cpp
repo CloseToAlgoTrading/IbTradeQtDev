@@ -13,6 +13,19 @@
 #include <QSplitter>
 #include <QTabWidget>
 #include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QHeaderView>
+#include <QFrame>
+#include <QLabel>
+#include <QToolButton>
+#include <QResizeEvent>
+#include <QEvent>
+#include <QMouseEvent>
+#include <QKeyEvent>
+#include <QPropertyAnimation>
+#include <QEasingCurve>
+#include <QSignalBlocker>
+#include <QtGlobal>
 
 
 CIBTradeSystemView::CIBTradeSystemView(QWidget *parent)
@@ -22,6 +35,7 @@ CIBTradeSystemView::CIBTradeSystemView(QWidget *parent)
     , m_ih()
 {
 	ui.setupUi(this);
+    ui.actionSetting->setCheckable(true);
 
 
 
@@ -110,7 +124,6 @@ void CIBTradeSystemView::setupConsoleLayout()
         QStringLiteral("← Select a strategy to start a backtest"), backtestRight);
     placeholder->setObjectName(QStringLiteral("BacktestPlaceholderLabel"));
     placeholder->setAlignment(Qt::AlignCenter);
-    placeholder->setStyleSheet(QStringLiteral("color:#555; font-size:13px;"));
     backtestRightLayout->addWidget(placeholder);
 
     auto* backtestSplitter = new QSplitter(Qt::Horizontal, this);
@@ -142,7 +155,154 @@ void CIBTradeSystemView::setupConsoleLayout()
     // Replace the old logging dock with EventLogPanel
     removeDockWidget(ui.dockWidget_Logging);
     ui.dockWidget_Logging->hide();
+
+    // Events only on the bottom; Settings uses a right slide-over panel (see setupSettingsSlideOverlay).
+    removeDockWidget(ui.dockWidget_Settings);
+    ui.dockWidget_Settings->hide();
     addDockWidget(Qt::BottomDockWidgetArea, m_eventLogPanel);
+
+    setupSettingsSlideOverlay();
+}
+
+void CIBTradeSystemView::setupSettingsSlideOverlay()
+{
+    m_settingsOverlay = new QWidget(this);
+    m_settingsOverlay->setObjectName(QStringLiteral("SettingsOverlay"));
+    m_settingsOverlay->hide();
+    m_settingsOverlay->setFocusPolicy(Qt::StrongFocus);
+
+    m_settingsBackdrop = new QFrame(m_settingsOverlay);
+    m_settingsBackdrop->setObjectName(QStringLiteral("SettingsOverlayBackdrop"));
+    m_settingsBackdrop->setFrameShape(QFrame::NoFrame);
+    m_settingsBackdrop->installEventFilter(this);
+
+    m_settingsSheet = new QFrame(m_settingsOverlay);
+    m_settingsSheet->setObjectName(QStringLiteral("SettingsSlidePanel"));
+    m_settingsSheet->setFrameShape(QFrame::NoFrame);
+
+    auto* title = new QLabel(QStringLiteral("Settings"), m_settingsSheet);
+    title->setObjectName(QStringLiteral("SettingsSlideTitle"));
+
+    auto* closeBtn = new QToolButton(m_settingsSheet);
+    closeBtn->setObjectName(QStringLiteral("SettingsSlideCloseButton"));
+    closeBtn->setText(QStringLiteral("×"));
+    closeBtn->setAutoRaise(true);
+    closeBtn->setToolTip(QStringLiteral("Close"));
+    QObject::connect(closeBtn, &QAbstractButton::clicked, this, [this] {
+        setSettingsOverlayVisible(false);
+    });
+
+    ui.settingsTreeView->setParent(m_settingsSheet);
+    // Sheet chrome: padding, child margins, tree/header — operations-console.qss.
+    // QLayout spacing/margins are not stylable in Qt; defaults are used (see THEMING.md).
+
+    auto* headerWrap = new QWidget(m_settingsSheet);
+    auto* headerLay  = new QHBoxLayout(headerWrap);
+    headerLay->addWidget(title);
+    headerLay->addStretch();
+    headerLay->addWidget(closeBtn);
+
+    auto* body = new QVBoxLayout(m_settingsSheet);
+    body->addWidget(headerWrap);
+    body->addWidget(ui.settingsTreeView, 1);
+}
+
+void CIBTradeSystemView::updateSettingsOverlayGeometry()
+{
+    if (!m_settingsOverlay || !centralWidget())
+        return;
+
+    const QPoint origin = centralWidget()->mapTo(this, QPoint(0, 0));
+    m_settingsOverlay->setGeometry(origin.x(), origin.y(),
+                                   centralWidget()->width(), centralWidget()->height());
+    m_settingsBackdrop->setGeometry(0, 0, m_settingsOverlay->width(), m_settingsOverlay->height());
+
+    if (m_settingsOverlayVisible && m_settingsOverlay->isVisible() && m_settingsSheet) {
+        const int w = m_settingsSheet->width();
+        m_settingsSheet->setGeometry(m_settingsOverlay->width() - w, 0,
+                                      w, m_settingsOverlay->height());
+    }
+}
+
+void CIBTradeSystemView::setSettingsOverlayVisible(bool visible)
+{
+    if (!m_settingsOverlay || !m_settingsBackdrop || !m_settingsSheet)
+        return;
+
+    if (visible == m_settingsOverlayVisible && m_settingsOverlay->isVisible() == visible)
+        return;
+
+    m_settingsOverlayVisible = visible;
+    {
+        const QSignalBlocker b(ui.actionSetting);
+        ui.actionSetting->setChecked(visible);
+    }
+
+    updateSettingsOverlayGeometry();
+
+    if (visible) {
+        m_settingsOverlay->show();
+        m_settingsOverlay->raise();
+        m_settingsOverlay->setFocus();
+        m_settingsBackdrop->show();
+        m_settingsSheet->show();
+        m_settingsSheet->raise();
+
+        const int w = m_settingsSheet->width();
+        const int h = m_settingsOverlay->height();
+        const int fullW = m_settingsOverlay->width();
+        const QRect start(fullW, 0, w, h);
+        const QRect end(fullW - w, 0, w, h);
+        m_settingsSheet->setGeometry(start);
+
+        auto* anim = new QPropertyAnimation(m_settingsSheet, "geometry", this);
+        anim->setDuration(200);
+        anim->setStartValue(start);
+        anim->setEndValue(end);
+        anim->setEasingCurve(QEasingCurve::OutCubic);
+        anim->start(QAbstractAnimation::DeleteWhenStopped);
+    } else {
+        const int w = m_settingsSheet->width();
+        const int h = m_settingsOverlay->height();
+        const int fullW = m_settingsOverlay->width();
+        const QRect start = m_settingsSheet->geometry();
+        const QRect end(fullW, 0, w, h);
+
+        auto* anim = new QPropertyAnimation(m_settingsSheet, "geometry", this);
+        anim->setDuration(160);
+        anim->setStartValue(start);
+        anim->setEndValue(end);
+        anim->setEasingCurve(QEasingCurve::InCubic);
+        QObject::connect(anim, &QPropertyAnimation::finished, this, [this] {
+            if (m_settingsOverlay)
+                m_settingsOverlay->hide();
+        });
+        anim->start(QAbstractAnimation::DeleteWhenStopped);
+    }
+}
+
+void CIBTradeSystemView::resizeEvent(QResizeEvent* event)
+{
+    QMainWindow::resizeEvent(event);
+    updateSettingsOverlayGeometry();
+}
+
+bool CIBTradeSystemView::eventFilter(QObject* watched, QEvent* event)
+{
+    if (watched == m_settingsBackdrop && event->type() == QEvent::MouseButtonPress) {
+        setSettingsOverlayVisible(false);
+        return true;
+    }
+    return QObject::eventFilter(watched, event);
+}
+
+void CIBTradeSystemView::keyPressEvent(QKeyEvent* event)
+{
+    if (m_settingsOverlayVisible && event->key() == Qt::Key_Escape) {
+        setSettingsOverlayVisible(false);
+        return;
+    }
+    QMainWindow::keyPressEvent(event);
 }
 
 void CIBTradeSystemView::switchToBacktestTab()
@@ -177,7 +337,8 @@ void CIBTradeSystemView::mapSignals()
 {
     QObject::connect(ui.actionClear_Log, &QAction::triggered, this, &CIBTradeSystemView::slotClearLog);
     QObject::connect(ui.actionShow_Log, &QAction::triggered, this, &CIBTradeSystemView::slotShowLog);
-    QObject::connect(ui.actionSetting, &QAction::triggered, this, &CIBTradeSystemView::slotshowSettings);
+    QObject::connect(ui.actionSetting, &QAction::toggled,
+                     this, &CIBTradeSystemView::setSettingsOverlayVisible);
 
     QObject::connect(ui.test_treeView, &QTreeView::expanded,  [=](const QModelIndex& index) { ui.test_treeView->resizeColumnToContents(index.column()); });
     QObject::connect(ui.test_treeView, &QTreeView::collapsed, [=](const QModelIndex& index) { ui.test_treeView->resizeColumnToContents(index.column()); });
@@ -243,11 +404,6 @@ void CIBTradeSystemView::slotShowLog()
 {
     if (m_eventLogPanel)
         m_eventLogPanel->show();
-}
-
-void CIBTradeSystemView::slotshowSettings()
-{
-    ui.dockWidget_Settings->show();
 }
 
 void CIBTradeSystemView::slotUpdateTreeView(const QModelIndex &index)

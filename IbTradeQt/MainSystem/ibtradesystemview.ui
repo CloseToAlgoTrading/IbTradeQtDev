@@ -213,17 +213,11 @@
    </widget>
   </widget>
   <widget class="QDockWidget" name="dockWidget_Settings">
-   <property name="maximumSize">
-    <size>
-     <width>350</width>
-     <height>524287</height>
-    </size>
-   </property>
    <property name="features">
-    <set>QDockWidget::DockWidgetClosable|QDockWidget::DockWidgetMovable</set>
+    <set>QDockWidget::DockWidgetClosable|QDockWidget::DockWidgetMovable|QDockWidget::DockWidgetFloatable</set>
    </property>
    <property name="allowedAreas">
-    <set>Qt::LeftDockWidgetArea|Qt::RightDockWidgetArea</set>
+    <set>Qt::LeftDockWidgetArea|Qt::RightDockWidgetArea|Qt::BottomDockWidgetArea</set>
    </property>
    <property name="windowTitle">
     <string>Settings</string>

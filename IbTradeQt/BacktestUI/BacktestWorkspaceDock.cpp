@@ -36,18 +36,16 @@ void BacktestWorkspaceDock::buildDock() {
     outerLayout->setSpacing(4);
 
     m_headerLabel = new QLabel(QStringLiteral("No strategy selected"));
-    m_headerLabel->setStyleSheet(
-        QStringLiteral("font-weight: bold; font-size: 13px; "
-                        "padding: 4px; background: #f0f4f8; "
-                        "border-radius: 4px;"));
+    m_headerLabel->setObjectName(QStringLiteral("BacktestWorkspaceContextHeader"));
     m_headerLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     outerLayout->addWidget(m_headerLabel);
 
     auto* splitter = new QSplitter(Qt::Vertical, container);
     splitter->setChildrenCollapsible(false);
 
-    // Top: tabbed config area
+    // Top: tabbed config area — tab underline styled in operations-console.qss
     m_configTabs = new QTabWidget();
+    m_configTabs->setObjectName(QStringLiteral("BacktestWorkspaceConfigTabs"));
     m_configTabs->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
     m_configPanel = new BacktestRunConfigPanel();
@@ -70,8 +68,9 @@ void BacktestWorkspaceDock::buildDock() {
 
     splitter->addWidget(m_configTabs);
 
-    // Bottom: results tabs
+    // Bottom: results tabs — same QSS object as config tabs
     m_tabWidget = new QTabWidget();
+    m_tabWidget->setObjectName(QStringLiteral("BacktestWorkspaceResultTabs"));
     m_tabWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
     m_historyPanel = new BacktestRunHistoryPanel();
@@ -133,14 +132,15 @@ void BacktestWorkspaceDock::updateStrategyHeader() {
     QString versionBadge;
     if (!m_currentStrategyDefId.isEmpty()) {
         versionBadge = QString(
-            "<span style='color:#4a90d9; font-size:10px;'>"
+            "<span style='color:#6eb3f0; font-size:10px;'>"
             "&nbsp;|&nbsp;def v%1</span>")
             .arg(m_currentStrategyVersion);
     }
+    /* Colors tuned for dark header (see #BacktestWorkspaceContextHeader in operations-console.qss) */
     const QString text = QString(
-        "<b>%1</b>"
-        "<span style='color:#777; font-size:11px;'>&nbsp;&nbsp;%2</span>"
-        "<span style='color:#aaa; font-size:10px;'>&nbsp;|&nbsp;ID: %3</span>"
+        "<b style='color:#f0f0f0;'>%1</b>"
+        "<span style='color:#b8b8b8; font-size:11px;'>&nbsp;&nbsp;%2</span>"
+        "<span style='color:#909090; font-size:10px;'>&nbsp;|&nbsp;ID: %3</span>"
         "%4")
         .arg(m_currentDisplayName)
         .arg(m_currentPortfolioPath)

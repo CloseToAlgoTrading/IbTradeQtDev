@@ -221,9 +221,8 @@ public:
         IBTradeSystemClass->addDockWidget(Qt::DockWidgetArea::BottomDockWidgetArea, dockWidget_Logging);
         dockWidget_Settings = new QDockWidget(IBTradeSystemClass);
         dockWidget_Settings->setObjectName("dockWidget_Settings");
-        dockWidget_Settings->setMaximumSize(QSize(350, 524287));
-        dockWidget_Settings->setFeatures(QDockWidget::DockWidgetClosable|QDockWidget::DockWidgetMovable);
-        dockWidget_Settings->setAllowedAreas(Qt::LeftDockWidgetArea|Qt::RightDockWidgetArea);
+        dockWidget_Settings->setFeatures(QDockWidget::DockWidgetClosable|QDockWidget::DockWidgetMovable|QDockWidget::DockWidgetFloatable);
+        dockWidget_Settings->setAllowedAreas(Qt::LeftDockWidgetArea|Qt::RightDockWidgetArea|Qt::BottomDockWidgetArea);
         dockWidgetContents_3 = new QWidget();
         dockWidgetContents_3->setObjectName("dockWidgetContents_3");
         dockWidgetContents_3->setEnabled(true);

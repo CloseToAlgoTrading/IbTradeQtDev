@@ -1,5 +1,6 @@
 #include "MetricsStrip.h"
 #include "LayoutConstants.h"
+#include "ThemePalette.h"
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QLabel>
@@ -39,25 +40,28 @@ void MetricsStrip::rebuildCards(const QList<MetricCard>& cards)
         frame->setObjectName("metricCard");
         frame->setMinimumWidth(Layout::MetricCardMinWidth);
         frame->setFrameShape(QFrame::NoFrame);
-        frame->setStyleSheet(
-            "QFrame#metricCard { background-color: #2a2a3e; border-radius: 4px; padding: 4px 8px; }");
 
         auto* cardLayout = new QVBoxLayout(frame);
         cardLayout->setContentsMargins(Layout::MetricCardPadding, 2, Layout::MetricCardPadding, 2);
         cardLayout->setSpacing(2);
 
         auto* labelWidget = new QLabel(card.label, frame);
-        labelWidget->setStyleSheet("color: #8888a0; font-size: 10px;");
+        labelWidget->setObjectName(QStringLiteral("metricCardLabel"));
 
         auto* valueWidget = new QLabel(card.value, frame);
+        valueWidget->setObjectName(QStringLiteral("metricCardValue"));
         QFont valueFont = valueWidget->font();
         valueFont.setPointSize(12);
         valueFont.setBold(true);
         valueWidget->setFont(valueFont);
-        if (card.color.isValid())
-            valueWidget->setStyleSheet(QStringLiteral("color: %1; font-size: 13px; font-weight: bold;").arg(card.color.name()));
-        else
-            valueWidget->setStyleSheet("color: #e0e0e0; font-size: 13px; font-weight: bold;");
+        if (card.color.isValid()) {
+            valueWidget->setStyleSheet(QStringLiteral(
+                "QLabel#metricCardValue { color: %1; font-size: %2px; font-weight: bold; }")
+                .arg(card.color.name())
+                .arg(UiTheme::kFontSizeMetricValue));
+        } else {
+            valueWidget->setStyleSheet(QString());
+        }
 
         if (!card.tooltip.isEmpty())
             frame->setToolTip(card.tooltip);

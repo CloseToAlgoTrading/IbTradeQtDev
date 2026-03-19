@@ -1,6 +1,10 @@
 /* Operations Console — Professional Finance Terminal Theme
  *  Centralized QSS for the Qt GUI. Edit palette below to retheme the app.
  *
+ *  C++ cannot read this file. Shared hex tokens for runtime stylesheets live in
+ *  MainSystem/ThemePalette.h (namespace UiTheme) — keep those literals in sync
+ *  with the palette and rules below.
+ *
  *  ── THEME PALETTE (reference for designers & developers) ─────────────────
  *  bgWindow      #1b1b1b   Main windows / panels
  *  bgElevated    #212121   Inputs, cards, popups
@@ -219,6 +223,60 @@ QHeaderView::section {
     letter-spacing: 0.5px;
 }
 
+/* ── Settings slide panel ──────────────────────────────────────────────────
+ * Sheet width, tree min-height, header column sizing (qproperty-*) live here; not in C++.
+ * Widen/narrow the sheet: edit min-width and max-width on #SettingsSlidePanel (e.g. 480px).
+ */
+QWidget#SettingsOverlay {
+    background: transparent;
+}
+QFrame#SettingsOverlayBackdrop {
+    background-color: rgba(0, 0, 0, 0.5);
+    border: none;
+}
+QFrame#SettingsSlidePanel {
+    /* Panel width (was kPanelWidth in code) */
+    min-width: 480px;
+    max-width: 480px;
+    background-color: #1a1a1a;
+    border-left: 1px solid #333333;
+    /* Inset for main column (replaces QVBoxLayout setContentsMargins L,T,R,B = 10,8,10,10) */
+    padding: 8px 10px 10px 10px;
+}
+
+/* Settings tree: min height + header so "Parameter" column is wider; Value column stretches */
+QFrame#SettingsSlidePanel QTreeView#settingsTreeView {
+    min-height: 200px;
+    /* Gap below title row (replaces QVBoxLayout setSpacing(8)) */
+    margin-top: 8px;
+}
+QFrame#SettingsSlidePanel QTreeView#settingsTreeView QHeaderView {
+    qproperty-defaultSectionSize: 268;
+    qproperty-minimumSectionSize: 96;
+    qproperty-stretchLastSection: true;
+}
+QLabel#SettingsSlideTitle {
+    color: #e8e8e8;
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0px;
+}
+QToolButton#SettingsSlideCloseButton {
+    color: #cccccc;
+    font-size: 20px;
+    font-weight: 400;
+    min-width: 28px;
+    max-width: 28px;
+    min-height: 28px;
+    margin: 0px;
+    border: none;
+    border-radius: 4px;
+}
+QToolButton#SettingsSlideCloseButton:hover {
+    background-color: #3a3a3a;
+    color: #ffffff;
+}
+
 /* ── Context Workspace ── */
 #ContextWorkspace {
     background-color: #1b1b1b;
@@ -236,8 +294,17 @@ QHeaderView::section {
 }
 
 #WorkspaceHeader QLabel#wsBreadcrumb {
-    color: #888888;
+    color: #8888a0;
     font-size: 11px;
+}
+
+/* Workspace header state badge: base chrome only; background stays data-driven in C++ */
+#WorkspaceHeader QLabel#wsStateBadge {
+    color: #ffffff;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 11px;
+    min-height: 22px;
 }
 
 /* ── Metrics Strip ── */
@@ -247,9 +314,98 @@ QHeaderView::section {
 }
 
 QFrame#metricCard {
-    background-color: #212121;
-    border: 1px solid #2a2a2a;
-    border-radius: 2px;
+    background-color: #252538;
+    border: 1px solid #2a2a3a;
+    border-radius: 4px;
+    padding: 4px 8px;
+}
+
+QFrame#metricCard QLabel#metricCardLabel {
+    color: #8888a0;
+    font-size: 10px;
+}
+
+QFrame#metricCard QLabel#metricCardValue {
+    color: #e0e0e0;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+/* ── Context / placeholders / hints (was inline setStyleSheet) ── */
+QLabel#ContextWorkspaceEmptyHint {
+    color: #8888a0;
+    font-size: 14px;
+}
+
+QLabel#BacktestPlaceholderLabel {
+    color: #707070;
+    font-size: 13px;
+}
+
+/* Strategy workspace overview */
+QLabel#strategyOverviewState {
+    font-size: 14px;
+    color: #d0d0d0;
+}
+
+QLabel#strategyOverviewWarning {
+    color: #eab308;
+    font-size: 12px;
+}
+
+QLabel#strategyOverviewMuted {
+    color: #888888;
+    font-size: 12px;
+}
+
+QLabel#workspaceFormHint {
+    color: #888888;
+    font-size: 11px;
+    font-style: italic;
+}
+
+/* Backtest selector panel */
+QLabel#panelHeader {
+    padding: 6px 6px 2px 6px;
+}
+
+QLabel#countLabel {
+    padding: 2px 6px;
+    color: #a0a0a0;
+    font-size: 11px;
+}
+
+QLabel#BacktestStatusLabel {
+    color: #909090;
+    font-style: italic;
+    font-size: 12px;
+}
+
+QLabel#BacktestUniverseHint {
+    color: #888888;
+    font-size: 11px;
+    font-style: italic;
+}
+
+/* Block inspector (backtest “Block Details”) */
+QLabel#InspectorEmptyHint,
+QLabel#InspectorEmptyParams {
+    color: #888888;
+    font-style: italic;
+}
+
+QLabel#InspectorBlockDescription {
+    color: #777777;
+    font-size: 11px;
+    margin-bottom: 8px;
+}
+
+QLabel#InspectorSectionSpacer {
+    margin-top: 12px;
+}
+
+QLabel#InspectorInfoValue {
+    color: #aaaaaa;
 }
 
 /* ── Tab Widget ── */
@@ -276,6 +432,48 @@ QTabBar::tab:selected {
 
 QTabBar::tab:hover:!selected {
     color: #aaaaaa;
+}
+
+/* Backtest workspace (Run Configuration / Block Details + Run History / …):
+ * Blue line under the selected tab = border-bottom on QTabBar::tab:selected (accent #507dbc). */
+QTabWidget#BacktestWorkspaceConfigTabs::pane,
+QTabWidget#BacktestWorkspaceResultTabs::pane {
+    background-color: #1b1b1b;
+    border: none;
+    border-top: 1px solid #2a2a2a;
+}
+
+QTabWidget#BacktestWorkspaceConfigTabs QTabBar::tab,
+QTabWidget#BacktestWorkspaceResultTabs QTabBar::tab {
+    background-color: transparent;
+    color: #777777;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 6px 16px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+QTabWidget#BacktestWorkspaceConfigTabs QTabBar::tab:selected,
+QTabWidget#BacktestWorkspaceResultTabs QTabBar::tab:selected {
+    color: #e0e0e0;
+    border-bottom: 2px solid #507dbc; /* THEME: accent / borderFocus */
+}
+
+QTabWidget#BacktestWorkspaceConfigTabs QTabBar::tab:hover:!selected,
+QTabWidget#BacktestWorkspaceResultTabs QTabBar::tab:hover:!selected {
+    color: #aaaaaa;
+}
+
+/* Backtest / Strategy Management context strip: “No strategy selected” / strategy title */
+QLabel#BacktestWorkspaceContextHeader {
+    background-color: #212121;
+    color: #d0d0d0;
+    border: 1px solid #2a2a2a;
+    border-radius: 4px;
+    padding: 8px 10px;
+    font-size: 13px;
+    font-weight: 600;
 }
 
 /* ── Event Log Panel / Dock Widgets ── */

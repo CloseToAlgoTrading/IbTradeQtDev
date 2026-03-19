@@ -12,6 +12,7 @@
 #include "mandatoryFieldKeys.h"
 #include "Pipeline/UniverseResolver.h"
 #include "Pipeline/StrategyRuntimePolicy.h"
+#include "ThemePalette.h"
 #include <QFormLayout>
 #include <QVBoxLayout>
 #include <QStackedWidget>
@@ -46,15 +47,16 @@ void StrategyWorkspace::buildOverviewTab()
     layout->setSpacing(Layout::SectionSpacing);
 
     m_ovStateSummary = new QLabel("--", m_overviewWidget);
+    m_ovStateSummary->setObjectName(QStringLiteral("strategyOverviewState"));
     m_ovCurrentPos   = new QLabel("Positions: --", m_overviewWidget);
     m_ovLatestSignal = new QLabel("Last signal: --", m_overviewWidget);
     m_ovWarnings     = new QLabel("", m_overviewWidget);
-    m_ovWarnings->setStyleSheet("color: #eab308;");
+    m_ovWarnings->setObjectName(QStringLiteral("strategyOverviewWarning"));
 
     m_ovEvalMode  = new QLabel("Evaluation: --", m_overviewWidget);
-    m_ovEvalMode->setStyleSheet("color: #888; font-size: 12px;");
+    m_ovEvalMode->setObjectName(QStringLiteral("strategyOverviewMuted"));
     m_ovRebalMode = new QLabel("Rebalance: --", m_overviewWidget);
-    m_ovRebalMode->setStyleSheet("color: #888; font-size: 12px;");
+    m_ovRebalMode->setObjectName(QStringLiteral("strategyOverviewMuted"));
 
     layout->addWidget(new QLabel("<b>State</b>", m_overviewWidget));
     layout->addWidget(m_ovStateSummary);
@@ -128,8 +130,8 @@ void StrategyWorkspace::buildAssetsTab()
 
     auto* hint = new QLabel("Symbols configured in the selection block(s) of this strategy's pipeline.",
                              m_assetsWidget);
+    hint->setObjectName(QStringLiteral("workspaceFormHint"));
     hint->setWordWrap(true);
-    hint->setStyleSheet("color: #888; font-size: 11px;");
     layout->addWidget(hint);
 
     layout->addWidget(new QLabel("<b>Asset Universe</b>", m_assetsWidget));
@@ -175,8 +177,8 @@ void StrategyWorkspace::buildAssetsTab()
     layout->addWidget(m_assetsEdit);
 
     m_universeInfoLabel = new QLabel(m_assetsWidget);
+    m_universeInfoLabel->setObjectName(QStringLiteral("workspaceFormHint"));
     m_universeInfoLabel->setWordWrap(true);
-    m_universeInfoLabel->setStyleSheet("color: #888; font-size: 11px; font-style: italic;");
     layout->addWidget(m_universeInfoLabel);
 
     layout->addStretch();
@@ -332,8 +334,13 @@ void StrategyWorkspace::refreshOverview()
         auto dispInfo = ModelStateUtils::stateDisplay(ds);
         m_ovStateSummary->setText(
             QStringLiteral("%1 %2").arg(dispInfo.indicator, dispInfo.label));
-        m_ovStateSummary->setStyleSheet(
-            QStringLiteral("color: %1; font-size: 14px;").arg(dispInfo.color.name()));
+        m_ovStateSummary->setStyleSheet(QStringLiteral(
+            "QLabel#strategyOverviewState { color: %1; font-size: %2px; }")
+            .arg(dispInfo.color.name())
+            .arg(UiTheme::kFontSizeStrategyOverviewState));
+    } else {
+        m_ovStateSummary->setStyleSheet(QString());
+        m_ovStateSummary->setText(QStringLiteral("--"));
     }
 
     int posCount = info.value(MandatoryInfo::Strategy::PositionsCount).toInt();

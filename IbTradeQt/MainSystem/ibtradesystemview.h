@@ -13,6 +13,10 @@ class EventLogPanel;
 class ContextWorkspace;
 class QSplitter;
 class QTabWidget;
+class QFrame;
+class QResizeEvent;
+class QEvent;
+class QKeyEvent;
 
 namespace BacktestUI { class BacktestStrategySelector; }
 namespace StrategyMgmt { class StrategyManagementPanel; }
@@ -45,8 +49,16 @@ public:
     void mapSignals();
 
 
+protected:
+    void resizeEvent(QResizeEvent* event) override;
+    void keyPressEvent(QKeyEvent* event) override;
+    bool eventFilter(QObject* watched, QEvent* event) override;
+
 private:
     void setupConsoleLayout();
+    void setupSettingsSlideOverlay();
+    void updateSettingsOverlayGeometry();
+    void setSettingsOverlayVisible(bool visible);
 
     Ui::IBTradeSystemClass ui;
     QLabel * m_pTimeLabel;
@@ -61,13 +73,17 @@ private:
     BacktestUI::BacktestStrategySelector* m_backtestSelector = nullptr;
     StrategyMgmt::StrategyManagementPanel* m_strategyMgmtPanel = nullptr;
 
+    QWidget* m_settingsOverlay   = nullptr;
+    QFrame*  m_settingsBackdrop  = nullptr;
+    QFrame*  m_settingsSheet     = nullptr;
+    bool     m_settingsOverlayVisible = false;
+
 private slots:
 	void slotOnTimeReceived(long time);
 	void slotOnLogMsgReceived(QString msg);
 	void slotRecvConnectButtonState(bool isConnect);
     void slotClearLog();
     void slotShowLog();
-    void slotshowSettings();
 
     void slotUpdateTreeView(const QModelIndex& index);
 public:

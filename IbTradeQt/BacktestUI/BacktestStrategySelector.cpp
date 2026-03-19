@@ -29,7 +29,6 @@ void BacktestStrategySelector::buildUi()
     // Header
     auto* header = new QLabel(QStringLiteral("<b>Strategies</b>"), this);
     header->setObjectName(QStringLiteral("panelHeader"));
-    header->setStyleSheet("padding:6px 6px 2px 6px;");
     layout->addWidget(header);
 
     // Tree panel (reusable component)
@@ -52,7 +51,6 @@ void BacktestStrategySelector::buildUi()
     // Count label
     m_countLabel = new QLabel(QStringLiteral("0 strategies"), this);
     m_countLabel->setObjectName(QStringLiteral("countLabel"));
-    m_countLabel->setStyleSheet("padding:2px 6px;");
     layout->addWidget(m_countLabel);
 
     // Buttons row

@@ -53,7 +53,7 @@ void BlockInspectorPanel::buildUi()
 
     m_emptyLabel = new QLabel(QStringLiteral("Select a block to view its parameters."),
                               m_paramWidget);
-    m_emptyLabel->setStyleSheet(QStringLiteral("color: #888; font-style: italic;"));
+    m_emptyLabel->setObjectName(QStringLiteral("InspectorEmptyHint"));
     m_emptyLabel->setAlignment(Qt::AlignCenter);
     m_paramForm->addRow(m_emptyLabel);
 
@@ -93,7 +93,7 @@ void BlockInspectorPanel::clearForm()
 
     m_emptyLabel = new QLabel(QStringLiteral("Select a block to view its parameters."),
                               m_paramWidget);
-    m_emptyLabel->setStyleSheet(QStringLiteral("color: #888; font-style: italic;"));
+    m_emptyLabel->setObjectName(QStringLiteral("InspectorEmptyHint"));
     m_emptyLabel->setAlignment(Qt::AlignCenter);
     m_paramForm->addRow(m_emptyLabel);
 }
@@ -135,8 +135,8 @@ void BlockInspectorPanel::showBlock(const QJsonObject& pipelineConfig,
 
     if (!description.isEmpty()) {
         auto* descLabel = new QLabel(description, m_paramWidget);
+        descLabel->setObjectName(QStringLiteral("InspectorBlockDescription"));
         descLabel->setWordWrap(true);
-        descLabel->setStyleSheet(QStringLiteral("color: #666; font-size: 11px; margin-bottom: 8px;"));
         m_paramForm->addRow(descLabel);
     }
 
@@ -145,7 +145,7 @@ void BlockInspectorPanel::showBlock(const QJsonObject& pipelineConfig,
 
     if (cfg.isEmpty()) {
         auto* noParams = new QLabel(QStringLiteral("No configurable parameters."), m_paramWidget);
-        noParams->setStyleSheet(QStringLiteral("color: #888; font-style: italic;"));
+        noParams->setObjectName(QStringLiteral("InspectorEmptyParams"));
         m_paramForm->addRow(noParams);
     } else {
         for (auto it = cfg.begin(); it != cfg.end(); ++it) {
@@ -219,13 +219,13 @@ void BlockInspectorPanel::showBlock(const QJsonObject& pipelineConfig,
 
     // Block metadata section
     auto* infoSep = new QLabel(QStringLiteral("<b>Block Info</b>"), m_paramWidget);
-    infoSep->setStyleSheet(QStringLiteral("margin-top: 12px;"));
+    infoSep->setObjectName(QStringLiteral("InspectorSectionSpacer"));
     m_paramForm->addRow(infoSep);
 
     auto addInfoRow = [this](const QString& label, const QString& value) {
         auto* lbl = new QLabel(value, m_paramWidget);
+        lbl->setObjectName(QStringLiteral("InspectorInfoValue"));
         lbl->setTextInteractionFlags(Qt::TextSelectableByMouse);
-        lbl->setStyleSheet(QStringLiteral("color: #aaa;"));
         m_paramForm->addRow(label, lbl);
     };
 

@@ -10,7 +10,8 @@ It is loaded at startup in `CApplicationController::setUpApplication()` from the
 
 1. Open `operations-console.qss`.
 2. Edit the **THEME PALETTE** comment block at the top — it lists the semantic colors (backgrounds, text, borders, accent).
-3. Search/replace hex values consistently, or adjust individual selectors (`QLineEdit`, `QLabel`, `QGroupBox`, etc.).
+3. Update matching string literals in **`MainSystem/ThemePalette.h`** (`namespace UiTheme`) so C++ runtime styles stay in sync.
+4. Search/replace hex values consistently, or adjust individual selectors (`QLineEdit`, `QLabel`, `QGroupBox`, etc.).
 
 ## Text hierarchy
 
@@ -74,3 +75,41 @@ QTabWidget#MainTabWidget QTreeView {
     qproperty-indentation: 18;
 }
 ```
+
+## Settings slide panel
+
+Logging / server settings are shown in a **right-hand sheet** over the **central widget** only (tabs + global status bar). Styles: `SettingsOverlay`, `SettingsOverlayBackdrop`, `SettingsSlidePanel`, and under the panel `QTreeView#settingsTreeView` + its `QHeaderView` (`qproperty-defaultSectionSize`, `qproperty-stretchLastSection`, etc.) in `operations-console.qss`. Toggle with the toolbar **Setting** action (checkable); **Escape** or click the dimmed area closes it.
+
+**Sheet width** is `min-width` / `max-width` on `#SettingsSlidePanel` (default 480px). Insets use **`padding`** on that frame; spacing between the title row and the tree uses **`margin-top`** on `#settingsTreeView`. **Parameter column** width is driven mainly by `qproperty-defaultSectionSize` on that header; **Value** uses `qproperty-stretchLastSection: true`.
+
+**QLayout and QSS:** Qt style sheets do **not** control `QLayout` margins or `spacing`. The settings sheet uses a plain `QVBoxLayout` with style defaults; visual spacing should come from QSS (`padding`, widget `margin`). If your platform style adds extra vertical gap between the title row and the tree, reduce `margin-top` on `#settingsTreeView` or reintroduce `body->setSpacing(0)` in `setupSettingsSlideOverlay()` as a last resort.
+
+**Backtest workspace tab underline:** The blue bar under **Run Configuration** (and selected tabs in Run History / Equity / …) is `border-bottom: 2px solid #507dbc` on `QTabWidget#BacktestWorkspaceConfigTabs QTabBar::tab:selected` and `#BacktestWorkspaceResultTabs` (see `operations-console.qss`). Matches THEME **accent** / **borderFocus**.
+
+**Backtest context header:** The strip with “No strategy selected” / strategy name is `QLabel#BacktestWorkspaceContextHeader` (dark `bgElevated`-style `#212121`, readable text, subtle border). Rich-text spans when a strategy is selected use inline colors in `BacktestWorkspaceDock::updateStrategyHeader()` chosen for that background.
+
+## Why not “constants in QSS” for C++?
+
+Qt Style Sheets **cannot** declare variables or export values to C++. There is no `#define` or `var(--accent)` that both QSS and `QString::arg` can share.
+
+**Pattern in this project:**
+
+1. **Static UI** → `objectName` + `operations-console.qss`.
+2. **Runtime-dependent colors** (state badge `QColor`, metric value tint) → build a small stylesheet string in C++ using **`UiTheme::k…`** from **`MainSystem/ThemePalette.h`** so hex values stay aligned with the QSS THEME PALETTE.
+3. When you change a palette color, update **both** `operations-console.qss` and `ThemePalette.h` (grep the old hex).
+
+## QSS coverage vs. remaining C++
+
+**Centralized in QSS:** Most chrome plus named labels (`#ContextWorkspaceEmptyHint`, `#strategyOverviewMuted`, `#InspectorEmptyHint`, `#metricCard` + children, backtest selector headers, etc.).
+
+**Remaining `setStyleSheet` in C++ (intentional):**
+
+| Location | Why |
+|----------|-----|
+| `WorkspaceHeader::applyStateBadge` | Background from live `QColor`; text uses `UiTheme::kTextOnAccent`. |
+| `MetricsStrip` value row | Per-card `QColor` when valid; otherwise stylesheet cleared so QSS applies. |
+| `StrategyWorkspace::refreshOverview` | State line color from `ModelStateUtils`; font size from `UiTheme::kFontSizeStrategyOverviewState`. |
+
+**Always C++:** `StrategyTreeDelegate` painting, other model-driven visuals.
+
+**Recommendation:** Prefer **`objectName` + QSS** for fixed appearance; for dynamic rules use **`UiTheme`** literals, not ad-hoc hex strings.

@@ -81,11 +81,11 @@ void BacktestRunConfigPanel::buildForm() {
     m_progressBar->setVisible(false);
 
     m_statusLabel = new QLabel(QStringLiteral("Ready"));
-    m_statusLabel->setStyleSheet(QStringLiteral("color: gray; font-style: italic;"));
+    m_statusLabel->setObjectName(QStringLiteral("BacktestStatusLabel"));
 
     // Universe resolution info
     m_universeLabel = new QLabel;
-    m_universeLabel->setStyleSheet(QStringLiteral("color: #888; font-size: 11px; font-style: italic;"));
+    m_universeLabel->setObjectName(QStringLiteral("BacktestUniverseHint"));
     m_universeLabel->setWordWrap(true);
 
     // --- Layout ---

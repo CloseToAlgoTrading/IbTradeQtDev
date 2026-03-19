@@ -13,8 +13,8 @@ ContextWorkspace::ContextWorkspace(QWidget *parent)
     m_emptyPage = new QWidget(this);
     auto* layout = new QVBoxLayout(m_emptyPage);
     auto* label = new QLabel("Select an item in the tree to view details", m_emptyPage);
+    label->setObjectName(QStringLiteral("ContextWorkspaceEmptyHint"));
     label->setAlignment(Qt::AlignCenter);
-    label->setStyleSheet("color: #8888a0; font-size: 14px;");
     layout->addWidget(label);
 
     m_strategyWS  = new StrategyWorkspace(this);

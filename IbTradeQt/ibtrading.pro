@@ -271,6 +271,7 @@ HEADERS += \
     MainSystem/PortfolioModelDefines.h \
     MainSystem/TreeItemDataTypesDef.h \
     MainSystem/capplicationcontroller.h \
+    MainSystem/ThemePalette.h \
     MainSystem/ciconhandler.h \
     MainSystem/cmainmodel.h \
     MainSystem/csettinsmodeldata.h \
