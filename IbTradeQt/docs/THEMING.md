@@ -35,6 +35,28 @@ hint->setObjectName(QStringLiteral("labelMuted"));
 
 - Checkbox checkmark: `:/style/icons/checkbox-check.svg` (bundled in `ibtradesystem.qrc`).
 
+### Toolbar / menu icons (PNG `QIcon`)
+
+**QSS cannot change the color of icons** supplied as `QIcon` from raster (PNG) resources: rules like `color:` only affect **text** on `QToolButton`, not the pixmap Qt paints for the icon.
+
+- **`CIconHandler::loadIconFromResourceTheme()`** — used by **tree/models** (`Qt::DecorationRole`): returns the PNG **unchanged** so coloured strategy/parameter artwork stays correct.
+- **`CIconHandler::loadIconForChrome()`** — used for **toolbars**, **status bar**, and **context menus**: tints monochrome glyphs to **`UiTheme::kToolbarIcon`** (`#c8c8c8`) so line art reads on `kBgChrome` (`#161616`). Skips a few semantic assets (e.g. **`Connected`**).
+
+To change chrome icon tint, update **`kToolbarIcon`** in `ThemePalette.h` and the **toolbarIcon** line in the `operations-console.qss` THEME PALETTE comment.
+
+**If you truly need QSS-only icon swapping**, you can assign alternate pixmaps with `qproperty-icon: url(:/…);` on named `QToolButton`s — but that duplicates assets and still does not “recolor” a single PNG.
+
+**Alternative long-term:** SVG sources + a tinting `QIconEngine`, or separate light/dark PNG folders switched by theme.
+
+### Status strips (GlobalStatusBar + `QStatusBar`)
+
+There are two footer areas: the **`GlobalStatusBar`** widget (broker, data, engine, …) and Qt’s native **`QStatusBar`** (clock + connection indicator). **All colours for labels and footer buttons are in `operations-console.qss`** under “Status strips” and “Native QStatusBar” — do not set ad-hoc `setStyleSheet` on those widgets in C++.
+
+- **Text:** default label colour matches **`UiTheme::kTextSecondary`** (`#b8b8b8`); neutral state uses **`kTextMuted`** (`#888888`). Semantic states (`ok` / `warning` / `error`) use the same greens/oranges/reds as in QSS.
+- **Connection pixmap** on `QStatusBar` uses **`loadIconForChrome()`**. **`Connected`** keeps PNG colours (skipped tint); **`NotConnected`** is tinted with **`kToolbarIcon`** so it is visible on `#141414`.
+
+Labels use `objectName` **`statusBarTimeLabel`** / **`statusBarConnectionIndicator`** where needed so QSS can target them without affecting other `QLabel`s.
+
 ## Dependencies
 
 - `QT += svg` in `ibtrading.pro` so SVG resources load for stylesheet `image: url(...)`.
@@ -84,7 +106,7 @@ Logging / server settings are shown in a **right-hand sheet** over the **central
 
 **QLayout and QSS:** Qt style sheets do **not** control `QLayout` margins or `spacing`. The settings sheet uses a plain `QVBoxLayout` with style defaults; visual spacing should come from QSS (`padding`, widget `margin`). If your platform style adds extra vertical gap between the title row and the tree, reduce `margin-top` on `#settingsTreeView` or reintroduce `body->setSpacing(0)` in `setupSettingsSlideOverlay()` as a last resort.
 
-**Backtest workspace tab underline:** The blue bar under **Run Configuration** (and selected tabs in Run History / Equity / …) is `border-bottom: 2px solid #507dbc` on `QTabWidget#BacktestWorkspaceConfigTabs QTabBar::tab:selected` and `#BacktestWorkspaceResultTabs` (see `operations-console.qss`). Matches THEME **accent** / **borderFocus**.
+**Backtest workspace tab underline:** One tab strip (`QTabWidget#BacktestWorkspaceMainTabs`) holds **Run Configuration** (includes runtime policy), **Run History**, **Equity Curve**, etc., and **Block Details** when opened. The blue bar under the selected tab is `border-bottom: 2px solid #507dbc` on `QTabBar::tab:selected` (see `operations-console.qss`). Matches THEME **accent** / **borderFocus**.
 
 **Backtest context header:** The strip with “No strategy selected” / strategy name is `QLabel#BacktestWorkspaceContextHeader` (dark `bgElevated`-style `#212121`, readable text, subtle border). Rich-text spans when a strategy is selected use inline colors in `BacktestWorkspaceDock::updateStrategyHeader()` chosen for that background.
 

@@ -24,6 +24,14 @@ inline constexpr char kTextDisabled[]  = "#666666";
 inline constexpr char kSelectionBg[]   = "#2a3a50";
 inline constexpr char kAccent[]        = "#507dbc";
 
+/**
+ * Monochrome PNG icons on dark chrome: applied in CIconHandler::loadIconForChrome()
+ * only (trees use loadIconFromResourceTheme() and keep full-colour assets).
+ * QSS cannot recolor QIcon raster pixmaps — keep in sync with THEME PALETTE
+ * "toolbarIcon" in operations-console.qss.
+ */
+inline constexpr char kToolbarIcon[] = "#c8c8c8";
+
 /** High-contrast text on tinted / colored badges (workspace header state) */
 inline constexpr char kTextOnAccent[] = "#ffffff";
 

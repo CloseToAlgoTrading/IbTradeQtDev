@@ -34,6 +34,9 @@ CIBTradeSystemView::CIBTradeSystemView(QWidget *parent)
     , m_pConnectLabel(new QLabel(this))
     , m_ih()
 {
+    m_pTimeLabel->setObjectName(QStringLiteral("statusBarTimeLabel"));
+    m_pConnectLabel->setObjectName(QStringLiteral("statusBarConnectionIndicator"));
+
 	ui.setupUi(this);
     ui.actionSetting->setCheckable(true);
 
@@ -42,17 +45,17 @@ CIBTradeSystemView::CIBTradeSystemView(QWidget *parent)
     /*** Begin Create Context Menu **************/
     ui.test_treeView->setContextMenuPolicy(Qt::CustomContextMenu);
 
-    ui.test_treeView->addAction(m_ih.loadIconFromResourceTheme("Account"),   "Add New Account");   // [0]
-    ui.test_treeView->addAction(m_ih.loadIconFromResourceTheme("Portfolio"),  "Add New Portfolio"); // [1]
-    ui.test_treeView->addAction(m_ih.loadIconFromResourceTheme("Strategy"),   "Add Strategy");      // [2]
+    ui.test_treeView->addAction(m_ih.loadIconForChrome("Account"),   "Add New Account");   // [0]
+    ui.test_treeView->addAction(m_ih.loadIconForChrome("Portfolio"),  "Add New Portfolio"); // [1]
+    ui.test_treeView->addAction(m_ih.loadIconForChrome("Strategy"),   "Add Strategy");      // [2]
     QAction *act = new QAction(this);
     act->setSeparator(true);
     ui.test_treeView->addAction(act);                                                               // [3] separator
-    ui.test_treeView->addAction(m_ih.loadIconFromResourceTheme("Strategy"), "Add Selection Model"); // [4]
-    ui.test_treeView->addAction(m_ih.loadIconFromResourceTheme("Strategy"), "Add Aplha Model");     // [5]
-    ui.test_treeView->addAction(m_ih.loadIconFromResourceTheme("Strategy"), "Add Rebalance Model"); // [6]
-    ui.test_treeView->addAction(m_ih.loadIconFromResourceTheme("Strategy"), "Add Risk Model");      // [7]
-    ui.test_treeView->addAction(m_ih.loadIconFromResourceTheme("Strategy"), "Add Execution Model"); // [8]
+    ui.test_treeView->addAction(m_ih.loadIconForChrome("Strategy"), "Add Selection Model"); // [4]
+    ui.test_treeView->addAction(m_ih.loadIconForChrome("Strategy"), "Add Aplha Model");     // [5]
+    ui.test_treeView->addAction(m_ih.loadIconForChrome("Strategy"), "Add Rebalance Model"); // [6]
+    ui.test_treeView->addAction(m_ih.loadIconForChrome("Strategy"), "Add Risk Model");      // [7]
+    ui.test_treeView->addAction(m_ih.loadIconForChrome("Strategy"), "Add Execution Model"); // [8]
     act = new QAction(this);
     act->setSeparator(true);
     ui.test_treeView->addAction(act);                                                               // [9] separator
@@ -70,15 +73,15 @@ CIBTradeSystemView::CIBTradeSystemView(QWidget *parent)
     ui.statusBar->addPermanentWidget(m_pConnectLabel);
     ui.statusBar->setSizeGripEnabled(true);
 
-    m_pConnectLabel->setPixmap(m_ih.loadIconFromResourceTheme("NotConnected").pixmap(16));
+    m_pConnectLabel->setPixmap(m_ih.loadIconForChrome("NotConnected").pixmap(16));
     m_pConnectLabel->setToolTip("Disconnected");
 
-    ui.actionLoad->setIcon(m_ih.loadIconFromResourceTheme("LoadConfiguration"));
-    ui.actionSave->setIcon(m_ih.loadIconFromResourceTheme("SaveConfiguration"));
-    ui.actionSetting->setIcon(m_ih.loadIconFromResourceTheme("Settings"));
-    ui.actionClear_Log->setIcon(m_ih.loadIconFromResourceTheme("LogClear"));
-    ui.actionShow_Log->setIcon(m_ih.loadIconFromResourceTheme("Log"));
-    ui.actionConnect->setIcon(m_ih.loadIconFromResourceTheme("Disconnect"));
+    ui.actionLoad->setIcon(m_ih.loadIconForChrome("LoadConfiguration"));
+    ui.actionSave->setIcon(m_ih.loadIconForChrome("SaveConfiguration"));
+    ui.actionSetting->setIcon(m_ih.loadIconForChrome("Settings"));
+    ui.actionClear_Log->setIcon(m_ih.loadIconForChrome("LogClear"));
+    ui.actionShow_Log->setIcon(m_ih.loadIconForChrome("Log"));
+    ui.actionConnect->setIcon(m_ih.loadIconForChrome("Disconnect"));
 
     setupConsoleLayout();
 }
@@ -373,9 +376,9 @@ void CIBTradeSystemView::slotRecvConnectButtonState(bool isConnect)
 	if (isConnect)
 	{
         ui.actionConnect->setText("Disconnect");
-        ui.actionConnect->setIcon(m_ih.loadIconFromResourceTheme("Connect"));
+        ui.actionConnect->setIcon(m_ih.loadIconForChrome("Connect"));
 
-        m_pConnectLabel->setPixmap(m_ih.loadIconFromResourceTheme("Connected").pixmap(16));
+        m_pConnectLabel->setPixmap(m_ih.loadIconForChrome("Connected").pixmap(16));
         m_pConnectLabel->setToolTip("Connected");
 
         if (m_globalStatusBar)
@@ -384,9 +387,9 @@ void CIBTradeSystemView::slotRecvConnectButtonState(bool isConnect)
 	else
 	{
         ui.actionConnect->setText("Connect");
-        ui.actionConnect->setIcon(m_ih.loadIconFromResourceTheme("Disconnect"));
+        ui.actionConnect->setIcon(m_ih.loadIconForChrome("Disconnect"));
 
-        m_pConnectLabel->setPixmap(m_ih.loadIconFromResourceTheme("NotConnected").pixmap(16));
+        m_pConnectLabel->setPixmap(m_ih.loadIconForChrome("NotConnected").pixmap(16));
         m_pConnectLabel->setToolTip("Disconnected");
 
         if (m_globalStatusBar)

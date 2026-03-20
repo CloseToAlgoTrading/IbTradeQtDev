@@ -35,9 +35,35 @@ void StrategyDetailPanel::buildUi()
     auto* mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(4, 4, 4, 4);
 
-    // --- Metadata section ---
-    auto* metaGroup = new QGroupBox(QStringLiteral("Strategy Metadata"));
-    auto* metaForm  = new QFormLayout(metaGroup);
+    // --- Version table ---
+    auto* verGroup = new QGroupBox(QStringLiteral("Versions"));
+    auto* verLayout = new QVBoxLayout(verGroup);
+
+    m_versionTable = new QTableWidget;
+    m_versionTable->setColumnCount(4);
+    m_versionTable->setHorizontalHeaderLabels({
+        QStringLiteral("Version"),
+        QStringLiteral("Published"),
+        QStringLiteral("Notes"),
+        QStringLiteral("Created At")
+    });
+    m_versionTable->horizontalHeader()->setStretchLastSection(true);
+    m_versionTable->setSelectionMode(QAbstractItemView::SingleSelection);
+    m_versionTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    m_versionTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_versionTable->verticalHeader()->hide();
+    m_versionTable->setMaximumHeight(120);
+    verLayout->addWidget(m_versionTable);
+
+    mainLayout->addWidget(verGroup);
+
+    // --- Tabs: Strategy Metadata, Raw JSON, Runtime Policy, Block Details ---
+    m_configTabs = new QTabWidget;
+
+    auto* metaTab = new QWidget;
+    auto* metaTabLayout = new QVBoxLayout(metaTab);
+    metaTabLayout->setContentsMargins(8, 8, 8, 8);
+    auto* metaForm = new QFormLayout();
 
     m_nameEdit = new QLineEdit;
     metaForm->addRow(QStringLiteral("Name:"), m_nameEdit);
@@ -65,32 +91,9 @@ void StrategyDetailPanel::buildUi()
     m_saveMetaBtn = new QPushButton(QStringLiteral("Save Metadata"));
     metaForm->addRow(QString(), m_saveMetaBtn);
 
-    mainLayout->addWidget(metaGroup);
-
-    // --- Version table ---
-    auto* verGroup = new QGroupBox(QStringLiteral("Versions"));
-    auto* verLayout = new QVBoxLayout(verGroup);
-
-    m_versionTable = new QTableWidget;
-    m_versionTable->setColumnCount(4);
-    m_versionTable->setHorizontalHeaderLabels({
-        QStringLiteral("Version"),
-        QStringLiteral("Published"),
-        QStringLiteral("Notes"),
-        QStringLiteral("Created At")
-    });
-    m_versionTable->horizontalHeader()->setStretchLastSection(true);
-    m_versionTable->setSelectionMode(QAbstractItemView::SingleSelection);
-    m_versionTable->setSelectionBehavior(QAbstractItemView::SelectRows);
-    m_versionTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    m_versionTable->verticalHeader()->hide();
-    m_versionTable->setMaximumHeight(120);
-    verLayout->addWidget(m_versionTable);
-
-    mainLayout->addWidget(verGroup);
-
-    // --- Config tabs: Raw JSON + dynamic Block Details ---
-    m_configTabs = new QTabWidget;
+    metaTabLayout->addLayout(metaForm);
+    metaTabLayout->addStretch();
+    m_configTabs->addTab(metaTab, QStringLiteral("Strategy Metadata"));
 
     auto* jsonTab = new QWidget;
     auto* jsonLayout = new QVBoxLayout(jsonTab);

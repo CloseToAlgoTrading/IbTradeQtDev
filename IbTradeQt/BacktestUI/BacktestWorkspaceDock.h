@@ -10,7 +10,6 @@
 class QLabel;
 class QTabWidget;
 class QWidget;
-class QSplitter;
 class BlockInspectorPanel;
 class BacktestPresenter;
 
@@ -65,11 +64,10 @@ private:
 
     QLabel*                  m_headerLabel     = nullptr;
 
-    QTabWidget*              m_configTabs      = nullptr;
+    QTabWidget*              m_tabWidget       = nullptr;
     BacktestRunConfigPanel*  m_configPanel     = nullptr;
     BlockInspectorPanel*     m_inspector       = nullptr;
     int                      m_inspectorTabIdx = -1;
-    QTabWidget*              m_tabWidget       = nullptr;
 
     BacktestRunHistoryPanel* m_historyPanel    = nullptr;
     EquityChartWidget*       m_equityChart     = nullptr;

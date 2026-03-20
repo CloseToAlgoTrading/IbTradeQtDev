@@ -18,6 +18,9 @@
  *  textDisabled  #666666
  *  selectionBg   #2a3a50   Selection highlight
  *  accent        #507dbc   Buttons, tabs, focus
+ *  toolbarIcon   #c8c8c8   Chrome-only tint (CIconHandler::loadIconForChrome); trees use raw PNGs
+ *  statusBar     —         Label text: QStatusBar + #GlobalStatusBar (see “Status strips” below);
+ *                         use textSecondary #b8b8b8, textMuted #888888, matches ThemePalette.h
  *  ────────────────────────────────────────────────────────────────────────── */
 
 * {
@@ -48,9 +51,9 @@ QLabel {
 /* Row labels in form layouts (Mode:, Interval N:, etc.) */
 QFormLayout QLabel {
     color: #f0f0f0;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 400;
-    min-height: 20px;
+    min-height: 18px;
 }
 
 /* Optional: set QLabel objectName="labelMuted" or dynamic property for hints */
@@ -60,17 +63,26 @@ QLabel[mute="true"] {
     font-size: 11px;
 }
 
-/* ── Global Status Bar ── */
+/* ── Status strips (GlobalStatusBar widget + native QStatusBar) ──────────────
+ *  All label/button copy colours are defined here only (no setStyleSheet on these widgets).
+ *  Hex aligns with ThemePalette: kTextSecondary #b8b8b8, kTextMuted #888888, kTextPrimary #e8e8e8 */
 #GlobalStatusBar {
     background-color: #141414;
     border-bottom: 1px solid #2a2a2a;
 }
 
+#GlobalStatusBar QFrame#globalStatusSeparator {
+    background-color: #2a2a2a;
+    color: #2a2a2a;
+    border: none;
+}
+
 #GlobalStatusBar QLabel#statusIndicator {
-    color: #999;
+    color: #b8b8b8;
     font-size: 11px;
     font-weight: 500;
     padding: 0 6px;
+    background-color: transparent;
 }
 
 #GlobalStatusBar QLabel#statusIndicator[statusState="ok"] {
@@ -83,37 +95,39 @@ QLabel[mute="true"] {
     color: #e53935;
 }
 #GlobalStatusBar QLabel#statusIndicator[statusState="neutral"] {
-    color: #666;
+    color: #888888;
 }
 
 #GlobalStatusBar QPushButton#globalActionBtn {
     background-color: #252525;
-    color: #ccc;
+    color: #b8b8b8;
     border: 1px solid #383838;
     border-radius: 2px;
-    padding: 2px 12px;
+    padding: 2px 10px;
     font-size: 11px;
     font-weight: 500;
+    min-height: 18px;
+    max-height: 22px;
 }
 #GlobalStatusBar QPushButton#globalActionBtn:hover {
-    background-color: #333;
+    background-color: #333333;
     border-color: #507dbc;
-    color: #e0e0e0;
+    color: #e8e8e8;
 }
 #GlobalStatusBar QPushButton#globalActionBtn:pressed {
     background-color: #507dbc;
-    color: #fff;
+    color: #ffffff;
 }
 
-/* ── Push buttons (application-wide) ── */
+/* ── Push buttons (application-wide) — compact ── */
 QPushButton {
     background-color: #2a2a2a;
     color: #e0e0e0;
     border: 1px solid #404040;
     border-radius: 3px;
-    padding: 5px 14px;
-    font-size: 12px;
-    min-height: 20px;
+    padding: 3px 10px;
+    font-size: 11px;
+    min-height: 18px;
 }
 QPushButton:hover {
     background-color: #333333;
@@ -434,17 +448,15 @@ QTabBar::tab:hover:!selected {
     color: #aaaaaa;
 }
 
-/* Backtest workspace (Run Configuration / Block Details + Run History / …):
+/* Backtest workspace — single tab bar (Run Configuration + Run History + Equity + … + Block Details):
  * Blue line under the selected tab = border-bottom on QTabBar::tab:selected (accent #507dbc). */
-QTabWidget#BacktestWorkspaceConfigTabs::pane,
-QTabWidget#BacktestWorkspaceResultTabs::pane {
+QTabWidget#BacktestWorkspaceMainTabs::pane {
     background-color: #1b1b1b;
     border: none;
     border-top: 1px solid #2a2a2a;
 }
 
-QTabWidget#BacktestWorkspaceConfigTabs QTabBar::tab,
-QTabWidget#BacktestWorkspaceResultTabs QTabBar::tab {
+QTabWidget#BacktestWorkspaceMainTabs QTabBar::tab {
     background-color: transparent;
     color: #777777;
     border: none;
@@ -454,14 +466,12 @@ QTabWidget#BacktestWorkspaceResultTabs QTabBar::tab {
     font-weight: 500;
 }
 
-QTabWidget#BacktestWorkspaceConfigTabs QTabBar::tab:selected,
-QTabWidget#BacktestWorkspaceResultTabs QTabBar::tab:selected {
+QTabWidget#BacktestWorkspaceMainTabs QTabBar::tab:selected {
     color: #e0e0e0;
     border-bottom: 2px solid #507dbc; /* THEME: accent / borderFocus */
 }
 
-QTabWidget#BacktestWorkspaceConfigTabs QTabBar::tab:hover:!selected,
-QTabWidget#BacktestWorkspaceResultTabs QTabBar::tab:hover:!selected {
+QTabWidget#BacktestWorkspaceMainTabs QTabBar::tab:hover:!selected {
     color: #aaaaaa;
 }
 
@@ -587,14 +597,16 @@ QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
     background: transparent;
 }
 
-/* ── Text inputs (single & multi line) ── */
+/* ── Text inputs (single & multi line) — compact row height ── */
 QLineEdit {
     background-color: #212121;
     color: #e8e8e8;
     border: 1px solid #333333;
     border-radius: 3px;
-    padding: 4px 8px;
-    font-size: 12px;
+    padding: 2px 6px;
+    font-size: 11px;
+    min-height: 18px;
+    max-height: 24px;
     selection-background-color: #2a3a50;
     selection-color: #ffffff;
 }
@@ -616,8 +628,8 @@ QPlainTextEdit {
     color: #e8e8e8;
     border: 1px solid #333333;
     border-radius: 3px;
-    padding: 4px 8px;
-    font-size: 12px;
+    padding: 3px 6px;
+    font-size: 11px;
     selection-background-color: #2a3a50;
     selection-color: #ffffff;
 }
@@ -673,6 +685,8 @@ QMenu::separator {
 }
 
 /* ── Tool Bar ── */
+/* Icon pixels: QSS color / :hover do not affect QIcon from PNG. Icon tint uses
+ * UiTheme::kToolbarIcon via loadIconForChrome — match THEME PALETTE toolbarIcon. */
 QToolBar {
     background-color: #161616;
     border: none;
@@ -685,7 +699,7 @@ QToolButton {
     border: none;
     padding: 4px;
     border-radius: 2px;
-    color: #bbbbbb;
+    color: #c8c8c8;
     font-size: 11px;
 }
 QToolButton:hover {
@@ -696,10 +710,10 @@ QToolButton:pressed {
     background-color: #333333;
 }
 
-/* ── Status Bar ── */
+/* ── Native QStatusBar (clock + connection glyph under GlobalStatusBar) ──── */
 QStatusBar {
     background-color: #141414;
-    color: #888888;
+    color: #b8b8b8;
     border-top: 1px solid #2a2a2a;
     font-size: 11px;
 }
@@ -707,19 +721,36 @@ QStatusBar::item {
     border: none;
 }
 QStatusBar QLabel {
-    color: #888888;
+    color: #b8b8b8;
     font-size: 11px;
+    background-color: transparent;
+}
+QStatusBar QLabel#statusBarTimeLabel {
+    color: #b8b8b8;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 0 8px;
+}
+/* Pixmap: loadIconForChrome (NotConnected → kToolbarIcon); QSS cannot tint QIcon */
+QStatusBar QLabel#statusBarConnectionIndicator {
+    padding: 0 10px;
+    min-width: 22px;
+}
+QStatusBar QSizeGrip {
+    background-color: transparent;
+    width: 16px;
 }
 
-/* ── Combo Box ── */
+/* ── Combo Box — compact (matches QLineEdit) ── */
 QComboBox {
     background-color: #212121;
     color: #e8e8e8;
     border: 1px solid #333333;
     border-radius: 3px;
-    padding: 4px 8px;
-    font-size: 12px;
-    min-height: 20px;
+    padding: 2px 6px;
+    font-size: 11px;
+    min-height: 18px;
+    max-height: 24px;
     selection-background-color: #2a3a50;
 }
 QComboBox:hover {
@@ -734,7 +765,7 @@ QComboBox:disabled {
 }
 QComboBox::drop-down {
     border: none;
-    width: 22px;
+    width: 18px;
 }
 QComboBox QAbstractItemView {
     background-color: #212121;
@@ -746,15 +777,16 @@ QComboBox QAbstractItemView {
     outline: 0;
 }
 
-/* ── Spin Box ── */
+/* ── Spin Box — compact ── */
 QSpinBox, QDoubleSpinBox {
     background-color: #212121;
     color: #e8e8e8;
     border: 1px solid #333333;
     border-radius: 3px;
-    padding: 3px 6px;
-    font-size: 12px;
-    min-height: 20px;
+    padding: 2px 4px;
+    font-size: 11px;
+    min-height: 18px;
+    max-height: 24px;
     selection-background-color: #2a3a50;
     selection-color: #ffffff;
 }
@@ -772,7 +804,7 @@ QSpinBox::up-button, QDoubleSpinBox::up-button,
 QSpinBox::down-button, QDoubleSpinBox::down-button {
     background-color: #2a2a2a;
     border: 1px solid #333333;
-    width: 16px;
+    width: 14px;
 }
 QSpinBox::up-button:hover, QDoubleSpinBox::up-button:hover,
 QSpinBox::down-button:hover, QDoubleSpinBox::down-button:hover {

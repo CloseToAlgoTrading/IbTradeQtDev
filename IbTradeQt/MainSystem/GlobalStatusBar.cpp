@@ -3,6 +3,7 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QFrame>
+#include <QString>
 #include <QStyle>
 
 GlobalStatusBar::GlobalStatusBar(QWidget *parent)
@@ -60,6 +61,7 @@ GlobalStatusBar::GlobalStatusBar(QWidget *parent)
 QWidget* GlobalStatusBar::createSeparator()
 {
     auto* sep = new QFrame(this);
+    sep->setObjectName(QStringLiteral("globalStatusSeparator"));
     sep->setFrameShape(QFrame::VLine);
     sep->setFrameShadow(QFrame::Sunken);
     sep->setFixedWidth(1);

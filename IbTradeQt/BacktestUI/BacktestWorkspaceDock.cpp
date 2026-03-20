@@ -10,7 +10,6 @@
 #include <QTabWidget>
 #include <QVBoxLayout>
 #include <QWidget>
-#include <QSplitter>
 #include <QFont>
 #include <QSizePolicy>
 #include <QJsonDocument>
@@ -40,21 +39,17 @@ void BacktestWorkspaceDock::buildDock() {
     m_headerLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     outerLayout->addWidget(m_headerLabel);
 
-    auto* splitter = new QSplitter(Qt::Vertical, container);
-    splitter->setChildrenCollapsible(false);
-
-    // Top: tabbed config area — tab underline styled in operations-console.qss
-    m_configTabs = new QTabWidget();
-    m_configTabs->setObjectName(QStringLiteral("BacktestWorkspaceConfigTabs"));
-    m_configTabs->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    // Single tab strip: run/runtime configuration + results (+ Block Details when opened)
+    m_tabWidget = new QTabWidget();
+    m_tabWidget->setObjectName(QStringLiteral("BacktestWorkspaceMainTabs"));
+    m_tabWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
     m_configPanel = new BacktestRunConfigPanel();
-    m_configTabs->addTab(m_configPanel, QStringLiteral("Run Configuration"));
+    m_tabWidget->addTab(m_configPanel, QStringLiteral("Run Configuration"));
 
     m_inspector = new BlockInspectorPanel();
     m_inspector->setDiffPanelVisible(true);
 
-    // Inspector param edits update stored config and run config panel
     connect(m_inspector, &BlockInspectorPanel::configChanged,
             this, [this](const QJsonObject& newConfig) {
         m_pipelineConfig = newConfig;
@@ -66,13 +61,6 @@ void BacktestWorkspaceDock::buildDock() {
             m_currentStrategyDefId, m_currentStrategyVersion);
     });
 
-    splitter->addWidget(m_configTabs);
-
-    // Bottom: results tabs — same QSS object as config tabs
-    m_tabWidget = new QTabWidget();
-    m_tabWidget->setObjectName(QStringLiteral("BacktestWorkspaceResultTabs"));
-    m_tabWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-
     m_historyPanel = new BacktestRunHistoryPanel();
     m_equityChart  = new EquityChartWidget();
     m_candleChart  = new BacktestCandlestickWidget();
@@ -83,11 +71,7 @@ void BacktestWorkspaceDock::buildDock() {
     m_tabWidget->addTab(m_candleChart,  QStringLiteral("Candlestick"));
     m_tabWidget->addTab(m_tradeLog,     QStringLiteral("Trade Log"));
 
-    splitter->addWidget(m_tabWidget);
-    splitter->setStretchFactor(0, 1);
-    splitter->setStretchFactor(1, 3);
-
-    outerLayout->addWidget(splitter, 1);
+    outerLayout->addWidget(m_tabWidget, 1);
     setWidget(container);
 
     connect(m_configPanel, &BacktestRunConfigPanel::runRequested,
@@ -126,6 +110,8 @@ void BacktestWorkspaceDock::selectStrategy(const QString& strategyId,
     m_candleChart->clear();
     m_tradeLog->clear();
     m_historyPanel->clear();
+
+    m_tabWidget->setCurrentIndex(0);
 }
 
 void BacktestWorkspaceDock::updateStrategyHeader() {
@@ -173,7 +159,8 @@ void BacktestWorkspaceDock::displayResult(const Backtest::BacktestLoadedRun& run
     }
 
     m_tradeLog->setFills(result.tradeLog);
-    m_tabWidget->setCurrentIndex(1);
+    // Tabs: 0 Run Configuration, 1 Run History, 2 Equity Curve, …
+    m_tabWidget->setCurrentIndex(2);
 }
 
 void BacktestWorkspaceDock::setRunHistory(const QList<DbBacktestRunSummary>& runs) {
@@ -198,15 +185,15 @@ void BacktestWorkspaceDock::showBlockDetails(const QString& category,
                                               const QJsonObject& pipelineConfig) {
     m_pipelineConfig = pipelineConfig;
     if (m_inspectorTabIdx < 0) {
-        m_inspectorTabIdx = m_configTabs->addTab(m_inspector, QStringLiteral("Block Details"));
+        m_inspectorTabIdx = m_tabWidget->addTab(m_inspector, QStringLiteral("Block Details"));
     }
-    m_configTabs->setCurrentIndex(m_inspectorTabIdx);
+    m_tabWidget->setCurrentIndex(m_inspectorTabIdx);
     m_inspector->showBlock(m_pipelineConfig, category, jsonKey, isArray, arrayIndex);
 }
 
 void BacktestWorkspaceDock::hideBlockDetails() {
     if (m_inspectorTabIdx >= 0) {
-        m_configTabs->removeTab(m_inspectorTabIdx);
+        m_tabWidget->removeTab(m_inspectorTabIdx);
         m_inspectorTabIdx = -1;
     }
 }
