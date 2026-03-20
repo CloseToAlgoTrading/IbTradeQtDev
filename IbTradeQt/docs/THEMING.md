@@ -34,6 +34,7 @@ hint->setObjectName(QStringLiteral("labelMuted"));
 ## Assets
 
 - Checkbox checkmark: `:/style/icons/checkbox-check.svg` (bundled in `ibtradesystem.qrc`).
+- **Window / taskbar icon:** `:/style/icons/application-icon.svg` — loaded in `CApplicationController::setUpApplication()` via **`QSvgRenderer`** into multi-size pixmaps (`loadApplicationIconRasterized()`), then applied to `QApplication` and the main window. **Do not** rely on `QIcon(":/…/file.svg")` alone for the window icon: on Linux many window managers ignore SVG-only icons. Requires `QT += svg`. Replace `MainSystem/style/icons/application-icon.svg` to change the icon; legacy fallback: `:/IBTradeSystem/x_resources/app.png`. If the **dock still shows a generic icon**, ensure you’re looking at the running app window (not the IDE “Run” button) and, on Linux, that a `.desktop` file’s `Icon=` matches your install if you use a launcher.
 
 ### Toolbar / menu icons (PNG `QIcon`)
 

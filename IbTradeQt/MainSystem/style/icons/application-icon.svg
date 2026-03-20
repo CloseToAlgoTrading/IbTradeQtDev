@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- IB Trade window / taskbar icon (sparkline on dark tile; matches accent #507dbc) -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#2a3550"/>
+      <stop offset="100%" stop-color="#121820"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
+  <path d="M10 40 L20 32 L28 36 L36 20 L44 24 L54 12"
+        fill="none" stroke="#507dbc" stroke-width="3.5"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="36" cy="20" r="3.2" fill="#e8e8e8"/>
+  <circle cx="54" cy="12" r="3.2" fill="#e8e8e8"/>
+</svg>

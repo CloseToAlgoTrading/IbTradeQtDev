@@ -8,6 +8,10 @@
 #include <QIcon>
 #include <QFile>
 #include <QJsonDocument>
+#include <QColor>
+#include <QPainter>
+#include <QPixmap>
+#include <QSvgRenderer>
 
 /******* xxx *********/
 #include "dbmanager.h"
@@ -71,6 +75,33 @@ static void registerBuiltinBlocks()
                        "Selects from a fixed list of symbols",
                        Pipeline::Scope::Strategy, {{"symbols", "AAPL,MSFT"}},
                        []() -> QObject* { return new Blocks::StaticListSelectionBlock(); }});
+}
+
+/** Window managers (especially on Linux) often ignore QIcon built from SVG alone — rasterize explicitly. */
+static QIcon loadApplicationIconRasterized()
+{
+    const QString svgPath = QStringLiteral(":/style/icons/application-icon.svg");
+    QSvgRenderer renderer(svgPath);
+    if (renderer.isValid()) {
+        QIcon icon;
+        const int sizes[] = {16, 24, 32, 48, 64, 128, 256};
+        for (int s : sizes) {
+            QPixmap pm(s, s);
+            pm.fill(Qt::transparent);
+            QPainter p(&pm);
+            p.setRenderHint(QPainter::Antialiasing, true);
+            p.setRenderHint(QPainter::SmoothPixmapTransform, true);
+            renderer.render(&p, QRectF(0, 0, s, s));
+            icon.addPixmap(pm);
+        }
+        return icon;
+    }
+    QIcon pngIcon(QStringLiteral(":/IBTradeSystem/x_resources/app.png"));
+    if (!pngIcon.isNull())
+        return pngIcon;
+    QPixmap solid(64, 64);
+    solid.fill(QColor(0x50, 0x7d, 0xbc));
+    return QIcon(solid);
 }
 
 CApplicationController::CApplicationController(QObject *parent):
@@ -225,8 +256,10 @@ void CApplicationController::setUpApplication(QApplication &app)
     font.setStyleHint(QFont::Monospace);
     QApplication::setFont(font);
 
-    auto icon = QIcon(":/IBTradeSystem/x_resources/app.png");
-    app.setWindowIcon(icon);
+    const QIcon windowIcon = loadApplicationIconRasterized();
+    app.setWindowIcon(windowIcon);
+    if (pMainView)
+        pMainView->setWindowIcon(windowIcon);
 
     // Load operations console stylesheet
     QFile qssFile(":/style/operations-console.qss");
@@ -238,6 +271,9 @@ void CApplicationController::setUpApplication(QApplication &app)
     }
 
     this->pMainView->show();
+    // Some platforms only associate the icon after the first show; set again.
+    if (pMainView)
+        pMainView->setWindowIcon(windowIcon);
 }
 
 void CApplicationController::setPMainModel(CMainModel *newPMainModel)
