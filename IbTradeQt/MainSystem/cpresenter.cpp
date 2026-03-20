@@ -34,6 +34,8 @@
 #include "StrategyManagementUI/StrategyManagementPanel.h"
 #include "StrategyManagementUI/StrategyDetailPanel.h"
 #include <QJsonDocument>
+#include <QAbstractItemView>
+#include <QTreeView>
 
 
 CPresenter::CPresenter(QObject *parent)
@@ -467,13 +469,18 @@ void CPresenter::setPGuiModel(CMainModel *newPGuiModel)
    treeView->setItemDelegate(m_pSystemTreeDelegate);
    treeView->setHeaderHidden(false);
    treeView->setAlternatingRowColors(true);
+   treeView->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+   treeView->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
+   treeView->header()->setStretchLastSection(true);
+   treeView->header()->setSectionResizeMode(SystemTreeModel::ColName, QHeaderView::Interactive);
+   treeView->header()->setSectionResizeMode(SystemTreeModel::ColEnabled, QHeaderView::Fixed);
+   treeView->header()->setSectionResizeMode(SystemTreeModel::ColStatus, QHeaderView::Interactive);
    treeView->setColumnWidth(SystemTreeModel::ColName, 200);
    treeView->setColumnWidth(SystemTreeModel::ColEnabled, 50);
    treeView->setColumnWidth(SystemTreeModel::ColStatus, 110);
-   treeView->setColumnWidth(SystemTreeModel::ColPnL, 90);
-   treeView->header()->setStretchLastSection(false);
-   treeView->header()->setSectionResizeMode(SystemTreeModel::ColName, QHeaderView::Stretch);
    treeView->expandAll();
+   for (int c = 0; c < SystemTreeModel::ColumnCount - 1; ++c)
+       treeView->resizeColumnToContents(c);
 
    if (m_stratMgmtCoord)
        m_stratMgmtCoord->refreshCatalog();

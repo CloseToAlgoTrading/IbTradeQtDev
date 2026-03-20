@@ -12,7 +12,7 @@ enum class ColumnPaintType {
     Checkbox,       // standard Qt checkbox
     StatusText,     // colored text, left-aligned (status indicators)
     NumericValue,   // right-aligned with P/L coloring
-    Badge,          // small colored text badge (e.g. version "v2")
+    Badge,          // compact colored version label (e.g. "v1"), left-aligned
     PlainText       // default left-aligned text
 };
 

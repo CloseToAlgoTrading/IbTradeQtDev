@@ -164,6 +164,14 @@ void CIBTradeSystemView::setupConsoleLayout()
     ui.dockWidget_Settings->hide();
     addDockWidget(Qt::BottomDockWidgetArea, m_eventLogPanel);
 
+    // Allow the bottom Events dock to grow upward: QMainWindow won’t shrink the
+    // central area below its minimumSizeHint; clear an inherited minimum so tab
+    // content (esp. Backtest) doesn’t lock the splitter range.
+    if (QWidget* cw = centralWidget()) {
+        cw->setMinimumHeight(0);
+        cw->setMinimumWidth(0);
+    }
+
     setupSettingsSlideOverlay();
 }
 

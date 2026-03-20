@@ -99,12 +99,19 @@ void StrategyTreeDelegate::paintBadge(QPainter* painter,
     painter->setPen(fg.isValid() ? fg : kBadgeColor);
 
     QFont f = painter->font();
-    f.setPointSizeF(f.pointSizeF() * 0.9);
+    // Fonts from QSS often use pixel size only; pointSizeF() is then -1, and
+    // (-1)*0.9 would trigger QFont::setPointSizeF: Point size <= 0 (-0.900000).
+    const qreal pt = f.pointSizeF();
+    if (pt > 0.0) {
+        f.setPointSizeF(pt * 0.9);
+    } else if (f.pixelSize() > 0) {
+        f.setPixelSize(qMax(1, qRound(f.pixelSize() * 0.9)));
+    }
     f.setBold(true);
     painter->setFont(f);
 
     painter->drawText(opt.rect.adjusted(CellPadH, 0, -CellPadH, 0),
-                      Qt::AlignCenter, text);
+                      Qt::AlignLeft | Qt::AlignVCenter, text);
 }
 
 void StrategyTreeDelegate::paintPlainText(QPainter* painter,

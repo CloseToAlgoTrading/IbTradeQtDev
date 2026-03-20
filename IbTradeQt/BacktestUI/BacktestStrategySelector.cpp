@@ -10,6 +10,7 @@
 #include <QTreeView>
 #include <QSortFilterProxyModel>
 #include <QHeaderView>
+#include <QAbstractItemView>
 #include <QJsonDocument>
 
 namespace BacktestUI {
@@ -40,11 +41,15 @@ void BacktestStrategySelector::buildUi()
     m_model = new BacktestTreeModel(this);
     m_treePanel->setModel(m_model);
 
-    // Column sizing
+    // Name resizable; VER column stretches with widget (StrategyTreePanel already
+    // applies stretch-last; keep explicit modes after setModel).
     auto* tv = m_treePanel->treeView();
-    tv->header()->setSectionResizeMode(BacktestTreeModel::ColName, QHeaderView::Stretch);
-    tv->header()->setSectionResizeMode(BacktestTreeModel::ColVersion, QHeaderView::Fixed);
-    tv->header()->setDefaultSectionSize(50);
+    tv->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    tv->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
+    tv->header()->setStretchLastSection(true);
+    tv->header()->setSectionResizeMode(BacktestTreeModel::ColName, QHeaderView::Interactive);
+    tv->header()->setSectionResizeMode(BacktestTreeModel::ColVersion, QHeaderView::Stretch);
+    tv->resizeColumnToContents(BacktestTreeModel::ColName);
 
     layout->addWidget(m_treePanel, 1);
 
@@ -96,6 +101,10 @@ void BacktestStrategySelector::populate(const QList<StrategyListItem>& items)
 {
     m_model->populate(items);
     m_treePanel->expandAll();
+    {
+        QTreeView* tv = m_treePanel->treeView();
+        tv->resizeColumnToContents(BacktestTreeModel::ColName);
+    }
 
     int count = items.size();
     m_countLabel->setText(count == 1 ? QStringLiteral("1 strategy")
@@ -106,6 +115,8 @@ void BacktestStrategySelector::populateCatalog(const QList<CatalogVersionItem>& 
 {
     m_model->populateCatalog(catalogItems);
     m_treePanel->expandAll();
+    QTreeView* tv = m_treePanel->treeView();
+    tv->resizeColumnToContents(BacktestTreeModel::ColName);
 }
 
 void BacktestStrategySelector::highlightStrategy(const QString& strategyId)

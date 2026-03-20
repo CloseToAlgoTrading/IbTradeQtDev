@@ -83,6 +83,10 @@ void StrategyCatalogPanel::populate(const QJsonArray& catalogEntries,
 {
     m_model->populate(catalogEntries, versionCounts, latestConfigs);
     m_treePanel->expandAll();
+    QTreeView* tv = m_treePanel->treeView();
+    const int n = m_model->columnCount();
+    for (int c = 0; c < n - 1; ++c)
+        tv->resizeColumnToContents(c);
 }
 
 void StrategyCatalogPanel::onItemClicked(const QModelIndex& proxyIndex)

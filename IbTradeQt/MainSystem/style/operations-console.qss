@@ -21,6 +21,9 @@
  *  toolbarIcon   #c8c8c8   Chrome-only tint (CIconHandler::loadIconForChrome); trees use raw PNGs
  *  statusBar     —         Label text: QStatusBar + #GlobalStatusBar (see “Status strips” below);
  *                         use textSecondary #b8b8b8, textMuted #888888, matches ThemePalette.h
+ *  layout (px)   —         Dock/panel mins & chart mins: UiTheme::kBacktestWorkspaceMinWidth,
+ *                         kBacktestWorkspaceMinHeight, kEventLogMinHeight, kEventLogDockInitialHeight,
+ *                         kBacktestChartViewMinHeight in ThemePalette.h (set in C++; not in QSS)
  *  ────────────────────────────────────────────────────────────────────────── */
 
 * {

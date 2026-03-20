@@ -1,4 +1,5 @@
 #include "EventLogPanel.h"
+#include "ThemePalette.h"
 #include <QTabWidget>
 #include <QTableView>
 #include <QStandardItemModel>
@@ -33,8 +34,10 @@ EventLogPanel::EventLogPanel(QWidget *parent)
     m_tabs->addTab(m_dataTab.view,     "Data");
     m_tabs->addTab(m_strategyTab.view, "Strategy");
 
-    setMinimumHeight(80);
-    resize(width(), 120);
+    // Small floor so the dock can be expanded upward until the central area
+    // hits its own minimum (see also central widget min in ibtradesystemview).
+    setMinimumHeight(UiTheme::kEventLogMinHeight);
+    resize(width(), UiTheme::kEventLogDockInitialHeight);
 }
 
 EventLogPanel::TabInfo EventLogPanel::createTab(const QString& /*filterCategory*/)

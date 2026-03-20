@@ -1,4 +1,5 @@
 #include "BacktestUI/EquityChartWidget.h"
+#include "ThemePalette.h"
 #include <QChart>
 #include <QChartView>
 #include <QLineSeries>
@@ -53,7 +54,9 @@ void EquityChartWidget::setupChart() {
 
     m_chartView = new QChartView(m_chart);
     m_chartView->setRenderHint(QPainter::Antialiasing);
-    m_chartView->setMinimumHeight(300);
+    // Moderate minimum so the main window’s central area can shrink and the
+    // bottom Events dock can use more vertical space when resized.
+    m_chartView->setMinimumHeight(UiTheme::kBacktestChartViewMinHeight);
 
     // Hover tooltip showing date / value
     connect(m_strategySeries, &QLineSeries::hovered,

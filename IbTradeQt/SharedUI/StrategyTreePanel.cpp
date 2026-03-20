@@ -5,6 +5,7 @@
 #include <QLineEdit>
 #include <QVBoxLayout>
 #include <QHeaderView>
+#include <QAbstractItemView>
 #include <QSortFilterProxyModel>
 
 StrategyTreePanel::StrategyTreePanel(QWidget* parent)
@@ -35,7 +36,10 @@ void StrategyTreePanel::buildUi()
     m_tree->setHeaderHidden(false);
     m_tree->setSelectionMode(QAbstractItemView::SingleSelection);
     m_tree->setSelectionBehavior(QAbstractItemView::SelectRows);
-    m_tree->header()->setStretchLastSection(false);
+    m_tree->header()->setStretchLastSection(true);
+    m_tree->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    m_tree->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
+    m_tree->header()->setMinimumSectionSize(40);
 
     m_delegate = new StrategyTreeDelegate(this);
     m_tree->setItemDelegate(m_delegate);
@@ -62,11 +66,16 @@ void StrategyTreePanel::setModel(QAbstractItemModel* model)
     m_filterProxy->setSourceModel(model);
     m_tree->setModel(m_filterProxy);
 
-    // Stretch the first column, let the rest size to content
+    // First n-1 columns: user-resizable; last column stretches to fill remaining
+    // viewport width (no empty gap). If leading columns' minimum widths exceed the
+    // viewport, horizontal scroll still appears.
     if (model && model->columnCount() > 0) {
-        m_tree->header()->setSectionResizeMode(0, QHeaderView::Stretch);
-        for (int i = 1; i < model->columnCount(); ++i)
-            m_tree->header()->setSectionResizeMode(i, QHeaderView::ResizeToContents);
+        m_tree->header()->setStretchLastSection(true);
+        const int n = model->columnCount();
+        for (int i = 0; i < n - 1; ++i)
+            m_tree->header()->setSectionResizeMode(i, QHeaderView::Interactive);
+        for (int i = 0; i < n - 1; ++i)
+            m_tree->resizeColumnToContents(i);
     }
 }
 

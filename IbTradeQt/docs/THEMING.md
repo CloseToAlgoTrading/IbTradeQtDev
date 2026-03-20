@@ -80,6 +80,7 @@ If you need **row or cell colours from data** (status, BUY/SELL), implement a **
 | **Indent per tree depth** (each nested level shifts right) | On `QTreeView` / `QTreeWidget`: `qproperty-indentation: 20;` (maps to `setIndentation`) |
 | **Padding inside each row** (space before branch + content) | `QTreeView::item, QTreeWidget::item { padding-left: 6px; }` (you already set `padding: 1px 3px` in `operations-console.qss`) |
 | **Space between icon and label** in the strategy tree | `SharedUI/StrategyTreeDelegate.cpp` — `IconLeftPad` / `TextLeftPad` / `CellPadH` (custom `paint`; QSS does not affect that layout) |
+| **Resizable columns / horizontal scroll / fill width** on strategy trees | `SharedUI/StrategyTreePanel.cpp` — leading columns `Interactive`, last column stretches (`setStretchLastSection(true)`); `ScrollBarAsNeeded`; Live tree in `cpresenter.cpp`. Not QSS-driven. |
 | **Branch column width** | Mostly driven by `indentation` + style; `QTreeView::branch` can use `background`/`image` but rarely replaces indent math |
 
 **Example** (global tree, tighter nesting):
@@ -119,6 +120,12 @@ Qt Style Sheets **cannot** declare variables or export values to C++. There is n
 1. **Static UI** → `objectName` + `operations-console.qss`.
 2. **Runtime-dependent colors** (state badge `QColor`, metric value tint) → build a small stylesheet string in C++ using **`UiTheme::k…`** from **`MainSystem/ThemePalette.h`** so hex values stay aligned with the QSS THEME PALETTE.
 3. When you change a palette color, update **both** `operations-console.qss` and `ThemePalette.h` (grep the old hex).
+
+### Layout sizes (dock minimums, chart minimums, initial dock height)
+
+Minimum widths/heights and one-off **`resize()`** values belong in **`MainSystem/ThemePalette.h`** as **`UiTheme::`** `constexpr int` (e.g. `kBacktestWorkspaceMinWidth`, `kEventLogMinHeight`, `kBacktestChartViewMinHeight`). C++ calls `setMinimumWidth` / `setMinimumHeight` using those constants.
+
+**Why not only QSS?** Qt Style Sheets support `min-width` / `min-height` on some widgets, but layout-critical sizes are often set in code (docks vs central widget, `QTabWidget` taking the max of tab minimums, initial `resize`). Putting the **same** numbers in both QSS and C++ would duplicate and drift. **Single source:** `ThemePalette.h`. The **THEME PALETTE** comment block in `operations-console.qss` references those names for documentation.
 
 ## QSS coverage vs. remaining C++
 

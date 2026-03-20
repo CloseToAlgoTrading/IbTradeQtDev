@@ -6,6 +6,7 @@
 #include "BacktestUI/BacktestCandlestickWidget.h"
 #include "BacktestUI/TradeLogWidget.h"
 #include "BlockInspectorPanel.h"
+#include "ThemePalette.h"
 #include <QLabel>
 #include <QTabWidget>
 #include <QVBoxLayout>
@@ -20,11 +21,15 @@ namespace BacktestUI {
 BacktestWorkspaceDock::BacktestWorkspaceDock(QWidget* parent)
     : QDockWidget(QStringLiteral("Backtest Workspace"), parent)
 {
+    setObjectName(QStringLiteral("BacktestWorkspaceDock"));
     m_btPresenter = new BacktestPresenter(this);
     setFeatures(QDockWidget::DockWidgetMovable  |
                 QDockWidget::DockWidgetFloatable |
                 QDockWidget::DockWidgetClosable);
-    setMinimumSize(700, 500);
+    // Avoid a tall minimum height here: QTabWidget uses the max of all tab pages’
+    // size hints, which would cap how far the bottom Events dock can expand upward.
+    setMinimumWidth(UiTheme::kBacktestWorkspaceMinWidth);
+    setMinimumHeight(UiTheme::kBacktestWorkspaceMinHeight);
     buildDock();
 }
 

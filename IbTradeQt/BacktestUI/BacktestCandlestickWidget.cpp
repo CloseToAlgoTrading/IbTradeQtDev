@@ -1,4 +1,5 @@
 #include "BacktestUI/BacktestCandlestickWidget.h"
+#include "ThemePalette.h"
 #include <QChart>
 #include <QChartView>
 #include <QCandlestickSeries>
@@ -83,7 +84,7 @@ void BacktestCandlestickWidget::setupChart() {
 
     m_chartView = new QChartView(m_chart);
     m_chartView->setRenderHint(QPainter::Antialiasing);
-    m_chartView->setMinimumHeight(300);
+    m_chartView->setMinimumHeight(UiTheme::kBacktestChartViewMinHeight);
 
     connect(m_buySeries, &QScatterSeries::hovered,
             [this](const QPointF& point, bool state) {

@@ -1,12 +1,18 @@
 #pragma once
 
 // ─────────────────────────────────────────────────────────────────────────────
-// UI color tokens shared with MainSystem/style/operations-console.qss
+// UI tokens shared with MainSystem/style/operations-console.qss (colors) and
+// with C++ layout code (pixel dimensions below).
 //
 // QSS cannot define variables or export values to C++. For runtime-generated
 // stylesheets (badge background, per-metric color, etc.), use these literals
 // so hex stays aligned with the QSS THEME PALETTE. When you change a value,
 // update the matching rules in operations-console.qss.
+//
+// Layout sizes (constexpr int, px): minimum sizes and initial geometry must be
+// set via QWidget::setMinimumWidth/Height etc. QSS `min-width`/`min-height` does
+// not cover every case (embedded docks, size hints) and would duplicate numbers
+// if we also set them in C++. Keep a single source here; see THEMING.md.
 // ─────────────────────────────────────────────────────────────────────────────
 
 namespace UiTheme {
@@ -54,5 +60,18 @@ inline constexpr char kInspectorInfoValue[]    = "#aaaaaa";
 inline constexpr int kFontSizeStrategyOverviewState = 14;
 
 inline constexpr int kFontSizeMetricValue = 13;
+
+// ── Layout (pixels; used in C++ — document in operations-console.qss THEME note) ──
+
+/** Backtest workspace dock / embedded panel (keeps main window central area flexible). */
+inline constexpr int kBacktestWorkspaceMinWidth  = 360;
+inline constexpr int kBacktestWorkspaceMinHeight   = 120;
+
+/** Bottom Events dock: floor height; initial height on first show (resize). */
+inline constexpr int kEventLogMinHeight         = 48;
+inline constexpr int kEventLogDockInitialHeight = 120;
+
+/** Backtest equity / candlestick chart views (avoid huge QTabWidget minimum). */
+inline constexpr int kBacktestChartViewMinHeight = 120;
 
 } // namespace UiTheme
