@@ -32,6 +32,14 @@ void YahooFinanceDataSource::setNetworkManager(QNetworkAccessManager* mgr)
     m_ownNam = false;
 }
 
+void YahooFinanceDataSource::disconnectFinishedHandler()
+{
+    if (!m_nam)
+        return;
+    QObject::disconnect(m_nam, &QNetworkAccessManager::finished,
+                        this, &YahooFinanceDataSource::onReplyFinished);
+}
+
 void YahooFinanceDataSource::requestBars(const QStringList& symbols,
                                          const QDateTime& from,
                                          const QDateTime& to,

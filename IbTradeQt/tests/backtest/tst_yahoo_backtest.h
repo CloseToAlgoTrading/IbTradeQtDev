@@ -21,6 +21,9 @@
 #include <QTemporaryFile>
 #include <QTextStream>
 #include <tuple>
+#include <cmath>
+
+#include <QEventLoop>
 
 #include "Backtest/YahooFinanceDataSource.h"
 #include "Backtest/BenchmarkComparison.h"
@@ -168,6 +171,17 @@ static QByteArray buildYahooJson(const QString& symbol,
     QJsonObject root;
     root["chart"] = chart;
     return QJsonDocument(root).toJson();
+}
+
+static QByteArray historicalBarsToYahooJson(const QString& symbol,
+                                            const QVector<IBComm::HistoricalBar>& bars)
+{
+    QVector<std::tuple<qint64, double, double, double, double, double>> rows;
+    rows.reserve(bars.size());
+    for (const auto& b : bars) {
+        rows.append({b.timestamp.toSecsSinceEpoch(), b.open, b.high, b.low, b.close, b.volume});
+    }
+    return buildYahooJson(symbol, rows);
 }
 
 // ---------------------------------------------------------------------------
@@ -432,6 +446,376 @@ static QString writeCsvFile(QTemporaryFile& f,
     f.close();
     return f.fileName();
 }
+
+// ---------------------------------------------------------------------------
+// TestYahooBacktestSessionMockE2E — full BacktestSession with dataSourceId=yahoo
+// and mock HTTP (no network). Default CI coverage for Yahoo transport + LEGO path.
+// ---------------------------------------------------------------------------
+class TestYahooBacktestSessionMockE2E : public QObject {
+    Q_OBJECT
+private slots:
+
+    void sessionWithMockYahoo_maCrossoverAndSpyBenchmark() {
+        const QDate       startDate(2015, 1, 2);
+        // Match CSV MA test horizon (~3y) so crossover + rebalance produce trades.
+        const int         tradingDays = 756;
+        auto              amdBars     = generateDailyBars("AMD", startDate, tradingDays,
+                                                          3.0, 0.0010, 0.025, 101);
+        auto              nvdaBars    = generateDailyBars("NVDA", startDate, tradingDays,
+                                                          20.0, 0.0012, 0.022, 202);
+        auto              spyBars     = generateDailyBars("SPY", startDate, tradingDays,
+                                                          200.0, 0.0004, 0.010, 303);
+
+        auto* mgr = new MockNetworkAccessManager();
+        mgr->addSymbolResponse("AMD", historicalBarsToYahooJson("AMD", amdBars));
+        mgr->addSymbolResponse("NVDA", historicalBarsToYahooJson("NVDA", nvdaBars));
+        mgr->addSymbolResponse("SPY", historicalBarsToYahooJson("SPY", spyBars));
+
+        QJsonObject pipeline;
+        pipeline["name"]        = QStringLiteral("MACrossoverMockYahoo");
+        QJsonArray  alphas;
+        QJsonObject alpha;
+        alpha["blockId"] = QStringLiteral("ma-crossover-alpha");
+        QJsonObject alphaCfg;
+        alphaCfg["fastPeriod"] = 5;
+        alphaCfg["slowPeriod"] = 20;
+        alpha["config"]        = alphaCfg;
+        alphas.append(alpha);
+        pipeline["alphas"]   = alphas;
+        pipeline["risks"]    = QJsonArray();
+        QJsonObject reb;
+        reb["blockId"]  = QStringLiteral("simple-rebalance");
+        reb["config"] = QJsonObject();
+        pipeline["rebalance"] = reb;
+        QJsonObject exec;
+        exec["blockId"]  = QStringLiteral("market-order-execution");
+        exec["config"]   = QJsonObject();
+        pipeline["execution"]   = exec;
+        pipeline["mergePolicy"] = QString();
+
+        Backtest::BacktestConfig config;
+        config.startDate = QDateTime(startDate, QTime(0, 0), QTimeZone::utc());
+        config.endDate =
+            QDateTime(startDate.addDays(tradingDays + 60), QTime(23, 59), QTimeZone::utc());
+        config.symbols         = {"AMD", "NVDA"};
+        config.dataSourceId    = "yahoo";
+        config.dataPath        = {};
+        config.resolution      = Backtest::BarResolution::Day1;
+        config.fillModel       = Backtest::FillModelType::MidPrice;
+        config.fillTiming      = Backtest::FillTiming::SignalOnClose_FillAtClose;
+        config.initialCapital  = 100'000.0;
+        config.slippageBps     = 5.0;
+        config.benchmarkSymbol = "SPY";
+
+        Backtest::BacktestSession session(config);
+        session.setPipelineConfig(pipeline);
+        session.setYahooNetworkAccessManager(mgr);
+
+        Backtest::BacktestResult result;
+        bool sessionFinished = false;
+        bool sessionFailed   = false;
+        QString failReason;
+
+        connect(&session, &Backtest::BacktestSession::finished,
+                [&](const Backtest::BacktestResult& r) {
+                    result          = r;
+                    sessionFinished = true;
+                });
+        connect(&session, &Backtest::BacktestSession::failed,
+                [&](const QString& reason) {
+                    failReason    = reason;
+                    sessionFailed = true;
+                });
+
+        session.run();
+
+        if (sessionFailed)
+            QFAIL(qPrintable(QStringLiteral("Session failed: ") + failReason));
+        QVERIFY(sessionFinished);
+
+        QVERIFY2(result.equityCurve.size() > 50,
+                 qPrintable(QStringLiteral("Equity curve too short: %1").arg(result.equityCurve.size())));
+        QCOMPARE(result.initialCapital, 100'000.0);
+        QVERIFY(result.finalCapital > 0.0);
+        QCOMPARE(result.dataQuality, Backtest::DataQuality::DailyBars);
+        QVERIFY2(result.totalTrades > 0, "Expected trades from MA crossover");
+
+        QCOMPARE(result.benchmark.symbol, QStringLiteral("SPY"));
+        QVERIFY2(result.benchmark.equityCurve.size() > 50, "Benchmark curve too short");
+        QVERIFY(result.benchmark.startPrice > 0.0);
+        QVERIFY(result.benchmark.endPrice > 0.0);
+    }
+};
+
+// ---------------------------------------------------------------------------
+// TestYahooBacktestSessionMockFailure — Yahoo load errors surface as failed()
+// ---------------------------------------------------------------------------
+class TestYahooBacktestSessionMockFailure : public QObject {
+    Q_OBJECT
+private slots:
+
+    void sessionFailsWhenStrategySymbolHasNetworkError() {
+        const QDate       startDate(2015, 1, 2);
+        const int         tradingDays = 50;
+        auto              nvdaBars    = generateDailyBars("NVDA", startDate, tradingDays,
+                                                          20.0, 0.0012, 0.022, 202);
+
+        auto* mgr = new MockNetworkAccessManager();
+        mgr->addErrorResponse(QStringLiteral("AMD"));
+        mgr->addSymbolResponse("NVDA", historicalBarsToYahooJson("NVDA", nvdaBars));
+
+        QJsonObject pipeline;
+        QJsonObject alpha;
+        alpha["blockId"] = QStringLiteral("momentum-alpha");
+        alpha["config"]  = QJsonObject{{QStringLiteral("lookback"), 2}, {QStringLiteral("threshold"), 0.001}};
+        pipeline["alphas"]      = QJsonArray{alpha};
+        pipeline["mergePolicy"] = QString();
+        pipeline["risks"]       = QJsonArray();
+        QJsonObject reb;
+        reb["blockId"]  = QStringLiteral("simple-rebalance");
+        reb["config"]   = QJsonObject();
+        pipeline["rebalance"] = reb;
+        QJsonObject exec;
+        exec["blockId"]  = QStringLiteral("market-order-execution");
+        exec["config"]   = QJsonObject();
+        pipeline["execution"] = exec;
+
+        Backtest::BacktestConfig config;
+        config.startDate = QDateTime(startDate, QTime(0, 0), QTimeZone::utc());
+        config.endDate =
+            QDateTime(startDate.addDays(tradingDays + 10), QTime(23, 59), QTimeZone::utc());
+        config.symbols        = {"AMD", "NVDA"};
+        config.dataSourceId   = "yahoo";
+        config.resolution     = Backtest::BarResolution::Day1;
+        config.fillModel      = Backtest::FillModelType::MidPrice;
+        config.fillTiming     = Backtest::FillTiming::SignalOnClose_FillAtClose;
+        config.initialCapital = 100'000.0;
+        config.benchmarkSymbol.clear();
+
+        Backtest::BacktestSession session(config);
+        session.setPipelineConfig(pipeline);
+        session.setYahooNetworkAccessManager(mgr);
+
+        bool sessionFailed = false;
+        QString failReason;
+        connect(&session, &Backtest::BacktestSession::failed,
+                [&](const QString& reason) {
+                    failReason    = reason;
+                    sessionFailed = true;
+                });
+
+        session.run();
+
+        QVERIFY2(sessionFailed, "Expected failed() when Yahoo returns network error for a symbol");
+        QVERIFY2(failReason.contains(QStringLiteral("AMD")),
+                 qPrintable(QStringLiteral("Unexpected error message: ") + failReason));
+    }
+};
+
+// ---------------------------------------------------------------------------
+// TestYahooBacktestPipelineVariants — benchmark math, minimal JSON, risk block
+// (mock Yahoo; deterministic). Complements live IBTRADING_LIVE_TESTS=1 real Yahoo runs.
+// ---------------------------------------------------------------------------
+class TestYahooBacktestPipelineVariants : public QObject {
+    Q_OBJECT
+private slots:
+
+    void benchmarkBuyAndHoldMath_matchesSpotPricesAndAlphaVsBenchmark() {
+        const QDate       startDate(2016, 6, 1);
+        const int         tradingDays = 120;
+        auto              amdBars  = generateDailyBars("AMD", startDate, tradingDays, 5.0, 0.001, 0.02, 11);
+        auto              nvdaBars = generateDailyBars("NVDA", startDate, tradingDays, 30.0, 0.001, 0.02, 22);
+        auto              spyBars  = generateDailyBars("SPY", startDate, tradingDays, 210.0, 0.0003, 0.008, 33);
+
+        auto* mgr = new MockNetworkAccessManager();
+        mgr->addSymbolResponse("AMD", historicalBarsToYahooJson("AMD", amdBars));
+        mgr->addSymbolResponse("NVDA", historicalBarsToYahooJson("NVDA", nvdaBars));
+        mgr->addSymbolResponse("SPY", historicalBarsToYahooJson("SPY", spyBars));
+
+        QJsonObject pipeline;
+        pipeline["alphas"] = QJsonArray{QJsonObject{
+            {QStringLiteral("blockId"), QStringLiteral("ma-crossover-alpha")},
+            {QStringLiteral("config"),
+             QJsonObject{{QStringLiteral("fastPeriod"), 5}, {QStringLiteral("slowPeriod"), 20}}}}};
+        pipeline["risks"]       = QJsonArray();
+        pipeline["rebalance"]   = QJsonObject{{QStringLiteral("blockId"), QStringLiteral("simple-rebalance")},
+                                            {QStringLiteral("config"), QJsonObject()}};
+        pipeline["execution"]   = QJsonObject{{QStringLiteral("blockId"), QStringLiteral("market-order-execution")},
+                                            {QStringLiteral("config"), QJsonObject()}};
+        pipeline["mergePolicy"] = QString();
+
+        Backtest::BacktestConfig config;
+        config.startDate = QDateTime(startDate, QTime(0, 0), QTimeZone::utc());
+        config.endDate =
+            QDateTime(startDate.addDays(tradingDays + 20), QTime(23, 59), QTimeZone::utc());
+        config.symbols         = {"AMD", "NVDA"};
+        config.dataSourceId    = "yahoo";
+        config.resolution      = Backtest::BarResolution::Day1;
+        config.fillModel       = Backtest::FillModelType::MidPrice;
+        config.fillTiming      = Backtest::FillTiming::SignalOnClose_FillAtClose;
+        config.initialCapital  = 100'000.0;
+        config.slippageBps     = 5.0;
+        config.benchmarkSymbol = "SPY";
+
+        Backtest::BacktestSession session(config);
+        session.setPipelineConfig(pipeline);
+        session.setYahooNetworkAccessManager(mgr);
+
+        Backtest::BacktestResult result;
+        bool                     finished = false;
+        QString                  err;
+        connect(&session, &Backtest::BacktestSession::finished,
+                [&](const Backtest::BacktestResult& r) {
+                    result   = r;
+                    finished = true;
+                });
+        connect(&session, &Backtest::BacktestSession::failed, [&](const QString& e) { err = e; });
+
+        session.run();
+
+        QVERIFY2(finished, qPrintable(QStringLiteral("failed: ") + err));
+        QVERIFY(result.benchmark.startPrice > 0.0 && result.benchmark.endPrice > 0.0);
+
+        const double expectedTotalReturn =
+            (result.benchmark.endPrice - result.benchmark.startPrice) / result.benchmark.startPrice;
+        QVERIFY2(std::abs(result.benchmark.totalReturn - expectedTotalReturn) < 1e-9,
+                 "Benchmark totalReturn must equal (end-start)/start from loaded closes");
+
+        if (result.benchmark.equityCurve.size() >= 2) {
+            const double years =
+                static_cast<double>(result.benchmark.equityCurve.first().timestamp.daysTo(
+                    result.benchmark.equityCurve.last().timestamp))
+                / 365.25;
+            if (years > 0.0) {
+                const double expectedAnn =
+                    std::pow(1.0 + result.benchmark.totalReturn, 1.0 / years) - 1.0;
+                QVERIFY2(std::abs(result.benchmark.annualizedReturn - expectedAnn) < 1e-6,
+                         "Benchmark annualizedReturn must match BenchmarkComparison formula");
+            }
+        }
+
+        const double expectedAlpha =
+            result.annualizedReturn - result.benchmark.annualizedReturn;
+        QVERIFY2(std::abs(result.alphaVsBenchmark - expectedAlpha) < 1e-9,
+                 "alphaVsBenchmark must equal strategy ann. minus benchmark ann.");
+
+        if (!result.benchmark.equityCurve.isEmpty()) {
+            const double shares = config.initialCapital / result.benchmark.startPrice;
+            const double expectedLast = shares * result.benchmark.endPrice;
+            QVERIFY2(std::abs(result.benchmark.equityCurve.last().portfolioValue - expectedLast) < 1.0,
+                     "Benchmark equity curve terminal value must match buy-and-hold shares*endClose");
+        }
+    }
+
+    void minimalPipeline_omitsRebalanceAndRisksKeys_usesFactoryDefaults() {
+        // PipelineFactory: missing "rebalance" → empty blockId → SimpleRebalanceBlock;
+        // missing "risks" → no risk blocks.
+        const QDate startDate(2017, 3, 1);
+        const int   tradingDays = 80;
+        auto        aaplBars    = generateDailyBars("AAPL", startDate, tradingDays, 100.0, 0.0005, 0.01, 44);
+
+        auto* mgr = new MockNetworkAccessManager();
+        mgr->addSymbolResponse("AAPL", historicalBarsToYahooJson("AAPL", aaplBars));
+
+        QJsonObject pipeline;
+        pipeline["alphas"] =
+            QJsonArray{QJsonObject{{QStringLiteral("blockId"), QStringLiteral("momentum-alpha")},
+                                   {QStringLiteral("config"),
+                                    QJsonObject{{QStringLiteral("lookback"), 3},
+                                                {QStringLiteral("threshold"), 0.0001}}}}};
+        pipeline["execution"]   = QJsonObject{{QStringLiteral("blockId"), QStringLiteral("market-order-execution")},
+                                            {QStringLiteral("config"), QJsonObject()}};
+        pipeline["mergePolicy"] = QString();
+        // Intentionally no "rebalance" and no "risks"
+
+        Backtest::BacktestConfig config;
+        config.startDate = QDateTime(startDate, QTime(0, 0), QTimeZone::utc());
+        config.endDate =
+            QDateTime(startDate.addDays(tradingDays + 5), QTime(23, 59), QTimeZone::utc());
+        config.symbols        = {"AAPL"};
+        config.dataSourceId   = "yahoo";
+        config.resolution     = Backtest::BarResolution::Day1;
+        config.fillModel      = Backtest::FillModelType::MidPrice;
+        config.fillTiming     = Backtest::FillTiming::SignalOnClose_FillAtClose;
+        config.initialCapital = 50'000.0;
+        config.benchmarkSymbol.clear();
+
+        Backtest::BacktestSession session(config);
+        session.setPipelineConfig(pipeline);
+        session.setYahooNetworkAccessManager(mgr);
+
+        bool               ok = false;
+        QString            failReason;
+        Backtest::BacktestResult result;
+        connect(&session, &Backtest::BacktestSession::finished,
+                [&](const Backtest::BacktestResult& r) {
+                    result = r;
+                    ok     = true;
+                });
+        connect(&session, &Backtest::BacktestSession::failed, [&](const QString& e) { failReason = e; });
+
+        session.run();
+
+        QVERIFY2(ok, qPrintable(QStringLiteral("Session failed: ") + failReason));
+        QVERIFY(!result.equityCurve.isEmpty());
+        QCOMPARE(result.initialCapital, 50'000.0);
+    }
+
+    void pipelineWithMaxPositionRisk_completes() {
+        const QDate startDate(2016, 1, 4);
+        const int   tradingDays = 180;
+        auto        amdBars     = generateDailyBars("AMD", startDate, tradingDays, 4.0, 0.001, 0.02, 55);
+        auto        nvdaBars    = generateDailyBars("NVDA", startDate, tradingDays, 25.0, 0.001, 0.02, 66);
+
+        auto* mgr = new MockNetworkAccessManager();
+        mgr->addSymbolResponse("AMD", historicalBarsToYahooJson("AMD", amdBars));
+        mgr->addSymbolResponse("NVDA", historicalBarsToYahooJson("NVDA", nvdaBars));
+
+        QJsonObject risk;
+        risk["blockId"] = QStringLiteral("max-position-risk");
+        risk["config"]  = QJsonObject{{QStringLiteral("maxPositionSize"), 50000.0},
+                                     {QStringLiteral("maxTotalExposure"), 500000.0}};
+
+        QJsonObject pipeline;
+        pipeline["alphas"] = QJsonArray{QJsonObject{
+            {QStringLiteral("blockId"), QStringLiteral("ma-crossover-alpha")},
+            {QStringLiteral("config"),
+             QJsonObject{{QStringLiteral("fastPeriod"), 5}, {QStringLiteral("slowPeriod"), 25}}}}};
+        pipeline["risks"]       = QJsonArray{risk};
+        pipeline["rebalance"]     = QJsonObject{{QStringLiteral("blockId"), QStringLiteral("simple-rebalance")},
+                                            {QStringLiteral("config"),
+                                             QJsonObject{{QStringLiteral("defaultQuantity"), 50.0}}}};
+        pipeline["execution"]   = QJsonObject{{QStringLiteral("blockId"), QStringLiteral("market-order-execution")},
+                                              {QStringLiteral("config"), QJsonObject()}};
+        pipeline["mergePolicy"]   = QString();
+
+        Backtest::BacktestConfig config;
+        config.startDate = QDateTime(startDate, QTime(0, 0), QTimeZone::utc());
+        config.endDate =
+            QDateTime(startDate.addDays(tradingDays + 15), QTime(23, 59), QTimeZone::utc());
+        config.symbols        = {"AMD", "NVDA"};
+        config.dataSourceId   = "yahoo";
+        config.resolution     = Backtest::BarResolution::Day1;
+        config.fillModel      = Backtest::FillModelType::MidPrice;
+        config.fillTiming     = Backtest::FillTiming::SignalOnClose_FillNextBarOpen;
+        config.initialCapital = 200'000.0;
+        config.slippageBps    = 10.0;
+        config.benchmarkSymbol.clear();
+
+        Backtest::BacktestSession session(config);
+        session.setPipelineConfig(pipeline);
+        session.setYahooNetworkAccessManager(mgr);
+
+        bool ok = false;
+        connect(&session, &Backtest::BacktestSession::finished, [&](const Backtest::BacktestResult&) { ok = true; });
+        QString fail;
+        connect(&session, &Backtest::BacktestSession::failed, [&](const QString& e) { fail = e; });
+
+        session.run();
+
+        QVERIFY2(ok, qPrintable(QStringLiteral("Session failed: ") + fail));
+    }
+};
 
 // ---------------------------------------------------------------------------
 // TestMACrossoverBacktest

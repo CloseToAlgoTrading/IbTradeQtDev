@@ -6,6 +6,7 @@
 #include "Pipeline/StrategyPipelineRunner.h"
 #include "Pipeline/UniverseResolver.h"
 #include "Strategies/Generic/cpipelinestrategyadapter.h"
+#include <algorithm>
 #include <QEventLoop>
 #include <QFile>
 #include <QJsonDocument>
@@ -27,9 +28,12 @@ void BacktestSession::cancel()
 
 void BacktestSession::run()
 {
-    m_cancelled = false;
+    m_cancelled  = false;
+    m_buildFailed = false;
 
     buildObjectGraph();
+    if (m_buildFailed)
+        return;
 
     if (!m_preloadedBars.isEmpty()) {
         // Bars were pre-fetched by HistoricalDataManager — skip network fetch
@@ -83,7 +87,10 @@ void BacktestSession::buildObjectGraph()
     } else if (m_config.dataSourceId == "csv") {
         m_dataSource = std::make_unique<CsvHistoricalDataSource>(m_config.dataPath);
     } else if (m_config.dataSourceId == "yahoo") {
-        m_dataSource = std::make_unique<YahooFinanceDataSource>();
+        auto yahoo = std::make_unique<YahooFinanceDataSource>();
+        if (m_yahooNetworkManager)
+            yahoo->setNetworkManager(m_yahooNetworkManager);
+        m_dataSource = std::move(yahoo);
     } else {
         qCWarning(lcBacktestSession) << "BacktestSession: unknown dataSourceId" << m_config.dataSourceId
                    << "— defaulting to JSONL";
@@ -135,6 +142,11 @@ void BacktestSession::buildObjectGraph()
 
     // m_pipelineRunner is a non-owning view — adapter owns the runner.
     m_pipelineRunner = m_strategyAdapter->backtestPipelineRunner();
+    if (!m_pipelineRunner) {
+        m_buildFailed = true;
+        emit failed(QStringLiteral("Pipeline configuration is invalid or empty."));
+        return;
+    }
 
     // Seed the universe from the pipeline selection config or from
     // the data-source symbols so the pipeline has an explicit universe.
@@ -148,6 +160,7 @@ void BacktestSession::buildObjectGraph()
                 universe.append(sym);
         }
         if (universe.isEmpty()) {
+            m_buildFailed = true;
             emit failed("Cannot determine tradeable universe: selection block requires "
                         "explicit symbols but none were resolved.");
             return;
@@ -216,10 +229,19 @@ void BacktestSession::loadHistoricalData()
     QString loadError;
     bool loadDone = false;
 
+    // Yahoo emits one symbol at a time; replay must be globally time-ordered (matches CSV).
+    QVector<IBComm::HistoricalBar> yahooBars;
+    const bool bufferYahooBars = (m_config.dataSourceId == QStringLiteral("yahoo"));
+
     connect(m_dataSource.get(), &IHistoricalDataSource::barLoaded,
-            this, [this](const IBComm::HistoricalBar& bar) {
-                m_replayer->addBar(bar, true);
-            }, Qt::DirectConnection);
+            this,
+            [this, bufferYahooBars, &yahooBars](const IBComm::HistoricalBar& bar) {
+                if (bufferYahooBars)
+                    yahooBars.append(bar);
+                else
+                    m_replayer->addBar(bar, true);
+            },
+            Qt::DirectConnection);
 
     connect(m_dataSource.get(), &IHistoricalDataSource::tickLoaded,
             this, [this](const IBComm::MarketTick& tick) {
@@ -267,6 +289,23 @@ void BacktestSession::loadHistoricalData()
         m_cancelled  = true;
         m_loadFailed = true;
         emit failed(loadError);
+    } else {
+        if (bufferYahooBars && !yahooBars.isEmpty()) {
+            std::sort(yahooBars.begin(), yahooBars.end(),
+                      [](const IBComm::HistoricalBar& a, const IBComm::HistoricalBar& b) {
+                          if (a.timestamp != b.timestamp)
+                              return a.timestamp < b.timestamp;
+                          return a.symbol < b.symbol;
+                      });
+            for (const auto& b : yahooBars)
+                m_replayer->addBar(b, true);
+        }
+        if (m_config.dataSourceId == QStringLiteral("yahoo")) {
+            // Second YahooFinanceDataSource (benchmark) may share the same injected NAM;
+            // disconnect strategy load so benchmark replies are not delivered twice.
+            if (auto* yahoo = dynamic_cast<YahooFinanceDataSource*>(m_dataSource.get()))
+                yahoo->disconnectFinishedHandler();
+        }
     }
 }
 
@@ -310,7 +349,10 @@ void BacktestSession::loadBenchmarkData()
     // to fetch benchmark bars. For Yahoo, reuse the same source type.
     std::unique_ptr<IHistoricalDataSource> bmSource;
     if (m_config.dataSourceId == "yahoo") {
-        bmSource = std::make_unique<YahooFinanceDataSource>();
+        auto yahoo = std::make_unique<YahooFinanceDataSource>();
+        if (m_yahooNetworkManager)
+            yahoo->setNetworkManager(m_yahooNetworkManager);
+        bmSource = std::move(yahoo);
     } else if (m_config.dataSourceId == "csv") {
         bmSource = std::make_unique<CsvHistoricalDataSource>(m_config.dataPath);
     } else {

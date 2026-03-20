@@ -19,6 +19,8 @@
 #include "Pipeline/StrategyPipelineRunner.h"
 #include "Strategies/Generic/cpipelinestrategyadapter.h"
 
+class QNetworkAccessManager;
+
 namespace Backtest {
 
 // Orchestrator for a single strategy-level backtest session.
@@ -57,6 +59,12 @@ public:
         return m_preloadedBars;
     }
 
+    // Optional: inject QNetworkAccessManager for Yahoo Finance (tests, custom proxies).
+    // Must be called before run(). Session does not take ownership.
+    void setYahooNetworkAccessManager(QNetworkAccessManager* nam) {
+        m_yahooNetworkManager = nam;
+    }
+
     // Preload-then-replay: all historical data is loaded into MarketDataReplayer
     // before the replay loop starts. Blocks until finished or cancelled.
     void run();
@@ -89,6 +97,8 @@ private:
     Pipeline::StrategyPipelineRunner*               m_pipelineRunner = nullptr;
     BacktestResult                                  m_result;
     bool                                            m_cancelled  = false;
+    // Set when buildObjectGraph() emitted failed() — run() must not load data or replay.
+    bool                                            m_buildFailed = false;
     // Separate from m_cancelled: set only when loadHistoricalData() emits failed().
     // Prevents run() from emitting a second, generic failed() after the specific error
     // has already been emitted inside loadHistoricalData().
@@ -96,6 +106,7 @@ private:
     QJsonObject                                     m_inlinePipelineConfig;
     QMap<QString, QVector<IBComm::HistoricalBar>>   m_preloadedBars;
     QVector<IBComm::HistoricalBar>                  m_preloadedBenchmarkBars;
+    QNetworkAccessManager*                         m_yahooNetworkManager = nullptr;
 };
 
 } // namespace Backtest

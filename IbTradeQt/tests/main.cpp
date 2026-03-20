@@ -24,7 +24,9 @@
 #include "integration/tst_phase_e_remaining_routers.h"
 #include "backtest/tst_backtest.h"
 #include "backtest/tst_yahoo_backtest.h"
+#include "backtest/tst_backtest_extended.h"
 #include "backtest/tst_live_backtest.h"
+#include "backtest/tst_backtest_engine_coverage.h"
 #include "backend/tst_storage_config.h"
 #include "backend/tst_persistence_factory.h"
 #include "backend/tst_model_tree_repository.h"
@@ -105,9 +107,20 @@ int main(int argc, char *argv[])
     { TestYahooFinanceDataSource tc;         status |= QTest::qExec(&tc, argc, argv); }
     { TestBenchmarkComparison tc;            status |= QTest::qExec(&tc, argc, argv); }
     { TestMACrossoverBacktest tc;            status |= QTest::qExec(&tc, argc, argv); }
+    { TestYahooBacktestSessionMockE2E tc;     status |= QTest::qExec(&tc, argc, argv); }
+    { TestYahooBacktestSessionMockFailure tc; status |= QTest::qExec(&tc, argc, argv); }
+    { TestYahooBacktestPipelineVariants tc;   status |= QTest::qExec(&tc, argc, argv); }
+    { TestBacktestEngineCoverage tc;          status |= QTest::qExec(&tc, argc, argv); }
 
-    // Live end-to-end backtests — require internet, write HTML+TXT reports
-    { TestLiveBacktest tc;                   status |= QTest::qExec(&tc, argc, argv); }
+    // Extended LEGO backtests (CSV + default pipeline JSON). Run: IBTRADING_EXTENDED_BACKTEST=1 ./tests
+    if (qEnvironmentVariable("IBTRADING_EXTENDED_BACKTEST") == "1") {
+        { TestBacktestExtendedLego tc; status |= QTest::qExec(&tc, argc, argv); }
+    }
+
+    // Live Yahoo backtests — require internet, write HTML+TXT reports (IBTRADING_LIVE_TESTS=1)
+    if (qEnvironmentVariable("IBTRADING_LIVE_TESTS") == "1") {
+        { TestLiveBacktest tc; status |= QTest::qExec(&tc, argc, argv); }
+    }
 
     { TestStorageConfig tc;                  status |= QTest::qExec(&tc, argc, argv); }
     { TestPersistenceFactory tc;             status |= QTest::qExec(&tc, argc, argv); }

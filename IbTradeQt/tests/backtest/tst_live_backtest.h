@@ -5,7 +5,7 @@
 // Live end-to-end backtest tests — require internet access.
 //
 // These tests download REAL historical data from Yahoo Finance and run a full
-// backtest. They are NOT skipped by default; they always run.
+// backtest. They run only when IBTRADING_LIVE_TESTS=1 (see tests/BACKTEST_TESTING.md).
 //
 // Strategy  : MA Crossover (fast=20 bars, slow=50 bars) on AMD + NVDA
 // Benchmark : SPY (buy-and-hold)

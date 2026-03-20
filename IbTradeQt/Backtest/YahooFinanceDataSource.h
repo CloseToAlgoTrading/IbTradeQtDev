@@ -51,6 +51,11 @@ public:
     // Must be called before requestBars(). Takes ownership if parent is set.
     void setNetworkManager(QNetworkAccessManager* mgr);
 
+    // Disconnect from QNetworkAccessManager::finished after a load completes.
+    // Required when multiple YahooFinanceDataSource instances share one NAM
+    // (e.g. BacktestSession loads strategy data then benchmark data).
+    void disconnectFinishedHandler();
+
 private slots:
     void onReplyFinished(QNetworkReply* reply);
 

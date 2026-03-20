@@ -118,6 +118,8 @@ SOURCES += \
     ../Backtest/BacktestMetricsCollector.cpp \
     ../Backtest/BacktestSession.cpp \
     ../Backtest/YahooFinanceDataSource.cpp \
+    ../Backtest/HistoricalDataManager.cpp \
+    ../Backtest/BacktestController.cpp \
     ../SharedUI/StrategyTreeDelegate.cpp \
     ../MainSystem/ciconhandler.cpp \
     ../MainSystem/UiLayoutDefaultsCatalog.cpp \
@@ -235,9 +237,13 @@ HEADERS += \
     ../Backtest/BenchmarkComparison.h \
     ../Backtest/BacktestReportWriter.h \
     ../Backtest/BacktestSession.h \
+    ../Backtest/BacktestController.h \
+    ../Backtest/HistoricalDataManager.h \
     backtest/tst_backtest.h \
     backtest/tst_yahoo_backtest.h \
+    backtest/tst_backtest_extended.h \
     backtest/tst_live_backtest.h \
+    backtest/tst_backtest_engine_coverage.h \
     backend/tst_storage_config.h \
     backend/tst_persistence_factory.h \
     backend/tst_model_tree_repository.h \
