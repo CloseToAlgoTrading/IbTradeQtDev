@@ -3,6 +3,7 @@
 
 #include <QDockWidget>
 #include <QDateTime>
+#include <functional>
 
 class QTabWidget;
 class QTableView;
@@ -65,6 +66,10 @@ public:
 
     void appendEvent(const LogEvent& event);
     void clearAll();
+
+    void resetLogTableColumnDefaults();
+
+    void enumerateLogTables(const std::function<void(QTableView*, const QString&)>& fn);
 
     static LogEvent makeSystemEvent(LogLevel level, const QString& message);
 

@@ -116,6 +116,8 @@ SOURCES += \
     ../Backtest/BacktestSession.cpp \
     ../Backtest/YahooFinanceDataSource.cpp \
     ../SharedUI/StrategyTreeDelegate.cpp \
+    ../MainSystem/ciconhandler.cpp \
+    ../MainSystem/UiLayoutDefaultsCatalog.cpp \
     ../SharedUI/AbstractPipelineTreeModel.cpp \
     ../SharedUI/StrategyTreePanel.cpp \
     ../SharedUI/WorkspacePresenterBase.cpp \

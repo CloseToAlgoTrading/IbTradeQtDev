@@ -6,6 +6,7 @@
 #include "BacktestTreeModel.h"
 
 class StrategyTreePanel;
+class QTreeView;
 class QPushButton;
 class QLabel;
 
@@ -15,6 +16,8 @@ class BacktestStrategySelector : public QWidget {
     Q_OBJECT
 public:
     explicit BacktestStrategySelector(QWidget* parent = nullptr);
+
+    QTreeView* strategyTreeView() const;
 
     void populate(const QList<StrategyListItem>& items);
     void populateCatalog(const QList<CatalogVersionItem>& catalogItems);

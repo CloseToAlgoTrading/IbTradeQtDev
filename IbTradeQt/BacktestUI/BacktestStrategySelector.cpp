@@ -1,6 +1,7 @@
 #include "BacktestUI/BacktestStrategySelector.h"
 #include "StrategyTreePanel.h"
 #include "PipelineConstants.h"
+#include "UiLayoutDefaults.h"
 
 #include <QPushButton>
 #include <QLabel>
@@ -9,7 +10,6 @@
 #include <QHBoxLayout>
 #include <QTreeView>
 #include <QSortFilterProxyModel>
-#include <QHeaderView>
 #include <QAbstractItemView>
 #include <QJsonDocument>
 
@@ -41,15 +41,8 @@ void BacktestStrategySelector::buildUi()
     m_model = new BacktestTreeModel(this);
     m_treePanel->setModel(m_model);
 
-    // Name resizable; VER column stretches with widget (StrategyTreePanel already
-    // applies stretch-last; keep explicit modes after setModel).
     auto* tv = m_treePanel->treeView();
-    tv->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-    tv->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
-    tv->header()->setStretchLastSection(true);
-    tv->header()->setSectionResizeMode(BacktestTreeModel::ColName, QHeaderView::Interactive);
-    tv->header()->setSectionResizeMode(BacktestTreeModel::ColVersion, QHeaderView::Stretch);
-    tv->resizeColumnToContents(BacktestTreeModel::ColName);
+    UiLayoutDefaults::applyBacktestStrategyTreeDefaults(tv);
 
     layout->addWidget(m_treePanel, 1);
 
@@ -88,6 +81,11 @@ void BacktestStrategySelector::buildUi()
 
     setMinimumWidth(220);
     setMaximumWidth(360);
+}
+
+QTreeView* BacktestStrategySelector::strategyTreeView() const
+{
+    return m_treePanel ? m_treePanel->treeView() : nullptr;
 }
 
 QModelIndex BacktestStrategySelector::mapToSource(const QModelIndex& proxyIndex) const

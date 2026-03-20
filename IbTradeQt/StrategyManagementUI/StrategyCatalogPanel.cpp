@@ -2,6 +2,7 @@
 #include "CatalogTreeModel.h"
 #include "StrategyTreePanel.h"
 #include "PipelineConstants.h"
+#include "UiLayoutDefaults.h"
 #include "Pipeline/BlockRegistry.h"
 
 #include <QTreeView>
@@ -54,7 +55,7 @@ void StrategyCatalogPanel::buildUi()
     m_treePanel->setModel(m_model);
 
     auto* tv = m_treePanel->treeView();
-    tv->header()->setStretchLastSection(true);
+    UiLayoutDefaults::applyStrategyCatalogTreeDefaults(tv);
     tv->setContextMenuPolicy(Qt::CustomContextMenu);
 
     layout->addWidget(m_treePanel, 1);

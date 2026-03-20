@@ -1,4 +1,5 @@
 #include "ibtradesystemview.h"
+#include "UiLayoutStore.h"
 #include "GlobalStatusBar.h"
 #include "EventLogPanel.h"
 #include "ContextWorkspace.h"
@@ -105,6 +106,7 @@ void CIBTradeSystemView::setupConsoleLayout()
 
     // ── "Live Trading" tab content ──────────────────────────────────────────
     m_mainSplitter = new QSplitter(Qt::Horizontal, this);
+    m_mainSplitter->setObjectName(QStringLiteral("MainLiveSplitter"));
     m_mainSplitter->addWidget(ui.test_treeView);
     m_mainSplitter->addWidget(m_contextWorkspace);
     m_mainSplitter->setStretchFactor(0, 1);
@@ -129,12 +131,12 @@ void CIBTradeSystemView::setupConsoleLayout()
     placeholder->setAlignment(Qt::AlignCenter);
     backtestRightLayout->addWidget(placeholder);
 
-    auto* backtestSplitter = new QSplitter(Qt::Horizontal, this);
-    backtestSplitter->addWidget(m_backtestSelector);
-    backtestSplitter->addWidget(backtestRight);
-    backtestSplitter->setStretchFactor(0, 0);  // selector: fixed-ish
-    backtestSplitter->setStretchFactor(1, 1);  // workspace: expands
-    backtestSplitter->setHandleWidth(4);
+    m_backtestSplitter = new QSplitter(Qt::Horizontal, this);
+    m_backtestSplitter->addWidget(m_backtestSelector);
+    m_backtestSplitter->addWidget(backtestRight);
+    m_backtestSplitter->setStretchFactor(0, 0);  // selector: fixed-ish
+    m_backtestSplitter->setStretchFactor(1, 1);  // workspace: expands
+    m_backtestSplitter->setHandleWidth(4);
 
     // ── Main tab widget ─────────────────────────────────────────────────────
     m_mainTabWidget = new QTabWidget(this);
@@ -144,7 +146,7 @@ void CIBTradeSystemView::setupConsoleLayout()
     m_strategyMgmtPanel = new StrategyMgmt::StrategyManagementPanel(this);
 
     m_mainTabWidget->addTab(m_mainSplitter,      QStringLiteral("Live Trading"));
-    m_mainTabWidget->addTab(backtestSplitter,     QStringLiteral("Backtest"));
+    m_mainTabWidget->addTab(m_backtestSplitter,  QStringLiteral("Backtest"));
     m_mainTabWidget->addTab(m_strategyMgmtPanel,  QStringLiteral("Strategy Management"));
 
     // Remove and hide the old .ui splitter hierarchy.
@@ -155,11 +157,7 @@ void CIBTradeSystemView::setupConsoleLayout()
     centralLayout->addWidget(m_globalStatusBar);
     centralLayout->addWidget(m_mainTabWidget, 1);
 
-    // Replace the old logging dock with EventLogPanel
-    removeDockWidget(ui.dockWidget_Logging);
-    ui.dockWidget_Logging->hide();
-
-    // Events only on the bottom; Settings uses a right slide-over panel (see setupSettingsSlideOverlay).
+    // Events dock on the bottom; Settings uses a right slide-over panel (see setupSettingsSlideOverlay).
     removeDockWidget(ui.dockWidget_Settings);
     ui.dockWidget_Settings->hide();
     addDockWidget(Qt::BottomDockWidgetArea, m_eventLogPanel);
@@ -296,6 +294,13 @@ void CIBTradeSystemView::resizeEvent(QResizeEvent* event)
 {
     QMainWindow::resizeEvent(event);
     updateSettingsOverlayGeometry();
+    if (m_uiLayoutStore)
+        m_uiLayoutStore->scheduleSave();
+}
+
+void CIBTradeSystemView::setUiLayoutStore(UiLayoutStore* store)
+{
+    m_uiLayoutStore = store;
 }
 
 bool CIBTradeSystemView::eventFilter(QObject* watched, QEvent* event)
@@ -371,8 +376,6 @@ void CIBTradeSystemView::slotOnTimeReceived(long time)
 
 void CIBTradeSystemView::slotOnLogMsgReceived(QString msg)
 {
-    ui.textEdit->append(msg);
-
     if (m_eventLogPanel) {
         m_eventLogPanel->appendEvent(
             EventLogPanel::makeSystemEvent(LogLevel::Info, msg));

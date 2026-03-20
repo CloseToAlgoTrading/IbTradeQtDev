@@ -22,7 +22,6 @@
 #include <QtWidgets/QMenuBar>
 #include <QtWidgets/QSplitter>
 #include <QtWidgets/QStatusBar>
-#include <QtWidgets/QTextEdit>
 #include <QtWidgets/QToolBar>
 #include <QtWidgets/QTreeView>
 #include <QtWidgets/QVBoxLayout>
@@ -40,6 +39,7 @@ public:
     QAction *actionRemove_Model;
     QAction *actionLoad;
     QAction *actionSave;
+    QAction *actionRestoreDefaultLayout;
     QAction *actionConnect;
     QAction *actionPair_Trader;
     QAction *actionAuto_Delta;
@@ -60,11 +60,6 @@ public:
     QMenu *menuConfiguration;
     QToolBar *mainToolBar;
     QStatusBar *statusBar;
-    QDockWidget *dockWidget_Logging;
-    QWidget *dockWidgetContents_2;
-    QGridLayout *gridLayout;
-    QHBoxLayout *horizontalLayout_3;
-    QTextEdit *textEdit;
     QDockWidget *dockWidget_Settings;
     QWidget *dockWidgetContents_3;
     QGridLayout *gridLayout_3;
@@ -106,6 +101,8 @@ public:
         actionSave->setObjectName("actionSave");
         QIcon icon4(QIcon::fromTheme(QString::fromUtf8("document-save")));
         actionSave->setIcon(icon4);
+        actionRestoreDefaultLayout = new QAction(IBTradeSystemClass);
+        actionRestoreDefaultLayout->setObjectName("actionRestoreDefaultLayout");
         actionConnect = new QAction(IBTradeSystemClass);
         actionConnect->setObjectName("actionConnect");
         QIcon icon5(QIcon::fromTheme(QString::fromUtf8("network-idle")));
@@ -187,38 +184,6 @@ public:
         statusBar = new QStatusBar(IBTradeSystemClass);
         statusBar->setObjectName("statusBar");
         IBTradeSystemClass->setStatusBar(statusBar);
-        dockWidget_Logging = new QDockWidget(IBTradeSystemClass);
-        dockWidget_Logging->setObjectName("dockWidget_Logging");
-        dockWidget_Logging->setMinimumSize(QSize(295, 212));
-        dockWidget_Logging->setLayoutDirection(Qt::LeftToRight);
-        dockWidget_Logging->setFeatures(QDockWidget::DockWidgetClosable|QDockWidget::DockWidgetVerticalTitleBar);
-        dockWidget_Logging->setAllowedAreas(Qt::BottomDockWidgetArea);
-        dockWidgetContents_2 = new QWidget();
-        dockWidgetContents_2->setObjectName("dockWidgetContents_2");
-        gridLayout = new QGridLayout(dockWidgetContents_2);
-        gridLayout->setSpacing(6);
-        gridLayout->setContentsMargins(11, 11, 11, 11);
-        gridLayout->setObjectName("gridLayout");
-        horizontalLayout_3 = new QHBoxLayout();
-        horizontalLayout_3->setSpacing(6);
-        horizontalLayout_3->setObjectName("horizontalLayout_3");
-        textEdit = new QTextEdit(dockWidgetContents_2);
-        textEdit->setObjectName("textEdit");
-        QSizePolicy sizePolicy(QSizePolicy::Policy::MinimumExpanding, QSizePolicy::Policy::MinimumExpanding);
-        sizePolicy.setHorizontalStretch(0);
-        sizePolicy.setVerticalStretch(0);
-        sizePolicy.setHeightForWidth(textEdit->sizePolicy().hasHeightForWidth());
-        textEdit->setSizePolicy(sizePolicy);
-        textEdit->setFrameShape(QFrame::NoFrame);
-        textEdit->setSizeAdjustPolicy(QAbstractScrollArea::AdjustIgnored);
-
-        horizontalLayout_3->addWidget(textEdit);
-
-
-        gridLayout->addLayout(horizontalLayout_3, 0, 0, 1, 1);
-
-        dockWidget_Logging->setWidget(dockWidgetContents_2);
-        IBTradeSystemClass->addDockWidget(Qt::DockWidgetArea::BottomDockWidgetArea, dockWidget_Logging);
         dockWidget_Settings = new QDockWidget(IBTradeSystemClass);
         dockWidget_Settings->setObjectName("dockWidget_Settings");
         dockWidget_Settings->setFeatures(QDockWidget::DockWidgetClosable|QDockWidget::DockWidgetMovable|QDockWidget::DockWidgetFloatable);
@@ -252,6 +217,8 @@ public:
         menuclear_log->addAction(actionClear_Log);
         menuView->addAction(actionShow_Log);
         menuView->addAction(actionSetting);
+        menuView->addSeparator();
+        menuView->addAction(actionRestoreDefaultLayout);
         menuConfiguration->addAction(actionLoad);
         menuConfiguration->addAction(actionSave);
         mainToolBar->addAction(actionConnect);
@@ -279,6 +246,7 @@ public:
         actionRemove_Model->setText(QCoreApplication::translate("IBTradeSystemClass", "Remove Model", nullptr));
         actionLoad->setText(QCoreApplication::translate("IBTradeSystemClass", "Load ...", nullptr));
         actionSave->setText(QCoreApplication::translate("IBTradeSystemClass", "Save ...", nullptr));
+        actionRestoreDefaultLayout->setText(QCoreApplication::translate("IBTradeSystemClass", "Restore Default Layout", nullptr));
         actionConnect->setText(QCoreApplication::translate("IBTradeSystemClass", "Connect", nullptr));
         actionPair_Trader->setText(QCoreApplication::translate("IBTradeSystemClass", "Pair Trader", nullptr));
         actionAuto_Delta->setText(QCoreApplication::translate("IBTradeSystemClass", "Auto Delta", nullptr));
@@ -286,7 +254,6 @@ public:
         menuclear_log->setTitle(QCoreApplication::translate("IBTradeSystemClass", "options", nullptr));
         menuView->setTitle(QCoreApplication::translate("IBTradeSystemClass", "View", nullptr));
         menuConfiguration->setTitle(QCoreApplication::translate("IBTradeSystemClass", "Configuration", nullptr));
-        dockWidget_Logging->setWindowTitle(QCoreApplication::translate("IBTradeSystemClass", "Logs", nullptr));
         dockWidget_Settings->setWindowTitle(QCoreApplication::translate("IBTradeSystemClass", "Settings", nullptr));
     } // retranslateUi
 

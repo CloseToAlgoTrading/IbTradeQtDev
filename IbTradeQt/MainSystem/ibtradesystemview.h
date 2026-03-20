@@ -18,6 +18,8 @@ class QResizeEvent;
 class QEvent;
 class QKeyEvent;
 
+class UiLayoutStore;
+
 namespace BacktestUI { class BacktestStrategySelector; }
 namespace StrategyMgmt { class StrategyManagementPanel; }
 
@@ -42,6 +44,11 @@ public:
                                                { return m_backtestSelector; }
     StrategyMgmt::StrategyManagementPanel* strategyManagementPanel() const
                                                { return m_strategyMgmtPanel; }
+
+    QSplitter* mainSplitter() const { return m_mainSplitter; }
+    QSplitter* backtestSplitter() const { return m_backtestSplitter; }
+
+    void setUiLayoutStore(UiLayoutStore* store);
 
     void switchToBacktestTab();
     void switchToStrategyManagementTab();
@@ -69,6 +76,7 @@ private:
     EventLogPanel*    m_eventLogPanel    = nullptr;
     ContextWorkspace* m_contextWorkspace = nullptr;
     QSplitter*        m_mainSplitter     = nullptr;   // inside "Live Trading" tab
+    QSplitter*        m_backtestSplitter = nullptr;
     QTabWidget*       m_mainTabWidget    = nullptr;
     BacktestUI::BacktestStrategySelector* m_backtestSelector = nullptr;
     StrategyMgmt::StrategyManagementPanel* m_strategyMgmtPanel = nullptr;
@@ -77,6 +85,8 @@ private:
     QFrame*  m_settingsBackdrop  = nullptr;
     QFrame*  m_settingsSheet     = nullptr;
     bool     m_settingsOverlayVisible = false;
+
+    UiLayoutStore* m_uiLayoutStore = nullptr;
 
 private slots:
 	void slotOnTimeReceived(long time);

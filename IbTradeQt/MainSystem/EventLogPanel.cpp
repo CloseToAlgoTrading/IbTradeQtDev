@@ -1,5 +1,6 @@
 #include "EventLogPanel.h"
 #include "ThemePalette.h"
+#include "UiLayoutDefaults.h"
 #include <QTabWidget>
 #include <QTableView>
 #include <QStandardItemModel>
@@ -57,12 +58,25 @@ EventLogPanel::TabInfo EventLogPanel::createTab(const QString& /*filterCategory*
     info.view->verticalHeader()->setVisible(false);
     info.view->verticalHeader()->setDefaultSectionSize(20);
     info.view->horizontalHeader()->setStretchLastSection(true);
-    info.view->setColumnWidth(0, 140);
-    info.view->setColumnWidth(1, 160);
-    info.view->setColumnWidth(2, 120);
-    info.view->setColumnWidth(3, 60);
+    UiLayoutDefaults::applyEventLogTableDefaults(info.view);
 
     return info;
+}
+
+void EventLogPanel::enumerateLogTables(const std::function<void(QTableView*, const QString&)>& fn)
+{
+    fn(m_allTab.view, QStringLiteral("EventLogTableAll"));
+    fn(m_errorsTab.view, QStringLiteral("EventLogTableErrors"));
+    fn(m_brokerTab.view, QStringLiteral("EventLogTableBroker"));
+    fn(m_dataTab.view, QStringLiteral("EventLogTableData"));
+    fn(m_strategyTab.view, QStringLiteral("EventLogTableStrategy"));
+}
+
+void EventLogPanel::resetLogTableColumnDefaults()
+{
+    enumerateLogTables([](QTableView* t, const QString& /*name*/) {
+        UiLayoutDefaults::applyEventLogTableDefaults(t);
+    });
 }
 
 static QString levelToString(LogLevel level)

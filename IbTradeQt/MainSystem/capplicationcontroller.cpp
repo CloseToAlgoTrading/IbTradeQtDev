@@ -1,6 +1,9 @@
 #include "capplicationcontroller.h"
 #include "MyLogger.h"
+#include "UiLayoutStore.h"
+#include "UiLayoutDefaults.h"
 #include <QtWidgets/QApplication>
+#include <QCoreApplication>
 #include <QProcess>
 #include <QLibraryInfo>
 #include <QStringList>
@@ -187,6 +190,19 @@ CApplicationController::CApplicationController(QObject *parent):
 
     this->pMainPresenter->MapSignals();
 
+    m_layoutStore = new UiLayoutStore(this);
+    m_layoutStore->setRepository(m_repo);
+    m_layoutStore->attachToView(pMainView);
+    m_layoutStore->load();
+    pMainView->setUiLayoutStore(m_layoutStore);
+
+    QObject::connect(QApplication::instance(), &QCoreApplication::aboutToQuit, this, [this]() {
+        if (m_layoutStore)
+            m_layoutStore->save();
+    });
+    QObject::connect(pMainView->getUi().actionRestoreDefaultLayout, &QAction::triggered,
+                       this, &CApplicationController::slotRestoreDefaultLayout);
+
     QObject::connect(pMainView->getUi().actionSave, &QAction::triggered, this, &CApplicationController::slotStoreModelTree);
 
     m_pSupervisor = new Supervision::Supervisor(this);
@@ -285,4 +301,12 @@ void CApplicationController::slotStoreModelTree()
 {
     if (m_backend)
         m_backend->exportToJsonFile("model_tree_config.json");
+}
+
+void CApplicationController::slotRestoreDefaultLayout()
+{
+    if (!m_layoutStore || !pMainView)
+        return;
+    m_layoutStore->clearPersistedLayout();
+    UiLayoutDefaults::applyFullDefaults(pMainView);
 }

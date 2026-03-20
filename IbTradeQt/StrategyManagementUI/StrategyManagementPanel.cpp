@@ -18,18 +18,18 @@ void StrategyManagementPanel::buildUi()
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
 
-    auto* splitter = new QSplitter(Qt::Horizontal);
+    m_splitter = new QSplitter(Qt::Horizontal);
 
     m_catalogPanel = new StrategyCatalogPanel;
     m_detailPanel  = new StrategyDetailPanel;
 
-    splitter->addWidget(m_catalogPanel);
-    splitter->addWidget(m_detailPanel);
-    splitter->setStretchFactor(0, 0);
-    splitter->setStretchFactor(1, 1);
-    splitter->setSizes({280, 520});
+    m_splitter->addWidget(m_catalogPanel);
+    m_splitter->addWidget(m_detailPanel);
+    m_splitter->setStretchFactor(0, 0);
+    m_splitter->setStretchFactor(1, 1);
+    m_splitter->setSizes({280, 520});
 
-    layout->addWidget(splitter);
+    layout->addWidget(m_splitter);
 
     // Wire signals from child panels
     connect(m_catalogPanel, &StrategyCatalogPanel::strategySelected,

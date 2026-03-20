@@ -2,6 +2,7 @@
 #define STRATEGYMANAGEMENTPANEL_H
 
 #include <QWidget>
+#include <QSplitter>
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QMap>
@@ -22,6 +23,7 @@ public:
 
     StrategyCatalogPanel* catalogPanel() const { return m_catalogPanel; }
     StrategyDetailPanel*  detailPanel()  const { return m_detailPanel; }
+    QSplitter*              horizontalSplitter() const { return m_splitter; }
 
     void populateCatalog(const QJsonArray& catalogEntries,
                          const QMap<QString, int>& versionCounts,
@@ -54,6 +56,7 @@ signals:
 private:
     void buildUi();
 
+    QSplitter*              m_splitter     = nullptr;
     StrategyCatalogPanel* m_catalogPanel = nullptr;
     StrategyDetailPanel*  m_detailPanel  = nullptr;
 };

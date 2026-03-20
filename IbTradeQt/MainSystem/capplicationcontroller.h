@@ -22,6 +22,8 @@
 #include <QApplication>
 #include <QObject>
 
+class UiLayoutStore;
+
 class CApplicationController : public QObject
 {
     Q_OBJECT
@@ -35,6 +37,9 @@ public:
 
 public slots:
     void slotStoreModelTree();
+
+private slots:
+    void slotRestoreDefaultLayout();
 
 private:
 
@@ -56,6 +61,8 @@ private:
     IBComm::AccountRouter *m_pAccountRouter = nullptr;
     IBComm::TimeRouter *m_pTimeRouter = nullptr;
     IBComm::MarketDepthRouter *m_pMarketDepthRouter = nullptr;
+
+    UiLayoutStore* m_layoutStore = nullptr;
 };
 
 #endif // CAPPLICATIONCONTROLLER_H

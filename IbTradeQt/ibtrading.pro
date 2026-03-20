@@ -68,6 +68,10 @@ SOURCES += \
     DB/dbhandler.cpp \
     DB/dbmanager.cpp \
     MainSystem/capplicationcontroller.cpp \
+    MainSystem/UiLayoutStore.cpp \
+    MainSystem/UiLayoutDefaults.cpp \
+    MainSystem/UiLayoutDefaultsTables.cpp \
+    MainSystem/UiLayoutDefaultsCatalog.cpp \
     MainSystem/ciconhandler.cpp \
     MainSystem/cmainmodel.cpp \
     MainSystem/csettinsmodeldata.cpp \
@@ -271,6 +275,8 @@ HEADERS += \
     MainSystem/PortfolioModelDefines.h \
     MainSystem/TreeItemDataTypesDef.h \
     MainSystem/capplicationcontroller.h \
+    MainSystem/UiLayoutStore.h \
+    MainSystem/UiLayoutDefaults.h \
     MainSystem/ThemePalette.h \
     MainSystem/ciconhandler.h \
     MainSystem/cmainmodel.h \

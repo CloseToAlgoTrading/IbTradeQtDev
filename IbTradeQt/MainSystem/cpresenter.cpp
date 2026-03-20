@@ -33,6 +33,7 @@
 #include "BacktestUI/BacktestStrategySelector.h"
 #include "StrategyManagementUI/StrategyManagementPanel.h"
 #include "StrategyManagementUI/StrategyDetailPanel.h"
+#include "UiLayoutDefaults.h"
 #include <QJsonDocument>
 #include <QAbstractItemView>
 #include <QTreeView>
@@ -471,16 +472,7 @@ void CPresenter::setPGuiModel(CMainModel *newPGuiModel)
    treeView->setAlternatingRowColors(true);
    treeView->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
    treeView->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
-   treeView->header()->setStretchLastSection(true);
-   treeView->header()->setSectionResizeMode(SystemTreeModel::ColName, QHeaderView::Interactive);
-   treeView->header()->setSectionResizeMode(SystemTreeModel::ColEnabled, QHeaderView::Fixed);
-   treeView->header()->setSectionResizeMode(SystemTreeModel::ColStatus, QHeaderView::Interactive);
-   treeView->setColumnWidth(SystemTreeModel::ColName, 200);
-   treeView->setColumnWidth(SystemTreeModel::ColEnabled, 50);
-   treeView->setColumnWidth(SystemTreeModel::ColStatus, 110);
-   treeView->expandAll();
-   for (int c = 0; c < SystemTreeModel::ColumnCount - 1; ++c)
-       treeView->resizeColumnToContents(c);
+   UiLayoutDefaults::applySystemTreeColumnDefaults(treeView);
 
    if (m_stratMgmtCoord)
        m_stratMgmtCoord->refreshCatalog();

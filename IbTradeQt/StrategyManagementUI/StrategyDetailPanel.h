@@ -34,6 +34,8 @@ public:
                           bool isArray, int arrayIndex);
     void hideBlockDetails();
 
+    QTableWidget* versionTable() const { return m_versionTable; }
+
     QJsonObject workingConfig() const { return m_workingConfig; }
     bool isConfigDirty() const { return m_configDirty; }
 

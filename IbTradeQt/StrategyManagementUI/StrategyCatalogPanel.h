@@ -21,6 +21,8 @@ class StrategyCatalogPanel : public QWidget
 public:
     explicit StrategyCatalogPanel(QWidget* parent = nullptr);
 
+    StrategyTreePanel* treePanel() const { return m_treePanel; }
+
     void populate(const QJsonArray& catalogEntries,
                   const QMap<QString, int>& versionCounts,
                   const QMap<QString, QJsonObject>& latestConfigs);
