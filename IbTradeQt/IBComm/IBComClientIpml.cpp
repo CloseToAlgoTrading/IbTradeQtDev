@@ -536,8 +536,12 @@ void IBComClientImpl::tickOptionComputation(TickerId tickerId, TickType tickType
 void IBComClientImpl::tickEFP(TickerId tickerId, TickType tickType, double basisPoints, const std::string& formattedBasisPoints,
 	double totalDividends, int holdDays, const std::string& futureExpiry, double dividendImpact, double dividendsToExpiry)
 {
-    qDebug("tickEFP : tickerId = %ld , tickType = %d, basisPoints = %f, formattedBasisPoints = %s, totalDividends =%f, holdDays = %d, futureExpiry = %s, dividendImpact = %f, dividendsToExpiry = %f",
-		tickerId, tickType, basisPoints, formattedBasisPoints.c_str(), totalDividends, holdDays, futureExpiry.c_str(), dividendImpact, dividendsToExpiry);
+    qCDebug(IBComClientImplLog) << "tickEFP: tickerId =" << tickerId << "tickType =" << tickType
+                                << "basisPoints =" << basisPoints << "formattedBasisPoints ="
+                                << QString::fromStdString(formattedBasisPoints) << "totalDividends ="
+                                << totalDividends << "holdDays =" << holdDays << "futureExpiry ="
+                                << QString::fromStdString(futureExpiry) << "dividendImpact ="
+                                << dividendImpact << "dividendsToExpiry =" << dividendsToExpiry;
 	return;
 };
 

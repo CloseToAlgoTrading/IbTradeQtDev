@@ -12,20 +12,29 @@ int main(int argc, char *argv[])
     //Log output template
     qSetMessagePattern("%{time [dd.MM.yy hh:mm:ss]}[%{type}][%{function}]: %{message}");
 
-    //Filter rules (default set in QtProject/qtlogging.ini)
-    //-----
-    // processing.Base, customCandleQChart.GUI,customQChart.GUI, dataProvider.General, ibComClient.Callback, ibComClientImpl.Callback
-    // pairTrader.PM, pairTrader.GUI
-    //-----
-    //Comment the following line if you want to use qtlogging.ini settings
-    QLoggingCategory::setFilterRules(QStringLiteral("\
-        pairTrader.*      = true  \n\
-        customQChart.*    = false \n\
-        ibComClient.*     = true  \n\
-        dataProviderLog.* = true  \n\
-        processing.*      = true  \n\
-        DBStore.*         = true  \n\
-        ibComClientImpl.* = true  \n"));
+    // Filter rules: keys are logging category *name* strings (2nd arg to Q_LOGGING_CATEGORY), not C++ vars.
+    // Comment out to use qtlogging.ini instead.
+    QLoggingCategory::setFilterRules(QStringLiteral(
+        "pairTrader.*       = true\n"
+        "AutoDeltaAlig.*    = true\n"
+        "customQChart.*       = false\n"
+        "customCandleQChart.* = false\n"
+        "ibComClientImpl.*    = true\n"
+        "dataProvider.*       = true\n"
+        "processing.*         = true\n"
+        "DBStore.*            = true\n"
+        "backtest.*           = true\n"
+        "backend.*            = true\n"
+        "db.*                 = true\n"
+        "pipeline.*           = true\n"
+        "strategyMgmt.*       = true\n"
+        "shared.*             = true\n"
+        "app.*                = true\n"
+        "ui.*                 = true\n"
+        "reqManager.*         = true\n"
+        "baseModel.*          = true\n"
+        "basicStrategy.*      = true\n"
+        "portfolio.*          = true\n"));
 
     //MyLogger::setDebugLevelMask(MyLogger::LL_ALL);
     MyLogger::setDebugLevelMask(MyLogger::LL_INFO|MyLogger::LL_DEBUG);

@@ -20,8 +20,10 @@
 #include <QHeaderView>
 #include <QAbstractItemView>
 #include <QTimer>
-#include <QDebug>
+#include <QLoggingCategory>
 #include <QDockWidget>
+
+Q_LOGGING_CATEGORY(lcUiLayout, "ui.layout")
 
 namespace {
 const char kUiLayoutMetadataKey[] = "ui_layout_v1";
@@ -169,13 +171,13 @@ void UiLayoutStore::load()
     QJsonParseError err{};
     QJsonDocument doc = QJsonDocument::fromJson(jsonStr.toUtf8(), &err);
     if (err.error != QJsonParseError::NoError || !doc.isObject()) {
-        qWarning("UiLayoutStore::load: invalid JSON: %s", qPrintable(err.errorString()));
+        qCWarning(lcUiLayout) << "UiLayoutStore::load: invalid JSON:" << err.errorString();
         return;
     }
 
     QJsonObject root = doc.object();
     if (root.value(QStringLiteral("schema")).toInt(0) != kJsonSchema)
-        qWarning("UiLayoutStore::load: schema mismatch, attempting best-effort restore");
+        qCWarning(lcUiLayout) << "UiLayoutStore::load: schema mismatch, attempting best-effort restore";
 
     QJsonObject mw = root.value(QStringLiteral("mainWindow")).toObject();
     const QByteArray geom = bytesFromJson(mw.value(QStringLiteral("geometry")).toString());

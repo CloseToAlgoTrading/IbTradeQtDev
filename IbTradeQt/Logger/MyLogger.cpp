@@ -98,8 +98,6 @@ void MyLogger::AddLogMsg(const char* format, ...)
 void MyLogger::myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QString &msg)
 {
 
-    //qSetMessagePattern("[%{category}[%{function}]: %{message}");
-    const QString logMessage = qFormatLogMessage(type, context, msg);
     const quint8 logLevel = MyLogger::getDebugLevelMask();
 
     bool isTraceable = false;
@@ -137,9 +135,10 @@ void MyLogger::myMessageOutput(QtMsgType type, const QMessageLogContext &context
     }
 
 
-    if (isTraceable)
-    {
-        LOGGER.sendLogMsg(logMessage);
+    if (isTraceable) {
+        const QString cat = QString::fromUtf8(context.category);
+        const QString fn  = QString::fromUtf8(context.function);
+        emit LOGGER.signalQtStructuredLog(static_cast<int>(type), cat, fn, msg);
     }
     
 

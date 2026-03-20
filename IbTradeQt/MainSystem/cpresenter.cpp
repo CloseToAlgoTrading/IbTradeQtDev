@@ -79,6 +79,8 @@ void CPresenter::MapSignals()
     QObject::connect(workerAlfaTime, SIGNAL(signalTimeReceived(long)), pIbtsView, SLOT(slotOnTimeReceived(long)));
     QObject::connect(this, SIGNAL(signalClickConnect(bool)), pIbtsView, SLOT(slotRecvConnectButtonState(bool)));
     QObject::connect(&LOGGER, SIGNAL(signalAddLogMsg(QString)), pIbtsView, SLOT(slotOnLogMsgReceived(QString)));
+    QObject::connect(&LOGGER, SIGNAL(signalQtStructuredLog(int,QString,QString,QString)),
+                     pIbtsView, SLOT(slotOnQtStructuredLog(int,QString,QString,QString)));
 
     QTreeView * pTreeView = this->pIbtsView->getPortfolioConfigTreeView();
     CPortfolioConfigModel *pPConfigModel = this->getPGuiModel()->pPortfolioConfigModel();

@@ -3,7 +3,7 @@
 
 #include <QJsonObject>
 #include <QJsonArray>
-#include <QDebug>
+#include "PipelineLog.h"
 #include "StrategyPipelineRunner.h"
 #include "StrategyRuntimePolicy.h"
 #include "PipelineDefinition.h"
@@ -142,7 +142,7 @@ private:
         if (result) {
             return qobject_cast<IAlphaBlock*>(*result);
         }
-        qWarning() << "PipelineFactory: unknown alpha block:" << blockId;
+        qCWarning(pipelineFactoryLog) << "PipelineFactory: unknown alpha block:" << blockId;
         return nullptr;
     }
 
@@ -158,7 +158,7 @@ private:
         if (blockId == "max-position-risk") return new Blocks::MaxPositionRiskBlock();
         auto result = BlockRegistry::instance().createBlock(blockId);
         if (result) return qobject_cast<IRiskBlock*>(*result);
-        qWarning() << "PipelineFactory: unknown risk block:" << blockId;
+        qCWarning(pipelineFactoryLog) << "PipelineFactory: unknown risk block:" << blockId;
         return nullptr;
     }
 

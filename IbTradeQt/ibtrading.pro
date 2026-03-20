@@ -93,6 +93,8 @@ SOURCES += \
     Strategies/Generic/cgenericmodelApi.cpp \
     Strategies/Generic/csma.cpp \
     Strategies/Generic/cstrategyfactory.cpp \
+    Strategies/PairTrader/PairTraderLogging.cpp \
+    Strategies/AutoDeltAlignment/src/AutoDeltaLogging.cpp \
     main.cpp \
     AboutDialog/aboutdialog.cpp \
     AboutDialog/AboutDlgPresener.cpp \
@@ -114,12 +116,14 @@ SOURCES += \
     CustomWidgets/clineqchart.cpp \
     DB/DBConnector.cpp \
     DBStore/DBStoreGUI.cpp \
+    DBStore/DBStoreLogging.cpp \
     DBStore/DBStorePresenter.cpp \
     DBStore/DBStoreProcessing.cpp \
     IBComm/cbrokerdataprovider.cpp \
     IBComm/IBComClientIpml.cpp \
     IBComm/IBworker.cpp \
     Logger/MyLogger.cpp \
+    Logging/UiLogCategories.cpp \
     MainSystem/cpresenter.cpp \
     MainSystem/BacktestWorkspaceCoordinator.cpp \
     MainSystem/StrategyManagementCoordinator.cpp \
@@ -180,6 +184,7 @@ SOURCES += \
     MainSystem/WorkspaceWidgets/BlockInspectorPanel.cpp \
     MainSystem/WorkspaceWidgets/RuntimePolicyEditor.cpp \
     Pipeline/PipelineTreeUtils.cpp \
+    Pipeline/PipelineLog.cpp \
     MainSystem/AlertService.cpp \
     Backend/ModelTreeRepository.cpp \
     Backend/ModelTreeMapper.cpp \
@@ -405,6 +410,8 @@ HEADERS += \
     IBComm/IBrokerAPI.h \
     IBComm/IBworker.h \
     Logger/MyLogger.h \
+    Logging/UiLogCategories.h \
+    Pipeline/PipelineLog.h \
     MainSystem/cpresenter.h \
     MainSystem/BacktestWorkspaceCoordinator.h \
     MainSystem/StrategyManagementCoordinator.h \

@@ -31,7 +31,7 @@ void CBasicSelectionModel::setParameters(const QVariantMap &parametersMap)
 void CBasicSelectionModel::processData(DataListPtr data)
 {
     Q_UNUSED(data);
-    qDebug() << "Selection processData - emit signal: " ;
+    qCDebug(BasicSelectionModelLog) << "Selection processData - emit signal: ";
 
     auto assets = this->m_ParametersMap["Selected_Assets"].toString();
     assets.remove(" ");

@@ -6,7 +6,9 @@
 #include <QUrl>
 #include <QUrlQuery>
 #include <QTimeZone>
-#include <QDebug>
+#include <QLoggingCategory>
+
+Q_LOGGING_CATEGORY(lcYahoo, "backtest.yahoo")
 
 namespace Backtest {
 
@@ -59,7 +61,7 @@ void YahooFinanceDataSource::requestBars(const QStringList& symbols,
     // Yahoo Finance free API only supports daily data reliably for multi-year ranges.
     // Intraday intervals are capped to ~60 days by Yahoo; always use daily.
     if (resolution != BarResolution::Day1) {
-        qWarning() << "YahooFinanceDataSource: resolution"
+        qCWarning(lcYahoo) << "YahooFinanceDataSource: resolution"
                    << static_cast<int>(resolution)
                    << "not supported — falling back to Day1 (Yahoo Finance limit)";
     }
@@ -82,7 +84,7 @@ void YahooFinanceDataSource::requestBars(const QStringList& symbols,
                       "Mozilla/5.0 (compatible; IbTradeQt/1.0)");
         req.setAttribute(QNetworkRequest::User, symbol);
 
-        qDebug() << "YahooFinanceDataSource: GET" << url.toString();
+        qCDebug(lcYahoo) << "YahooFinanceDataSource: GET" << url.toString();
         m_nam->get(req);
     }
 }
@@ -100,7 +102,7 @@ void YahooFinanceDataSource::onReplyFinished(QNetworkReply* reply)
     if (reply->error() != QNetworkReply::NoError) {
         const QString symbol = reply->request().attribute(QNetworkRequest::User).toString();
         m_lastError = QString("Network error for %1: %2").arg(symbol, reply->errorString());
-        qWarning() << "YahooFinanceDataSource:" << m_lastError;
+        qCWarning(lcYahoo) << "YahooFinanceDataSource:" << m_lastError;
         m_failed = true;
         --m_pendingCount;
         checkAllDone();
@@ -120,7 +122,7 @@ void YahooFinanceDataSource::parseChartReply(QNetworkReply* reply)
     QJsonParseError parseErr;
     const QJsonDocument doc = QJsonDocument::fromJson(raw, &parseErr);
     if (parseErr.error != QJsonParseError::NoError) {
-        qWarning() << "YahooFinanceDataSource: JSON parse error for" << symbol
+        qCWarning(lcYahoo) << "YahooFinanceDataSource: JSON parse error for" << symbol
                    << parseErr.errorString();
         return;
     }
@@ -132,7 +134,7 @@ void YahooFinanceDataSource::parseChartReply(QNetworkReply* reply)
 
     if (result.isEmpty()) {
         const QString errMsg = chart["error"].toObject()["description"].toString("unknown");
-        qWarning() << "YahooFinanceDataSource: no result for" << symbol << "—" << errMsg;
+        qCWarning(lcYahoo) << "YahooFinanceDataSource: no result for" << symbol << "—" << errMsg;
         return;
     }
 
@@ -142,7 +144,7 @@ void YahooFinanceDataSource::parseChartReply(QNetworkReply* reply)
     const QJsonArray  quoteArr   = indicators["quote"].toArray();
 
     if (quoteArr.isEmpty() || timestamps.isEmpty()) {
-        qWarning() << "YahooFinanceDataSource: empty quote data for" << symbol;
+        qCWarning(lcYahoo) << "YahooFinanceDataSource: empty quote data for" << symbol;
         return;
     }
 
@@ -180,7 +182,7 @@ void YahooFinanceDataSource::parseChartReply(QNetworkReply* reply)
         ++emitted;
     }
 
-    qDebug() << "YahooFinanceDataSource: parsed" << emitted << "bars for" << symbol;
+    qCDebug(lcYahoo) << "YahooFinanceDataSource: parsed" << emitted << "bars for" << symbol;
 }
 
 void YahooFinanceDataSource::checkAllDone()

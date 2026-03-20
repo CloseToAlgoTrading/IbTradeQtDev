@@ -376,10 +376,35 @@ void CIBTradeSystemView::slotOnTimeReceived(long time)
 
 void CIBTradeSystemView::slotOnLogMsgReceived(QString msg)
 {
-    if (m_eventLogPanel) {
-        m_eventLogPanel->appendEvent(
-            EventLogPanel::makeSystemEvent(LogLevel::Info, msg));
+    if (!m_eventLogPanel)
+        return;
+    LogLevel lvl = LogLevel::Info;
+    QString text = msg;
+    if (text.startsWith(QLatin1String("[D]"))) {
+        lvl = LogLevel::Debug;
+        text = text.mid(3).trimmed();
+    } else if (text.startsWith(QLatin1String("[W]"))) {
+        lvl = LogLevel::Warning;
+        text = text.mid(3).trimmed();
+    } else if (text.startsWith(QLatin1String("[E]"))) {
+        lvl = LogLevel::Error;
+        text = text.mid(3).trimmed();
+    } else if (text.startsWith(QLatin1String("[I]"))) {
+        lvl = LogLevel::Info;
+        text = text.mid(3).trimmed();
+    } else if (text.startsWith(QLatin1String("[N]"))) {
+        lvl = LogLevel::Info;
+        text = text.mid(3).trimmed();
     }
+    m_eventLogPanel->appendEvent(EventLogPanel::makeSystemEvent(lvl, text));
+}
+
+void CIBTradeSystemView::slotOnQtStructuredLog(int msgType, QString category, QString function,
+                                               QString message)
+{
+    if (m_eventLogPanel)
+        m_eventLogPanel->appendEvent(
+            EventLogPanel::fromQtMessage(msgType, category, function, message));
 }
 
 void CIBTradeSystemView::slotRecvConnectButtonState(bool isConnect)

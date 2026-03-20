@@ -1,5 +1,7 @@
 #include "SimulatedExecutionAdapter.h"
-#include <QDebug>
+#include <QLoggingCategory>
+
+Q_LOGGING_CATEGORY(lcSimExec, "backtest.exec")
 
 namespace Backtest {
 
@@ -122,7 +124,7 @@ void SimulatedExecutionAdapter::onNextTickOpen(const IBComm::MarketTick& openTic
         IBComm::MarketTick tick = openTick;
         if (intent.symbol != openTick.symbol) {
             if (!m_priceStore->hasTick(intent.symbol)) {
-                qWarning() << "SimulatedExecutionAdapter: no price for" << intent.symbol
+                qCWarning(lcSimExec) << "SimulatedExecutionAdapter: no price for" << intent.symbol
                            << "— skipping pending order";
                 continue;
             }

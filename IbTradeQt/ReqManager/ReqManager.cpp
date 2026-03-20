@@ -1,6 +1,8 @@
-﻿#include "ReqManager.h"
+#include "ReqManager.h"
 
-#include <QDebug>
+#include <QLoggingCategory>
+
+Q_LOGGING_CATEGORY(lcReqManager, "reqManager.general")
 
 //----------------------------------------------------------------------------
 ReqManager::ReqManager()
@@ -31,7 +33,7 @@ void ReqManager::addReqIds(qint32 reqId, tEReqType reqDataId)
 	{
         // if not -> add to the list
 		m_listIDs.push_back(tempReqId);
-        qDebug("reqId = %d, reqType = %d added to list!", tempReqId.id, tempReqId.reqType);
+        qCDebug(lcReqManager) << "reqId =" << tempReqId.id << "reqType =" << tempReqId.reqType << "added to list!";
 	}
 
 }
@@ -94,14 +96,14 @@ void ReqManager::debugPrintList()
 
 	Iter.toFront();
 
-	qDebug("Start List ----------------");
+	qCDebug(lcReqManager) << "Start List ----------------";
 
 	while (Iter.hasNext())
 	{
 		stReqIds test = Iter.next();
-		qDebug("subscrId = %d, reqId = %d", test.id, test.reqType);
+		qCDebug(lcReqManager) << "subscrId =" << test.id << "reqId =" << test.reqType;
 	}
-	qDebug("---------------- End List");
+	qCDebug(lcReqManager) << "---------------- End List";
 
 }
 

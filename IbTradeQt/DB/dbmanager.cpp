@@ -1,5 +1,7 @@
 #include "dbmanager.h"
-#include "qdebug.h"
+#include <QLoggingCategory>
+
+Q_LOGGING_CATEGORY(lcDbManager, "db.manager")
 
 DBManager::DBManager(QObject *parent)
     : QObject{parent}
@@ -47,7 +49,7 @@ void DBManager::getOpenPositions(const QString& strategy_id)
 void DBManager::onOpenPositionsFetched(const QList<OpenPosition> &positions,  e_queryStatus state)
 {
     for (auto const &pos : positions) {
-        qDebug() << pos.symbol.toStdString().c_str() << pos.status << pos.date;
+        qCDebug(lcDbManager) << pos.symbol.toStdString().c_str() << pos.status << pos.date;
     }
     emit signalOpenPositionsFetched(positions);
 

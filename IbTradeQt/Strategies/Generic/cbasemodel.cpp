@@ -1,6 +1,9 @@
 
 #include "cbasemodel.h"
 #include <QRandomGenerator>
+#include <QLoggingCategory>
+
+Q_LOGGING_CATEGORY(lcBaseModel, "baseModel.general")
 #include <QJsonArray>
 #include "cstrategyfactory.h"
 #include "modelConstants.h"
@@ -368,7 +371,7 @@ void CBaseModel::onTimeoutSlot()
 
 void CBaseModel::onUpdateServerConnectionStateSlot(bool state)
 {
-    qDebug() << "server state: " << ((state == true) ? "Connected" : "Disconnected");
+    qCDebug(lcBaseModel) << "server state: " << ((state == true) ? "Connected" : "Disconnected");
 }
 
 void CBaseModel::slotDbManagerConnectionState(const bool state)
@@ -382,7 +385,7 @@ void CBaseModel::slotModelInfoFetched(const DbModelInfo &obj, e_queryStatus stat
     if(e_queryStatus::QS_VALID == state)
     {
         m_ModelInfo = obj;
-        qDebug() << "Model Info: " << m_ModelInfo.modelId << m_ModelInfo.modelName;
+        qCDebug(lcBaseModel) << "Model Info: " << m_ModelInfo.modelId << m_ModelInfo.modelName;
         if (m_ParametersMap[MandatoryParams::Description].toString().isEmpty())
             m_ParametersMap[MandatoryParams::Description] = obj.modelDescription;
     }
@@ -493,7 +496,7 @@ void CBaseModel::connectModels()
 
     for (auto &currentModel : models) {
         if (!currentModel.isNull()) {
-            qDebug() << "[CONNECT 1] model:" << this->getName() << "connect to " << currentModel->getName();
+            qCDebug(lcBaseModel) << "[CONNECT 1] model:" << this->getName() << "connect to " << currentModel->getName();
             QObject::connect(this, &CBaseModel::dataProcessed,
                                  currentModel.data(), &CBaseModel::processData);
             break;
@@ -503,7 +506,7 @@ void CBaseModel::connectModels()
     for (auto &currentModel : models) {
         if (!currentModel.isNull()) {
             if (!previousModel.isNull()) {
-                qDebug() << "[CONNECT 2] model:" << previousModel->getName() << "connect to " << currentModel->getName();
+                qCDebug(lcBaseModel) << "[CONNECT 2] model:" << previousModel->getName() << "connect to " << currentModel->getName();
                 QObject::connect(previousModel.data(), &CBaseModel::dataProcessed,
                                  currentModel.data(), &CBaseModel::processData);
             }
@@ -525,7 +528,7 @@ void CBaseModel::disconnectModels() {
     // First, disconnect this from each model
     for (auto &currentModel : models) {
         if (!currentModel.isNull()) {
-            qDebug() << "[DISCONNECT 1] model:" << this->getName() << "disconnect from " << currentModel->getName();
+            qCDebug(lcBaseModel) << "[DISCONNECT 1] model:" << this->getName() << "disconnect from " << currentModel->getName();
             QObject::disconnect(this, &CBaseModel::dataProcessed,
                                 currentModel.data(), &CBaseModel::processData);
             break;
@@ -537,7 +540,7 @@ void CBaseModel::disconnectModels() {
     for (auto &currentModel : models) {
         if (!currentModel.isNull()) {
             if (!previousModel.isNull()) {
-                qDebug() << "[DISCONNECT 2] model:" << previousModel->getName() << "disconnect from " << currentModel->getName();
+                qCDebug(lcBaseModel) << "[DISCONNECT 2] model:" << previousModel->getName() << "disconnect from " << currentModel->getName();
                 QObject::disconnect(previousModel.data(), &CBaseModel::dataProcessed,
                                     currentModel.data(), &CBaseModel::processData);
             }

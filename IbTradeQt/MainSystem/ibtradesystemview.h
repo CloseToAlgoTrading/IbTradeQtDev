@@ -91,6 +91,7 @@ private:
 private slots:
 	void slotOnTimeReceived(long time);
 	void slotOnLogMsgReceived(QString msg);
+    void slotOnQtStructuredLog(int msgType, QString category, QString function, QString message);
 	void slotRecvConnectButtonState(bool isConnect);
     void slotClearLog();
     void slotShowLog();

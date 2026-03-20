@@ -5,6 +5,9 @@
 #include <QJsonDocument>
 #include <QVariant>
 #include <QUuid>
+#include <QLoggingCategory>
+
+Q_LOGGING_CATEGORY(lcModelTree, "backend.modelTree")
 
 ModelTreeRepository::ModelTreeRepository(const QString& dbPath, const QString& connectionName)
     : m_dbPath(dbPath)
@@ -35,8 +38,8 @@ bool ModelTreeRepository::initialize()
     }
 
     if (!database.isOpen() && !database.open()) {
-        qWarning("ModelTreeRepository: cannot open DB: %s",
-                 qPrintable(database.lastError().text()));
+        qCWarning(lcModelTree) << "ModelTreeRepository: cannot open DB:" << database.lastError().text();
+
         return false;
     }
 
@@ -57,8 +60,8 @@ bool ModelTreeRepository::initialize()
         "  updated_at TEXT NOT NULL"
         ")");
     if (!ok) {
-        qWarning("ModelTreeRepository: create model_nodes failed: %s",
-                 qPrintable(q.lastError().text()));
+        qCWarning(lcModelTree) << "ModelTreeRepository: create model_nodes failed:" << q.lastError().text();
+
         return false;
     }
 
@@ -71,8 +74,8 @@ bool ModelTreeRepository::initialize()
         "  value TEXT"
         ")");
     if (!ok) {
-        qWarning("ModelTreeRepository: create app_metadata failed: %s",
-                 qPrintable(q.lastError().text()));
+        qCWarning(lcModelTree) << "ModelTreeRepository: create app_metadata failed:" << q.lastError().text();
+
         return false;
     }
 
@@ -90,8 +93,8 @@ bool ModelTreeRepository::initialize()
         "  updated_at       TEXT NOT NULL"
         ")");
     if (!ok) {
-        qWarning("ModelTreeRepository: create strategies failed: %s",
-                 qPrintable(q.lastError().text()));
+        qCWarning(lcModelTree) << "ModelTreeRepository: create strategies failed:" << q.lastError().text();
+
         return false;
     }
 
@@ -108,8 +111,8 @@ bool ModelTreeRepository::initialize()
         "  UNIQUE(strategy_id, version_number)"
         ")");
     if (!ok) {
-        qWarning("ModelTreeRepository: create strategy_versions failed: %s",
-                 qPrintable(q.lastError().text()));
+        qCWarning(lcModelTree) << "ModelTreeRepository: create strategy_versions failed:" << q.lastError().text();
+
         return false;
     }
 
@@ -142,8 +145,8 @@ bool ModelTreeRepository::initialize()
         "  UNIQUE(model_node_id)"
         ")");
     if (!ok) {
-        qWarning("ModelTreeRepository: create live_strategy_bindings failed: %s",
-                 qPrintable(q.lastError().text()));
+        qCWarning(lcModelTree) << "ModelTreeRepository: create live_strategy_bindings failed:" << q.lastError().text();
+
         return false;
     }
 
@@ -160,8 +163,8 @@ bool ModelTreeRepository::initialize()
         "  updated_at      TEXT NOT NULL"
         ")");
     if (!ok) {
-        qWarning("ModelTreeRepository: create backtest_run_profiles failed: %s",
-                 qPrintable(q.lastError().text()));
+        qCWarning(lcModelTree) << "ModelTreeRepository: create backtest_run_profiles failed:" << q.lastError().text();
+
         return false;
     }
 
@@ -177,7 +180,7 @@ bool ModelTreeRepository::initialize()
         setMetadata("schema_version", "3");
     } else if (ver == "1" || ver == "2") {
         if (!migrateV2toV3())
-            qWarning("ModelTreeRepository: v2->v3 migration failed");
+            qCWarning(lcModelTree) << "ModelTreeRepository: v2->v3 migration failed";
     }
 
     // --- Repair broken FK on live_strategy_bindings ---
@@ -227,8 +230,8 @@ bool ModelTreeRepository::insertNode(const ModelNodeRecord& record)
     q.bindValue(":updated_at", record.updatedAt.toString(Qt::ISODate));
 
     if (!q.exec()) {
-        qWarning("ModelTreeRepository::insertNode failed: %s",
-                 qPrintable(q.lastError().text()));
+        qCWarning(lcModelTree) << "ModelTreeRepository::insertNode failed:" << q.lastError().text();
+
         return false;
     }
     return true;
@@ -254,8 +257,8 @@ bool ModelTreeRepository::updateNode(const ModelNodeRecord& record)
     q.bindValue(":updated_at", record.updatedAt.toString(Qt::ISODate));
 
     if (!q.exec()) {
-        qWarning("ModelTreeRepository::updateNode failed: %s",
-                 qPrintable(q.lastError().text()));
+        qCWarning(lcModelTree) << "ModelTreeRepository::updateNode failed:" << q.lastError().text();
+
         return false;
     }
     return q.numRowsAffected() > 0;
@@ -273,8 +276,8 @@ bool ModelTreeRepository::deleteNode(const QString& uuid)
     q.bindValue(":uuid", uuid);
 
     if (!q.exec()) {
-        qWarning("ModelTreeRepository::deleteNode failed: %s",
-                 qPrintable(q.lastError().text()));
+        qCWarning(lcModelTree) << "ModelTreeRepository::deleteNode failed:" << q.lastError().text();
+
         return false;
     }
     return q.numRowsAffected() > 0;
@@ -333,7 +336,7 @@ bool ModelTreeRepository::replaceAll(const QList<ModelNodeRecord>& records)
 {
     QSqlDatabase database = db();
     if (!database.transaction()) {
-        qWarning("ModelTreeRepository::replaceAll: failed to start transaction");
+        qCWarning(lcModelTree) << "ModelTreeRepository::replaceAll: failed to start transaction";
         return false;
     }
 
@@ -393,8 +396,8 @@ bool ModelTreeRepository::setMetadata(const QString& key, const QString& value)
     q.bindValue(":value", value);
 
     if (!q.exec()) {
-        qWarning("ModelTreeRepository::setMetadata failed: %s",
-                 qPrintable(q.lastError().text()));
+        qCWarning(lcModelTree) << "ModelTreeRepository::setMetadata failed:" << q.lastError().text();
+
         return false;
     }
     return true;
@@ -440,8 +443,8 @@ bool ModelTreeRepository::createStrategyDefinition(const DbStrategyDefinition& d
     q.bindValue(":from_id",  def.createdFromDefId.isEmpty() ? QVariant() : def.createdFromDefId);
 
     if (!q.exec()) {
-        qWarning("ModelTreeRepository::createStrategyDefinition failed: %s",
-                 qPrintable(q.lastError().text()));
+        qCWarning(lcModelTree) << "ModelTreeRepository::createStrategyDefinition failed:" << q.lastError().text();
+
         return false;
     }
     return true;
@@ -478,8 +481,8 @@ bool ModelTreeRepository::updateStrategyDefinition(const DbStrategyDefinition& d
     q.bindValue(":from_id",  def.createdFromDefId.isEmpty() ? QVariant() : def.createdFromDefId);
 
     if (!q.exec()) {
-        qWarning("ModelTreeRepository::updateStrategyDefinition failed: %s",
-                 qPrintable(q.lastError().text()));
+        qCWarning(lcModelTree) << "ModelTreeRepository::updateStrategyDefinition failed:" << q.lastError().text();
+
         return false;
     }
     return q.numRowsAffected() > 0;
@@ -514,8 +517,8 @@ bool ModelTreeRepository::archiveStrategyDefinition(const QString& defId)
     q.bindValue(":id", defId);
 
     if (!q.exec()) {
-        qWarning("ModelTreeRepository::archiveStrategyDefinition failed: %s",
-                 qPrintable(q.lastError().text()));
+        qCWarning(lcModelTree) << "ModelTreeRepository::archiveStrategyDefinition failed:" << q.lastError().text();
+
         return false;
     }
     return q.numRowsAffected() > 0;
@@ -552,8 +555,8 @@ bool ModelTreeRepository::createLiveBinding(const DbLiveStrategyBinding& binding
     q.bindValue(":updated", binding.updatedAt);
 
     if (!q.exec()) {
-        qWarning("ModelTreeRepository::createLiveBinding failed: %s",
-                 qPrintable(q.lastError().text()));
+        qCWarning(lcModelTree) << "ModelTreeRepository::createLiveBinding failed:" << q.lastError().text();
+
         return false;
     }
     return true;
@@ -591,8 +594,8 @@ bool ModelTreeRepository::removeBindingForNode(const QString& nodeUuid)
     q.bindValue(":nid", nodeUuid);
 
     if (!q.exec()) {
-        qWarning("ModelTreeRepository::removeBindingForNode failed: %s",
-                 qPrintable(q.lastError().text()));
+        qCWarning(lcModelTree) << "ModelTreeRepository::removeBindingForNode failed:" << q.lastError().text();
+
         return false;
     }
     return q.numRowsAffected() > 0;
@@ -631,8 +634,8 @@ bool ModelTreeRepository::createRunProfile(const DbBacktestRunProfile& profile)
     q.bindValue(":updated", profile.updatedAt);
 
     if (!q.exec()) {
-        qWarning("ModelTreeRepository::createRunProfile failed: %s",
-                 qPrintable(q.lastError().text()));
+        qCWarning(lcModelTree) << "ModelTreeRepository::createRunProfile failed:" << q.lastError().text();
+
         return false;
     }
     return true;
@@ -695,8 +698,8 @@ bool ModelTreeRepository::createStrategyCatalog(const DbStrategy& strategy)
     q.bindValue(":updated",  strategy.updatedAt);
 
     if (!q.exec()) {
-        qWarning("ModelTreeRepository::createStrategyCatalog failed: %s",
-                 qPrintable(q.lastError().text()));
+        qCWarning(lcModelTree) << "ModelTreeRepository::createStrategyCatalog failed:" << q.lastError().text();
+
         return false;
     }
     return true;
@@ -749,8 +752,8 @@ bool ModelTreeRepository::updateStrategyCatalog(const DbStrategy& strategy)
     q.bindValue(":updated",  strategy.updatedAt);
 
     if (!q.exec()) {
-        qWarning("ModelTreeRepository::updateStrategyCatalog failed: %s",
-                 qPrintable(q.lastError().text()));
+        qCWarning(lcModelTree) << "ModelTreeRepository::updateStrategyCatalog failed:" << q.lastError().text();
+
         return false;
     }
     return q.numRowsAffected() > 0;
@@ -767,8 +770,8 @@ bool ModelTreeRepository::archiveStrategyCatalog(const QString& strategyId)
     q.bindValue(":id", strategyId);
 
     if (!q.exec()) {
-        qWarning("ModelTreeRepository::archiveStrategyCatalog failed: %s",
-                 qPrintable(q.lastError().text()));
+        qCWarning(lcModelTree) << "ModelTreeRepository::archiveStrategyCatalog failed:" << q.lastError().text();
+
         return false;
     }
     return q.numRowsAffected() > 0;
@@ -784,8 +787,8 @@ int ModelTreeRepository::removeOrphanedCatalogEntries()
         "  SELECT DISTINCT strategy_def_id FROM live_strategy_bindings"
         ")");
     if (!ok) {
-        qWarning("ModelTreeRepository::removeOrphanedCatalogEntries failed: %s",
-                 qPrintable(q.lastError().text()));
+        qCWarning(lcModelTree) << "ModelTreeRepository::removeOrphanedCatalogEntries failed:" << q.lastError().text();
+
         return 0;
     }
     int removed = q.numRowsAffected();
@@ -844,8 +847,8 @@ bool ModelTreeRepository::createStrategyVersion(const DbStrategyVersion& version
     q.bindValue(":created",  version.createdAt);
 
     if (!q.exec()) {
-        qWarning("ModelTreeRepository::createStrategyVersion failed: %s",
-                 qPrintable(q.lastError().text()));
+        qCWarning(lcModelTree) << "ModelTreeRepository::createStrategyVersion failed:" << q.lastError().text();
+
         return false;
     }
     return true;
@@ -901,8 +904,8 @@ bool ModelTreeRepository::setVersionPublished(const QString& versionId, bool pub
     q.bindValue(":vid", versionId);
 
     if (!q.exec()) {
-        qWarning("ModelTreeRepository::setVersionPublished failed: %s",
-                 qPrintable(q.lastError().text()));
+        qCWarning(lcModelTree) << "ModelTreeRepository::setVersionPublished failed:" << q.lastError().text();
+
         return false;
     }
     return q.numRowsAffected() > 0;
@@ -933,8 +936,8 @@ bool ModelTreeRepository::updateBindingVersion(const QString& bindingId, const Q
     q.bindValue(":bid", bindingId);
 
     if (!q.exec()) {
-        qWarning("ModelTreeRepository::updateBindingVersion failed: %s",
-                 qPrintable(q.lastError().text()));
+        qCWarning(lcModelTree) << "ModelTreeRepository::updateBindingVersion failed:" << q.lastError().text();
+
         return false;
     }
     return q.numRowsAffected() > 0;
@@ -957,7 +960,7 @@ bool ModelTreeRepository::migrateV2toV3()
     }
 
     if (!database.transaction()) {
-        qWarning("migrateV2toV3: failed to start transaction");
+        qCWarning(lcModelTree) << "migrateV2toV3: failed to start transaction";
         return false;
     }
 
@@ -984,8 +987,8 @@ bool ModelTreeRepository::migrateV2toV3()
         ins.bindValue(":created",  def.createdAt);
         ins.bindValue(":updated",  def.updatedAt);
         if (!ins.exec()) {
-            qWarning("migrateV2toV3: insert into strategies failed: %s",
-                     qPrintable(ins.lastError().text()));
+            qCWarning(lcModelTree) << "migrateV2toV3: insert into strategies failed:" << ins.lastError().text();
+
         }
 
         // Create a single version row for the current config
@@ -1003,8 +1006,8 @@ bool ModelTreeRepository::migrateV2toV3()
         insV.bindValue(":notes",   QStringLiteral("Migrated from v2 strategy_definitions"));
         insV.bindValue(":created", def.createdAt);
         if (!insV.exec()) {
-            qWarning("migrateV2toV3: insert into strategy_versions failed: %s",
-                     qPrintable(insV.lastError().text()));
+            qCWarning(lcModelTree) << "migrateV2toV3: insert into strategy_versions failed:" << insV.lastError().text();
+
         }
 
         // Update matching live_strategy_bindings to set version_id
@@ -1042,7 +1045,7 @@ bool ModelTreeRepository::migrateV2toV3()
 
     if (!database.commit()) {
         database.rollback();
-        qWarning("migrateV2toV3: commit failed");
+        qCWarning(lcModelTree) << "migrateV2toV3: commit failed";
         return false;
     }
 
@@ -1066,8 +1069,8 @@ void ModelTreeRepository::repairBindingsTableForeignKey()
     if (!createSql.contains("strategy_definitions_backup"))
         return;
 
-    qWarning("[schema-repair] live_strategy_bindings has stale FK to "
-             "strategy_definitions_backup — recreating table");
+    qCWarning(lcModelTree) << "[schema-repair] live_strategy_bindings has stale FK to "
+                              "strategy_definitions_backup — recreating table";
 
     if (!database.transaction()) return;
 
@@ -1098,6 +1101,6 @@ void ModelTreeRepository::repairBindingsTableForeignKey()
 
     if (!database.commit()) {
         database.rollback();
-        qWarning("[schema-repair] commit failed, rolling back");
+        qCWarning(lcModelTree) << "[schema-repair] commit failed, rolling back";
     }
 }

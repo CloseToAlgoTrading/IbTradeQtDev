@@ -34,6 +34,8 @@ public:
 
 signals:
 	void signalAddLogMsg(QString s);
+    /// Qt message handler path: raw `msg`, logging category name, context.function (may be "unknown").
+    void signalQtStructuredLog(int msgType, QString category, QString function, QString message);
 public:
 	void AddLogMsg(const char* format, ...);
     void AddLogMsgExt(const tELogLevel _lvl, const char* format, ...);

@@ -1,6 +1,9 @@
 #include "cbasicstrategy_V2.h"
 #include "mandatoryFieldRegistration.h"
 #include "mandatoryFieldKeys.h"
+#include <QLoggingCategory>
+
+Q_LOGGING_CATEGORY(lcBasicStratV2, "basicStrategy.v2")
 
 CBasicStrategy_V2::CBasicStrategy_V2(QObject *parent): CBaseModel(parent)
     , m_StrategyData()
@@ -39,7 +42,7 @@ void CBasicStrategy_V2::slotStrategyDataFetched(const DbStrategyData &obj, e_que
     default:
         break;
     }
-    qDebug() << "Data Fetched: " << ((state == QS_VALID) ? "Valid" : "Not Valid");
+    qCDebug(lcBasicStratV2) << "Data Fetched: " << ((state == QS_VALID) ? "Valid" : "Not Valid");
 }
 
 void CBasicStrategy_V2::slotOpenPositionsFetched(const QList<OpenPosition> &positions, e_queryStatus state)

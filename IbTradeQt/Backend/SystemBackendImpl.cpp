@@ -12,6 +12,9 @@
 #include <QJsonArray>
 #include <QFile>
 #include <functional>
+#include <QLoggingCategory>
+
+Q_LOGGING_CATEGORY(lcSystemBackend, "backend.system")
 
 SystemBackendImpl::SystemBackendImpl(ModelTreeRepository* repo, QObject* parent)
     : ISystemBackend(parent)
@@ -102,9 +105,9 @@ void SystemBackendImpl::createCatalogEntryAndBinding(const QString& nodeUuid,
     strat.updatedAt      = now;
 
     if (!m_repo->createStrategyCatalog(strat)) {
-        qWarning("SystemBackendImpl::createCatalogEntryAndBinding: "
-                 "failed to persist strategies row for node %s",
-                 qPrintable(nodeUuid));
+        qCWarning(lcSystemBackend) << "SystemBackendImpl::createCatalogEntryAndBinding: "
+                                      "failed to persist strategies row for node"
+                                   << nodeUuid;
         return;
     }
 
@@ -119,9 +122,9 @@ void SystemBackendImpl::createCatalogEntryAndBinding(const QString& nodeUuid,
     ver.createdAt     = now;
 
     if (!m_repo->createStrategyVersion(ver)) {
-        qWarning("SystemBackendImpl::createCatalogEntryAndBinding: "
-                 "failed to persist strategy_versions row for node %s",
-                 qPrintable(nodeUuid));
+        qCWarning(lcSystemBackend) << "SystemBackendImpl::createCatalogEntryAndBinding: "
+                                      "failed to persist strategy_versions row for node"
+                                   << nodeUuid;
         return;
     }
 
@@ -148,9 +151,9 @@ void SystemBackendImpl::createCatalogEntryAndBinding(const QString& nodeUuid,
     binding.updatedAt     = now;
 
     if (!m_repo->createLiveBinding(binding)) {
-        qWarning("SystemBackendImpl::createCatalogEntryAndBinding: "
-                 "failed to persist live_strategy_bindings row for node %s",
-                 qPrintable(nodeUuid));
+        qCWarning(lcSystemBackend) << "SystemBackendImpl::createCatalogEntryAndBinding: "
+                                      "failed to persist live_strategy_bindings row for node"
+                                   << nodeUuid;
         return;
     }
 
@@ -266,7 +269,7 @@ QString SystemBackendImpl::createAccount(const QString& name)
     rec.updatedAt = rec.createdAt;
 
     if (!m_repo->insertNode(rec)) {
-        qWarning("SystemBackend: failed to persist account %s", qPrintable(uuid));
+        qCWarning(lcSystemBackend) << "SystemBackend: failed to persist account" << uuid;
         return {};
     }
 
@@ -302,7 +305,7 @@ QString SystemBackendImpl::createPortfolio(const QString& accountId, const QStri
     rec.updatedAt = rec.createdAt;
 
     if (!m_repo->insertNode(rec)) {
-        qWarning("SystemBackend: failed to persist portfolio %s", qPrintable(uuid));
+        qCWarning(lcSystemBackend) << "SystemBackend: failed to persist portfolio" << uuid;
         return {};
     }
 
@@ -346,7 +349,7 @@ QString SystemBackendImpl::createStrategy(const QString& portfolioId, ModelType 
     rec.updatedAt = rec.createdAt;
 
     if (!m_repo->insertNode(rec)) {
-        qWarning("SystemBackend: failed to persist strategy %s", qPrintable(uuid));
+        qCWarning(lcSystemBackend) << "SystemBackend: failed to persist strategy" << uuid;
         return {};
     }
 
@@ -380,7 +383,7 @@ bool SystemBackendImpl::removeNode(const QString& uuid)
     }
 
     if (!m_repo->deleteNode(uuid)) {
-        qWarning("SystemBackend: failed to delete node %s", qPrintable(uuid));
+        qCWarning(lcSystemBackend) << "SystemBackend: failed to delete node" << uuid;
         return false;
     }
 
@@ -410,7 +413,7 @@ bool SystemBackendImpl::renameNode(const QString& uuid, const QString& name)
     rec.updatedAt = QDateTime::currentDateTimeUtc();
 
     if (!m_repo->updateNode(rec)) {
-        qWarning("SystemBackend: failed to rename node %s", qPrintable(uuid));
+        qCWarning(lcSystemBackend) << "SystemBackend: failed to rename node" << uuid;
         return false;
     }
 
@@ -765,8 +768,8 @@ bool SystemBackendImpl::loadFromDb()
         DbLiveStrategyBinding binding = m_repo->fetchBindingForNode(nodeUuid);
 
         if (!binding.isValid()) {
-            qWarning("[repair] strategy node %s has no binding — auto-creating catalog entry",
-                     qPrintable(nodeUuid));
+            qCWarning(lcSystemBackend) << "[repair] strategy node" << nodeUuid
+                                       << "has no binding — auto-creating catalog entry";
             QJsonObject canonical = extractCanonicalStrategyConfig(rec.config);
             createCatalogEntryAndBinding(nodeUuid, rec.name,
                                          rec.modelType, canonical);
@@ -778,8 +781,8 @@ bool SystemBackendImpl::loadFromDb()
         if (!catalogEntry.isValid()) {
             DbStrategyDefinition def = m_repo->fetchStrategyDefinition(binding.strategyDefId);
             if (!def.isValid()) {
-                qWarning("[repair] no catalog or definition for binding %s — recreating",
-                         qPrintable(binding.strategyDefId));
+                qCWarning(lcSystemBackend) << "[repair] no catalog or definition for binding"
+                                           << binding.strategyDefId << "— recreating";
                 m_repo->removeBindingForNode(nodeUuid);
                 QJsonObject canonical = extractCanonicalStrategyConfig(rec.config);
                 createCatalogEntryAndBinding(nodeUuid, rec.name,
@@ -806,7 +809,7 @@ bool SystemBackendImpl::loadFromDb()
     // Remove catalog entries that no live binding references (accumulated orphans)
     int orphansRemoved = m_repo->removeOrphanedCatalogEntries();
     if (orphansRemoved > 0)
-        qWarning("[repair] removed %d orphaned catalog entries", orphansRemoved);
+        qCWarning(lcSystemBackend) << "[repair] removed" << orphansRemoved << "orphaned catalog entries";
 
     emit treeLoaded();
     return true;

@@ -6,7 +6,9 @@
 #include <QNetworkAccessManager>
 #include <QEventLoop>
 #include <QTimer>
-#include <QDebug>
+#include <QLoggingCategory>
+
+Q_LOGGING_CATEGORY(lcHistData, "backtest.historical")
 
 namespace Backtest {
 
@@ -180,7 +182,7 @@ QVector<IBComm::HistoricalBar> HistoricalDataManager::readFromCache(
     auto q = query_fetchHistoricalBars(symbol, resolution, dataSourceId,
                                         fromUtc, toUtc, m_dbConnectionName);
     if (!q.exec()) {
-        qWarning() << "HistoricalDataManager: readFromCache failed:" << q.lastError().text();
+        qCWarning(lcHistData) << "HistoricalDataManager: readFromCache failed:" << q.lastError().text();
         return bars;
     }
     while (q.next()) {
@@ -231,7 +233,7 @@ QVector<IBComm::HistoricalBar> HistoricalDataManager::fetchAndCache(
         source.requestBars(symbols, from, to, res);
         loop.exec();
     } else {
-        qWarning() << "HistoricalDataManager: unsupported dataSourceId for fetch:" << dataSourceId;
+        qCWarning(lcHistData) << "HistoricalDataManager: unsupported dataSourceId for fetch:" << dataSourceId;
         return fetchedBars;
     }
 
@@ -269,7 +271,7 @@ void HistoricalDataManager::insertIntoCache(const QVector<IBComm::HistoricalBar>
 
         auto q = query_upsertHistoricalBar(dbBar, m_dbConnectionName);
         if (!q.exec()) {
-            qWarning() << "HistoricalDataManager: insertIntoCache failed for"
+            qCWarning(lcHistData) << "HistoricalDataManager: insertIntoCache failed for"
                        << bar.symbol << "@" << dbBar.timestamp << ":" << q.lastError().text();
         }
     }

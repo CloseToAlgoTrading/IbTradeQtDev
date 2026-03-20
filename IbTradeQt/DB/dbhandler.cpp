@@ -2,8 +2,10 @@
 #include "dbquery.h"
 #include <QtSql/QSqlQuery>
 #include <QtSql/QSqlError>
-#include <QDebug>
+#include <QLoggingCategory>
 #include <QUuid>
+
+Q_LOGGING_CATEGORY(lcDbHandler, "db.handler")
 
 DBHandler::DBHandler(QObject *parent) : QObject(parent) {
     // Constructor code
@@ -19,7 +21,7 @@ bool DBHandler::connectDB(const QString& dbName) {
     m_db.setDatabaseName(dbName);
 
     if (!m_db.open()) {
-        qDebug() << "Error: Connection with database failed";
+        qCDebug(lcDbHandler) << "Error: Connection with database failed";
         return false;
     }
 
@@ -31,7 +33,7 @@ void DBHandler::initializeBacktestTables() {
     auto exec = [this](const char* sql) {
         QSqlQuery q(m_db);
         if (!q.exec(QLatin1String(sql)))
-            qWarning() << "DBHandler: failed to create table:" << q.lastError().text();
+            qCWarning(lcDbHandler) << "DBHandler: failed to create table:" << q.lastError().text();
     };
 
     // Silence errors for ALTER TABLE when columns already exist
@@ -75,7 +77,7 @@ bool DBHandler::initializeDatabase() {
         if (!m_db.tables().contains(tableName)) {
             success = query.exec(creationQueryTemplate.arg(tableName));
             if (!success) {
-                qDebug() << "Failed to create table" << tableName << ":" << query.lastError().text();
+                qCDebug(lcDbHandler) << "Failed to create table" << tableName << ":" << query.lastError().text();
             }
         }
 
@@ -133,7 +135,7 @@ bool DBHandler::createTrigger(QSqlDatabase& db) {
     QString triggerCommand =  QString(CREATE_UPDATE_OR_INSERT_TRIGGER_TEMPLATE).arg(TABLE_TRADES, TABLE_POSITIONS);
 
     if (!query.exec(triggerCommand)) {
-        qDebug() << "Error creating trigger:" << query.lastError().text();
+        qCDebug(lcDbHandler) << "Error creating trigger:" << query.lastError().text();
         return false;
     }
 
@@ -145,9 +147,9 @@ void DBHandler::slotAddPositionQuery(const OpenPosition &position)
 {
     auto query = query_addCurrentPosition(position, m_uniqueConnectionName);
     if (!query.exec()) {
-        qDebug() << "Error executing query:" << query.lastError();
+        qCDebug(lcDbHandler) << "Error executing query:" << query.lastError();
     } else {
-        qDebug() << "Query executed successfully";  // Confirm successful execution
+        qCDebug(lcDbHandler) << "Query executed successfully";  // Confirm successful execution
         // Process query results if needed
     }
 }
@@ -156,9 +158,9 @@ void DBHandler::slotAddNewTrade(const DbTrade &trade)
 {
     auto query = query_addNewTrade(trade, m_uniqueConnectionName);
     if (!query.exec()) {
-        qDebug() << "Error executing query:" << query.lastError();
+        qCDebug(lcDbHandler) << "Error executing query:" << query.lastError();
     } else {
-        qDebug() << "Query executed successfully";  // Confirm successful execution
+        qCDebug(lcDbHandler) << "Query executed successfully";  // Confirm successful execution
         // Process query results if needed
     }
 }
@@ -167,9 +169,9 @@ void DBHandler::slotUpdateTradeCommission(const DbTradeCommission &tradeComm)
 {
     auto query = query_updateTrade(tradeComm, m_uniqueConnectionName);
     if (!query.exec()) {
-        qDebug() << "Error executing query:" << query.lastError();
+        qCDebug(lcDbHandler) << "Error executing query:" << query.lastError();
     } else {
-        qDebug() << "Query executed successfully";  // Confirm successful execution
+        qCDebug(lcDbHandler) << "Query executed successfully";  // Confirm successful execution
         // Process query results if needed
     }
 
@@ -188,7 +190,7 @@ void DBHandler::slotFetchOpenPositions(const QString& strategy_id)
     QList<OpenPosition> positionsList;
     QSqlQuery query(query_getOpenPositions(strategy_id, m_uniqueConnectionName));
     if (!query.exec()) {
-        qDebug() << "Error fetching open positions:" << query.lastError();
+        qCDebug(lcDbHandler) << "Error fetching open positions:" << query.lastError();
         emit signalOpenPositionsFetched(positionsList, QS_ERROR);
     }
     else
@@ -220,9 +222,9 @@ void DBHandler::slotAddOrUpdateDbModelInfo(const DbModelInfo &obj)
 {
     auto query = query_addOrUpdateDbModelInfo(obj, m_uniqueConnectionName);
     if (!query.exec()) {
-        qDebug() << "Error executing query:" << query.lastError();
+        qCDebug(lcDbHandler) << "Error executing query:" << query.lastError();
     } else {
-        qDebug() << "Query executed successfully";  // Confirm successful execution
+        qCDebug(lcDbHandler) << "Query executed successfully";  // Confirm successful execution
         // Process query results if needed
     }
 }
@@ -232,7 +234,7 @@ void DBHandler::slotGetModelInfo(const QString &modelId)
     DbModelInfo obj;
     QSqlQuery query(query_getDbModelInfo(modelId, m_uniqueConnectionName));
     if (!query.exec()) {
-        qDebug() << "Error fetching model info:" << query.lastError();
+        qCDebug(lcDbHandler) << "Error fetching model info:" << query.lastError();
         emit signalModelInfoFetched(obj, e_queryStatus::QS_ERROR);
     }
     else
@@ -258,9 +260,9 @@ void DBHandler::slotAddOrUpdateDbStrategyData(const DbStrategyData &obj)
 {
     auto query = query_addOrUpdateDbStrategyData(obj, m_uniqueConnectionName);
     if (!query.exec()) {
-        qDebug() << "Error executing query:" << query.lastError();
+        qCDebug(lcDbHandler) << "Error executing query:" << query.lastError();
     } else {
-        qDebug() << "Query executed successfully";  // Confirm successful execution
+        qCDebug(lcDbHandler) << "Query executed successfully";  // Confirm successful execution
         // Process query results if needed
     }
 }
@@ -270,7 +272,7 @@ void DBHandler::slotGetStrategyData(const QString &strategy_id)
     DbStrategyData obj;
     QSqlQuery query(query_getDbStrategyData(strategy_id, m_uniqueConnectionName));
     if (!query.exec()) {
-        qDebug() << "Error fetching strategy data:" << query.lastError();
+        qCDebug(lcDbHandler) << "Error fetching strategy data:" << query.lastError();
         emit signalStrategyDataFetched(obj, e_queryStatus::QS_ERROR);
     }
     else
@@ -286,7 +288,7 @@ void DBHandler::slotGetStrategyData(const QString &strategy_id)
 
             emit signalStrategyDataFetched(obj, e_queryStatus::QS_VALID);
         } else {
-            qDebug() << "No strategy data found for strategy_id:" << strategy_id;
+            qCDebug(lcDbHandler) << "No strategy data found for strategy_id:" << strategy_id;
             emit signalStrategyDataFetched(obj, e_queryStatus::QS_NOT_FOUND);
         }
     }
@@ -299,7 +301,7 @@ void DBHandler::slotGetStrategyData(const QString &strategy_id)
 void DBHandler::slotInsertBacktestRun(const DbBacktestRun& run) {
     auto q = query_insertBacktestRun(run, m_uniqueConnectionName);
     if (!q.exec())
-        qWarning() << "DBHandler: slotInsertBacktestRun failed:" << q.lastError().text();
+        qCWarning(lcDbHandler) << "DBHandler: slotInsertBacktestRun failed:" << q.lastError().text();
 }
 
 void DBHandler::slotUpdateBacktestRunStatus(const QString& runId, const QString& status,
@@ -308,13 +310,13 @@ void DBHandler::slotUpdateBacktestRunStatus(const QString& runId, const QString&
     auto q = query_updateBacktestRunStatus(runId, status, errorText, durationMs,
                                             dataRefreshedAt, m_uniqueConnectionName);
     if (!q.exec())
-        qWarning() << "DBHandler: slotUpdateBacktestRunStatus failed:" << q.lastError().text();
+        qCWarning(lcDbHandler) << "DBHandler: slotUpdateBacktestRunStatus failed:" << q.lastError().text();
 }
 
 void DBHandler::slotInsertBacktestMetrics(const DbBacktestMetrics& metrics) {
     auto q = query_insertBacktestMetrics(metrics, m_uniqueConnectionName);
     if (!q.exec())
-        qWarning() << "DBHandler: slotInsertBacktestMetrics failed:" << q.lastError().text();
+        qCWarning(lcDbHandler) << "DBHandler: slotInsertBacktestMetrics failed:" << q.lastError().text();
 }
 
 void DBHandler::slotInsertBacktestTrades(const QList<DbBacktestTrade>& trades) {
@@ -323,7 +325,7 @@ void DBHandler::slotInsertBacktestTrades(const QList<DbBacktestTrade>& trades) {
     for (const auto& t : trades) {
         auto q = query_insertBacktestTrade(t, m_uniqueConnectionName);
         if (!q.exec())
-            qWarning() << "DBHandler: slotInsertBacktestTrades failed:" << q.lastError().text();
+            qCWarning(lcDbHandler) << "DBHandler: slotInsertBacktestTrades failed:" << q.lastError().text();
     }
     m_db.commit();
 }
@@ -334,7 +336,7 @@ void DBHandler::slotInsertEquityCurve(const QList<DbBacktestEquityPoint>& points
     for (const auto& p : points) {
         auto q = query_insertEquityPoint(p, m_uniqueConnectionName);
         if (!q.exec())
-            qWarning() << "DBHandler: slotInsertEquityCurve failed:" << q.lastError().text();
+            qCWarning(lcDbHandler) << "DBHandler: slotInsertEquityCurve failed:" << q.lastError().text();
     }
     m_db.commit();
 }
@@ -345,7 +347,7 @@ void DBHandler::slotUpsertHistoricalBars(const QList<DbHistoricalBar>& bars) {
     for (const auto& b : bars) {
         auto q = query_upsertHistoricalBar(b, m_uniqueConnectionName);
         if (!q.exec())
-            qWarning() << "DBHandler: slotUpsertHistoricalBars failed:" << q.lastError().text();
+            qCWarning(lcDbHandler) << "DBHandler: slotUpsertHistoricalBars failed:" << q.lastError().text();
     }
     m_db.commit();
 }
@@ -358,7 +360,7 @@ void DBHandler::slotFetchRunsForStrategy(const QString& strategyId) {
     QList<DbBacktestRunSummary> result;
     auto q = query_fetchRunsForStrategy(strategyId, m_uniqueConnectionName);
     if (!q.exec()) {
-        qWarning() << "DBHandler: slotFetchRunsForStrategy failed:" << q.lastError().text();
+        qCWarning(lcDbHandler) << "DBHandler: slotFetchRunsForStrategy failed:" << q.lastError().text();
         emit signalRunsForStrategyFetched(result);
         return;
     }
@@ -474,7 +476,7 @@ void DBHandler::slotFetchHistoricalBars(const QString& symbol, const QString& re
     auto q = query_fetchHistoricalBars(symbol, resolution, dataSourceId,
                                         fromUtc, toUtc, m_uniqueConnectionName);
     if (!q.exec()) {
-        qWarning() << "DBHandler: slotFetchHistoricalBars failed:" << q.lastError().text();
+        qCWarning(lcDbHandler) << "DBHandler: slotFetchHistoricalBars failed:" << q.lastError().text();
         emit signalHistoricalBarsFetched(symbol, resolution, dataSourceId, bars);
         return;
     }
@@ -512,14 +514,14 @@ void DBHandler::slotFetchCachedBarRange(const QString& symbol, const QString& re
 void DBHandler::slotInsertBacktestRunProfile(const DbBacktestRunProfile& profile) {
     auto q = query_insertBacktestRunProfile(profile, m_uniqueConnectionName);
     if (!q.exec())
-        qWarning() << "DBHandler: slotInsertBacktestRunProfile failed:" << q.lastError().text();
+        qCWarning(lcDbHandler) << "DBHandler: slotInsertBacktestRunProfile failed:" << q.lastError().text();
 }
 
 void DBHandler::slotFetchRunProfilesForOwner(const QString& ownerType, const QString& ownerRefId) {
     QList<DbBacktestRunProfile> result;
     auto q = query_fetchRunProfilesForOwner(ownerType, ownerRefId, m_uniqueConnectionName);
     if (!q.exec()) {
-        qWarning() << "DBHandler: slotFetchRunProfilesForOwner failed:" << q.lastError().text();
+        qCWarning(lcDbHandler) << "DBHandler: slotFetchRunProfilesForOwner failed:" << q.lastError().text();
         emit signalRunProfilesFetched(result);
         return;
     }
@@ -541,7 +543,7 @@ void DBHandler::slotFetchRunsForDefinition(const QString& strategyDefId) {
     QList<DbBacktestRunSummary> result;
     auto q = query_fetchRunsForDefinition(strategyDefId, m_uniqueConnectionName);
     if (!q.exec()) {
-        qWarning() << "DBHandler: slotFetchRunsForDefinition failed:" << q.lastError().text();
+        qCWarning(lcDbHandler) << "DBHandler: slotFetchRunsForDefinition failed:" << q.lastError().text();
         emit signalRunsForDefinitionFetched(result);
         return;
     }

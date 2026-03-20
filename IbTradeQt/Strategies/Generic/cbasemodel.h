@@ -18,8 +18,9 @@
 #include "cmodelstate.h"
 #include "ModelStateUtils.h"
 #include <memory>  // For std::unique_ptr
+#include <QLoggingCategory>
 
-
+Q_DECLARE_LOGGING_CATEGORY(lcBaseModel)
 
 class CBaseModel : public CProcessingBase_v2, public CGenericModelApi, public IMandatoryFields
 {

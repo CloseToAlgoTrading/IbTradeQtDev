@@ -48,10 +48,10 @@ void CBaseRebalanceModel::processData(DataListPtr data)
 
 void CBaseRebalanceModel::slotOpenPositionsFetched(const QList<OpenPosition> &positions)
 {
-    qDebug() << "-------start---------";
+    qCDebug(BasicRebalanceModelLog) << "-------start---------";
     for (auto pos : positions) {
-        qDebug() << pos.symbol << pos.quantity << pos.price << pos.date;
+        qCDebug(BasicRebalanceModelLog) << pos.symbol << pos.quantity << pos.price << pos.date;
     }
-    qDebug() << "-------stop---------";
+    qCDebug(BasicRebalanceModelLog) << "-------stop---------";
 }
 

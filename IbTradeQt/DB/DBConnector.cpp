@@ -1,6 +1,9 @@
 #include "DBConnector.h"
 #include <QDateTime>
+#include <QLoggingCategory>
 #include "NHelper.h"
+
+Q_LOGGING_CATEGORY(lcDbConnector, "db.connector")
 
 DBConnector::DBConnector(QObject *parent)
     : QObject (parent)
@@ -30,8 +33,8 @@ bool DBConnector::connectDB()
 
 //    m_db.setUserName(RTB_USER_NAME);
 //    m_db.setPassword(RTB_DB_PASSWORD);
-    qDebug() << NHelper::getDBServerAddress() << NHelper::getDBPort() << NHelper::getDBName();
-    qDebug() << NHelper::getDBUser() << NHelper::getDBPswd();
+    qCDebug(lcDbConnector) << NHelper::getDBServerAddress() << NHelper::getDBPort() << NHelper::getDBName();
+    qCDebug(lcDbConnector) << NHelper::getDBUser() << NHelper::getDBPswd();
     m_db.setHostName(NHelper::getDBServerAddress());
     m_db.setPort(NHelper::getDBPort());
     m_db.setDatabaseName(NHelper::getDBName());
@@ -42,8 +45,8 @@ bool DBConnector::connectDB()
 
     ret_val = m_db.open();
 
-    qDebug() << ret_val;
-    qDebug() << "db is valid " << m_db.isValid();
+    qCDebug(lcDbConnector) << ret_val;
+    qCDebug(lcDbConnector) << "db is valid " << m_db.isValid();
 
     ret_val = m_db.isValid();
     if(true == ret_val)
@@ -51,11 +54,11 @@ bool DBConnector::connectDB()
         //Create real time bar table
         if ( m_db.tables().contains( QString("tb_real_time_bar") ) )
         {
-            qDebug() << "tb_real_time_bar exist";
+            qCDebug(lcDbConnector) << "tb_real_time_bar exist";
         }
         else
         {
-             qDebug() << "tb_real_time_bar NOT exist!";
+             qCDebug(lcDbConnector) << "tb_real_time_bar NOT exist!";
 
              QSqlQuery query2("CREATE table tb_real_time_bar ( index timestamp(6) not null, "
                               "ticker text, " //primary key
@@ -73,11 +76,11 @@ bool DBConnector::connectDB()
         //Create TickByTickLast table
         if ( m_db.tables().contains( QString("tb_tickbyticklast_data") ) )
         {
-            qDebug() << "tb_tickbyticklast_data exist";
+            qCDebug(lcDbConnector) << "tb_tickbyticklast_data exist";
         }
         else
         {
-             qDebug() << "tb_tickbyticklast_data NOT exist!";
+             qCDebug(lcDbConnector) << "tb_tickbyticklast_data NOT exist!";
 
 
              QSqlQuery query2("CREATE table tb_tickbyticklast_data ( index timestamp(6) not null, "
@@ -169,7 +172,7 @@ void DBConnector::slotInsertTickByTickLastItem(const CTickByTickAllLast &_item, 
 
     if(!query.exec())
     {
-        qDebug() << query.lastError().text();
+        qCDebug(lcDbConnector) << query.lastError().text();
     };
 }
 
@@ -197,7 +200,7 @@ bool DBConnector::insertNewRealTimeBarItem(const CrealtimeBar* _item, const QStr
 
         if(!query.exec())
         {
-            qDebug() << query.lastError().text();
+            qCDebug(lcDbConnector) << query.lastError().text();
             ret_val = false;
         };
         //disconnectDB();

@@ -10,12 +10,14 @@
 #include <QJsonObject>
 #include <QMap>
 #include <QVector>
-#include <QDebug>
+#include <QLoggingCategory>
 #include <QCoreApplication>
 #include <QtSql/QSqlDatabase>
 #include <QtSql/QSqlQuery>
 #include <QtSql/QSqlError>
 #include <cmath>
+
+Q_LOGGING_CATEGORY(lcBacktestController, "backtest.controller")
 
 namespace Backtest {
 
@@ -33,7 +35,7 @@ BacktestController::BacktestController(const QString& dbFileName,
     QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", m_dbConnectionName);
     db.setDatabaseName(dbFileName);
     if (!db.open()) {
-        qWarning() << "BacktestController: cannot open DB" << dbFileName;
+        qCWarning(lcBacktestController) << "BacktestController: cannot open DB" << dbFileName;
     }
 }
 
@@ -69,7 +71,7 @@ BacktestController::~BacktestController() {
 
 void BacktestController::start(const BacktestRunConfig& config) {
     if (isRunning()) {
-        qWarning() << "BacktestController: a run is already in progress — ignoring start()";
+        qCWarning(lcBacktestController) << "BacktestController: a run is already in progress — ignoring start()";
         return;
     }
 
@@ -124,7 +126,7 @@ void BacktestController::start(const BacktestRunConfig& config) {
         if (resolved.mode == Pipeline::UniverseResolutionResult::Mode::ExplicitStaticSymbols) {
             for (const auto& sym : resolved.symbols)
                 resolvedConfig.symbols.append(sym);
-            qDebug() << "BacktestController: resolved symbols from pipeline config:"
+            qCDebug(lcBacktestController) << "BacktestController: resolved symbols from pipeline config:"
                      << resolvedConfig.symbols;
         }
     }
@@ -175,7 +177,7 @@ void BacktestController::start(const BacktestRunConfig& config) {
         db.setDatabaseName(dbFileName);
         const bool dbOk = db.open();
         if (!dbOk) {
-            qWarning() << "BacktestController worker: cannot open DB — fetching without cache";
+            qCWarning(lcBacktestController) << "BacktestController worker: cannot open DB — fetching without cache";
         }
 
         // Use HistoricalDataManager to fetch and cache strategy bars.
@@ -316,7 +318,7 @@ void BacktestController::persistRunRecord(const DbBacktestRun& run) {
 
     auto q = query_insertBacktestRun(run, m_dbConnectionName);
     if (!q.exec())
-        qWarning() << "BacktestController: persistRunRecord failed:" << q.lastError().text();
+        qCWarning(lcBacktestController) << "BacktestController: persistRunRecord failed:" << q.lastError().text();
 }
 
 void BacktestController::updateRunStatus(const QString& status,
@@ -329,7 +331,7 @@ void BacktestController::updateRunStatus(const QString& status,
     auto q = query_updateBacktestRunStatus(
         m_currentRunId, status, errorText, durationMs, dataRefreshedAt, m_dbConnectionName);
     if (!q.exec())
-        qWarning() << "BacktestController: updateRunStatus failed:" << q.lastError().text();
+        qCWarning(lcBacktestController) << "BacktestController: updateRunStatus failed:" << q.lastError().text();
 }
 
 void BacktestController::persistResult(const BacktestResult& result,
@@ -355,7 +357,7 @@ void BacktestController::persistResult(const BacktestResult& result,
     {
         auto q = query_insertBacktestMetrics(m, m_dbConnectionName);
         if (!q.exec())
-            qWarning() << "BacktestController: persistMetrics failed:" << q.lastError().text();
+            qCWarning(lcBacktestController) << "BacktestController: persistMetrics failed:" << q.lastError().text();
     }
 
     // Trades (batch insert in a transaction)
@@ -371,7 +373,7 @@ void BacktestController::persistResult(const BacktestResult& result,
             t.timestamp = fill.timestamp.toUTC().toString(Qt::ISODate);
             auto q = query_insertBacktestTrade(t, m_dbConnectionName);
             if (!q.exec())
-                qWarning() << "BacktestController: insertTrade failed:" << q.lastError().text();
+                qCWarning(lcBacktestController) << "BacktestController: insertTrade failed:" << q.lastError().text();
         }
         db.commit();
     }
@@ -393,7 +395,7 @@ void BacktestController::persistResult(const BacktestResult& result,
             p.benchmarkValue = (i < bmCurve.size()) ? bmCurve[i].portfolioValue : 0.0;
             auto q = query_insertEquityPoint(p, m_dbConnectionName);
             if (!q.exec())
-                qWarning() << "BacktestController: insertEquity failed:" << q.lastError().text();
+                qCWarning(lcBacktestController) << "BacktestController: insertEquity failed:" << q.lastError().text();
         }
         db.commit();
     }

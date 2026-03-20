@@ -33,6 +33,9 @@
 #include "Blocks/MarketOrderExecutionBlock.h"
 #include "Blocks/LimitOrderExecutionBlock.h"
 #include "Blocks/StaticListSelectionBlock.h"
+#include <QLoggingCategory>
+
+Q_LOGGING_CATEGORY(lcApp, "app.bootstrap")
 
 static void registerBuiltinBlocks()
 {
@@ -126,15 +129,15 @@ CApplicationController::CApplicationController(QObject *parent):
         if (migrated != "true") {
             QFile jsonFile("model_tree_config.json");
             if (jsonFile.exists()) {
-                qInfo("Migration: importing model tree from JSON to SQLite (one-time)");
+                qCInfo(lcApp) << "Migration: importing model tree from JSON to SQLite (one-time)";
                 if (m_backend->importFromJsonFile("model_tree_config.json")) {
                     m_repo->setMetadata("model_tree_migrated_from_json", "true");
                     m_repo->setMetadata("migration_source", "model_tree_config.json");
                     m_repo->setMetadata("migration_timestamp",
                                         QDateTime::currentDateTimeUtc().toString(Qt::ISODate));
-                    qInfo("Migration: completed successfully");
+                    qCInfo(lcApp) << "Migration: completed successfully";
                 } else {
-                    qWarning("Migration: failed to import from JSON");
+                    qCWarning(lcApp) << "Migration: failed to import from JSON";
                 }
             }
         }

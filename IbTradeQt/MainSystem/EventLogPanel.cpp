@@ -1,6 +1,7 @@
 #include "EventLogPanel.h"
 #include "ThemePalette.h"
 #include "UiLayoutDefaults.h"
+#include <QtGlobal>
 #include <QTabWidget>
 #include <QTableView>
 #include <QStandardItemModel>
@@ -82,6 +83,7 @@ void EventLogPanel::resetLogTableColumnDefaults()
 static QString levelToString(LogLevel level)
 {
     switch (level) {
+    case LogLevel::Debug:   return QStringLiteral("Debug");
     case LogLevel::Info:    return QStringLiteral("Info");
     case LogLevel::Warning: return QStringLiteral("Warn");
     case LogLevel::Error:   return QStringLiteral("Error");
@@ -92,6 +94,7 @@ static QString levelToString(LogLevel level)
 static QColor levelToColor(LogLevel level)
 {
     switch (level) {
+    case LogLevel::Debug:   return QColor(100, 149, 237);
     case LogLevel::Warning: return QColor(234, 179, 8);
     case LogLevel::Error:   return QColor(239, 68, 68);
     default:                return QColor();
@@ -157,5 +160,57 @@ LogEvent EventLogPanel::makeSystemEvent(LogLevel level, const QString& message)
     e.level      = level;
     e.eventType  = EventTypes::System::Generic;
     e.message    = message;
+    return e;
+}
+
+QString EventLogPanel::tabCategoryForLoggingName(const QString& loggingCategory)
+{
+    const QString& n = loggingCategory;
+    if (n.startsWith(QLatin1String("ibComClient"), Qt::CaseInsensitive)
+        || n.contains(QLatin1String("ibComClientImpl")))
+        return QStringLiteral("Broker");
+    if (n.startsWith(QLatin1String("dataProvider")))
+        return QStringLiteral("Data");
+    if (n.startsWith(QLatin1String("backtest.yahoo")) || n.startsWith(QLatin1String("backtest.historical")))
+        return QStringLiteral("Data");
+    if (n.startsWith(QLatin1String("customQChart")) || n.startsWith(QLatin1String("customCandle")))
+        return QStringLiteral("Data");
+    if (n.startsWith(QLatin1String("pairTrader")) || n.startsWith(QLatin1String("backend."))
+        || n.startsWith(QLatin1String("processing")) || n.startsWith(QLatin1String("Basic"))
+        || n.startsWith(QLatin1String("backtest.")) || n.startsWith(QLatin1String("pipeline."))
+        || n.startsWith(QLatin1String("DBStore")) || n.startsWith(QLatin1String("AutoDelta"))
+        || n.startsWith(QLatin1String("strategyMgmt")) || n.startsWith(QLatin1String("shared."))
+        || n.startsWith(QLatin1String("db.")) || n.startsWith(QLatin1String("reqManager"))
+        || n.startsWith(QLatin1String("portfolio.")) || n.startsWith(QLatin1String("baseModel."))
+        || n.startsWith(QLatin1String("basicStrategy.")))
+        return QStringLiteral("Strategy");
+    return QStringLiteral("System");
+}
+
+LogEvent EventLogPanel::fromQtMessage(int qtMsgType, const QString& loggingCategory,
+                                    const QString& function, const QString& message)
+{
+    LogEvent e;
+    e.timestamp = QDateTime::currentDateTime();
+    e.message   = message;
+    e.eventType = loggingCategory.isEmpty() ? QStringLiteral("default") : loggingCategory;
+
+    const auto t = static_cast<QtMsgType>(qtMsgType);
+    switch (t) {
+    case QtDebugMsg:    e.level = LogLevel::Debug;   break;
+    case QtInfoMsg:     e.level = LogLevel::Info;    break;
+    case QtWarningMsg:  e.level = LogLevel::Warning; break;
+    case QtCriticalMsg:
+    case QtFatalMsg:    e.level = LogLevel::Error;   break;
+    default:            e.level = LogLevel::Info;    break;
+    }
+
+    QString fn = function;
+    if (fn.isEmpty() || fn == QLatin1String("unknown"))
+        e.sourcePath = loggingCategory.isEmpty() ? QStringLiteral("default") : loggingCategory;
+    else
+        e.sourcePath = fn;
+
+    e.category = tabCategoryForLoggingName(loggingCategory);
     return e;
 }

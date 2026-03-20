@@ -13,6 +13,7 @@ class QSortFilterProxyModel;
 // ---- Structured Event Schema (D8) ----
 
 enum class LogLevel {
+    Debug,
     Info,
     Warning,
     Error
@@ -72,6 +73,13 @@ public:
     void enumerateLogTables(const std::function<void(QTableView*, const QString&)>& fn);
 
     static LogEvent makeSystemEvent(LogLevel level, const QString& message);
+
+    /// Builds a row from Qt message handler inputs (category = logging category name).
+    static LogEvent fromQtMessage(int qtMsgType, const QString& loggingCategory,
+                                  const QString& function, const QString& message);
+
+    /// Maps `QLoggingCategory` name string to Broker / Data / Strategy / System tab bucket.
+    static QString tabCategoryForLoggingName(const QString& loggingCategory);
 
 private:
     static constexpr int MaxRows = 5000;

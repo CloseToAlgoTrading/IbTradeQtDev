@@ -9,7 +9,9 @@
 #include <QEventLoop>
 #include <QFile>
 #include <QJsonDocument>
-#include <QDebug>
+#include <QLoggingCategory>
+
+Q_LOGGING_CATEGORY(lcBacktestSession, "backtest.session")
 
 namespace Backtest {
 
@@ -38,7 +40,7 @@ void BacktestSession::run()
                 ++totalBars;
             }
         }
-        qDebug() << "BacktestSession: using" << totalBars
+        qCDebug(lcBacktestSession) << "BacktestSession: using" << totalBars
                  << "preloaded bars for" << m_preloadedBars.keys();
     } else {
         loadHistoricalData();
@@ -83,7 +85,7 @@ void BacktestSession::buildObjectGraph()
     } else if (m_config.dataSourceId == "yahoo") {
         m_dataSource = std::make_unique<YahooFinanceDataSource>();
     } else {
-        qWarning() << "BacktestSession: unknown dataSourceId" << m_config.dataSourceId
+        qCWarning(lcBacktestSession) << "BacktestSession: unknown dataSourceId" << m_config.dataSourceId
                    << "— defaulting to JSONL";
         m_dataSource = std::make_unique<JsonlHistoricalDataSource>(m_config.dataPath);
     }
@@ -114,7 +116,7 @@ void BacktestSession::buildObjectGraph()
         if (f.open(QIODevice::ReadOnly)) {
             pipelineConfig = QJsonDocument::fromJson(f.readAll()).object();
         } else {
-            qWarning() << "BacktestSession: cannot open pipeline config:"
+            qCWarning(lcBacktestSession) << "BacktestSession: cannot open pipeline config:"
                        << m_config.strategyConfigPath;
         }
     }
@@ -238,7 +240,7 @@ void BacktestSession::loadHistoricalData()
                 loadDone = true;
             }, Qt::DirectConnection);
 
-    qDebug() << "BacktestSession: requesting bars for" << m_config.symbols
+    qCDebug(lcBacktestSession) << "BacktestSession: requesting bars for" << m_config.symbols
              << "from" << m_config.dataPath;
 
     m_dataSource->requestBars(
@@ -247,7 +249,7 @@ void BacktestSession::loadHistoricalData()
         m_config.endDate,
         m_config.resolution);
 
-    qDebug() << "BacktestSession: loadDone=" << loadDone
+    qCDebug(lcBacktestSession) << "BacktestSession: loadDone=" << loadDone
              << "replayer tick count=" << m_replayer->tickCount();
 
     // For synchronous sources, loadDone is already true — skip the event loop.
@@ -271,7 +273,7 @@ void BacktestSession::loadHistoricalData()
 void BacktestSession::driveReplayLoop()
 {
     const int total = m_replayer->tickCount();
-    qDebug() << "BacktestSession::driveReplayLoop: tick count =" << total;
+    qCDebug(lcBacktestSession) << "BacktestSession::driveReplayLoop: tick count =" << total;
     int processed = 0;
 
     // Connect progress reporting
@@ -298,7 +300,7 @@ void BacktestSession::loadBenchmarkData()
             }
         }
         m_result.benchmark = cmp.compute(m_config.benchmarkSymbol);
-        qDebug() << "BacktestSession: benchmark" << m_config.benchmarkSymbol
+        qCDebug(lcBacktestSession) << "BacktestSession: benchmark" << m_config.benchmarkSymbol
                  << "(preloaded) total return:" << m_result.benchmark.totalReturn * 100.0 << "%"
                  << "annualised:" << m_result.benchmark.annualizedReturn * 100.0 << "%";
         return;
@@ -332,7 +334,7 @@ void BacktestSession::loadBenchmarkData()
     connect(bmSource.get(), &IHistoricalDataSource::loadFailed,
             this, [&](const QString& reason) { err = reason; done = true; }, Qt::DirectConnection);
 
-    qDebug() << "BacktestSession: loading benchmark" << m_config.benchmarkSymbol;
+    qCDebug(lcBacktestSession) << "BacktestSession: loading benchmark" << m_config.benchmarkSymbol;
     bmSource->requestBars(
         QStringList{m_config.benchmarkSymbol},
         m_config.startDate,
@@ -349,12 +351,12 @@ void BacktestSession::loadBenchmarkData()
     }
 
     if (!err.isEmpty()) {
-        qWarning() << "BacktestSession: benchmark load failed:" << err;
+        qCWarning(lcBacktestSession) << "BacktestSession: benchmark load failed:" << err;
         return;
     }
 
     m_result.benchmark = cmp.compute(m_config.benchmarkSymbol);
-    qDebug() << "BacktestSession: benchmark" << m_config.benchmarkSymbol
+    qCDebug(lcBacktestSession) << "BacktestSession: benchmark" << m_config.benchmarkSymbol
              << "total return:" << m_result.benchmark.totalReturn * 100.0 << "%"
              << "annualised:" << m_result.benchmark.annualizedReturn * 100.0 << "%";
 }

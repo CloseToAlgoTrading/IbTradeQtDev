@@ -21,6 +21,9 @@
 #include <QUuid>
 #include <QRegularExpression>
 #include "Pipeline/BlockRegistry.h"
+#include <QLoggingCategory>
+
+Q_LOGGING_CATEGORY(lcPortfolio, "portfolio.config")
 
 #define START_OF_WORKING_NODES (3u)
 
@@ -844,12 +847,12 @@ void CPortfolioConfigModel::removeModel(QModelIndex index)
     {
         // A. Validate Index and Item Consistency
         if(index.row() != tmpItem->childNumber()) {
-                qDebug() << "Mismatch: index.row() =" << index.row() << ", tmpItem->childNumber() =" << tmpItem->childNumber();
+                qCDebug(lcPortfolio) << "Mismatch: index.row() =" << index.row() << ", tmpItem->childNumber() =" << tmpItem->childNumber();
         }
         beginRemoveRows(index.parent(), index.row(), index.row());
         bool removed = tmpItem->parent()->removeChildren(tmpItem->childNumber(), 1);
         if(!removed) {
-                qDebug() << "Removal failed";
+                qCDebug(lcPortfolio) << "Removal failed";
         }
         endRemoveRows();
 

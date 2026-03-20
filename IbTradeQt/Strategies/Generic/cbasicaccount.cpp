@@ -33,7 +33,7 @@ void CBasicAccount::setBrokerDataProvider(QSharedPointer<CBrokerDataProvider> ne
 /* Temporary here.. probably need to make a generic in base */
 void CBasicAccount::onUpdateServerConnectionStateSlot(bool state)
 {
-    qDebug() << "--> server state: " << ((state == true) ? "Connected" : "Disconnected");
+    qCDebug(lcBaseModel) << "--> server state: " << ((state == true) ? "Connected" : "Disconnected");
     m_genericInfo[MandatoryInfo::Account::Status] = state ? "Connected" : "Disconnected";
 
     if((true == state) && (true == getActiveStatus()) && (true == getParentActivatedState()))
