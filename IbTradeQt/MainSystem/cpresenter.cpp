@@ -216,13 +216,20 @@ void CPresenter::MapSignals()
         }
     });
 
-    // ── Diagram dock ─────────────────────────────────────────────────────
+    // ── Diagram dock (tabified with Events — same bottom dock tab bar) ───
     m_pDiagramWidget = new PipelineDiagramWidget();
-    m_pDiagramDock = new QDockWidget("Diagram View", this->pIbtsView);
+    m_pDiagramDock = new QDockWidget(QStringLiteral("Diagram View"), this->pIbtsView);
+    m_pDiagramDock->setObjectName(QStringLiteral("DiagramViewDock"));
     m_pDiagramDock->setWidget(m_pDiagramWidget);
     m_pDiagramDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable);
+    m_pDiagramDock->setAllowedAreas(Qt::BottomDockWidgetArea);
     this->pIbtsView->addDockWidget(Qt::BottomDockWidgetArea, m_pDiagramDock);
-    m_pDiagramDock->hide();
+    if (EventLogPanel* eventDock = this->pIbtsView->eventLogPanel()) {
+        this->pIbtsView->tabifyDockWidget(eventDock, m_pDiagramDock);
+        eventDock->raise();
+    }
+    m_pDiagramDock->show();
+    this->pIbtsView->setDiagramDock(m_pDiagramDock);
 
     // ── Backtest Workspace (delegated to BacktestWorkspaceCoordinator) ───
     m_backtestCoord = new BacktestWorkspaceCoordinator(this);

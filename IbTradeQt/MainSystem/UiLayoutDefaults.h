@@ -7,6 +7,7 @@ class QTableWidget;
 class QSplitter;
 class QTabWidget;
 class QMainWindow;
+class QDockWidget;
 class CIBTradeSystemView;
 class EventLogPanel;
 
@@ -21,7 +22,8 @@ void applyStrategyVersionTableDefaults(QTableWidget* tableWidget);
 
 void applySplitterDefaults(QSplitter* mainLive, QSplitter* backtest, QSplitter* strategyMgmt);
 void applyMainTabDefault(QTabWidget* tabs);
-void applyMainWindowDockDefaults(QMainWindow* mainWindow, EventLogPanel* eventLogDock);
+void applyMainWindowDockDefaults(QMainWindow* mainWindow, EventLogPanel* eventLogDock,
+                                 QDockWidget* diagramDock = nullptr);
 
 void applyFullDefaults(CIBTradeSystemView* view);
 

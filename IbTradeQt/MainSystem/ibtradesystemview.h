@@ -13,8 +13,10 @@ class EventLogPanel;
 class ContextWorkspace;
 class QSplitter;
 class QTabWidget;
+class QDockWidget;
 class QFrame;
 class QResizeEvent;
+class QShowEvent;
 class QEvent;
 class QKeyEvent;
 
@@ -50,6 +52,10 @@ public:
 
     void setUiLayoutStore(UiLayoutStore* store);
 
+    /// Bottom-area pipeline diagram dock (tabified with Events); set from CPresenter after creation.
+    void setDiagramDock(QDockWidget* dock);
+    QDockWidget* diagramDock() const { return m_diagramDock; }
+
     void switchToBacktestTab();
     void switchToStrategyManagementTab();
 
@@ -58,6 +64,7 @@ public:
 
 protected:
     void resizeEvent(QResizeEvent* event) override;
+    void showEvent(QShowEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
     bool eventFilter(QObject* watched, QEvent* event) override;
 
@@ -66,6 +73,8 @@ private:
     void setupSettingsSlideOverlay();
     void updateSettingsOverlayGeometry();
     void setSettingsOverlayVisible(bool visible);
+    /// Tabified dock titles (Events / Diagram View): show full text, not "Eve…".
+    void polishDockAreaTabBars();
 
     Ui::IBTradeSystemClass ui;
     QLabel * m_pTimeLabel;
@@ -74,6 +83,7 @@ private:
 
     GlobalStatusBar*  m_globalStatusBar  = nullptr;
     EventLogPanel*    m_eventLogPanel    = nullptr;
+    QDockWidget*      m_diagramDock     = nullptr;
     ContextWorkspace* m_contextWorkspace = nullptr;
     QSplitter*        m_mainSplitter     = nullptr;   // inside "Live Trading" tab
     QSplitter*        m_backtestSplitter = nullptr;

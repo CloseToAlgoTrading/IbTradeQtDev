@@ -12,6 +12,7 @@
 #include <QSplitter>
 #include <QTabWidget>
 #include <QMainWindow>
+#include <QDockWidget>
 
 namespace UiLayoutDefaults {
 
@@ -35,7 +36,8 @@ void applyMainTabDefault(QTabWidget* tabs)
         tabs->setCurrentIndex(0);
 }
 
-void applyMainWindowDockDefaults(QMainWindow* mainWindow, EventLogPanel* eventLogDock)
+void applyMainWindowDockDefaults(QMainWindow* mainWindow, EventLogPanel* eventLogDock,
+                                 QDockWidget* diagramDock)
 {
     if (!mainWindow || !eventLogDock)
         return;
@@ -43,6 +45,10 @@ void applyMainWindowDockDefaults(QMainWindow* mainWindow, EventLogPanel* eventLo
     docks << eventLogDock;
     QList<int> heights;
     heights << UiTheme::kEventLogDockInitialHeight;
+    if (diagramDock) {
+        docks << diagramDock;
+        heights << UiTheme::kEventLogDockInitialHeight;
+    }
     mainWindow->resizeDocks(docks, heights, Qt::Vertical);
 }
 
@@ -57,7 +63,7 @@ void applyFullDefaults(CIBTradeSystemView* view)
                               ? view->strategyManagementPanel()->horizontalSplitter()
                               : nullptr);
     applyMainTabDefault(view->mainTabWidget());
-    applyMainWindowDockDefaults(view, view->eventLogPanel());
+    applyMainWindowDockDefaults(view, view->eventLogPanel(), view->diagramDock());
 
     applySystemTreeColumnDefaults(view->getPortfolioConfigTreeView());
 

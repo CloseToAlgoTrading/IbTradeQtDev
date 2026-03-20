@@ -27,6 +27,10 @@
 #include <QEasingCurve>
 #include <QSignalBlocker>
 #include <QtGlobal>
+#include <QDockWidget>
+#include <QTabBar>
+#include <QTimer>
+#include <QShowEvent>
 
 
 CIBTradeSystemView::CIBTradeSystemView(QWidget *parent)
@@ -298,9 +302,35 @@ void CIBTradeSystemView::resizeEvent(QResizeEvent* event)
         m_uiLayoutStore->scheduleSave();
 }
 
+void CIBTradeSystemView::showEvent(QShowEvent* event)
+{
+    QMainWindow::showEvent(event);
+    QTimer::singleShot(0, this, [this]() { polishDockAreaTabBars(); });
+}
+
 void CIBTradeSystemView::setUiLayoutStore(UiLayoutStore* store)
 {
     m_uiLayoutStore = store;
+}
+
+void CIBTradeSystemView::setDiagramDock(QDockWidget* dock)
+{
+    m_diagramDock = dock;
+    QTimer::singleShot(0, this, [this]() { polishDockAreaTabBars(); });
+}
+
+void CIBTradeSystemView::polishDockAreaTabBars()
+{
+    if (!m_eventLogPanel && !m_mainTabWidget)
+        return;
+    for (QTabBar* tb : findChildren<QTabBar*>()) {
+        if (m_eventLogPanel && m_eventLogPanel->isAncestorOf(tb))
+            continue;
+        if (m_mainTabWidget && m_mainTabWidget->isAncestorOf(tb))
+            continue;
+        tb->setElideMode(Qt::ElideNone);
+        tb->setUsesScrollButtons(true);
+    }
 }
 
 bool CIBTradeSystemView::eventFilter(QObject* watched, QEvent* event)

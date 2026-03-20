@@ -156,6 +156,13 @@ void UiLayoutStore::attachToView(CIBTradeSystemView* view)
             registerHeaderView(t);
         });
     }
+
+    if (auto* dd = view->diagramDock()) {
+        connect(dd, &QDockWidget::dockLocationChanged, this, &UiLayoutStore::scheduleSave,
+                Qt::UniqueConnection);
+        connect(dd, &QDockWidget::topLevelChanged, this, &UiLayoutStore::scheduleSave,
+                Qt::UniqueConnection);
+    }
 }
 
 void UiLayoutStore::load()
