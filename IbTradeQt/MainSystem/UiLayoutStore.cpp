@@ -1,5 +1,5 @@
 #include "UiLayoutStore.h"
-#include "ModelTreeRepository.h"
+#include "IModelTreeRepository.h"
 #include "ibtradesystemview.h"
 #include "EventLogPanel.h"
 #include "BacktestUI/BacktestStrategySelector.h"
@@ -49,7 +49,7 @@ UiLayoutStore::UiLayoutStore(QObject* parent)
     connect(m_saveTimer, &QTimer::timeout, this, &UiLayoutStore::onSaveTimer);
 }
 
-void UiLayoutStore::setRepository(ModelTreeRepository* repo)
+void UiLayoutStore::setRepository(IModelTreeRepository* repo)
 {
     m_repo = repo;
 }

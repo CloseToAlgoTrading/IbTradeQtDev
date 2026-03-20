@@ -1,4 +1,5 @@
 #include "BacktestWorkspaceCoordinator.h"
+#include "NHelper.h"
 #include "ISystemBackend.h"
 #include "ibtradesystemview.h"
 #include "BacktestUI/BacktestWorkspaceDock.h"
@@ -14,6 +15,11 @@
 BacktestWorkspaceCoordinator::BacktestWorkspaceCoordinator(QObject* parent)
     : QObject(parent)
 {
+}
+
+bool BacktestWorkspaceCoordinator::isBacktestRunning() const
+{
+    return m_controller && m_controller->isRunning();
 }
 
 void BacktestWorkspaceCoordinator::setView(CIBTradeSystemView* view) { m_view = view; }
@@ -60,7 +66,7 @@ void BacktestWorkspaceCoordinator::createController()
 {
     delete m_controller;
     m_controller = new Backtest::BacktestController(
-        QStringLiteral("myLocalDb.sqlite"), nullptr, this);
+        NHelper::getStorageConfig().backtestStore.path, nullptr, this);
 
     connect(m_controller, &Backtest::BacktestController::progressChanged,
             m_dock, &BacktestUI::BacktestWorkspaceDock::setProgress);
@@ -346,7 +352,7 @@ void BacktestWorkspaceCoordinator::onBacktestFinished(const Backtest::BacktestLo
     m_dock->displayResult(run);
 
     const QString conn = m_controller ? m_controller->dbConnectionName()
-                                       : QStringLiteral("myLocalDb.sqlite");
+                                       : QString();
     auto q = query_fetchRunsForStrategy(run.record.strategyId, conn);
     if (q.exec()) {
         QList<DbBacktestRunSummary> summaries;

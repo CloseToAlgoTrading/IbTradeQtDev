@@ -47,6 +47,7 @@ SOURCES += \
     ../Common/globalsettings.cpp \
     ../IBComm/cbrokerdataprovider.cpp \
     ../Common/NHelper.cpp \
+    ../Common/StorageConfig.cpp \
     ../DB/dbhandler.cpp \
     ../DB/dbmanager.cpp \
     ../DB/DBConnector.cpp \
@@ -71,7 +72,8 @@ SOURCES += \
     ../CObjects/crealtimebar.cpp \
     ../CObjects/cexecutionreport.cpp \
     ../CObjects/ccommissionreport.cpp \
-    ../Brokers/IB/src/Decimal.cpp
+    ../Brokers/IB/src/Decimal.cpp \
+    ../Pipeline/PipelineLog.cpp
 
 HEADERS += \
     ../Backend/ISystemBackend.h \
@@ -109,6 +111,7 @@ HEADERS += \
     ../Pipeline/ISignalMergePolicy.h \
     ../Pipeline/Contracts.h \
     ../Pipeline/BlockRegistry.h \
+    ../Pipeline/PipelineLog.h \
     ../IBComm/MarketDataRouter.h \
     ../IBComm/PositionRouter.h \
     ../IBComm/HistoricalDataRouter.h \

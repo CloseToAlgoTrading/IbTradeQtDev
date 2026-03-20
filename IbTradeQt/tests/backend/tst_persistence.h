@@ -6,7 +6,10 @@
 #include <QDir>
 #include <QTemporaryFile>
 #include "Backend/SystemBackendImpl.h"
-#include "Backend/ModelTreeRepository.h"
+#include "Backend/IModelTreeRepository.h"
+#include "Backend/ModelNodeRecord.h"
+#include "Backend/PersistenceFactory.h"
+#include "Common/StorageConfig.h"
 #include "Strategies/Generic/ModelType.h"
 #include "Strategies/Generic/cbasicroot.h"
 #include "Strategies/Generic/cbasicaccount.h"
@@ -20,11 +23,14 @@ private:
     QString m_jsonPath;
     QString m_connSuffix;
 
-    std::unique_ptr<ModelTreeRepository> makeRepo(const QString& suffix = "")
+    std::unique_ptr<IModelTreeRepository> createInitializedRepo(const QString& suffix)
     {
-        QString conn = "persist_conn_" + m_connSuffix + suffix;
-        auto repo = std::make_unique<ModelTreeRepository>(m_dbPath, conn);
-        repo->initialize();
+        const QString conn = QStringLiteral("persist_conn_") + m_connSuffix + suffix;
+        StorageConfig cfg = StorageConfig::loadDefaults();
+        cfg.modelStore.sqlitePath = m_dbPath;
+        auto repo = Persistence::createModelTreeRepository(cfg, conn);
+        if (!repo || !repo->initialize())
+            return nullptr;
         return repo;
     }
 
@@ -45,7 +51,8 @@ private slots:
     void testSchemaVersionSet()
     {
         // Schema version is now "3" after the strategy catalog migration
-        auto repo = makeRepo("_ver");
+        auto repo = createInitializedRepo(QStringLiteral("_ver"));
+        QVERIFY(repo);
         QCOMPARE(repo->metadata("schema_version"), "3");
     }
 
@@ -53,19 +60,24 @@ private slots:
     {
         // A fresh DB should initialize at v3; simulate a legacy v1 DB by
         // manually resetting the metadata and re-initializing.
-        auto repo = makeRepo("_v1upgrade");
+        auto repo = createInitializedRepo(QStringLiteral("_v1upgrade"));
+        QVERIFY(repo);
         repo->setMetadata("schema_version", "1");
 
         // Re-init with a second repo instance on the same path to trigger upgrade
         QString conn2 = "persist_conn_" + m_connSuffix + "_v1upgrade_b";
-        auto repo2 = std::make_unique<ModelTreeRepository>(m_dbPath, conn2);
+        StorageConfig cfg = StorageConfig::loadDefaults();
+        cfg.modelStore.sqlitePath = m_dbPath;
+        auto repo2 = Persistence::createModelTreeRepository(cfg, conn2);
+        QVERIFY(repo2);
         QVERIFY(repo2->initialize());
         QCOMPARE(repo2->metadata("schema_version"), "3");
     }
 
     void testMigrationViaRecords()
     {
-        auto repo = makeRepo("_mig");
+        auto repo = createInitializedRepo(QStringLiteral("_mig"));
+        QVERIFY(repo);
         auto backend = std::make_unique<SystemBackendImpl>(repo.get());
 
         // Empty DB is now a valid state — loadFromDb() succeeds with an empty root
@@ -91,7 +103,8 @@ private slots:
 
     void testRestartPersistence()
     {
-        auto repo = makeRepo("_restart");
+        auto repo = createInitializedRepo(QStringLiteral("_restart"));
+        QVERIFY(repo);
 
         // Session 1: create some data
         {
@@ -114,7 +127,8 @@ private slots:
 
     void testMutationPersistsAcrossRestart()
     {
-        auto repo = makeRepo("_mut");
+        auto repo = createInitializedRepo(QStringLiteral("_mut"));
+        QVERIFY(repo);
 
         // Session 1: create + rename
         {
@@ -133,11 +147,13 @@ private slots:
 
     void testExportCreatesValidJson()
     {
-        auto repo = makeRepo("_rt");
+        auto repo = createInitializedRepo(QStringLiteral("_rt"));
+        QVERIFY(repo);
         auto backend = std::make_unique<SystemBackendImpl>(repo.get());
 
         QString acc = backend->createAccount("ExportAcc");
-        QString port = backend->createPortfolio(acc, "ExportPort");
+        const QString portId = backend->createPortfolio(acc, "ExportPort");
+        QVERIFY(!portId.isEmpty());
 
         QVERIFY(backend->exportToJsonFile(m_jsonPath));
 
@@ -155,7 +171,8 @@ private slots:
 
     void testMigrationIdempotent()
     {
-        auto repo = makeRepo("_idem");
+        auto repo = createInitializedRepo(QStringLiteral("_idem"));
+        QVERIFY(repo);
 
         repo->setMetadata("model_tree_migrated_from_json", "true");
 
@@ -166,7 +183,8 @@ private slots:
 
     void testRemovePersistsAcrossRestart()
     {
-        auto repo = makeRepo("_rm");
+        auto repo = createInitializedRepo(QStringLiteral("_rm"));
+        QVERIFY(repo);
 
         QString accId;
         {

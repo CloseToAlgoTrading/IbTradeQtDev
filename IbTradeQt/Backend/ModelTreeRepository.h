@@ -1,6 +1,7 @@
 #ifndef MODELTREEREPOSITORY_H
 #define MODELTREEREPOSITORY_H
 
+#include "IModelTreeRepository.h"
 #include "ModelNodeRecord.h"
 #include "DB/dbdatatypes.h"
 #include <QList>
@@ -9,66 +10,59 @@
 
 class QSqlDatabase;
 
-class ModelTreeRepository
+/** SQLite implementation of ModelStore persistence. */
+class ModelTreeRepository : public IModelTreeRepository
 {
 public:
     explicit ModelTreeRepository(const QString& dbPath, const QString& connectionName);
-    ~ModelTreeRepository();
+    ~ModelTreeRepository() override;
 
-    bool initialize();
+    bool initialize() override;
 
-    // ---- model_nodes CRUD ----
-    bool insertNode(const ModelNodeRecord& record);
-    bool updateNode(const ModelNodeRecord& record);
-    bool deleteNode(const QString& uuid);
-    std::optional<ModelNodeRecord> fetchNode(const QString& uuid) const;
-    QList<ModelNodeRecord> fetchChildren(const QString& parentUuid) const;
-    QList<ModelNodeRecord> fetchTopLevel() const;
-    QList<ModelNodeRecord> fetchAll() const;
+    bool insertNode(const ModelNodeRecord& record) override;
+    bool updateNode(const ModelNodeRecord& record) override;
+    bool deleteNode(const QString& uuid) override;
+    std::optional<ModelNodeRecord> fetchNode(const QString& uuid) const override;
+    QList<ModelNodeRecord> fetchChildren(const QString& parentUuid) const override;
+    QList<ModelNodeRecord> fetchTopLevel() const override;
+    QList<ModelNodeRecord> fetchAll() const override;
 
-    // Bulk (migration/import only)
-    bool replaceAll(const QList<ModelNodeRecord>& records);
+    bool replaceAll(const QList<ModelNodeRecord>& records) override;
 
-    int nextSortOrder(const QString& parentUuid) const;
+    int nextSortOrder(const QString& parentUuid) const override;
 
-    // ---- strategy_definitions CRUD (legacy, reads backup table) ----
-    bool createStrategyDefinition(const DbStrategyDefinition& def);
-    DbStrategyDefinition fetchStrategyDefinition(const QString& defId) const;
-    bool updateStrategyDefinition(const DbStrategyDefinition& def);
-    QList<DbStrategyDefinition> listStrategyDefinitions(bool includeArchived = false) const;
-    bool archiveStrategyDefinition(const QString& defId);
+    bool createStrategyDefinition(const DbStrategyDefinition& def) override;
+    DbStrategyDefinition fetchStrategyDefinition(const QString& defId) const override;
+    bool updateStrategyDefinition(const DbStrategyDefinition& def) override;
+    QList<DbStrategyDefinition> listStrategyDefinitions(bool includeArchived = false) const override;
+    bool archiveStrategyDefinition(const QString& defId) override;
 
-    // ---- strategies CRUD (v3 catalog) ----
-    bool createStrategyCatalog(const DbStrategy& strategy);
-    DbStrategy fetchStrategyCatalog(const QString& strategyId) const;
-    QList<DbStrategy> listStrategyCatalog(bool includeArchived = false) const;
-    bool updateStrategyCatalog(const DbStrategy& strategy);
-    bool archiveStrategyCatalog(const QString& strategyId);
-    int  removeOrphanedCatalogEntries();
+    bool createStrategyCatalog(const DbStrategy& strategy) override;
+    DbStrategy fetchStrategyCatalog(const QString& strategyId) const override;
+    QList<DbStrategy> listStrategyCatalog(bool includeArchived = false) const override;
+    bool updateStrategyCatalog(const DbStrategy& strategy) override;
+    bool archiveStrategyCatalog(const QString& strategyId) override;
+    int  removeOrphanedCatalogEntries() override;
 
-    // ---- strategy_versions CRUD ----
-    bool createStrategyVersion(const DbStrategyVersion& version);
-    DbStrategyVersion fetchStrategyVersion(const QString& versionId) const;
-    QList<DbStrategyVersion> listStrategyVersions(const QString& strategyId) const;
-    DbStrategyVersion fetchLatestVersion(const QString& strategyId) const;
-    bool setVersionPublished(const QString& versionId, bool published);
-    int nextVersionNumber(const QString& strategyId) const;
+    bool createStrategyVersion(const DbStrategyVersion& version) override;
+    DbStrategyVersion fetchStrategyVersion(const QString& versionId) const override;
+    QList<DbStrategyVersion> listStrategyVersions(const QString& strategyId) const override;
+    DbStrategyVersion fetchLatestVersion(const QString& strategyId) const override;
+    bool setVersionPublished(const QString& versionId, bool published) override;
+    int nextVersionNumber(const QString& strategyId) const override;
 
-    // ---- live_strategy_bindings CRUD ----
-    bool createLiveBinding(const DbLiveStrategyBinding& binding);
-    DbLiveStrategyBinding fetchBindingForNode(const QString& nodeUuid) const;
-    QList<DbLiveStrategyBinding> listBindingsForDefinition(const QString& defId) const;
-    bool removeBindingForNode(const QString& nodeUuid);
-    bool updateBindingVersion(const QString& bindingId, const QString& versionId);
+    bool createLiveBinding(const DbLiveStrategyBinding& binding) override;
+    DbLiveStrategyBinding fetchBindingForNode(const QString& nodeUuid) const override;
+    QList<DbLiveStrategyBinding> listBindingsForDefinition(const QString& defId) const override;
+    bool removeBindingForNode(const QString& nodeUuid) override;
+    bool updateBindingVersion(const QString& bindingId, const QString& versionId) override;
 
-    // ---- backtest_run_profiles CRUD ----
-    bool createRunProfile(const DbBacktestRunProfile& profile);
+    bool createRunProfile(const DbBacktestRunProfile& profile) override;
     QList<DbBacktestRunProfile> listRunProfiles(const QString& ownerType,
-                                                 const QString& ownerRefId) const;
+                                                 const QString& ownerRefId) const override;
 
-    // ---- Metadata ----
-    QString metadata(const QString& key) const;
-    bool setMetadata(const QString& key, const QString& value);
+    QString metadata(const QString& key) const override;
+    bool setMetadata(const QString& key, const QString& value) override;
 
 private:
     QSqlDatabase db() const;

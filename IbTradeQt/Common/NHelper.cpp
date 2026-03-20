@@ -1,4 +1,5 @@
 #include "NHelper.h"
+#include "StorageConfig.h"
 #include <QSettings>
 #include <QFile>
 
@@ -45,20 +46,7 @@ quint64 NHelper::convertTimeStringToTimestamp(QString date, bool isFormat)
 
 qint32 NHelper::getDBPort()
 {
-    qint32 ret_port = 5432;
-    if (QFile(SETTINGS_FILE_NAME).exists())
-    {
-        QSettings dbsettings(SETTINGS_FILE_NAME, QSettings::IniFormat);
-        ret_port = dbsettings.value("DBSettings/dbport", ret_port).toInt();
-    }
-    else
-    {
-        QSettings dbsettings(SETTINGS_FILE_NAME, QSettings::IniFormat);
-        dbsettings.setValue("DBSettings/dbport", ret_port);
-        dbsettings.sync();
-    }
-
-    return ret_port;
+    return static_cast<qint32>(getStorageConfig().legacyMarketDataDb.port);
 }
 
 quint16 NHelper::getServerPort()
@@ -79,18 +67,24 @@ void NHelper::initSettings()
         settings.setValue("serverport", 4002);
         settings.setValue("serveraddr", "localhost");
         settings.endGroup();
-        settings.beginGroup("DBSettings");
-        settings.setValue("dbport", 5432);
-        settings.setValue("dbaddress", "192.168.0.90");
-        settings.setValue("dbusr", "postgres");
-        settings.setValue("dbname", "IbTrade");
-        settings.setValue("pswd", "docker");
-        settings.endGroup();
         settings.beginGroup("Logger");
         settings.setValue("mask", 0);
         settings.endGroup();
         settings.sync();
+
+        const StorageConfig cfg = StorageConfig::loadDefaults();
+        StorageConfig::saveToIni(SETTINGS_FILE_NAME, cfg);
     }
+}
+
+StorageConfig NHelper::getStorageConfig()
+{
+    return StorageConfig::loadFromIni(SETTINGS_FILE_NAME);
+}
+
+void NHelper::saveStorageConfig(const StorageConfig& cfg)
+{
+    StorageConfig::saveToIni(SETTINGS_FILE_NAME, cfg);
 }
 
 QString NHelper::getServerAddress()
@@ -101,20 +95,17 @@ QString NHelper::getServerAddress()
 
 QString NHelper::getDBServerAddress()
 {
-    QSettings settings(SETTINGS_FILE_NAME, QSettings::IniFormat);
-    return settings.value("DBSettings/dbaddress", "localhost").toString();
+    return getStorageConfig().legacyMarketDataDb.host;
 }
 
 QString NHelper::getDBUser()
 {
-    QSettings settings(SETTINGS_FILE_NAME, QSettings::IniFormat);
-    return settings.value("DBSettings/dbusr", "postgres").toString();
+    return getStorageConfig().legacyMarketDataDb.user;
 }
 
 QString NHelper::getDBName()
 {
-    QSettings settings(SETTINGS_FILE_NAME, QSettings::IniFormat);
-    return settings.value("DBSettings/dbname", "IbTrade").toString();
+    return getStorageConfig().legacyMarketDataDb.database;
 }
 
 quint8 NHelper::getLoggerMask()
@@ -132,8 +123,7 @@ void NHelper::writeLoggerMask(const quint8 _mask)
 
 QString NHelper::getDBPswd()
 {
-    QSettings settings(SETTINGS_FILE_NAME, QSettings::IniFormat);
-    return settings.value("DBSettings/pswd", "passw").toString();
+    return getStorageConfig().legacyMarketDataDb.password;
 }
 
 void NHelper::writeServerPort(const qint32 &_port)

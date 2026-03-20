@@ -2,7 +2,7 @@
 #define CAPPLICATIONCONTROLLER_H
 
 #include "cbasicroot.h"
-#include "ModelTreeRepository.h"
+#include "IModelTreeRepository.h"
 #include "SystemBackendImpl.h"
 
 #include "cpresenter.h"
@@ -21,6 +21,9 @@
 #include <QSharedPointer>
 #include <QApplication>
 #include <QObject>
+#include <memory>
+
+class IModelTreeRepository;
 
 class UiLayoutStore;
 
@@ -48,7 +51,7 @@ private:
     CMainModel *pMainModel;
 
     CBasicRoot *m_pDataRoot;
-    ModelTreeRepository *m_repo = nullptr;
+    std::unique_ptr<IModelTreeRepository> m_modelRepo;
     SystemBackendImpl   *m_backend = nullptr;
 
     Supervision::Supervisor *m_pSupervisor = nullptr;

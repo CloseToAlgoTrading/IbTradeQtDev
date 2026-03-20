@@ -73,6 +73,7 @@ SOURCES += \
     ../CObjects/cexecutionreport.cpp \
     ../CObjects/ccommissionreport.cpp \
     ../Common/NHelper.cpp \
+    ../Common/StorageConfig.cpp \
     ../Common/cprocessingbase_v2.cpp \
     ../IBComm/cbrokerdataprovider.cpp \
     ../CObjects/cdeltaobject.cpp \
@@ -108,6 +109,8 @@ SOURCES += \
     ../DB/dbmanager.cpp \
     ../DB/DBConnector.cpp \
     ../Backend/ModelTreeRepository.cpp \
+    ../Backend/ModelTreeRepositoryPostgres.cpp \
+    ../Backend/PersistenceFactory.cpp \
     ../Backend/ModelTreeMapper.cpp \
     ../Backend/SystemBackendImpl.cpp \
     ../Backtest/SimulatedLedger.cpp \
@@ -132,6 +135,7 @@ SOURCES += \
     ../StrategyManagementUI/StrategyDetailPanel.cpp \
     ../StrategyManagementUI/StrategyManagementPanel.cpp \
     ../Pipeline/PipelineTreeUtils.cpp \
+    ../Pipeline/PipelineLog.cpp \
     ../MainSystem/WorkspaceWidgets/BlockInspectorPanel.cpp \
     ../MainSystem/WorkspaceWidgets/RuntimePolicyEditor.cpp
 
@@ -234,6 +238,8 @@ HEADERS += \
     backtest/tst_backtest.h \
     backtest/tst_yahoo_backtest.h \
     backtest/tst_live_backtest.h \
+    backend/tst_storage_config.h \
+    backend/tst_persistence_factory.h \
     backend/tst_model_tree_repository.h \
     backend/tst_system_backend.h \
     backend/tst_persistence.h \
@@ -246,7 +252,10 @@ HEADERS += \
     ../Backend/ISystemBackend.h \
     ../Backend/SystemBackendImpl.h \
     ../Backend/ModelNodeRecord.h \
+    ../Backend/IModelTreeRepository.h \
     ../Backend/ModelTreeRepository.h \
+    ../Backend/ModelTreeRepositoryPostgres.h \
+    ../Backend/PersistenceFactory.h \
     ../Backend/ModelTreeMapper.h \
     ../Strategies/Generic/cbasemodel.h \
     ../Strategies/Generic/cbasicroot.h \
@@ -306,6 +315,7 @@ HEADERS += \
     ../StrategyManagementUI/StrategyDetailPanel.h \
     ../StrategyManagementUI/StrategyManagementPanel.h \
     ../Pipeline/PipelineTreeUtils.h \
+    ../Pipeline/PipelineLog.h \
     ../MainSystem/WorkspaceWidgets/BlockInspectorPanel.h \
     ../MainSystem/WorkspaceWidgets/RuntimePolicyEditor.h \
     ui/tst_runtime_policy_editor.h

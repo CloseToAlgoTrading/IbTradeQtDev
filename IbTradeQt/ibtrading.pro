@@ -65,6 +65,7 @@ SOURCES += \
     CObjects/cdeltaobject.cpp \
     CObjects/cexecutionreport.cpp \
     Common/cprocessingbase_v2.cpp \
+    Common/StorageConfig.cpp \
     DB/dbhandler.cpp \
     DB/dbmanager.cpp \
     MainSystem/capplicationcontroller.cpp \
@@ -75,6 +76,7 @@ SOURCES += \
     MainSystem/ciconhandler.cpp \
     MainSystem/cmainmodel.cpp \
     MainSystem/csettinsmodeldata.cpp \
+    MainSystem/SettingsTreeDelegate.cpp \
     MainSystem/ctreeviewcustommodel.cpp \
     MainSystem/ibtradesystemview.cpp \
     MainSystem/portfolioconfigmodel.cpp \
@@ -187,6 +189,8 @@ SOURCES += \
     Pipeline/PipelineLog.cpp \
     MainSystem/AlertService.cpp \
     Backend/ModelTreeRepository.cpp \
+    Backend/ModelTreeRepositoryPostgres.cpp \
+    Backend/PersistenceFactory.cpp \
     Backend/ModelTreeMapper.cpp \
     Backend/SystemBackendImpl.cpp \
     SharedUI/StrategyTreeDelegate.cpp \
@@ -286,6 +290,7 @@ HEADERS += \
     MainSystem/ciconhandler.h \
     MainSystem/cmainmodel.h \
     MainSystem/csettinsmodeldata.h \
+    MainSystem/SettingsTreeDelegate.h \
     MainSystem/ctreeviewcustommodel.h \
     MainSystem/ctreeviewdatamodel.h \
     MainSystem/ibtradesystemview.h \
@@ -350,7 +355,10 @@ HEADERS += \
     MainSystem/WorkspaceWidgets/RuntimePolicyEditor.h \
     MainSystem/AlertService.h \
     Backend/ModelNodeRecord.h \
+    Backend/IModelTreeRepository.h \
     Backend/ModelTreeRepository.h \
+    Backend/ModelTreeRepositoryPostgres.h \
+    Backend/PersistenceFactory.h \
     Backend/ModelTreeMapper.h \
     Backend/ISystemBackend.h \
     Backend/SystemBackendImpl.h \
@@ -392,6 +400,7 @@ HEADERS += \
     CObjects/cticksize.h \
     CObjects/ctickstring.h \
     Common/GlobalDef.h \
+    Common/StorageConfig.h \
     Common/NHelper.h \
     Common/Singleton.h \
     CustomWidgets/ccandlestickqchart.h \

@@ -24,4 +24,9 @@ CPortfolioConfigModel *CMainModel::pPortfolioConfigModel() const
     return m_pPortfolioConfigModel;
 }
 
+bool CMainModel::storageReconfigurationAllowed() const
+{
+    return m_pPresenter && m_pPresenter->storageReconfigurationAllowed();
+}
+
 

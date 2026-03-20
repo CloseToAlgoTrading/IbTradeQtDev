@@ -34,6 +34,7 @@
 #include "StrategyManagementUI/StrategyManagementPanel.h"
 #include "StrategyManagementUI/StrategyDetailPanel.h"
 #include "UiLayoutDefaults.h"
+#include "SettingsTreeDelegate.h"
 #include <QJsonDocument>
 #include <QAbstractItemView>
 #include <QTreeView>
@@ -450,6 +451,15 @@ QSharedPointer<CBrokerDataProvider> CPresenter::getDataProvider() const
     return m_pDataProvider;
 }
 
+bool CPresenter::storageReconfigurationAllowed() const
+{
+    if (m_pDataProvider && m_pDataProvider->isConnectedToTheServer())
+        return false;
+    if (m_backtestCoord && m_backtestCoord->isBacktestRunning())
+        return false;
+    return true;
+}
+
 void CPresenter::setBackend(ISystemBackend* backend)
 {
     m_backend = backend;
@@ -464,6 +474,7 @@ void CPresenter::setPGuiModel(CMainModel *newPGuiModel)
 {
    pGuiModel = newPGuiModel;
    this->pIbtsView->getSettingsTreeView()->setModel(this->pGuiModel->pSettingsModel());
+   this->pIbtsView->getSettingsTreeView()->setItemDelegate(new SettingsTreeDelegate(this));
    this->pIbtsView->getSettingsTreeView()->expandAll();
 
    this->getPGuiModel()->pPortfolioConfigModel()->setBrokerDataProvider(this->m_pDataProvider);

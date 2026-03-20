@@ -7,7 +7,7 @@
 #include <QByteArray>
 #include <QTimer>
 
-class ModelTreeRepository;
+class IModelTreeRepository;
 class QMainWindow;
 class QTabWidget;
 class QSplitter;
@@ -24,7 +24,7 @@ public:
 
     explicit UiLayoutStore(QObject* parent = nullptr);
 
-    void setRepository(ModelTreeRepository* repo);
+    void setRepository(IModelTreeRepository* repo);
 
     // Registers splitters, tab widget, header views, and wires debounced save.
     void attachToView(CIBTradeSystemView* view);
@@ -48,7 +48,7 @@ private:
     static QString bytesToJson(const QByteArray& b);
     static QByteArray bytesFromJson(const QString& s);
 
-    ModelTreeRepository* m_repo = nullptr;
+    IModelTreeRepository* m_repo = nullptr;
 
     QPointer<QMainWindow> m_mainWindow;
     QPointer<QTabWidget>  m_mainTabWidget;

@@ -22,6 +22,11 @@
 #include <QDateTime>
 /******* xxx *********/
 
+#include "NHelper.h"
+#include "PersistenceFactory.h"
+#include "StorageConfig.h"
+#include "IModelTreeRepository.h"
+#include <utility>
 #include "cpipelinestrategyadapter.h"
 #include "IBComClientImpl.h"
 #include "Pipeline/BlockRegistry.h"
@@ -118,23 +123,29 @@ CApplicationController::CApplicationController(QObject *parent):
 {
     registerBuiltinBlocks();
 
-    // Initialize backend (SQLite repository + service layer)
-    m_repo = new ModelTreeRepository("model_tree.sqlite", "app_main_conn");
-    m_repo->initialize();
-    m_backend = new SystemBackendImpl(m_repo, this);
+    NHelper::initSettings();
+    const StorageConfig storageCfg = NHelper::getStorageConfig();
+    m_modelRepo = Persistence::createModelTreeRepository(storageCfg, QStringLiteral("app_main_conn"));
+    if (!m_modelRepo || !m_modelRepo->initialize()) {
+        qCWarning(lcApp) << "ModelStore initialization failed — check ibtrade.ini [ModelStore] and database availability";
+    }
+    m_backend = new SystemBackendImpl(m_modelRepo.get(), this);
 
     // Try loading from DB; if empty, migrate from legacy JSON file (one-time)
     if (!m_backend->loadFromDb()) {
-        QString migrated = m_repo->metadata("model_tree_migrated_from_json");
+        auto* repo = m_backend->modelTreeRepository();
+        QString migrated = repo ? repo->metadata("model_tree_migrated_from_json") : QString();
         if (migrated != "true") {
             QFile jsonFile("model_tree_config.json");
             if (jsonFile.exists()) {
                 qCInfo(lcApp) << "Migration: importing model tree from JSON to SQLite (one-time)";
                 if (m_backend->importFromJsonFile("model_tree_config.json")) {
-                    m_repo->setMetadata("model_tree_migrated_from_json", "true");
-                    m_repo->setMetadata("migration_source", "model_tree_config.json");
-                    m_repo->setMetadata("migration_timestamp",
-                                        QDateTime::currentDateTimeUtc().toString(Qt::ISODate));
+                    if (repo) {
+                        repo->setMetadata("model_tree_migrated_from_json", "true");
+                        repo->setMetadata("migration_source", "model_tree_config.json");
+                        repo->setMetadata("migration_timestamp",
+                                           QDateTime::currentDateTimeUtc().toString(Qt::ISODate));
+                    }
                     qCInfo(lcApp) << "Migration: completed successfully";
                 } else {
                     qCWarning(lcApp) << "Migration: failed to import from JSON";
@@ -194,7 +205,7 @@ CApplicationController::CApplicationController(QObject *parent):
     this->pMainPresenter->MapSignals();
 
     m_layoutStore = new UiLayoutStore(this);
-    m_layoutStore->setRepository(m_repo);
+    m_layoutStore->setRepository(m_backend->modelTreeRepository());
     m_layoutStore->attachToView(pMainView);
     m_layoutStore->load();
     pMainView->setUiLayoutStore(m_layoutStore);
@@ -217,7 +228,7 @@ CApplicationController::CApplicationController(QObject *parent):
     m_pExecutionAdapter = new IBOrderExecutionAdapter(brokerApi);
     CPipelineStrategyAdapter::setGlobalExecutionPort(m_pExecutionAdapter);
 
-    m_pPositionRepo = new SqlitePositionRepository("myLocalDb.sqlite", true);
+    m_pPositionRepo = new SqlitePositionRepository(storageCfg.appDataStore.path, true);
 
     m_pLivePositionRepo = new IBPositionRepositoryAdapter(this);
     m_pLivePositionRepo->connectToRouter(m_pPositionRouter);
@@ -266,7 +277,13 @@ CApplicationController::~CApplicationController()
     delete this->pMainView;
     delete this->pMainPresenter;
     delete this->pMainModel;
-    // m_pDataRoot is owned by m_backend (which is a QObject child of this)
+    if (m_layoutStore)
+        m_layoutStore->setRepository(nullptr);
+    if (m_backend) {
+        delete m_backend;
+        m_backend = nullptr;
+    }
+    // m_modelRepo released after destructor body (unique_ptr member) — backend must be gone first
 }
 
 void CApplicationController::setUpApplication(QApplication &app)

@@ -1,4 +1,5 @@
 #include "dbhandler.h"
+#include "NHelper.h"
 #include "dbquery.h"
 #include <QtSql/QSqlQuery>
 #include <QtSql/QSqlError>
@@ -179,7 +180,8 @@ void DBHandler::slotUpdateTradeCommission(const DbTradeCommission &tradeComm)
 
 void DBHandler::initializeConnectionSlot()
 {
-    bool isConnected = connectDB("myLocalDb.sqlite");
+    const QString dbPath = NHelper::getStorageConfig().appDataStore.path;
+    bool isConnected = connectDB(dbPath);
     if(isConnected)
         isConnected = initializeDatabase();
     emit signalDBConnectionState(isConnected);

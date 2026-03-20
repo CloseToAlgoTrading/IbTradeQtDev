@@ -25,6 +25,8 @@
 #include "backtest/tst_backtest.h"
 #include "backtest/tst_yahoo_backtest.h"
 #include "backtest/tst_live_backtest.h"
+#include "backend/tst_storage_config.h"
+#include "backend/tst_persistence_factory.h"
 #include "backend/tst_model_tree_repository.h"
 #include "backend/tst_system_backend.h"
 #include "backend/tst_persistence.h"
@@ -106,6 +108,9 @@ int main(int argc, char *argv[])
 
     // Live end-to-end backtests — require internet, write HTML+TXT reports
     { TestLiveBacktest tc;                   status |= QTest::qExec(&tc, argc, argv); }
+
+    { TestStorageConfig tc;                  status |= QTest::qExec(&tc, argc, argv); }
+    { TestPersistenceFactory tc;             status |= QTest::qExec(&tc, argc, argv); }
 
     // Backend - Model Tree Repository & Mapper
     { TestModelTreeRepository tc;            status |= QTest::qExec(&tc, argc, argv); }

@@ -12,6 +12,7 @@ RuntimePolicyEditor::RuntimePolicyEditor(QWidget* parent)
     : QWidget(parent)
 {
     buildUi();
+    setPolicy(Pipeline::StrategyRuntimePolicy{});
 }
 
 void RuntimePolicyEditor::buildUi()

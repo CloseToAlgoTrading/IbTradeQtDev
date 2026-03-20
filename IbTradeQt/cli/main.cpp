@@ -5,6 +5,8 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include "Backend/ModelTreeRepository.h"
+#include "NHelper.h"
+#include "StorageConfig.h"
 #include "Backend/SystemBackendImpl.h"
 #include "Strategies/Generic/cbasicroot.h"
 
@@ -47,14 +49,17 @@ int main(int argc, char* argv[])
     parser.addHelpOption();
     parser.addVersionOption();
 
-    parser.addOption({{"d", "db"}, "SQLite database path", "path", "model_tree.sqlite"});
+    parser.addOption({{"d", "db"}, "Model tree SQLite path (default: [ModelStore] in ibtrade.ini)", "path"});
 
     parser.addPositionalArgument("command",
         "Command: tree, add-account, add-portfolio, add-strategy, remove, rename, info, export");
 
     parser.process(app);
 
+    NHelper::initSettings();
     QString dbPath = parser.value("db");
+    if (dbPath.isEmpty())
+        dbPath = NHelper::getStorageConfig().modelStore.sqlitePath;
     QStringList args = parser.positionalArguments();
 
     if (args.isEmpty()) {

@@ -4,9 +4,7 @@
 #include <QString>
 #include <QDateTime>
 #include <QVariant>
-
-
-#pragma once
+#include "StorageConfig.h"
 
 #define SETTINGS_FILE_NAME "ibtrade.ini"
 
@@ -19,6 +17,9 @@ namespace NHelper
     quint64 convertTimeStringToTimestamp(QString date, bool isFormat = false);
 
     void initSettings();
+
+    StorageConfig getStorageConfig();
+    void saveStorageConfig(const StorageConfig& cfg);
 
     quint16 getServerPort();
     void writeServerPort(const qint32 & _port);

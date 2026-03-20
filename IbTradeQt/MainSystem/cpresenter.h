@@ -51,6 +51,9 @@ public:
     ISystemBackend* backend() const { return m_backend; }
 
     QSharedPointer<CBrokerDataProvider> getDataProvider() const;
+
+    /** Safe to edit storage paths / ModelStore settings (not connected, no backtest running). */
+    bool storageReconfigurationAllowed() const;
     IBComm::MarketDataRouter* marketDataRouter() const { return m_pMarketDataRouter; }
     AlphaModGetTime* getWorkerAlfaTime() const { return workerAlfaTime; }
 

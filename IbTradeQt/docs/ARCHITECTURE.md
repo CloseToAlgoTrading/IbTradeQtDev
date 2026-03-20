@@ -25,7 +25,7 @@
 - Hierarchical portfolio and strategy management (Account → Portfolio → Strategy)
 - Composable LEGO pipeline blocks (Selection → Alpha → Rebalance → Risk → Execution)
 - **Backend service as single system boundary** — all mutations flow through `ISystemBackend`
-- SQLite-backed persistent model tree (`model_nodes` table)
+- **Storage topology by role** — model/config (`ModelStore`), app/runtime (`AppDataStore`), backtest (`BacktestStore`), and optional future market-data store; see [Storage topology (by role)](#storage-topology-by-role). Model tree persistence (`model_nodes`, `app_metadata`) uses SQLite or PostgreSQL for ModelStore per `ibtrade.ini`.
 - Real-time and historical market data processing via typed signal routers
 - Multi-threaded execution for responsive UI
 - Client-independent architecture (GUI, CLI, future MCP all use the same backend API)
@@ -38,9 +38,10 @@
 | **Language** | C++17 |
 | **Build System** | qmake (`.pro` files) |
 | **Broker API** | Interactive Brokers TWS C++ API |
-| **Model Persistence** | SQLite (`model_nodes`, `app_metadata` tables) |
-| **Market Data Storage** | PostgreSQL |
-| **Trading State Storage** | SQLite (positions, trades, strategy data) |
+| **Model Persistence (ModelStore)** | SQLite or PostgreSQL (`model_nodes`, `app_metadata`); selectable in `[ModelStore]` |
+| **Market Data Storage** | PostgreSQL (legacy `[DBSettings]` / `DBConnector`; not the same as ModelStore PG profile unless aligned in INI) |
+| **App / trading state (AppDataStore)** | SQLite by default — positions, legacy operational DB; path in `[AppDataStore]` |
+| **Backtest (BacktestStore)** | SQLite by default; separate file path in `[BacktestStore]` |
 | **Decimal Precision** | Intel Binary Decimal Library (libbid) |
 
 ### Entry Point
@@ -885,6 +886,21 @@ flowchart TB
 ---
 
 ## Database Architecture
+
+### Storage topology (by role)
+
+Persistence is organized by **storage role**, not a single global database mode. Each role can use a different backend and file path; configuration lives in `ibtrade.ini` (see `[ModelStore]`, `[AppDataStore]`, `[BacktestStore]`) and is loaded once into a central **`StorageConfig`**, which a **composition root / factory** uses at startup. Downstream code should depend on repository interfaces, not on parsing INI directly.
+
+| Role | Working name | Typical contents | First rollout |
+| --- | --- | --- | --- |
+| **Config / model** | **ModelStore** | Strategy tree, catalog, versions, bindings, model-level metadata; includes **`app_metadata`** (e.g. UI layout key `ui_layout_v1`) until a future split. | SQLite or PostgreSQL selectable; PostgreSQL implementation targets this store only. |
+| **App / runtime** | **AppDataStore** | Positions (`SqlitePositionRepository`), legacy `DBHandler` tables (trades, open positions, etc.). | SQLite path configurable. |
+| **Backtest** | **BacktestStore** | Backtest runs, metrics, trades, equity, historical bars used by backtest. | Separate SQLite file; path configurable. |
+| **Market data** (optional / later) | **MarketDataStore** | Real-time bars, ticks, large caches. | Legacy `[DBSettings]` / `DBConnector` — not merged with ModelStore configuration. |
+
+**Scope rule:** The first PostgreSQL rollout applies to **ModelStore** only. **AppDataStore** and **BacktestStore** remain SQLite unless a later phase has explicit product justification. **Market data** PostgreSQL settings remain separate from ModelStore.
+
+**Design note:** UI layout is stored in `app_metadata` on the model-tree database; keeping it under ModelStore minimizes churn; moving layout to AppDataStore would be a separate migration.
 
 ### model_nodes (persistent model tree)
 

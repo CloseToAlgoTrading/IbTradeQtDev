@@ -19,6 +19,9 @@ public:
 
     CSettinsModelData *pSettingsModel();
     CPortfolioConfigModel *pPortfolioConfigModel() const;
+
+    /** See CPresenter::storageReconfigurationAllowed(). */
+    bool storageReconfigurationAllowed() const;
     CBasicRoot* dataRoot() const { return m_pDataRoot; }
     AlertService* alertService() const { return m_pAlertService; }
 

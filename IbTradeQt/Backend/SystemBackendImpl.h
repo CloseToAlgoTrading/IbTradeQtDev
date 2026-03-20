@@ -2,7 +2,7 @@
 #define SYSTEMBACKENDIMPL_H
 
 #include "ISystemBackend.h"
-#include "ModelTreeRepository.h"
+#include "IModelTreeRepository.h"
 #include "ModelTreeMapper.h"
 #include <QHash>
 
@@ -15,8 +15,11 @@ class SystemBackendImpl : public ISystemBackend
     Q_OBJECT
 
 public:
-    explicit SystemBackendImpl(ModelTreeRepository* repo, QObject* parent = nullptr);
+    /** Caller owns the repository lifetime; backend does not delete. */
+    explicit SystemBackendImpl(IModelTreeRepository* repo, QObject* parent = nullptr);
     ~SystemBackendImpl() override;
+
+    IModelTreeRepository* modelTreeRepository() const { return m_repo; }
 
     // ---- Model Service: Topology CRUD ----
     QString createAccount(const QString& name) override;
@@ -137,7 +140,7 @@ private:
     static QJsonObject versionToJson(const DbStrategyVersion& v);
 
     CBasicRoot* m_root = nullptr;
-    ModelTreeRepository* m_repo;
+    IModelTreeRepository* m_repo = nullptr;
     QHash<QString, CGenericModelApi*> m_uuidIndex;
     bool m_brokerConnected = false;
 };

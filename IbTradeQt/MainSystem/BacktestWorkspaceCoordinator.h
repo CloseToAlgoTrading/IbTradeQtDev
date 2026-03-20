@@ -35,6 +35,9 @@ public:
 
     BacktestUI::BacktestWorkspaceDock* dock() const { return m_dock; }
 
+    /** True while a backtest worker thread is active. */
+    bool isBacktestRunning() const;
+
 signals:
     void catalogRefreshNeeded();
 

@@ -16,7 +16,7 @@
 
 Q_LOGGING_CATEGORY(lcSystemBackend, "backend.system")
 
-SystemBackendImpl::SystemBackendImpl(ModelTreeRepository* repo, QObject* parent)
+SystemBackendImpl::SystemBackendImpl(IModelTreeRepository* repo, QObject* parent)
     : ISystemBackend(parent)
     , m_repo(repo)
 {

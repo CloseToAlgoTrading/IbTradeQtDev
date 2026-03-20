@@ -29,6 +29,15 @@ enum S_DATA_IDS{
     S_DATA_ID_LOG_LEVEL_DEBUG,
     S_DATA_ID_SERVER_ADDRESS,
     S_DATA_ID_SERVER_PORT,
+    S_DATA_ID_MODEL_STORE_BACKEND,
+    S_DATA_ID_MODEL_STORE_SQLITE_PATH,
+    S_DATA_ID_PG_HOST,
+    S_DATA_ID_PG_PORT,
+    S_DATA_ID_PG_DATABASE,
+    S_DATA_ID_PG_USER,
+    S_DATA_ID_PG_PASSWORD,
+    S_DATA_ID_APP_DATA_PATH,
+    S_DATA_ID_BACKTEST_PATH,
     S_DATA_ID_COUNT
 };
 
@@ -37,6 +46,9 @@ class CSettinsModelData: public CTreeViewCustomModel
     Q_OBJECT
 public:
     CSettinsModelData(QTreeView *treeView, QObject *parent);
+
+    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
+    Qt::ItemFlags flags(const QModelIndex &index) const override;
 
     void setupModelData(TreeItem * rootItem);
 
@@ -61,10 +73,26 @@ signals:
 
 
 private:
+    void onSettingsDoubleClicked(const QModelIndex &index);
+
+    void persistStorageSettingsFromUi();
+    bool storageReconfigurationAllowed() const;
+    /** Show SQLite path vs PostgreSQL rows based on ModelStore backend. */
+    void applyStorageVisibilityForBackend();
+
     pItemDataType m_pServerAddress;
     pItemDataType m_pServerPort;
     QVector<pItemDataType> m_plogLevel;
 
+    pItemDataType m_pModelStoreBackend;
+    pItemDataType m_pModelStoreSqlitePath;
+    pItemDataType m_pPgHost;
+    pItemDataType m_pPgPort;
+    pItemDataType m_pPgDatabase;
+    pItemDataType m_pPgUser;
+    pItemDataType m_pPgPassword;
+    pItemDataType m_pAppDataPath;
+    pItemDataType m_pBacktestPath;
 
 };
 
