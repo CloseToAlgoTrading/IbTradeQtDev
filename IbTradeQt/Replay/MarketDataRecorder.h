@@ -6,7 +6,6 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QTextStream>
-#include "IBComm/MarketDataRouter.h"
 #include "Pipeline/Contracts.h"
 
 class MarketDataRecorder : public QObject {
@@ -38,12 +37,13 @@ public:
     }
 
 public slots:
-    void onMarketTick(const IBComm::MarketTick& tick) {
+    void onMarketTick(const Pipeline::MarketTick& tick) {
         QJsonObject obj;
         obj["type"] = "MarketTick";
         obj["symbol"] = tick.symbol;
         obj["bid"] = tick.bid;
         obj["ask"] = tick.ask;
+        obj["volume"] = tick.volume;
         obj["timestamp"] = tick.timestamp.toString(Qt::ISODateWithMs);
         obj["reqId"] = tick.reqId;
         writeLine(obj);
@@ -66,11 +66,16 @@ public slots:
         ++m_intentCount;
     }
 
-    void onBarClose(const QString& symbol, const QDateTime& timestamp) {
+    void onOhlcvBar(const Pipeline::OHLCVBar& bar) {
         QJsonObject obj;
         obj["type"] = "BarClose";
-        obj["symbol"] = symbol;
-        obj["timestamp"] = timestamp.toString(Qt::ISODateWithMs);
+        obj["symbol"] = bar.symbol;
+        obj["open"] = bar.open;
+        obj["high"] = bar.high;
+        obj["low"] = bar.low;
+        obj["close"] = bar.close;
+        obj["volume"] = bar.volume;
+        obj["timestamp"] = bar.timestamp.toString(Qt::ISODateWithMs);
         writeLine(obj);
     }
 

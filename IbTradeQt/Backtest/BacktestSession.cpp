@@ -3,6 +3,7 @@
 #include "Backtest/CsvHistoricalDataSource.h"
 #include "Backtest/YahooFinanceDataSource.h"
 #include "Pipeline/PipelineFactory.h"
+#include "Pipeline/Contracts.h"
 #include "Pipeline/StrategyPipelineRunner.h"
 #include "Pipeline/UniverseResolver.h"
 #include "Strategies/Generic/cpipelinestrategyadapter.h"
@@ -169,44 +170,34 @@ void BacktestSession::buildObjectGraph()
     }
 
     // --- Wire signals in priority order (all Qt::DirectConnection, same thread) ---
+    // Feed → runner only for strategy; runner dispatches ticks/bars to blocks.
 
     // Priority 0: price cache updated before any consumer sees the tick
     connect(m_replayer.get(), &MarketDataReplayer::tick,
             m_priceStore.get(), &MarketPriceStore::onTick,
             Qt::DirectConnection);
 
-    // Priority 1: flush pending orders from previous barClose
+    // Priority 1: flush pending orders from previous bar close
     connect(m_replayer.get(), &MarketDataReplayer::tick,
-            this, [this](const IBComm::MarketTick& tick) {
+            this, [this](const Pipeline::MarketTick& tick) {
                 m_clock->setCurrentTime(tick.timestamp);
                 m_execAdapter->onNextTickOpen(tick);
             }, Qt::DirectConnection);
 
-    // Priority 2: strategy alpha blocks receive the tick
-    for (auto* alpha : m_pipelineRunner->graph().alphaBlocks) {
-        connect(m_replayer.get(), &MarketDataReplayer::tick,
-                alpha, &Pipeline::IAlphaBlock::onTick,
-                Qt::DirectConnection);
-    }
-
-    // Priority 2.5: risk blocks receive ticks for proactive monitoring (stop-loss, etc.)
-    auto allRisks = m_pipelineRunner->graph().strategyLevel.risks
-                  + m_pipelineRunner->graph().portfolioLevel.risks
-                  + m_pipelineRunner->graph().accountLevel.risks;
-    for (auto* risk : allRisks) {
-        connect(m_replayer.get(), &MarketDataReplayer::tick,
-                risk, [risk](const IBComm::MarketTick& t){ risk->onTick(t); },
-                Qt::DirectConnection);
-    }
-
-    // Priority 3: strategy barClose — pipeline runner processes bar boundary
-    connect(m_replayer.get(), &MarketDataReplayer::barClose,
-            m_pipelineRunner, &Pipeline::StrategyPipelineRunner::onBarClose,
+    // Priority 2: pipeline ingress (tick + authoritative OHLCV bar)
+    connect(m_replayer.get(), &MarketDataReplayer::tick,
+            m_pipelineRunner, &Pipeline::StrategyPipelineRunner::ingestTick,
+            Qt::DirectConnection);
+    connect(m_replayer.get(), &MarketDataReplayer::ohlcvBar,
+            m_pipelineRunner, &Pipeline::StrategyPipelineRunner::ingestOhlcvBar,
             Qt::DirectConnection);
 
-    // Priority 4: ledger mark-to-market after strategy has processed barClose
-    connect(m_replayer.get(), &MarketDataReplayer::barClose,
-            m_ledger.get(), &SimulatedLedger::onBarClose,
+    // Priority 3: ledger mark-to-market on bar boundary (after runner slot order for same signal:
+    // use QueuedConnection would reorder — keep Direct and connect ledger after runner in same wave)
+    connect(m_replayer.get(), &MarketDataReplayer::ohlcvBar,
+            m_ledger.get(), [this](const Pipeline::OHLCVBar& bar) {
+                m_ledger->onBarClose(bar.symbol, bar.timestamp);
+            },
             Qt::DirectConnection);
 
     // SimulatedExecutionAdapter → SimulatedLedger (fills update ledger state)
@@ -244,12 +235,12 @@ void BacktestSession::loadHistoricalData()
             Qt::DirectConnection);
 
     connect(m_dataSource.get(), &IHistoricalDataSource::tickLoaded,
-            this, [this](const IBComm::MarketTick& tick) {
+            this, [this](const Pipeline::MarketTick& tick) {
                 m_replayer->addTick(tick);
             }, Qt::DirectConnection);
 
     connect(m_dataSource.get(), &IHistoricalDataSource::tickByTickLoaded,
-            this, [this](const IBComm::TickByTickTrade& trade) {
+            this, [this](const Pipeline::TickByTickTrade& trade) {
                 m_replayer->addTickByTick(trade);
             }, Qt::DirectConnection);
 
@@ -317,7 +308,7 @@ void BacktestSession::driveReplayLoop()
 
     // Connect progress reporting
     connect(m_replayer.get(), &MarketDataReplayer::tick,
-            this, [this, total, &processed](const IBComm::MarketTick&) mutable {
+            this, [this, total, &processed](const Pipeline::MarketTick&) mutable {
                 ++processed;
                 if (total > 0) {
                     emit progressChanged(processed * 100 / total);

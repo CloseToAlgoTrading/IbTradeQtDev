@@ -3,7 +3,7 @@
 
 #include <QObject>
 #include <QMap>
-#include "IBComm/MarketDataRouter.h"
+#include "Pipeline/Contracts.h"
 
 namespace Backtest {
 
@@ -15,7 +15,7 @@ class MarketPriceStore : public QObject {
 public:
     explicit MarketPriceStore(QObject* parent = nullptr) : QObject(parent) {}
 
-    IBComm::MarketTick lastTick(const QString& symbol) const {
+    Pipeline::MarketTick lastTick(const QString& symbol) const {
         return m_cache.value(symbol);
     }
 
@@ -26,12 +26,12 @@ public:
     void clear() { m_cache.clear(); }
 
 public slots:
-    void onTick(const IBComm::MarketTick& tick) {
+    void onTick(const Pipeline::MarketTick& tick) {
         m_cache[tick.symbol] = tick;
     }
 
 private:
-    QMap<QString, IBComm::MarketTick> m_cache;
+    QMap<QString, Pipeline::MarketTick> m_cache;
 };
 
 } // namespace Backtest

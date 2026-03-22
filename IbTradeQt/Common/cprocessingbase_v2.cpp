@@ -1,4 +1,5 @@
 #include "cprocessingbase_v2.h"
+#include "IBComm/ProcessingRouterSink.h"
 #include <QSharedPointer>
 #include <QtConcurrent/QtConcurrentRun>
 #include "NHelper.h"
@@ -9,6 +10,7 @@ Q_LOGGING_CATEGORY(processingBaseV2Log, "processing.Base");
 CProcessingBase_v2::CProcessingBase_v2(QObject *parent)
     : QObject(parent)
     , m_Client(nullptr)
+    , m_routerSink(std::make_unique<IBComm::ProcessingRouterSink>(this))
     , m_aciveReqestsMap()
     , m_historyMap()
 	, m_histMap()
@@ -241,120 +243,11 @@ QSharedPointer<CBrokerDataProvider> CProcessingBase_v2::getIBrokerDataProvider()
 
 void CProcessingBase_v2::setIBrokerDataProvider(QSharedPointer<CBrokerDataProvider> newClient)
 {
-    disconnectFromTypedRouters();
+    if (m_routerSink)
+        m_routerSink->unbind();
     m_Client = newClient;
-    connectToTypedRouters();
-}
-
-//----------------------------------------------------------
-void CProcessingBase_v2::connectToTypedRouters()
-{
-    if (!m_Client) return;
-
-    if (auto* r = m_Client->orderRouter()) {
-        connect(r, &IBComm::OrderRouter::nextValidIdReceived,
-                this, &CProcessingBase_v2::slotRouterNextValidId, Qt::QueuedConnection);
-        connect(r, &IBComm::OrderRouter::executionReceived,
-                this, &CProcessingBase_v2::slotRouterExecution, Qt::QueuedConnection);
-        connect(r, &IBComm::OrderRouter::commissionReceived,
-                this, &CProcessingBase_v2::slotRouterCommission, Qt::QueuedConnection);
-    }
-    if (auto* r = m_Client->accountRouter()) {
-        connect(r, &IBComm::AccountRouter::accountSummaryUpdated,
-                this, &CProcessingBase_v2::slotRouterAccountSummary, Qt::QueuedConnection);
-    }
-    if (auto* r = m_Client->positionRouter()) {
-        connect(r, &IBComm::PositionRouter::positionChanged,
-                this, &CProcessingBase_v2::slotRouterPositionChanged, Qt::QueuedConnection);
-        connect(r, &IBComm::PositionRouter::positionSnapshotComplete,
-                this, &CProcessingBase_v2::slotRouterPositionSnapshotComplete, Qt::QueuedConnection);
-    }
-    if (auto* r = m_Client->historicalDataRouter()) {
-        connect(r, &IBComm::HistoricalDataRouter::barsReceived,
-                this, &CProcessingBase_v2::slotRouterBarsReceived, Qt::QueuedConnection);
-    }
-}
-
-//----------------------------------------------------------
-void CProcessingBase_v2::disconnectFromTypedRouters()
-{
-    if (!m_Client) return;
-
-    if (auto* r = m_Client->orderRouter())
-        disconnect(r, nullptr, this, nullptr);
-    if (auto* r = m_Client->accountRouter())
-        disconnect(r, nullptr, this, nullptr);
-    if (auto* r = m_Client->positionRouter())
-        disconnect(r, nullptr, this, nullptr);
-    if (auto* r = m_Client->historicalDataRouter())
-        disconnect(r, nullptr, this, nullptr);
-}
-
-//----------------------------------------------------------
-void CProcessingBase_v2::slotRouterNextValidId(int orderId)
-{
-    setNextValidId(static_cast<qint32>(orderId));
-}
-
-//----------------------------------------------------------
-void CProcessingBase_v2::slotRouterAccountSummary(const IBComm::AccountSummaryData& data)
-{
-    CAccountSummary obj;
-    obj.setAccount(data.account);
-    obj.setAccountType(data.accountType);
-    obj.setCurrency(data.currency);
-    obj.setBuyingPower(data.buyingPower);
-    obj.setTotalCashValue(data.totalCashValue);
-    obj.setNetLiquidation(data.netLiquidation);
-    obj.setEquityWithLoanValue(data.equityWithLoanValue);
-    emit signalRecvAccountSummary(obj);
-}
-
-//----------------------------------------------------------
-void CProcessingBase_v2::slotRouterPositionChanged(const IBComm::PositionUpdate& update)
-{
-    Contract c;
-    c.symbol = update.symbol.toStdString();
-    CPosition pos(update.account, c, update.quantity, update.avgCost);
-    m_positionMap.insert(update.symbol, pos);
-}
-
-//----------------------------------------------------------
-void CProcessingBase_v2::slotRouterPositionSnapshotComplete()
-{
-    emit signalEndRecvPosition();
-}
-
-//----------------------------------------------------------
-void CProcessingBase_v2::slotRouterBarsReceived(int requestId, const QString& symbol,
-                                                 const QVector<IBComm::HistoricalBar>& bars)
-{
-    Q_UNUSED(requestId)
-    QList<CHistoricalData> histList;
-    for (const auto& bar : bars) {
-        CHistoricalData hd(0, "", bar.open, bar.high, bar.low, bar.close,
-                           static_cast<int>(bar.volume), bar.count, 0.0, 0, false);
-        hd.setDateTime(bar.timestamp.toMSecsSinceEpoch());
-        histList.append(hd);
-    }
-    if (!histList.isEmpty()) {
-        histList.last().setIsLast(true);
-    }
-    emit signalCbkRecvHistoricalData(histList, symbol);
-}
-
-//----------------------------------------------------------
-void CProcessingBase_v2::slotRouterExecution(const IBComm::ExecutionReport& report)
-{
-    CExecutionReport obj(report.orderId, report.symbol, report.avgPrice, report.shares, report.execId);
-    emit signalRecvExecutionReport(obj);
-}
-
-//----------------------------------------------------------
-void CProcessingBase_v2::slotRouterCommission(const IBComm::CommissionUpdate& update)
-{
-    CCommissionReport obj(update.execId, update.commission, update.currency, update.realizedPnL, 0.0, 0);
-    emit signalRecvCommissionReport(obj);
+    if (m_routerSink)
+        m_routerSink->bindTo(newClient);
 }
 
 qint32 CProcessingBase_v2::getRequestMapSize() const

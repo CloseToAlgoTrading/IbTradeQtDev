@@ -12,6 +12,64 @@
 
 namespace Pipeline {
 
+/// Domain market tick (pipeline layer). IB adapters convert at the boundary.
+struct MarketTick {
+    Q_GADGET
+    Q_PROPERTY(QString symbol MEMBER symbol)
+    Q_PROPERTY(double bid MEMBER bid)
+    Q_PROPERTY(double ask MEMBER ask)
+    Q_PROPERTY(double volume MEMBER volume)
+    Q_PROPERTY(QDateTime timestamp MEMBER timestamp)
+    Q_PROPERTY(int reqId MEMBER reqId)
+
+public:
+    QString symbol;
+    double bid = 0.0;
+    double ask = 0.0;
+    double volume = 0.0;
+    QDateTime timestamp;
+    int reqId = 0;
+
+    double mid() const { return (bid + ask) / 2.0; }
+};
+
+/// Completed bar with OHLCV — authoritative payload from feed adapters (replay / IB).
+struct OHLCVBar {
+    Q_GADGET
+    Q_PROPERTY(QString symbol MEMBER symbol)
+    Q_PROPERTY(double open MEMBER open)
+    Q_PROPERTY(double high MEMBER high)
+    Q_PROPERTY(double low MEMBER low)
+    Q_PROPERTY(double close MEMBER close)
+    Q_PROPERTY(double volume MEMBER volume)
+    Q_PROPERTY(QDateTime timestamp MEMBER timestamp)
+
+public:
+    QString symbol;
+    double open = 0.0;
+    double high = 0.0;
+    double low = 0.0;
+    double close = 0.0;
+    double volume = 0.0;
+    /// Bar end / event time (same role as prior barClose timestamp).
+    QDateTime timestamp;
+};
+
+struct TickByTickTrade {
+    Q_GADGET
+    Q_PROPERTY(QString symbol MEMBER symbol)
+    Q_PROPERTY(double price MEMBER price)
+    Q_PROPERTY(double size MEMBER size)
+    Q_PROPERTY(QDateTime timestamp MEMBER timestamp)
+    Q_PROPERTY(QString exchange MEMBER exchange)
+public:
+    QString symbol;
+    double price = 0.0;
+    double size = 0.0;
+    QDateTime timestamp;
+    QString exchange;
+};
+
 struct Signal {
     Q_GADGET
     Q_PROPERTY(QString symbol MEMBER symbol)
@@ -150,6 +208,9 @@ public:
 
 } // namespace Pipeline
 
+Q_DECLARE_METATYPE(Pipeline::MarketTick)
+Q_DECLARE_METATYPE(Pipeline::OHLCVBar)
+Q_DECLARE_METATYPE(Pipeline::TickByTickTrade)
 Q_DECLARE_METATYPE(Pipeline::Signal)
 Q_DECLARE_METATYPE(Pipeline::TargetPosition)
 Q_DECLARE_METATYPE(Pipeline::ExecutionIntent)

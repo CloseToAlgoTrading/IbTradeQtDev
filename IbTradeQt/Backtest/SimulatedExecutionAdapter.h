@@ -8,6 +8,7 @@
 #include "Backtest/BacktestConfig.h"
 #include "Backtest/FilledOrder.h"
 #include "Backtest/MarketPriceStore.h"
+#include "Pipeline/Contracts.h"
 #include "Common/IClock.h"
 
 namespace Backtest {
@@ -37,7 +38,7 @@ public:
 
     // Called by BacktestSession replay loop at the start of each new tick.
     // Flushes any pending orders queued during the previous barClose event.
-    void onNextTickOpen(const IBComm::MarketTick& openTick);
+    void onNextTickOpen(const Pipeline::MarketTick& openTick);
 
     const QVector<FilledOrder>& filledOrders() const { return m_filledOrders; }
 
@@ -48,10 +49,10 @@ signals:
 
 private:
     double computeFillPrice(const Pipeline::ExecutionIntent& intent,
-                            const IBComm::MarketTick& tick) const;
+                            const Pipeline::MarketTick& tick) const;
 
     FilledOrder executeFill(const Pipeline::ExecutionIntent& intent,
-                            const IBComm::MarketTick& tick);
+                            const Pipeline::MarketTick& tick);
 
     FillModelType                       m_fillModel;
     double                              m_slippageBps;

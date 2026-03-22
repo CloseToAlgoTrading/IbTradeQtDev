@@ -2,6 +2,7 @@
 #define PIPELINE_STRATEGYPIPELINERUNNER_H
 
 #include <QObject>
+#include <QStringList>
 #include <QVector>
 #include <QMap>
 #include <QSet>
@@ -16,10 +17,13 @@
 #include "IExecutionBlock.h"
 #include "ISignalMergePolicy.h"
 #include "Scope.h"
-#include "../IBComm/MarketDataRouter.h"
 #include "../Ports/IOrderExecutionPort.h"
 #include "../Ports/IPositionRepositoryPort.h"
 #include "../Common/IClock.h"
+
+namespace IBComm {
+class MarketDataRouter;
+}
 
 namespace Pipeline {
 
@@ -101,47 +105,42 @@ public:
         , m_clock(clock)
     {}
 
-    // Wire any QObject that has tick(MarketTick) and barClose(QString,QDateTime) signals.
-    // Used by tests with MockMarketDataRouter and by production with IBComm::MarketDataRouter.
-    template<typename RouterT>
-    void connectToAnyRouter(RouterT* router) {
-        for (auto* alpha : m_graph.alphaBlocks) {
-            connect(router, &RouterT::tick,     alpha, &IAlphaBlock::onTick,    Qt::DirectConnection);
-            connect(router, &RouterT::barClose, alpha, &IAlphaBlock::onBarClose, Qt::DirectConnection);
-        }
-        for (auto* risk : allRiskBlocks()) {
-            connect(router, &RouterT::tick,
-                    risk, [risk](const IBComm::MarketTick& t){ risk->onTick(t); },
-                    Qt::DirectConnection);
-        }
-        connect(router, &RouterT::barClose,
-                this, &StrategyPipelineRunner::onBarClose,
+    /// Feed → runner only: any QObject emitting `tick` / `ohlcvBar` on pipeline domain types.
+    template<typename FeedT>
+    void connectMarketDataFeed(FeedT* feed) {
+        connect(feed, &FeedT::tick, this, &StrategyPipelineRunner::ingestTick, Qt::DirectConnection);
+        connect(feed, &FeedT::ohlcvBar, this, &StrategyPipelineRunner::ingestOhlcvBar, Qt::DirectConnection);
+    }
+
+    template<typename FeedT>
+    void connectMarketDataFeedQueued(FeedT* feed) {
+        connect(feed, &FeedT::tick, this, &StrategyPipelineRunner::ingestTick, Qt::QueuedConnection);
+        connect(feed, &FeedT::ohlcvBar, this, &StrategyPipelineRunner::ingestOhlcvBar, Qt::QueuedConnection);
+    }
+
+    /// Optional tick-by-tick path (alphas only; same feed object as above).
+    template<typename FeedT>
+    void connectTickByTickFeed(FeedT* feed) {
+        connect(feed, &FeedT::tickByTickTrade, this, &StrategyPipelineRunner::ingestTickByTick,
                 Qt::DirectConnection);
     }
 
-    // Convenience alias for tests using MockMarketDataRouter
+    template<typename FeedT>
+    void connectTickByTickFeedQueued(FeedT* feed) {
+        connect(feed, &FeedT::tickByTickTrade, this, &StrategyPipelineRunner::ingestTickByTick,
+                Qt::QueuedConnection);
+    }
+
+    template<typename RouterT>
+    void connectToAnyRouter(RouterT* router) {
+        connectMarketDataFeed(router);
+    }
+
     template<typename MockT>
     void connectToMockRouter(MockT* mock) { connectToAnyRouter(mock); }
 
-    // Wire live market data router (used in production).
-    void connectToMarketData(IBComm::MarketDataRouter* router) {
-        for (auto* alpha : m_graph.alphaBlocks) {
-            connect(router, &IBComm::MarketDataRouter::tick,
-                    alpha, &IAlphaBlock::onTick,
-                    Qt::QueuedConnection);
-            connect(router, &IBComm::MarketDataRouter::barClose,
-                    alpha, &IAlphaBlock::onBarClose,
-                    Qt::QueuedConnection);
-        }
-        for (auto* risk : allRiskBlocks()) {
-            connect(router, &IBComm::MarketDataRouter::tick,
-                    risk, [risk](const IBComm::MarketTick& t){ risk->onTick(t); },
-                    Qt::QueuedConnection);
-        }
-        connect(router, &IBComm::MarketDataRouter::barClose,
-                this, &StrategyPipelineRunner::onBarClose,
-                Qt::QueuedConnection);
-    }
+    /// IB adapter: implementation in StrategyPipelineRunner.cpp (no IB headers in this file).
+    void connectToMarketData(IBComm::MarketDataRouter* router);
 
     // Wire alpha signal collection and risk proactive signals.
     void wireAlphaSignals() {
@@ -182,6 +181,41 @@ public:
     }
 
 public slots:
+    /// Sole ingress for quote ticks — dispatches to alpha + risk blocks in config order.
+    void ingestTick(const Pipeline::MarketTick& tick) {
+        for (auto* alpha : m_graph.alphaBlocks)
+            alpha->onTick(tick);
+        for (auto* risk : allRiskBlocks())
+            risk->onTick(tick);
+    }
+
+    /// Authoritative completed bar — alphas receive full OHLCV; runner dedupes on timestamp.
+    void ingestOhlcvBar(const Pipeline::OHLCVBar& bar) {
+        for (auto* alpha : m_graph.alphaBlocks)
+            alpha->onBarClose(bar);
+        if (bar.timestamp == m_lastBarCloseTs)
+            return;
+        m_lastBarCloseTs = bar.timestamp;
+        runPipeline();
+    }
+
+    void ingestTickByTick(const Pipeline::TickByTickTrade& trade) {
+        for (auto* alpha : m_graph.alphaBlocks)
+            alpha->onTickByTick(trade);
+    }
+
+    /// No-op used with BlockingQueuedConnection to drain queued ingress on the runner thread.
+    void ping() {}
+
+    /// Slot wrapper for cross-thread universe updates (QStringList is meta-type friendly).
+    void setUniverseFromList(const QStringList& symbols) {
+        QVector<QString> u;
+        u.reserve(symbols.size());
+        for (const QString& s : symbols)
+            u.append(s);
+        m_universe = u;
+    }
+
     void onAlphaSignal(const Pipeline::Signal& signal) {
         m_collectedSignals.append(signal);
     }
@@ -191,18 +225,6 @@ public slots:
     // emergency pipeline run so the exit order reaches the market without delay.
     void onRiskProactiveSignal(const Pipeline::Signal& signal) {
         runEmergencyRiskPipeline(signal);
-    }
-
-    // Called once per symbol per bar close.  We deduplicate on timestamp so the
-    // pipeline runs exactly once per bar, after all alpha blocks have seen all
-    // ticks for that timestamp.
-    void onBarClose(const QString& symbol, const QDateTime& timestamp) {
-        Q_UNUSED(symbol)
-
-        if (timestamp == m_lastBarCloseTs) return;
-        m_lastBarCloseTs = timestamp;
-
-        runPipeline();
     }
 
     // Run the full pipeline with evaluation and rebalance gating.

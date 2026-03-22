@@ -2,6 +2,7 @@
 #define TST_ADAPTERS_H
 
 #include <QtTest>
+#include "Pipeline/Contracts.h"
 #include "Adapters/MockExecutionAdapter.h"
 #include "Adapters/MockPositionRepository.h"
 #include "Testing/MockMarketDataRouter.h"
@@ -180,13 +181,13 @@ private slots:
     void mockRouter_emitsTick()
     {
         MockMarketDataRouter router;
-        qRegisterMetaType<IBComm::MarketTick>("IBComm::MarketTick");
+        qRegisterMetaType<Pipeline::MarketTick>("Pipeline::MarketTick");
         QSignalSpy spy(&router, &MockMarketDataRouter::tick);
 
         router.simulateTick("AAPL", 149.0, 150.0);
 
         QCOMPARE(spy.count(), 1);
-        auto t = spy.at(0).at(0).value<IBComm::MarketTick>();
+        auto t = spy.at(0).at(0).value<Pipeline::MarketTick>();
         QCOMPARE(t.symbol, QString("AAPL"));
         QCOMPARE(t.bid, 149.0);
         QCOMPARE(t.ask, 150.0);
@@ -195,24 +196,27 @@ private slots:
     void mockRouter_emitsBarClose()
     {
         MockMarketDataRouter router;
-        QSignalSpy spy(&router, &MockMarketDataRouter::barClose);
+        qRegisterMetaType<Pipeline::OHLCVBar>("Pipeline::OHLCVBar");
+        QSignalSpy spy(&router, &MockMarketDataRouter::ohlcvBar);
 
         QDateTime now = QDateTime::currentDateTimeUtc();
         router.simulateBarClose("AAPL", now);
 
         QCOMPARE(spy.count(), 1);
-        QCOMPARE(spy.at(0).at(0).toString(), QString("AAPL"));
+        auto b = spy.at(0).at(0).value<Pipeline::OHLCVBar>();
+        QCOMPARE(b.symbol, QString("AAPL"));
+        QCOMPARE(b.timestamp, now);
     }
 
     void mockRouter_replayTicks()
     {
         MockMarketDataRouter router;
-        qRegisterMetaType<IBComm::MarketTick>("IBComm::MarketTick");
+        qRegisterMetaType<Pipeline::MarketTick>("Pipeline::MarketTick");
         QSignalSpy spy(&router, &MockMarketDataRouter::tick);
 
-        QVector<IBComm::MarketTick> ticks;
+        QVector<Pipeline::MarketTick> ticks;
         for (int i = 0; i < 3; ++i) {
-            IBComm::MarketTick t;
+            Pipeline::MarketTick t;
             t.symbol = "AAPL"; t.bid = 100.0 + i; t.ask = 100.5 + i;
             ticks.append(t);
         }
@@ -234,13 +238,13 @@ private slots:
     void mockRouter_customTimestamp()
     {
         MockMarketDataRouter router;
-        qRegisterMetaType<IBComm::MarketTick>("IBComm::MarketTick");
+        qRegisterMetaType<Pipeline::MarketTick>("Pipeline::MarketTick");
         QSignalSpy spy(&router, &MockMarketDataRouter::tick);
 
         QDateTime ts(QDate(2026, 1, 15), QTime(12, 0, 0), QTimeZone::utc());
         router.simulateTick("AAPL", 150.0, 151.0, ts);
 
-        auto t = spy.at(0).at(0).value<IBComm::MarketTick>();
+        auto t = spy.at(0).at(0).value<Pipeline::MarketTick>();
         QCOMPARE(t.timestamp, ts);
     }
 };

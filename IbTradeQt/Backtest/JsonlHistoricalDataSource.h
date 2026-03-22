@@ -41,7 +41,7 @@ public:
             return;
         }
 
-        for (const IBComm::MarketTick& tick : replayer.ticks()) {
+        for (const Pipeline::MarketTick& tick : replayer.ticks()) {
             if (!symbols.isEmpty() && !symbols.contains(tick.symbol)) continue;
             if (from.isValid() && tick.timestamp < from) continue;
             if (to.isValid()   && tick.timestamp > to)   continue;

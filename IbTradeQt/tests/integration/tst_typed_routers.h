@@ -6,6 +6,7 @@
 #include <QSignalSpy>
 
 #include "IBComm/MarketDataRouter.h"
+#include "Pipeline/Contracts.h"
 #include "IBComm/PositionRouter.h"
 #include "IBComm/HistoricalDataRouter.h"
 #include "IBComm/OrderRouter.h"
@@ -158,7 +159,7 @@ private slots:
         router.onTickByTickAllLast(1, "AAPL", 155.0, 200.0, now, "NASDAQ");
 
         QCOMPARE(spy.count(), 1);
-        auto trade = spy.at(0).at(0).value<IBComm::TickByTickTrade>();
+        auto trade = spy.at(0).at(0).value<Pipeline::TickByTickTrade>();
         QCOMPARE(trade.symbol, QString("AAPL"));
         QCOMPARE(trade.price, 155.0);
         QCOMPARE(trade.size, 200.0);
@@ -221,7 +222,7 @@ private slots:
         QSignalSpy spy(&block, &Pipeline::IAlphaBlock::signalGenerated);
 
         for (int i = 0; i < 6; ++i) {
-            IBComm::MarketTick tick;
+            Pipeline::MarketTick tick;
             tick.symbol = "AAPL";
             tick.bid = 100.0 + i;
             tick.ask = 100.0 + i;
@@ -229,7 +230,7 @@ private slots:
             block.onTick(tick);
         }
 
-        IBComm::MarketTick bigJump;
+        Pipeline::MarketTick bigJump;
         bigJump.symbol = "AAPL";
         bigJump.bid = 120.0;
         bigJump.ask = 120.0;

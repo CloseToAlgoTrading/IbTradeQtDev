@@ -63,7 +63,21 @@ SOURCES += \
     ../Backtest/SimulatedExecutionAdapter.cpp \
     ../Backtest/BacktestMetricsCollector.cpp \
     ../Backtest/BacktestSession.cpp \
-    ../Backtest/YahooFinanceDataSource.cpp
+    ../Backtest/YahooFinanceDataSource.cpp \
+    ../Pipeline/StrategyPipelineRunner.cpp \
+    ../Pipeline/PipelineFactory.cpp \
+    ../Pipeline/BlockGraphSerializer.cpp \
+    ../Pipeline/UniverseResolver.cpp \
+    ../Pipeline/StrategyRuntimePolicy.cpp \
+    ../Pipeline/SignalMergePolicies.cpp \
+    ../Pipeline/PipelineExecutionHost.cpp \
+    ../Blocks/MomentumAlphaBlock.cpp \
+    ../Blocks/MeanReversionAlphaBlock.cpp \
+    ../Blocks/MovingAverageCrossoverAlphaBlock.cpp \
+    ../Blocks/MaxPositionRiskBlock.cpp \
+    ../Blocks/StaticListSelectionBlock.cpp \
+    ../Blocks/LimitOrderExecutionBlock.cpp \
+    ../Blocks/MarketOrderExecutionBlock.cpp
 
 HEADERS += \
     ../Pipeline/Contracts.h \
@@ -74,6 +88,10 @@ HEADERS += \
     ../Pipeline/IRiskBlock.h \
     ../Pipeline/IExecutionBlock.h \
     ../Pipeline/ISignalMergePolicy.h \
+    ../Pipeline/SignalMergePolicies.h \
+    ../Pipeline/PipelineExecutionHost.h \
+    ../Pipeline/StrategyRuntimePolicy.h \
+    ../Pipeline/UniverseResolver.h \
     ../IBComm/MarketDataRouter.h \
     ../Ports/IOrderExecutionPort.h \
     ../Ports/IPositionRepositoryPort.h \

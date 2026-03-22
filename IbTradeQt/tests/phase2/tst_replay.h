@@ -25,7 +25,7 @@ private slots:
             MarketDataRecorder recorder(filename);
             QVERIFY(recorder.isOpen());
 
-            IBComm::MarketTick t;
+            Pipeline::MarketTick t;
             t.symbol = "AAPL";
             t.bid = 149.0;
             t.ask = 150.0;
@@ -129,11 +129,11 @@ private slots:
 
         {
             MarketDataRecorder recorder(filename);
-            IBComm::MarketTick t1;
+            Pipeline::MarketTick t1;
             t1.symbol = "AAPL"; t1.bid = 149.0; t1.ask = 150.0;
             t1.timestamp = QDateTime(QDate(2026, 3, 4), QTime(10, 0, 0), QTimeZone::utc());
 
-            IBComm::MarketTick t2;
+            Pipeline::MarketTick t2;
             t2.symbol = "MSFT"; t2.bid = 300.0; t2.ask = 301.0;
             t2.timestamp = QDateTime(QDate(2026, 3, 4), QTime(10, 1, 0), QTimeZone::utc());
 
@@ -142,14 +142,14 @@ private slots:
         }
 
         MarketDataReplayer replayer(filename);
-        qRegisterMetaType<IBComm::MarketTick>("IBComm::MarketTick");
+        qRegisterMetaType<Pipeline::MarketTick>("Pipeline::MarketTick");
         QSignalSpy spy(&replayer, &MarketDataReplayer::tick);
 
         replayer.replay();
 
         QCOMPARE(spy.count(), 2);
-        auto tick1 = spy.at(0).at(0).value<IBComm::MarketTick>();
-        auto tick2 = spy.at(1).at(0).value<IBComm::MarketTick>();
+        auto tick1 = spy.at(0).at(0).value<Pipeline::MarketTick>();
+        auto tick2 = spy.at(1).at(0).value<Pipeline::MarketTick>();
         QCOMPARE(tick1.symbol, QString("AAPL"));
         QCOMPARE(tick2.symbol, QString("MSFT"));
     }
@@ -162,9 +162,9 @@ private slots:
         QString filename = tmpFile.fileName();
         tmpFile.close();
 
-        QVector<IBComm::MarketTick> original;
+        QVector<Pipeline::MarketTick> original;
         for (int i = 0; i < 5; ++i) {
-            IBComm::MarketTick t;
+            Pipeline::MarketTick t;
             t.symbol = "TEST";
             t.bid = 100.0 + i;
             t.ask = 100.5 + i;
@@ -182,13 +182,13 @@ private slots:
         MarketDataReplayer replayer(filename);
         QCOMPARE(replayer.tickCount(), 5);
 
-        qRegisterMetaType<IBComm::MarketTick>("IBComm::MarketTick");
+        qRegisterMetaType<Pipeline::MarketTick>("Pipeline::MarketTick");
         QSignalSpy spy(&replayer, &MarketDataReplayer::tick);
         replayer.replay();
 
         QCOMPARE(spy.count(), 5);
         for (int i = 0; i < 5; ++i) {
-            auto t = spy.at(i).at(0).value<IBComm::MarketTick>();
+            auto t = spy.at(i).at(0).value<Pipeline::MarketTick>();
             QCOMPARE(t.symbol, original[i].symbol);
             QCOMPARE(t.bid, original[i].bid);
             QCOMPARE(t.ask, original[i].ask);
@@ -242,7 +242,7 @@ private slots:
         {
             MarketDataRecorder recorder(filename);
             for (int i = 0; i < 5; ++i) {
-                IBComm::MarketTick t;
+                Pipeline::MarketTick t;
                 t.symbol = "AAPL"; t.bid = 100.0 + i; t.ask = 100.5 + i;
                 t.timestamp = QDateTime(QDate(2026, 3, 4),
                     QTime(10, 0, 0), QTimeZone::utc()).addSecs(i * 60);
@@ -251,7 +251,7 @@ private slots:
         }
 
         MarketDataReplayer replayer(filename);
-        qRegisterMetaType<IBComm::MarketTick>("IBComm::MarketTick");
+        qRegisterMetaType<Pipeline::MarketTick>("Pipeline::MarketTick");
         QSignalSpy spy(&replayer, &MarketDataReplayer::tick);
 
         QDateTime cutoff = QDateTime(QDate(2026, 3, 4),
@@ -272,7 +272,7 @@ private slots:
         {
             MarketDataRecorder recorder(filename);
             for (int i = 0; i < 3; ++i) {
-                IBComm::MarketTick t;
+                Pipeline::MarketTick t;
                 t.symbol = "AAPL"; t.bid = 100.0 + i; t.ask = 100.5 + i;
                 t.timestamp = QDateTime(QDate(2026, 3, 4),
                     QTime(10, 0, 0), QTimeZone::utc()).addSecs(i * 60);
@@ -280,23 +280,23 @@ private slots:
             }
         }
 
-        qRegisterMetaType<IBComm::MarketTick>("IBComm::MarketTick");
+        qRegisterMetaType<Pipeline::MarketTick>("Pipeline::MarketTick");
 
         // Replay twice, results must be identical
-        QVector<IBComm::MarketTick> run1, run2;
+        QVector<Pipeline::MarketTick> run1, run2;
         {
             MarketDataReplayer replayer(filename);
             QSignalSpy spy(&replayer, &MarketDataReplayer::tick);
             replayer.replay();
             for (int i = 0; i < spy.count(); ++i)
-                run1.append(spy.at(i).at(0).value<IBComm::MarketTick>());
+                run1.append(spy.at(i).at(0).value<Pipeline::MarketTick>());
         }
         {
             MarketDataReplayer replayer(filename);
             QSignalSpy spy(&replayer, &MarketDataReplayer::tick);
             replayer.replay();
             for (int i = 0; i < spy.count(); ++i)
-                run2.append(spy.at(i).at(0).value<IBComm::MarketTick>());
+                run2.append(spy.at(i).at(0).value<Pipeline::MarketTick>());
         }
 
         QCOMPARE(run1.size(), run2.size());

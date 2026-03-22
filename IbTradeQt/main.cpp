@@ -1,4 +1,5 @@
 #include "capplicationcontroller.h"
+#include "Pipeline/PipelineMetaTypes.h"
 
 #include <clocale>
 
@@ -41,6 +42,7 @@ int main(int argc, char *argv[])
 
 
     QApplication a(argc, argv);
+    Pipeline::registerPipelineMetaTypes();
     setlocale(LC_NUMERIC,"C");
     CApplicationController app;
     app.setUpApplication(a);

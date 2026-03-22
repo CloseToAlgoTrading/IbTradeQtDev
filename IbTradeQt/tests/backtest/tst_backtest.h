@@ -25,10 +25,10 @@
 // Helpers
 // ---------------------------------------------------------------------------
 
-static IBComm::MarketTick makeTick(const QString& symbol, double bid, double ask,
+static Pipeline::MarketTick makeTick(const QString& symbol, double bid, double ask,
                                     const QDateTime& ts = QDateTime())
 {
-    IBComm::MarketTick t;
+    Pipeline::MarketTick t;
     t.symbol    = symbol;
     t.bid       = bid;
     t.ask       = ask;
@@ -91,7 +91,7 @@ class TestMarketPriceStore : public QObject {
 private slots:
     void storesAndRetrievesLastTick() {
         Backtest::MarketPriceStore store;
-        IBComm::MarketTick t = makeTick("AAPL", 185.0, 185.1);
+        Pipeline::MarketTick t = makeTick("AAPL", 185.0, 185.1);
         store.onTick(t);
 
         QVERIFY(store.hasTick("AAPL"));
@@ -394,7 +394,7 @@ private slots:
         QCOMPARE(fills.size(), 0);
 
         // Simulate next bar open tick
-        IBComm::MarketTick openTick = makeTick("AAPL", 186.0, 186.2);
+        Pipeline::MarketTick openTick = makeTick("AAPL", 186.0, 186.2);
         adapter.onNextTickOpen(openTick);
 
         QCOMPARE(fills.size(), 1);
@@ -517,14 +517,14 @@ private slots:
 
         replayer.addBar(bar, true);
 
-        QList<IBComm::MarketTick> ticks;
+        QList<Pipeline::MarketTick> ticks;
         QList<QPair<QString, QDateTime>> barCloses;
 
         connect(&replayer, &MarketDataReplayer::tick,
-                [&](const IBComm::MarketTick& t) { ticks.append(t); });
-        connect(&replayer, &MarketDataReplayer::barClose,
-                [&](const QString& sym, const QDateTime& ts) {
-                    barCloses.append({sym, ts});
+                [&](const Pipeline::MarketTick& t) { ticks.append(t); });
+        connect(&replayer, &MarketDataReplayer::ohlcvBar,
+                [&](const Pipeline::OHLCVBar& b) {
+                    barCloses.append({b.symbol, b.timestamp});
                 });
 
         replayer.replay();
@@ -552,22 +552,27 @@ private slots:
 
         replayer.addBar(bar, false);  // no synthesis
 
-        QList<IBComm::MarketTick> ticks;
+        QList<Pipeline::MarketTick> ticks;
+        QList<Pipeline::OHLCVBar> bars;
         connect(&replayer, &MarketDataReplayer::tick,
-                [&](const IBComm::MarketTick& t) { ticks.append(t); });
+                [&](const Pipeline::MarketTick& t) { ticks.append(t); });
+        connect(&replayer, &MarketDataReplayer::ohlcvBar,
+                [&](const Pipeline::OHLCVBar& b) { bars.append(b); });
 
         replayer.replay();
         QCOMPARE(ticks.size(), 0);
+        QCOMPARE(bars.size(), 1);
+        QCOMPARE(bars[0].symbol, QString("AAPL"));
     }
 
     void addTickDirectlyIsReplayed() {
         MarketDataReplayer replayer;
-        IBComm::MarketTick t = makeTick("MSFT", 400.0, 400.2);
+        Pipeline::MarketTick t = makeTick("MSFT", 400.0, 400.2);
         replayer.addTick(t);
 
-        QList<IBComm::MarketTick> received;
+        QList<Pipeline::MarketTick> received;
         connect(&replayer, &MarketDataReplayer::tick,
-                [&](const IBComm::MarketTick& tick) { received.append(tick); });
+                [&](const Pipeline::MarketTick& tick) { received.append(tick); });
 
         replayer.replay();
         QCOMPARE(received.size(), 1);
@@ -580,9 +585,9 @@ private slots:
 
         replayer.clearAll();
 
-        QList<IBComm::MarketTick> ticks;
+        QList<Pipeline::MarketTick> ticks;
         connect(&replayer, &MarketDataReplayer::tick,
-                [&](const IBComm::MarketTick& t) { ticks.append(t); });
+                [&](const Pipeline::MarketTick& t) { ticks.append(t); });
 
         replayer.replay();
         QCOMPARE(ticks.size(), 0);
@@ -686,10 +691,10 @@ private slots:
 
         Backtest::JsonlHistoricalDataSource source(tmpFile.fileName());
 
-        QList<IBComm::MarketTick> ticks;
+        QList<Pipeline::MarketTick> ticks;
         bool finished = false;
         connect(&source, &Backtest::IHistoricalDataSource::tickLoaded,
-                [&](const IBComm::MarketTick& t) { ticks.append(t); });
+                [&](const Pipeline::MarketTick& t) { ticks.append(t); });
         connect(&source, &Backtest::IHistoricalDataSource::loadFinished,
                 [&]() { finished = true; });
 

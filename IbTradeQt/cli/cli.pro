@@ -42,6 +42,7 @@ SOURCES += \
     ../Strategies/Generic/cbasicexecutionmodel.cpp \
     ../Strategies/Generic/cgenericmodelApi.cpp \
     ../Strategies/Generic/cstrategyfactory.cpp \
+    ../Strategies/Generic/cpipelinestrategyadapter.cpp \
     ../Strategies/Generic/UnifiedModelData.cpp \
     ../Common/cprocessingbase_v2.cpp \
     ../Common/globalsettings.cpp \
@@ -73,7 +74,25 @@ SOURCES += \
     ../CObjects/cexecutionreport.cpp \
     ../CObjects/ccommissionreport.cpp \
     ../Brokers/IB/src/Decimal.cpp \
-    ../Pipeline/PipelineLog.cpp
+    ../Pipeline/PipelineLog.cpp \
+    ../Pipeline/StrategyPipelineRunner.cpp \
+    ../Pipeline/PipelineFactory.cpp \
+    ../Pipeline/BlockGraphSerializer.cpp \
+    ../Pipeline/UniverseResolver.cpp \
+    ../Pipeline/StrategyRuntimePolicy.cpp \
+    ../Pipeline/SignalMergePolicies.cpp \
+    ../Pipeline/PipelineExecutionHost.cpp \
+    ../Blocks/MomentumAlphaBlock.cpp \
+    ../Blocks/MeanReversionAlphaBlock.cpp \
+    ../Blocks/MovingAverageCrossoverAlphaBlock.cpp \
+    ../Blocks/MaxPositionRiskBlock.cpp \
+    ../Blocks/StaticListSelectionBlock.cpp \
+    ../Blocks/LimitOrderExecutionBlock.cpp \
+    ../Blocks/MarketOrderExecutionBlock.cpp \
+    ../Supervision/StrategyRuntime.cpp \
+    ../Supervision/Supervisor.cpp \
+    ../Plugin/PluginLoader.cpp \
+    ../IBComm/ProcessingRouterSink.cpp
 
 HEADERS += \
     ../Backend/ISystemBackend.h \
@@ -95,6 +114,7 @@ HEADERS += \
     ../Strategies/Generic/cpipelinestrategyadapter.h \
     ../Common/cprocessingbase_v2.h \
     ../IBComm/cbrokerdataprovider.h \
+    ../IBComm/ProcessingRouterSink.h \
     ../IBComm/IBrokerAPI.h \
     ../DB/dbhandler.h \
     ../DB/dbmanager.h \
@@ -109,6 +129,10 @@ HEADERS += \
     ../Pipeline/IRiskBlock.h \
     ../Pipeline/IExecutionBlock.h \
     ../Pipeline/ISignalMergePolicy.h \
+    ../Pipeline/SignalMergePolicies.h \
+    ../Pipeline/PipelineExecutionHost.h \
+    ../Pipeline/StrategyRuntimePolicy.h \
+    ../Pipeline/UniverseResolver.h \
     ../Pipeline/Contracts.h \
     ../Pipeline/BlockRegistry.h \
     ../Pipeline/PipelineLog.h \

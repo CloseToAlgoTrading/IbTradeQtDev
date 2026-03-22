@@ -1,5 +1,6 @@
 #include <QApplication>
 #include <QtTest>
+#include "Pipeline/PipelineMetaTypes.h"
 
 #include "phase1/tst_contracts.h"
 #include "phase1/tst_merge_policies.h"
@@ -43,6 +44,7 @@
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
+    Pipeline::registerPipelineMetaTypes();
     int status = 0;
 
     // Phase 1

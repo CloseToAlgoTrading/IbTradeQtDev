@@ -104,6 +104,7 @@ SOURCES += \
     ../Strategies/Generic/cbasicexecutionmodel.cpp \
     ../Strategies/Generic/cgenericmodelApi.cpp \
     ../Strategies/Generic/cstrategyfactory.cpp \
+    ../Strategies/Generic/cpipelinestrategyadapter.cpp \
     ../Strategies/Generic/UnifiedModelData.cpp \
     ../DB/dbhandler.cpp \
     ../DB/dbmanager.cpp \
@@ -138,6 +139,24 @@ SOURCES += \
     ../StrategyManagementUI/StrategyManagementPanel.cpp \
     ../Pipeline/PipelineTreeUtils.cpp \
     ../Pipeline/PipelineLog.cpp \
+    ../Pipeline/StrategyPipelineRunner.cpp \
+    ../Pipeline/PipelineFactory.cpp \
+    ../Pipeline/BlockGraphSerializer.cpp \
+    ../Pipeline/UniverseResolver.cpp \
+    ../Pipeline/StrategyRuntimePolicy.cpp \
+    ../Pipeline/SignalMergePolicies.cpp \
+    ../Pipeline/PipelineExecutionHost.cpp \
+    ../Blocks/MomentumAlphaBlock.cpp \
+    ../Blocks/MeanReversionAlphaBlock.cpp \
+    ../Blocks/MovingAverageCrossoverAlphaBlock.cpp \
+    ../Blocks/MaxPositionRiskBlock.cpp \
+    ../Blocks/StaticListSelectionBlock.cpp \
+    ../Blocks/LimitOrderExecutionBlock.cpp \
+    ../Blocks/MarketOrderExecutionBlock.cpp \
+    ../Supervision/StrategyRuntime.cpp \
+    ../Supervision/Supervisor.cpp \
+    ../Plugin/PluginLoader.cpp \
+    ../IBComm/ProcessingRouterSink.cpp \
     ../MainSystem/WorkspaceWidgets/BlockInspectorPanel.cpp \
     ../MainSystem/WorkspaceWidgets/RuntimePolicyEditor.cpp
 
@@ -150,7 +169,10 @@ HEADERS += \
     ../Pipeline/IRiskBlock.h \
     ../Pipeline/IExecutionBlock.h \
     ../Pipeline/ISignalMergePolicy.h \
+    ../Pipeline/SignalMergePolicies.h \
+    ../Pipeline/PipelineExecutionHost.h \
     ../IBComm/MarketDataRouter.h \
+    ../IBComm/ProcessingRouterSink.h \
     ../Ports/IOrderExecutionPort.h \
     ../Ports/IPositionRepositoryPort.h \
     ../Common/Expected.h \

@@ -42,7 +42,7 @@ public:
     }
 
 public slots:
-    void onTick(const IBComm::MarketTick& tick) override {
+    void onTick(const Pipeline::MarketTick& tick) override {
         m_lastTick = tick;
     }
 
@@ -74,7 +74,7 @@ private:
     }
 
     CBasicAlphaModel* m_legacyModel;
-    IBComm::MarketTick m_lastTick;
+    Pipeline::MarketTick m_lastTick;
 };
 
 #endif // ADAPTERS_ALPHAMODELADAPTER_H

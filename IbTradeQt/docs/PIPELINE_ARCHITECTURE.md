@@ -21,6 +21,7 @@
 14. [Multi-Level Risk and Rebalance (Sub-Models)](#multi-level-risk-and-rebalance-sub-models)
 15. [Test Coverage](#test-coverage)
 16. [Directory Structure](#directory-structure)
+17. [Broker boundary + live vs backtest](#broker-boundary-multi-broker-alignment)
 
 ---
 
@@ -376,6 +377,26 @@ flowchart LR
 **OrderEventBridge** (`Adapters/OrderEventBridge.h`) relays IB order callbacks to the pipeline's execution adapter:
 - `IBComClientImpl::orderStatus()` → `bridge.onOrderStatus()` → `IBOrderExecutionAdapter::updateOrderStatus()`
 - This keeps `IBOrderExecutionAdapter` free of QObject overhead while providing thread-safe delivery.
+
+### Broker boundary (multi-broker alignment)
+
+- **Authoritative domain types** at the pipeline edge are `Pipeline::MarketTick`, `Pipeline::OHLCVBar`, and related contracts in `Pipeline/Contracts.h`. `Pipeline/` and `Blocks/` headers do not include IB SDK or `IBComm/*` router headers.
+- **Historical warm-up for alphas** uses the same shape as bars: `QVector<Pipeline::OHLCVBar>`. IB-specific `IBComm::HistoricalBar` is converted once in `Adapters/PipelineHistoricalConversions.h` (`Adapters::toOhlcvBars`).
+- **Live connection wiring** uses `Brokers::createBrokerApi("ib")` (see `Brokers/BrokerConnectionFactory.h`) so presenters do not construct `IBComClientImpl` directly; IB-only setup (e.g. `setMarketDataRouter`) runs only when the implementation is `IBComClientImpl`. A stub backend id `paper` exists for non-IB flows (`Brokers/PaperBrokerStub`).
+- **Legacy processing** (`CProcessingBase_v2`) receives typed router signals via `IBComm::ProcessingRouterSink`, keeping concrete router types out of `Common/cprocessingbase_v2.h`.
+
+### Live vs backtest — same pipeline path (not the legacy processing path)
+
+For **LEGO / `STRATEGY_PIPELINE`** strategies, live and backtest are intentionally aligned on **one** execution shape:
+
+| Concern | Live | Backtest |
+|--------|------|----------|
+| **Config → graph** | `CPipelineStrategyAdapter` + `PipelineFactory::buildGraph` / `createRuntime` from persisted `pipelineConfig` | Same adapter + factory; `BacktestSession` uses `CPipelineStrategyAdapter` with injected backtest context (`Backtest/BacktestSession.cpp`) |
+| **Runner ingress** | `StrategyPipelineRunner::ingestTick` / `ingestOhlcvBar` only — types `Pipeline::MarketTick`, `Pipeline::OHLCVBar` | Same slots from `MarketDataReplayer` (`tick` / `ohlcvBar`) — **not** a separate “old strategy” tick pipeline |
+| **Feed source** | `IBComm::MarketDataRouter` via `StrategyRuntime::connectToMarketData` → `StrategyPipelineRunner::connectToMarketData` (typically **queued** to the runner thread) | `MarketDataReplayer` (CSV/Yahoo/JSONL, etc.) — **direct** connections in-session for determinism |
+| **Execution / positions** | `IBOrderExecutionAdapter` + `IBPositionRepositoryAdapter` when `ExecutionMode::Live` | `SimulatedExecutionAdapter`, `SimulatedLedger`, optional sqlite/mock position repos |
+
+So: **same block graph and same runner API** for pipeline strategies; **different** feed implementations and **different** execution adapters — which is expected. What is *not* shared with this path is **legacy** `CBasicStrategy_V2` code that still runs through `CProcessingBase_v2` and IB routers for non-pipeline strategies.
 
 ---
 
@@ -734,6 +755,25 @@ IbTradeQt/
         ├── tst_pipeline_strategy_adapter.h
         └── tst_live_execution_wiring.h
 ```
+
+---
+
+## Unified market feed and execution host
+
+**Domain inputs (explicit types, not a generic event bus):**
+
+- `Pipeline::MarketTick` — bid/ask (and volume when available) for the quote path.
+- `Pipeline::OHLCVBar` — **authoritative** completed bar OHLCV + symbol + bar timestamp. IB `realtimeBar` and replay `addBar` populate this at the adapter boundary; the runner does not infer OHLCV from ticks unless a separate documented mode is added.
+
+**Feed contract (`Pipeline/IMarketDataFeed.h`):** Implementations emit `tick` and `ohlcvBar` on these types (`IBComm::MarketDataRouter`, `MarketDataReplayer`, `MockMarketDataRouter`). `StrategyPipelineRunner::connectMarketDataFeed()` is the only wiring from feed to blocks: it connects to `ingestTick` / `ingestOhlcvBar` (optional `connectTickByTickFeed*` for `tickByTickTrade`).
+
+**Ingress rule:** No direct feed → alpha/risk connections in application code; backtest and live both go through the runner.
+
+**Ordering:** Cross-thread live mode uses `Qt::QueuedConnection` into the runner so the worker thread processes a FIFO of queued calls. `StrategyRuntime::stop()` issues a blocking `ping` on the runner to drain queued ingress before quitting the thread. `Pipeline::PipelineExecutionHost` offers the same drain for tests or custom hosts.
+
+**Bar-close deduplication:** `ingestOhlcvBar` runs `onBarClose` on each alpha, then runs the full pipeline once per **unique bar timestamp** (first bar at that time wins), matching the prior `(symbol, timestamp)` bar-close behavior for multi-symbol sessions.
+
+**Dispatch tie-breaker:** Block order follows persisted pipeline JSON; topological ties use selection/alpha/risk array order; fallback is stable lexical block `id` (see plan invariants).
 
 ---
 

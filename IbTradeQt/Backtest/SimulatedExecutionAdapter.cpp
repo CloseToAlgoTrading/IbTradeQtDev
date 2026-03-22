@@ -55,7 +55,7 @@ Expected<Ports::OrderResult, Error> SimulatedExecutionAdapter::placeOrder(
         });
     }
 
-    IBComm::MarketTick tick = m_priceStore->lastTick(intent.symbol);
+    Pipeline::MarketTick tick = m_priceStore->lastTick(intent.symbol);
     FilledOrder fill = executeFill(intent, tick);
 
     m_filledOrders.append(fill);
@@ -112,7 +112,7 @@ Expected<void, Error> SimulatedExecutionAdapter::cancelAllPending()
     return {};
 }
 
-void SimulatedExecutionAdapter::onNextTickOpen(const IBComm::MarketTick& openTick)
+void SimulatedExecutionAdapter::onNextTickOpen(const Pipeline::MarketTick& openTick)
 {
     if (m_pendingOrders.isEmpty()) return;
 
@@ -121,7 +121,7 @@ void SimulatedExecutionAdapter::onNextTickOpen(const IBComm::MarketTick& openTic
 
     for (const Pipeline::ExecutionIntent& intent : toFill) {
         // Use the provided openTick if symbol matches, otherwise fall back to price store
-        IBComm::MarketTick tick = openTick;
+        Pipeline::MarketTick tick = openTick;
         if (intent.symbol != openTick.symbol) {
             if (!m_priceStore->hasTick(intent.symbol)) {
                 qCWarning(lcSimExec) << "SimulatedExecutionAdapter: no price for" << intent.symbol
@@ -148,7 +148,7 @@ void SimulatedExecutionAdapter::reset()
 
 double SimulatedExecutionAdapter::computeFillPrice(
     const Pipeline::ExecutionIntent& intent,
-    const IBComm::MarketTick& tick) const
+    const Pipeline::MarketTick& tick) const
 {
     const bool isBuy = (intent.quantity > 0);
 
@@ -173,7 +173,7 @@ double SimulatedExecutionAdapter::computeFillPrice(
 
 FilledOrder SimulatedExecutionAdapter::executeFill(
     const Pipeline::ExecutionIntent& intent,
-    const IBComm::MarketTick& tick)
+    const Pipeline::MarketTick& tick)
 {
     FilledOrder fill;
     fill.orderId       = m_nextOrderId++;

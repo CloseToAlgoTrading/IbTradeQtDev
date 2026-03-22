@@ -6,6 +6,7 @@
 #include <QSignalSpy>
 
 #include "IBComm/MarketDataRouter.h"
+#include "Pipeline/Contracts.h"
 #include "IBComm/OrderRouter.h"
 #include "IBComm/TimeRouter.h"
 #include "CObjects/cexecutionreport.h"
@@ -28,12 +29,12 @@ private slots:
 
         QCOMPARE(spy.count(), 2);
 
-        auto tick1 = spy.at(0).at(0).value<IBComm::MarketTick>();
+        auto tick1 = spy.at(0).at(0).value<Pipeline::MarketTick>();
         QCOMPARE(tick1.symbol, QString("AAPL"));
         QCOMPARE(tick1.bid, 150.0);
         QCOMPARE(tick1.ask, 150.5);
 
-        auto tick2 = spy.at(1).at(0).value<IBComm::MarketTick>();
+        auto tick2 = spy.at(1).at(0).value<Pipeline::MarketTick>();
         QCOMPARE(tick2.symbol, QString("MSFT"));
         QCOMPARE(tick2.bid, 380.0);
     }
@@ -57,14 +58,19 @@ private slots:
     void realtimeBar_flowsExclusivelyThroughMarketDataRouter()
     {
         IBComm::MarketDataRouter router;
-        QSignalSpy spy(&router, &IBComm::MarketDataRouter::barClose);
+        qRegisterMetaType<Pipeline::OHLCVBar>("Pipeline::OHLCVBar");
+        QSignalSpy spy(&router, &IBComm::MarketDataRouter::ohlcvBar);
 
         QDateTime ts = QDateTime(QDate(2026, 3, 4), QTime(10, 30, 0));
-        router.onBarComplete(1, "GOOG", ts);
+        Pipeline::OHLCVBar bar;
+        bar.symbol = "GOOG";
+        bar.timestamp = ts;
+        router.onOhlcvBarComplete(bar);
 
         QCOMPARE(spy.count(), 1);
-        QCOMPARE(spy.at(0).at(0).toString(), QString("GOOG"));
-        QCOMPARE(spy.at(0).at(1).toDateTime(), ts);
+        auto out = spy.at(0).at(0).value<Pipeline::OHLCVBar>();
+        QCOMPARE(out.symbol, QString("GOOG"));
+        QCOMPARE(out.timestamp, ts);
     }
 
     void tickByTick_flowsExclusivelyThroughMarketDataRouter()
@@ -76,7 +82,7 @@ private slots:
         router.onTickByTickAllLast(1, "TSLA", 250.0, 10.0, ts, "ARCA");
 
         QCOMPARE(spy.count(), 1);
-        auto trade = spy.at(0).at(0).value<IBComm::TickByTickTrade>();
+        auto trade = spy.at(0).at(0).value<Pipeline::TickByTickTrade>();
         QCOMPARE(trade.symbol, QString("TSLA"));
         QCOMPARE(trade.price, 250.0);
         QCOMPARE(trade.size, 10.0);

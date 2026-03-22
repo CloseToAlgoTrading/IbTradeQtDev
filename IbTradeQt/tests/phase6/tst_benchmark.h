@@ -24,13 +24,13 @@
 
 namespace {
 
-QVector<IBComm::MarketTick> generateRealisticTicks(
+QVector<Pipeline::MarketTick> generateRealisticTicks(
     const QStringList& symbols,
     int ticksPerSymbol,
     double startPrice = 150.0,
     double volatility = 0.001)
 {
-    QVector<IBComm::MarketTick> ticks;
+    QVector<Pipeline::MarketTick> ticks;
     ticks.reserve(symbols.size() * ticksPerSymbol);
 
     QMap<QString, double> prices;
@@ -48,7 +48,7 @@ QVector<IBComm::MarketTick> generateRealisticTicks(
             if (price < 1.0) price = 1.0;
 
             double spread = price * 0.0005;
-            IBComm::MarketTick tick;
+            Pipeline::MarketTick tick;
             tick.symbol = sym;
             tick.bid = price - spread / 2.0;
             tick.ask = price + spread / 2.0;
@@ -94,7 +94,7 @@ private slots:
         IBComm::MarketDataRouter router;
         int tickCount = 0;
         connect(&router, &IBComm::MarketDataRouter::tick,
-                this, [&](const IBComm::MarketTick&) { tickCount++; },
+                this, [&](const Pipeline::MarketTick&) { tickCount++; },
                 Qt::DirectConnection);
 
         const int N = 100000;
@@ -567,12 +567,12 @@ private slots:
 
     void bench_droppedMessageRate()
     {
-        Supervision::BoundedQueue<IBComm::MarketTick> tickQueue(
+        Supervision::BoundedQueue<Pipeline::MarketTick> tickQueue(
             100, Supervision::OverflowPolicy::DropOldest);
 
         const int N = 10000;
         for (int i = 0; i < N; ++i) {
-            IBComm::MarketTick tick;
+            Pipeline::MarketTick tick;
             tick.symbol = "AAPL";
             tick.bid = 150.0 + i * 0.01;
             tick.ask = 150.05 + i * 0.01;

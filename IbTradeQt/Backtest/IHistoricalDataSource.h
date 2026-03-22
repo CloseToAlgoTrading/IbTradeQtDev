@@ -5,7 +5,7 @@
 #include <QStringList>
 #include <QDateTime>
 #include "IBComm/HistoricalDataRouter.h"
-#include "IBComm/MarketDataRouter.h"
+#include "Pipeline/Contracts.h"
 #include "Backtest/BacktestConfig.h"
 
 namespace Backtest {
@@ -36,8 +36,8 @@ public:
 
 signals:
     void barLoaded(const IBComm::HistoricalBar& bar);
-    void tickLoaded(const IBComm::MarketTick& tick);
-    void tickByTickLoaded(const IBComm::TickByTickTrade& trade);
+    void tickLoaded(const Pipeline::MarketTick& tick);
+    void tickByTickLoaded(const Pipeline::TickByTickTrade& trade);
     void loadFinished();
     void loadFailed(const QString& reason);
 };

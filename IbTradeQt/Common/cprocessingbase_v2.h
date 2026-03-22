@@ -2,6 +2,7 @@
 #define CPROCESSINGBASE_V2_H
 
 #include <QObject>
+#include <memory>
 
 #include "CHistoricalData.h"
 #include "caccountsummary.h"
@@ -13,11 +14,6 @@
 #include "coptiontickcomputation.h"
 #include "./ReqManager/globalreqmanager.h"
 #include "./IBComm/cbrokerdataprovider.h"
-#include "IBComm/OrderRouter.h"
-#include "IBComm/AccountRouter.h"
-#include "IBComm/PositionRouter.h"
-#include "IBComm/HistoricalDataRouter.h"
-#include "IBComm/MarketDataRouter.h"
 #include <QLoggingCategory>
 #include <QList>
 #include "GlobalDef.h"
@@ -49,10 +45,13 @@ typedef QMultiMap<QString, CPosition>	    PositionMap_t;
 
 Q_DECLARE_METATYPE(HistMap_t);
 
+namespace IBComm { class ProcessingRouterSink; }
 
 class CProcessingBase_v2 : public QObject
 {
 	Q_OBJECT
+
+    friend class IBComm::ProcessingRouterSink;
 
 public:
     explicit CProcessingBase_v2(QObject *parent);
@@ -62,20 +61,8 @@ public:
     void setNextValidId(const qint32 val) { m_nextValidId = val; }
 
 private:
-    void connectToTypedRouters();
-    void disconnectFromTypedRouters();
-
-private slots:
-    void slotRouterNextValidId(int orderId);
-    void slotRouterAccountSummary(const IBComm::AccountSummaryData& data);
-    void slotRouterPositionChanged(const IBComm::PositionUpdate& update);
-    void slotRouterPositionSnapshotComplete();
-    void slotRouterBarsReceived(int requestId, const QString& symbol, const QVector<IBComm::HistoricalBar>& bars);
-    void slotRouterExecution(const IBComm::ExecutionReport& report);
-    void slotRouterCommission(const IBComm::CommissionUpdate& update);
-
-private:
     QSharedPointer<CBrokerDataProvider> m_Client;
+    std::unique_ptr<IBComm::ProcessingRouterSink> m_routerSink;
     ActiveReqestsMap_t m_aciveReqestsMap;
 
 public:

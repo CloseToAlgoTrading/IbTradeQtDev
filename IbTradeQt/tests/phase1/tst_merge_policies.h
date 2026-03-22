@@ -3,6 +3,7 @@
 
 #include <QtTest>
 #include "Pipeline/ISignalMergePolicy.h"
+#include "Pipeline/SignalMergePolicies.h"
 
 class TestMergePolicies : public QObject
 {

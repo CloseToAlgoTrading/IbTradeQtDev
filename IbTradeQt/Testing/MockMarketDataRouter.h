@@ -3,8 +3,9 @@
 
 #include <QObject>
 #include <QVector>
-#include "IBComm/MarketDataRouter.h"
+#include "Pipeline/Contracts.h"
 
+/// Test double matching the pipeline feed contract (`tick` + `ohlcvBar` + optional `tickByTickTrade`).
 class MockMarketDataRouter : public QObject {
     Q_OBJECT
 
@@ -15,7 +16,7 @@ public:
     void simulateTick(const QString& symbol, double bid, double ask,
                       const QDateTime& timestamp = QDateTime())
     {
-        IBComm::MarketTick marketTick;
+        Pipeline::MarketTick marketTick;
         marketTick.symbol = symbol;
         marketTick.bid = bid;
         marketTick.ask = ask;
@@ -25,37 +26,51 @@ public:
         emit tick(marketTick);
     }
 
-    void simulateTick(const IBComm::MarketTick& marketTick) {
+    void simulateTick(const Pipeline::MarketTick& marketTick) {
         m_emittedTicks.push_back(marketTick);
         emit tick(marketTick);
+    }
+
+    void simulateOhlcvBar(const Pipeline::OHLCVBar& bar) {
+        m_emittedBars.append(bar);
+        emit ohlcvBar(bar);
     }
 
     void simulateBarClose(const QString& symbol,
                           const QDateTime& timestamp = QDateTime())
     {
-        QDateTime ts = timestamp.isValid()
+        Pipeline::OHLCVBar bar;
+        bar.symbol = symbol;
+        bar.timestamp = timestamp.isValid()
             ? timestamp : QDateTime::currentDateTimeUtc();
-        emit barClose(symbol, ts);
+        simulateOhlcvBar(bar);
     }
 
-    void replayTicks(const QVector<IBComm::MarketTick>& ticks) {
+    void replayTicks(const QVector<Pipeline::MarketTick>& ticks) {
         for (const auto& t : ticks) {
             simulateTick(t);
         }
     }
 
-    const QVector<IBComm::MarketTick>& emittedTicks() const {
+    const QVector<Pipeline::MarketTick>& emittedTicks() const {
         return m_emittedTicks;
     }
 
-    void reset() { m_emittedTicks.clear(); }
+    const QVector<Pipeline::OHLCVBar>& emittedBars() const { return m_emittedBars; }
+
+    void reset() {
+        m_emittedTicks.clear();
+        m_emittedBars.clear();
+    }
 
 signals:
-    void tick(const IBComm::MarketTick& tick);
-    void barClose(const QString& symbol, const QDateTime& timestamp);
+    void tick(const Pipeline::MarketTick& tick);
+    void ohlcvBar(const Pipeline::OHLCVBar& bar);
+    void tickByTickTrade(const Pipeline::TickByTickTrade& trade);
 
 private:
-    QVector<IBComm::MarketTick> m_emittedTicks;
+    QVector<Pipeline::MarketTick> m_emittedTicks;
+    QVector<Pipeline::OHLCVBar> m_emittedBars;
 };
 
 #endif // TESTING_MOCKMARKETDATAROUTER_H

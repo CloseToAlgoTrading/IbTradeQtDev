@@ -7,7 +7,6 @@
 #include <optional>
 #include "Contracts.h"
 #include "Scope.h"
-#include "../IBComm/MarketDataRouter.h"
 
 namespace Pipeline {
 
@@ -38,7 +37,7 @@ public:
     // Called on every market tick so risk blocks can monitor live prices
     // and emit proactive signals (e.g. stop-loss, trailing stop).
     // Default implementation is a no-op — override only when needed.
-    virtual void onTick(const IBComm::MarketTick& tick) { Q_UNUSED(tick); }
+    virtual void onTick(const Pipeline::MarketTick& tick) { Q_UNUSED(tick); }
 
     // Evaluate a proposed target position and decide whether to approve,
     // reject, or modify it. Called once per target during pipeline execution.

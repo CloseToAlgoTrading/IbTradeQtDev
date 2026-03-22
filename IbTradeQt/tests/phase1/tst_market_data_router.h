@@ -4,6 +4,7 @@
 #include <QtTest>
 #include <QSignalSpy>
 #include "IBComm/MarketDataRouter.h"
+#include "Pipeline/Contracts.h"
 
 class TestMarketDataRouter : public QObject
 {
@@ -13,13 +14,13 @@ private slots:
     void tickEmittedOnPriceUpdate()
     {
         IBComm::MarketDataRouter router;
-        qRegisterMetaType<IBComm::MarketTick>("IBComm::MarketTick");
+        qRegisterMetaType<Pipeline::MarketTick>("Pipeline::MarketTick");
         QSignalSpy spy(&router, &IBComm::MarketDataRouter::tick);
 
         router.onTickPrice(1, "AAPL", 149.50, 150.00);
 
         QCOMPARE(spy.count(), 1);
-        auto tick = spy.at(0).at(0).value<IBComm::MarketTick>();
+        auto tick = spy.at(0).at(0).value<Pipeline::MarketTick>();
         QCOMPARE(tick.symbol, QString("AAPL"));
         QCOMPARE(tick.bid, 149.50);
         QCOMPARE(tick.ask, 150.00);
@@ -29,7 +30,7 @@ private slots:
 
     void midPriceCalculation()
     {
-        IBComm::MarketTick tick;
+        Pipeline::MarketTick tick;
         tick.bid = 100.0;
         tick.ask = 102.0;
         QCOMPARE(tick.mid(), 101.0);
@@ -79,20 +80,30 @@ private slots:
     void barCloseEmitted()
     {
         IBComm::MarketDataRouter router;
-        QSignalSpy spy(&router, &IBComm::MarketDataRouter::barClose);
+        qRegisterMetaType<Pipeline::OHLCVBar>("Pipeline::OHLCVBar");
+        QSignalSpy spy(&router, &IBComm::MarketDataRouter::ohlcvBar);
 
         QDateTime now = QDateTime::currentDateTimeUtc();
-        router.onBarComplete(1, "AAPL", now);
+        Pipeline::OHLCVBar bar;
+        bar.symbol = "AAPL";
+        bar.timestamp = now;
+        bar.open = 1.0;
+        bar.high = 2.0;
+        bar.low = 0.5;
+        bar.close = 1.5;
+        bar.volume = 100.0;
+        router.onOhlcvBarComplete(bar);
 
         QCOMPARE(spy.count(), 1);
-        QCOMPARE(spy.at(0).at(0).toString(), QString("AAPL"));
-        QCOMPARE(spy.at(0).at(1).toDateTime(), now);
+        auto out = spy.at(0).at(0).value<Pipeline::OHLCVBar>();
+        QCOMPARE(out.symbol, QString("AAPL"));
+        QCOMPARE(out.timestamp, now);
     }
 
     void multipleSymbolsMultipleTicks()
     {
         IBComm::MarketDataRouter router;
-        qRegisterMetaType<IBComm::MarketTick>("IBComm::MarketTick");
+        qRegisterMetaType<Pipeline::MarketTick>("Pipeline::MarketTick");
         QSignalSpy spy(&router, &IBComm::MarketDataRouter::tick);
 
         router.onTickPrice(1, "AAPL", 149.0, 150.0);
@@ -101,9 +112,9 @@ private slots:
 
         QCOMPARE(spy.count(), 3);
 
-        auto tick1 = spy.at(0).at(0).value<IBComm::MarketTick>();
-        auto tick2 = spy.at(1).at(0).value<IBComm::MarketTick>();
-        auto tick3 = spy.at(2).at(0).value<IBComm::MarketTick>();
+        auto tick1 = spy.at(0).at(0).value<Pipeline::MarketTick>();
+        auto tick2 = spy.at(1).at(0).value<Pipeline::MarketTick>();
+        auto tick3 = spy.at(2).at(0).value<Pipeline::MarketTick>();
         QCOMPARE(tick1.symbol, QString("AAPL"));
         QCOMPARE(tick2.symbol, QString("MSFT"));
         QCOMPARE(tick3.symbol, QString("GOOG"));
@@ -112,14 +123,14 @@ private slots:
     void tickTimestampIsSet()
     {
         IBComm::MarketDataRouter router;
-        qRegisterMetaType<IBComm::MarketTick>("IBComm::MarketTick");
+        qRegisterMetaType<Pipeline::MarketTick>("Pipeline::MarketTick");
         QSignalSpy spy(&router, &IBComm::MarketDataRouter::tick);
 
         QDateTime before = QDateTime::currentDateTime();
         router.onTickPrice(1, "AAPL", 149.0, 150.0);
         QDateTime after = QDateTime::currentDateTime();
 
-        auto tick = spy.at(0).at(0).value<IBComm::MarketTick>();
+        auto tick = spy.at(0).at(0).value<Pipeline::MarketTick>();
         QVERIFY(tick.timestamp >= before);
         QVERIFY(tick.timestamp <= after);
     }

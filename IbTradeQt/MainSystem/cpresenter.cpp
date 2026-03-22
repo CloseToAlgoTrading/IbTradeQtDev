@@ -1,6 +1,7 @@
 #include "cpresenter.h"
 #include "ISystemBackend.h"
 #include "ReqManager.h"
+#include "Brokers/BrokerConnectionFactory.h"
 #include "IBComClientImpl.h"
 #include "cmainmodel.h"
 #include "CPortfolioConfigModel.h"
@@ -52,12 +53,12 @@ CPresenter::CPresenter(QObject *parent)
     , workerAlfaTime(new AlphaModGetTime(parent, *m_pDataProvider.data()))
     , pAboutDlgPresenter(new AboutDlgPresener(parent))
 {
-    QSharedPointer<IBComClientImpl> pClient = QSharedPointer<IBComClientImpl>::create();
-
+    QSharedPointer<IBrokerAPI> pClient = Brokers::createBrokerApi(QStringLiteral("ib"));
     m_pDataProvider->setClien(pClient);
 
     m_pMarketDataRouter = new IBComm::MarketDataRouter(this);
-    pClient->setMarketDataRouter(m_pMarketDataRouter);
+    if (auto* ibImpl = dynamic_cast<IBComClientImpl*>(pClient.data()))
+        ibImpl->setMarketDataRouter(m_pMarketDataRouter);
 
     workerIBClient->moveToThread(threadIBClient);
     QObject::connect(threadIBClient, SIGNAL(started()), workerIBClient, SLOT(process()));

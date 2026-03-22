@@ -5,9 +5,11 @@
 #include <QDateTime>
 #include <QMap>
 #include <QMetaType>
+#include "../Pipeline/Contracts.h"
 
 namespace IBComm {
 
+/// Legacy IB-shaped tick (still used outside the pipeline domain).
 struct TickByTickTrade {
     Q_GADGET
     Q_PROPERTY(QString symbol MEMBER symbol)
@@ -95,7 +97,7 @@ public:
         : QObject(parent) {}
 
     void onTickPrice(int reqId, const QString& symbol, double bid, double ask) {
-        MarketTick t;
+        Pipeline::MarketTick t;
         t.symbol = symbol;
         t.bid = bid;
         t.ask = ask;
@@ -115,12 +117,12 @@ public:
         emit tickSizeUpdate(symbol, volume);
     }
 
-    void onBarComplete(int reqId, const QString& symbol, const QDateTime& timestamp) {
-        Q_UNUSED(reqId)
-        emit barClose(symbol, timestamp);
+    /// Authoritative completed bar from IB real-time bars (or adapter).
+    void onOhlcvBarComplete(const Pipeline::OHLCVBar& bar) {
+        emit ohlcvBar(bar);
     }
 
-    MarketTick lastPrice(const QString& symbol) const {
+    Pipeline::MarketTick lastPrice(const QString& symbol) const {
         return m_lastPriceCache.value(symbol);
     }
 
@@ -129,7 +131,7 @@ public:
                              const QDateTime& timestamp, const QString& exchange)
     {
         Q_UNUSED(reqId)
-        TickByTickTrade trade;
+        Pipeline::TickByTickTrade trade;
         trade.symbol = symbol;
         trade.price = price;
         trade.size = size;
@@ -183,10 +185,10 @@ public:
     }
 
 signals:
-    void tick(const IBComm::MarketTick& tick);
-    void barClose(const QString& symbol, const QDateTime& timestamp);
+    void tick(const Pipeline::MarketTick& tick);
+    void ohlcvBar(const Pipeline::OHLCVBar& bar);
     void tickSizeUpdate(const QString& symbol, double volume);
-    void tickByTickTrade(const IBComm::TickByTickTrade& trade);
+    void tickByTickTrade(const Pipeline::TickByTickTrade& trade);
     void connectionError(const QString& message);
     void subscriptionRestarted();
     void subscriptionError(int reqId, int errorCode, const QString& msg);
@@ -196,7 +198,7 @@ signals:
 
 private:
     QString symbolForReqId(int reqId) const { return m_reqIdToSymbol.value(reqId); }
-    QMap<QString, MarketTick> m_lastPriceCache;
+    QMap<QString, Pipeline::MarketTick> m_lastPriceCache;
     QMap<int, QString> m_reqIdToSymbol;
 };
 

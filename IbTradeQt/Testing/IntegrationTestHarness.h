@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QCoreApplication>
 #include "Testing/MockMarketDataRouter.h"
+#include "Pipeline/Contracts.h"
 #include "Adapters/MockExecutionAdapter.h"
 #include "Adapters/MockPositionRepository.h"
 #include "Pipeline/IAlphaBlock.h"
@@ -30,7 +31,7 @@ public:
         delete m_mockRepo;
     }
 
-    void runWithTicks(const QVector<IBComm::MarketTick>& ticks) {
+    void runWithTicks(const QVector<Pipeline::MarketTick>& ticks) {
         for (const auto& t : ticks) {
             m_mockRouter->simulateTick(t);
         }

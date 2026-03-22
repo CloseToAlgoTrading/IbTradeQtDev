@@ -9,6 +9,7 @@
 
 #include "Pipeline/PipelineFactory.h"
 #include "Pipeline/StrategyPipelineRunner.h"
+#include "Pipeline/Contracts.h"
 #include "Blocks/MomentumAlphaBlock.h"
 #include "Blocks/MeanReversionAlphaBlock.h"
 #include "Blocks/MaxPositionRiskBlock.h"
@@ -55,7 +56,7 @@ private slots:
 
         // Build a stable price history, then spike
         for (int i = 0; i < 5; ++i) {
-            IBComm::MarketTick tick;
+            Pipeline::MarketTick tick;
             tick.symbol = "AAPL";
             tick.bid = 100.0;
             tick.ask = 100.10;
@@ -64,7 +65,7 @@ private slots:
         }
 
         // Spike up: should trigger Sell (mean reversion)
-        IBComm::MarketTick spike;
+        Pipeline::MarketTick spike;
         spike.symbol = "AAPL";
         spike.bid = 110.0;
         spike.ask = 110.10;
@@ -84,7 +85,7 @@ private slots:
         QSignalSpy spy(&alpha, &Pipeline::IAlphaBlock::signalGenerated);
 
         for (int i = 0; i < 10; ++i) {
-            IBComm::MarketTick tick;
+            Pipeline::MarketTick tick;
             tick.symbol = "MSFT";
             tick.bid = 200.0 + (i % 2) * 0.1;
             tick.ask = 200.10 + (i % 2) * 0.1;
@@ -102,7 +103,7 @@ private slots:
         QSignalSpy spy(&alpha, &Pipeline::IAlphaBlock::signalGenerated);
 
         for (int i = 0; i < 5; ++i) {
-            IBComm::MarketTick tick;
+            Pipeline::MarketTick tick;
             tick.symbol = "GOOG";
             tick.bid = 100.0;
             tick.ask = 100.10;
@@ -111,7 +112,7 @@ private slots:
         }
 
         // Dip down: should trigger Buy
-        IBComm::MarketTick dip;
+        Pipeline::MarketTick dip;
         dip.symbol = "GOOG";
         dip.bid = 90.0;
         dip.ask = 90.10;
@@ -393,7 +394,7 @@ private slots:
         QVERIFY(signal.direction == Pipeline::Signal::Buy);
     }
 
-    // --- MarketDataRouter barClose delivery ---
+    // --- MarketDataRouter ohlcvBar delivery (feed → runner only) ---
 
     void integration_barCloseTriggersRun()
     {
@@ -408,15 +409,7 @@ private slots:
 
         IBComm::MarketDataRouter router;
 
-        // Wire with DirectConnection for synchronous test execution
-        for (auto* alpha : graph.alphaBlocks) {
-            connect(&router, &IBComm::MarketDataRouter::tick,
-                    alpha, &Pipeline::IAlphaBlock::onTick,
-                    Qt::DirectConnection);
-        }
-        connect(&router, &IBComm::MarketDataRouter::barClose,
-                &runner, &Pipeline::StrategyPipelineRunner::onBarClose,
-                Qt::DirectConnection);
+        runner.connectMarketDataFeed(&router);
 
         QSignalSpy completedSpy(&runner, &Pipeline::StrategyPipelineRunner::pipelineCompleted);
 
@@ -424,7 +417,16 @@ private slots:
             router.onTickPrice(1, "AAPL", 100.0 + i * 0.5, 100.05 + i * 0.5);
         }
 
-        router.onBarComplete(1, "AAPL", QDateTime::currentDateTimeUtc());
+        const QDateTime barTs = QDateTime::currentDateTimeUtc();
+        Pipeline::OHLCVBar bar;
+        bar.symbol = "AAPL";
+        bar.timestamp = barTs;
+        bar.open = 100.0;
+        bar.high = 101.0;
+        bar.low = 99.0;
+        bar.close = 100.5;
+        bar.volume = 1000.0;
+        router.onOhlcvBarComplete(bar);
 
         QCOMPARE(completedSpy.count(), 1);
 

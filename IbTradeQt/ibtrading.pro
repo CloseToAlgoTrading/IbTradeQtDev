@@ -65,6 +65,8 @@ SOURCES += \
     CObjects/cdeltaobject.cpp \
     CObjects/cexecutionreport.cpp \
     Common/cprocessingbase_v2.cpp \
+    Brokers/BrokerConnectionFactory.cpp \
+    Brokers/PaperBrokerStub.cpp \
     Common/StorageConfig.cpp \
     DB/dbhandler.cpp \
     DB/dbmanager.cpp \
@@ -95,6 +97,7 @@ SOURCES += \
     Strategies/Generic/cgenericmodelApi.cpp \
     Strategies/Generic/csma.cpp \
     Strategies/Generic/cstrategyfactory.cpp \
+    Strategies/Generic/cpipelinestrategyadapter.cpp \
     Strategies/PairTrader/PairTraderLogging.cpp \
     Strategies/AutoDeltAlignment/src/AutoDeltaLogging.cpp \
     main.cpp \
@@ -122,6 +125,7 @@ SOURCES += \
     DBStore/DBStorePresenter.cpp \
     DBStore/DBStoreProcessing.cpp \
     IBComm/cbrokerdataprovider.cpp \
+    IBComm/ProcessingRouterSink.cpp \
     IBComm/IBComClientIpml.cpp \
     IBComm/IBworker.cpp \
     Logger/MyLogger.cpp \
@@ -187,6 +191,23 @@ SOURCES += \
     MainSystem/WorkspaceWidgets/RuntimePolicyEditor.cpp \
     Pipeline/PipelineTreeUtils.cpp \
     Pipeline/PipelineLog.cpp \
+    Pipeline/StrategyPipelineRunner.cpp \
+    Pipeline/PipelineFactory.cpp \
+    Pipeline/BlockGraphSerializer.cpp \
+    Pipeline/UniverseResolver.cpp \
+    Pipeline/StrategyRuntimePolicy.cpp \
+    Pipeline/SignalMergePolicies.cpp \
+    Pipeline/PipelineExecutionHost.cpp \
+    Blocks/MomentumAlphaBlock.cpp \
+    Blocks/MeanReversionAlphaBlock.cpp \
+    Blocks/MovingAverageCrossoverAlphaBlock.cpp \
+    Blocks/MaxPositionRiskBlock.cpp \
+    Blocks/StaticListSelectionBlock.cpp \
+    Blocks/LimitOrderExecutionBlock.cpp \
+    Blocks/MarketOrderExecutionBlock.cpp \
+    Supervision/StrategyRuntime.cpp \
+    Supervision/Supervisor.cpp \
+    Plugin/PluginLoader.cpp \
     MainSystem/AlertService.cpp \
     Backend/ModelTreeRepository.cpp \
     Backend/ModelTreeRepositoryPostgres.cpp \
@@ -222,6 +243,10 @@ HEADERS += \
     Pipeline/IRiskBlock.h \
     Pipeline/IExecutionBlock.h \
     Pipeline/ISignalMergePolicy.h \
+    Pipeline/SignalMergePolicies.h \
+    Pipeline/PipelineExecutionHost.h \
+    Pipeline/StrategyRuntimePolicy.h \
+    Pipeline/UniverseResolver.h \
     IBComm/MarketDataRouter.h \
     Ports/IOrderExecutionPort.h \
     Ports/IPositionRepositoryPort.h \
@@ -415,12 +440,15 @@ HEADERS += \
     GeneratedIncludes/ui_ibtradesystem.h \
     GeneratedIncludes/ui_pairtrading.h \
     IBComm/cbrokerdataprovider.h \
+    IBComm/ProcessingRouterSink.h \
     IBComm/IBComClientImpl.h \
     IBComm/IBrokerAPI.h \
     IBComm/IBworker.h \
     Logger/MyLogger.h \
     Logging/UiLogCategories.h \
     Pipeline/PipelineLog.h \
+    Brokers/BrokerConnectionFactory.h \
+    Brokers/PaperBrokerStub.h \
     MainSystem/cpresenter.h \
     MainSystem/BacktestWorkspaceCoordinator.h \
     MainSystem/StrategyManagementCoordinator.h \

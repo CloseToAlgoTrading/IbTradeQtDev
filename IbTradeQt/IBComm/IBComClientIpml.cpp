@@ -35,6 +35,7 @@
 #include "bar.h"
 #include "NHelper.h"
 #include "Decimal.h"
+#include "../Pipeline/Contracts.h"
 
 using namespace IBDataTypes;
 
@@ -488,8 +489,15 @@ void IBComClientImpl::realtimeBar(TickerId reqId, long time, double open, double
 		_realtimeBar.getClose(), _realtimeBar.getVolume(), _realtimeBar.getCount(), _realtimeBar.getWap());
 
     if (m_marketDataRouter && m_reqIdToSymbol.contains(reqId)) {
-        QDateTime barTime = QDateTime::fromSecsSinceEpoch(time);
-        m_marketDataRouter->onBarComplete(reqId, m_reqIdToSymbol[reqId], barTime);
+        Pipeline::OHLCVBar bar;
+        bar.symbol = m_reqIdToSymbol[reqId];
+        bar.open = open;
+        bar.high = high;
+        bar.low = low;
+        bar.close = close;
+        bar.volume = DecimalFunctions::decimalToDouble(volume);
+        bar.timestamp = QDateTime::fromSecsSinceEpoch(time);
+        m_marketDataRouter->onOhlcvBarComplete(bar);
     }
 
     return;

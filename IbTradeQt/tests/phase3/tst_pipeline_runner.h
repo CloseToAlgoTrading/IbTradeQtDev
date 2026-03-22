@@ -4,6 +4,7 @@
 #include <QtTest>
 #include <QSignalSpy>
 #include "Pipeline/StrategyPipelineRunner.h"
+#include "Pipeline/SignalMergePolicies.h"
 #include "Pipeline/BlockGraphSerializer.h"
 #include "Pipeline/BlockRegistry.h"
 #include "Blocks/MomentumAlphaBlock.h"
@@ -28,7 +29,7 @@ public:
     void initialize() override {}
     void shutdown() override {}
 
-    void onTick(const IBComm::MarketTick& tick) override {
+    void onTick(const Pipeline::MarketTick& tick) override {
         if (tick.mid() > m_threshold && !m_fired) {
             Pipeline::Signal sig;
             sig.symbol = tick.symbol;
@@ -476,7 +477,7 @@ private slots:
         QSignalSpy spy(&alpha, &Pipeline::IAlphaBlock::signalGenerated);
 
         QDateTime base(QDate(2026, 3, 4), QTime(10, 0, 0), QTimeZone::utc());
-        IBComm::MarketTick t;
+        Pipeline::MarketTick t;
         t.symbol = "AAPL";
 
         // Build up price history (need > period entries for momentum calculation)

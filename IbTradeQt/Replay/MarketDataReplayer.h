@@ -6,7 +6,6 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QVector>
-#include "IBComm/MarketDataRouter.h"
 #include "IBComm/HistoricalDataRouter.h"
 #include "Pipeline/Contracts.h"
 
@@ -49,10 +48,11 @@ public:
             QString type = obj["type"].toString();
 
             if (type == "MarketTick") {
-                IBComm::MarketTick t;
+                Pipeline::MarketTick t;
                 t.symbol = obj["symbol"].toString();
                 t.bid = obj["bid"].toDouble();
                 t.ask = obj["ask"].toDouble();
+                t.volume = obj["volume"].toDouble();
                 t.timestamp = QDateTime::fromString(
                     obj["timestamp"].toString(), Qt::ISODateWithMs);
                 t.reqId = obj["reqId"].toInt();
@@ -74,11 +74,16 @@ public:
                 m_expectedIntents.append(ei);
             }
             else if (type == "BarClose") {
-                BarCloseEvent bc;
-                bc.symbol = obj["symbol"].toString();
-                bc.timestamp = QDateTime::fromString(
+                Pipeline::OHLCVBar bar;
+                bar.symbol = obj["symbol"].toString();
+                bar.open = obj["open"].toDouble();
+                bar.high = obj["high"].toDouble();
+                bar.low = obj["low"].toDouble();
+                bar.close = obj["close"].toDouble();
+                bar.volume = obj["volume"].toDouble();
+                bar.timestamp = QDateTime::fromString(
                     obj["timestamp"].toString(), Qt::ISODateWithMs);
-                m_barCloses.append(bc);
+                m_barCloses.append(bar);
             }
             else if (type == "BlockGraphConfig") {
                 m_blockGraphConfig = obj["config"].toObject();
@@ -90,16 +95,13 @@ public:
 
     // --- Programmatic population for backtest data sources ---
 
-    // Add a historical bar with OHLC 4-tick synthesis.
-    // Each bar is expanded into: open tick → high tick → low tick → close tick → barClose.
-    // Set synthesizeTicks=false for tick-level sources that provide real ticks.
     void addBar(const IBComm::HistoricalBar& bar, bool synthesizeTicks = true) {
         if (synthesizeTicks) {
             auto makeTick = [&](double price) {
-                IBComm::MarketTick t;
-                t.symbol    = bar.symbol;
-                t.bid       = price;
-                t.ask       = price;
+                Pipeline::MarketTick t;
+                t.symbol = bar.symbol;
+                t.bid = price;
+                t.ask = price;
                 t.timestamp = bar.timestamp;
                 return t;
             };
@@ -108,24 +110,33 @@ public:
             m_ticks.append(makeTick(bar.low));
             m_ticks.append(makeTick(bar.close));
         }
-        BarCloseEvent bc;
-        bc.symbol    = bar.symbol;
-        bc.timestamp = bar.timestamp;
-        m_barCloses.append(bc);
+        Pipeline::OHLCVBar o;
+        o.symbol = bar.symbol;
+        o.open = bar.open;
+        o.high = bar.high;
+        o.low = bar.low;
+        o.close = bar.close;
+        o.volume = bar.volume;
+        o.timestamp = bar.timestamp;
+        m_barCloses.append(o);
     }
 
-    void addTick(const IBComm::MarketTick& tick) {
+    void addTick(const Pipeline::MarketTick& tick) {
         m_ticks.append(tick);
     }
 
-    void addBarClose(const QString& symbol, const QDateTime& timestamp) {
-        BarCloseEvent bc;
-        bc.symbol    = symbol;
-        bc.timestamp = timestamp;
-        m_barCloses.append(bc);
+    void addOhlcvBar(const Pipeline::OHLCVBar& bar) {
+        m_barCloses.append(bar);
     }
 
-    void addTickByTick(const IBComm::TickByTickTrade& trade) {
+    void addBarClose(const QString& symbol, const QDateTime& timestamp) {
+        Pipeline::OHLCVBar bar;
+        bar.symbol = symbol;
+        bar.timestamp = timestamp;
+        m_barCloses.append(bar);
+    }
+
+    void addTickByTick(const Pipeline::TickByTickTrade& trade) {
         m_tickByTicks.append(trade);
     }
 
@@ -143,24 +154,19 @@ public:
         for (int i = 0; i < nTicks; ++i) {
             emit tick(m_ticks[i]);
 
-            // Flush barCloses only after the LAST tick sharing this timestamp.
-            // This ensures all symbols' ticks for a given bar have been delivered
-            // to alpha blocks before the pipeline runs on barClose.
             const bool isLastTickForTs = (i + 1 >= nTicks)
                 || (m_ticks[i + 1].timestamp != m_ticks[i].timestamp);
 
             if (isLastTickForTs) {
                 while (barIdx < m_barCloses.size()
                        && m_barCloses[barIdx].timestamp <= m_ticks[i].timestamp) {
-                    emit barClose(m_barCloses[barIdx].symbol,
-                                  m_barCloses[barIdx].timestamp);
+                    emit ohlcvBar(m_barCloses[barIdx]);
                     ++barIdx;
                 }
             }
         }
         while (barIdx < m_barCloses.size()) {
-            emit barClose(m_barCloses[barIdx].symbol,
-                          m_barCloses[barIdx].timestamp);
+            emit ohlcvBar(m_barCloses[barIdx]);
             ++barIdx;
         }
     }
@@ -172,7 +178,7 @@ public:
         }
     }
 
-    const QVector<IBComm::MarketTick>& ticks() const { return m_ticks; }
+    const QVector<Pipeline::MarketTick>& ticks() const { return m_ticks; }
     const QVector<Pipeline::ExecutionIntent>& expectedIntents() const {
         return m_expectedIntents;
     }
@@ -180,21 +186,16 @@ public:
     int tickCount() const { return m_ticks.size(); }
 
 signals:
-    void tick(const IBComm::MarketTick& tick);
-    void barClose(const QString& symbol, const QDateTime& timestamp);
-    void tickByTick(const IBComm::TickByTickTrade& trade);
+    void tick(const Pipeline::MarketTick& tick);
+    void ohlcvBar(const Pipeline::OHLCVBar& bar);
+    void tickByTick(const Pipeline::TickByTickTrade& trade);
 
 private:
-    struct BarCloseEvent {
-        QString symbol;
-        QDateTime timestamp;
-    };
-
-    QVector<IBComm::MarketTick>         m_ticks;
-    QVector<Pipeline::ExecutionIntent>  m_expectedIntents;
-    QVector<BarCloseEvent>              m_barCloses;
-    QVector<IBComm::TickByTickTrade>    m_tickByTicks;
-    QJsonObject                         m_blockGraphConfig;
+    QVector<Pipeline::MarketTick>         m_ticks;
+    QVector<Pipeline::ExecutionIntent>    m_expectedIntents;
+    QVector<Pipeline::OHLCVBar>           m_barCloses;
+    QVector<Pipeline::TickByTickTrade>    m_tickByTicks;
+    QJsonObject                           m_blockGraphConfig;
 };
 
 #endif // REPLAY_MARKETDATAREPLAYER_H

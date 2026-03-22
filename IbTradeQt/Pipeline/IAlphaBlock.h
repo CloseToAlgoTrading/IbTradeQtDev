@@ -4,7 +4,6 @@
 #include <QObject>
 #include <QJsonObject>
 #include "Contracts.h"
-#include "../IBComm/MarketDataRouter.h"
 #include "../Common/IClock.h"
 
 namespace Pipeline {
@@ -31,14 +30,13 @@ public:
     virtual void setClock(IClock* clock) { m_clock = clock; }
 
 public slots:
-    virtual void onTick(const IBComm::MarketTick& tick) = 0;
+    virtual void onTick(const Pipeline::MarketTick& tick) = 0;
 
-    virtual void onBarClose(const QString& symbol, const QDateTime& timestamp) {
-        Q_UNUSED(symbol);
-        Q_UNUSED(timestamp);
+    virtual void onBarClose(const Pipeline::OHLCVBar& bar) {
+        Q_UNUSED(bar);
     }
 
-    virtual void onTickByTick(const IBComm::TickByTickTrade& trade) {
+    virtual void onTickByTick(const Pipeline::TickByTickTrade& trade) {
         Q_UNUSED(trade);
     }
 
@@ -47,7 +45,6 @@ signals:
     void errorOccurred(const QString& message);
 
 protected:
-    // Blocks that need deterministic time call: m_clock ? m_clock->now() : QDateTime::currentDateTime()
     IClock* m_clock = nullptr;
 };
 

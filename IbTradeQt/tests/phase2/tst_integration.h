@@ -23,7 +23,7 @@ public:
     void initialize() override {}
     void shutdown() override {}
 
-    void onTick(const IBComm::MarketTick& tick) override {
+    void onTick(const Pipeline::MarketTick& tick) override {
         m_lastMid = tick.mid();
         if (m_lastMid > m_threshold && !m_signalSent) {
             Pipeline::Signal sig;
@@ -332,9 +332,9 @@ private slots:
         });
 
         QDateTime base(QDate(2026, 3, 4), QTime(10, 0, 0), QTimeZone::utc());
-        QVector<IBComm::MarketTick> ticks;
+        QVector<Pipeline::MarketTick> ticks;
         for (int i = 0; i < 5; ++i) {
-            IBComm::MarketTick t;
+            Pipeline::MarketTick t;
             t.symbol = "AAPL";
             t.bid = 148.0 + i;
             t.ask = 148.5 + i;

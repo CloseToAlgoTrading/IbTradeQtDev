@@ -25,7 +25,7 @@ public:
     void initialize() override { m_initialized = true; }
     void shutdown() override { m_initialized = false; }
 
-    void onTick(const IBComm::MarketTick& tick) override {
+    void onTick(const Pipeline::MarketTick& tick) override {
         m_lastTick = tick;
         m_tickCount++;
         if (tick.mid() > m_threshold) {
@@ -41,7 +41,7 @@ public:
     int m_tickCount = 0;
     double m_threshold = 0.0;
     bool m_initialized = false;
-    IBComm::MarketTick m_lastTick;
+    Pipeline::MarketTick m_lastTick;
     QJsonObject m_config;
 };
 
@@ -169,7 +169,7 @@ private slots:
         qRegisterMetaType<Pipeline::Signal>("Pipeline::Signal");
         QSignalSpy spy(&alpha, &Pipeline::IAlphaBlock::signalGenerated);
 
-        IBComm::MarketTick tick;
+        Pipeline::MarketTick tick;
         tick.symbol = "AAPL";
         tick.bid = 149.0;
         tick.ask = 151.0;
@@ -188,7 +188,7 @@ private slots:
         qRegisterMetaType<Pipeline::Signal>("Pipeline::Signal");
         QSignalSpy spy(&alpha, &Pipeline::IAlphaBlock::signalGenerated);
 
-        IBComm::MarketTick tick;
+        Pipeline::MarketTick tick;
         tick.symbol = "AAPL";
         tick.bid = 149.0;
         tick.ask = 151.0;
@@ -350,7 +350,7 @@ private slots:
         MockAlphaBlock alpha;
         alpha.m_threshold = 1000.0;
 
-        IBComm::MarketTick tick;
+        Pipeline::MarketTick tick;
         tick.symbol = "AAPL";
         tick.bid = 149.0;
         tick.ask = 151.0;
