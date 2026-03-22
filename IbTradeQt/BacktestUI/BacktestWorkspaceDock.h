@@ -2,14 +2,16 @@
 #define BACKTESTUI_BACKTESTWORKSPACEDOCK_H
 
 #include <QDockWidget>
-#include <QMap>
 #include <QList>
 #include "Backtest/BacktestDataTypes.h"
+#include "Backtest/BacktestWorkspaceSession.h"
 #include "DB/dbdatatypes.h"
 
 class QLabel;
 class QTabWidget;
 class QWidget;
+class QPushButton;
+class QHBoxLayout;
 class BlockInspectorPanel;
 class BacktestPresenter;
 
@@ -27,14 +29,8 @@ class BacktestWorkspaceDock : public QDockWidget {
 public:
     explicit BacktestWorkspaceDock(QWidget* parent = nullptr);
 
-    void selectStrategy(const QString& strategyId,
-                        const QString& displayName,
-                        const QString& portfolioPath,
-                        const Backtest::BacktestProfile& profile,
-                        const QString& pipelineConfigJson,
-                        const QString& strategyDefId     = {},
-                        int            strategyVersion   = 1,
-                        const QString& catalogVersionId  = {});
+    void applyWorkspaceSession(const Backtest::Workspace::Session& session,
+                               bool clearResultPanels);
 
     void displayResult(const Backtest::BacktestLoadedRun& run);
     void setRunHistory(const QList<DbBacktestRunSummary>& runs);
@@ -48,21 +44,40 @@ public:
                           const QJsonObject& pipelineConfig);
     void hideBlockDetails();
 
+    void setResultsStale(bool stale);
+    void setSessionDirtyState(bool dirty);
+
+    BacktestRunConfigPanel* runConfigPanel() const { return m_configPanel; }
+
 signals:
     void runRequested(const Backtest::BacktestRunConfig& config);
     void loadRunRequested(const QString& runId);
 
+    void userWorkspacePipelineEdited(const QJsonObject& newWorkingPipeline);
+    void userRunFieldsEdited();
+
+    void saveChangesRequested();
+    void resetToBaselineRequested();
+    void saveAsNewVersionRequested();
+
 private:
     void buildDock();
     void updateStrategyHeader();
+    void rebuildActionRow();
 
     QString m_currentStrategyId;
     QString m_currentDisplayName;
     QString m_currentPortfolioPath;
     QString m_currentStrategyDefId;
     int     m_currentStrategyVersion = 1;
+    bool    m_isCatalogPreview       = false;
 
     QLabel*                  m_headerLabel     = nullptr;
+    QLabel*                  m_staleLabel      = nullptr;
+    QHBoxLayout*             m_actionRowLayout = nullptr;
+    QPushButton*             m_saveBtn         = nullptr;
+    QPushButton*             m_resetBtn        = nullptr;
+    QPushButton*             m_saveVerBtn      = nullptr;
 
     QTabWidget*              m_tabWidget       = nullptr;
     BacktestRunConfigPanel*  m_configPanel     = nullptr;
@@ -75,6 +90,9 @@ private:
     TradeLogWidget*          m_tradeLog        = nullptr;
 
     QJsonObject              m_pipelineConfig;
+    bool                     m_programmaticDockUpdate = false;
+    bool                     m_sessionDirty         = false;
+
     BacktestPresenter*       m_btPresenter    = nullptr;
 };
 

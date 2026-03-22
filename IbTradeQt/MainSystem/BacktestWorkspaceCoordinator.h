@@ -2,8 +2,14 @@
 #define BACKTESTWORKSPACECOORDINATOR_H
 
 #include <QObject>
+#include <QHash>
 #include <QJsonObject>
+#include <memory>
+#include <optional>
+
 #include "Backtest/BacktestDataTypes.h"
+#include "Backtest/BacktestWorkspaceSession.h"
+#include "IUnsavedChangesPrompt.h"
 
 class ISystemBackend;
 class CIBTradeSystemView;
@@ -16,10 +22,13 @@ class BacktestWorkspaceCoordinator : public QObject
     Q_OBJECT
 public:
     explicit BacktestWorkspaceCoordinator(QObject* parent = nullptr);
+    ~BacktestWorkspaceCoordinator() override;
 
     void setView(CIBTradeSystemView* view);
     void setBackend(ISystemBackend* backend);
     void setDock(BacktestUI::BacktestWorkspaceDock* dock);
+
+    void setUnsavedChangesPrompt(std::unique_ptr<IUnsavedChangesPrompt> prompt);
 
     void wireSignals();
 
@@ -35,7 +44,6 @@ public:
 
     BacktestUI::BacktestWorkspaceDock* dock() const { return m_dock; }
 
-    /** True while a backtest worker thread is active. */
     bool isBacktestRunning() const;
 
 signals:
@@ -46,14 +54,41 @@ private slots:
     void onBacktestFinished(const Backtest::BacktestLoadedRun& run);
     void onBacktestFailed(const QString& reason);
 
+    void onUserPipelineEdited(const QJsonObject& pipeline);
+    void onUserRunFieldsEdited();
+    void onSaveChangesRequested();
+    void onResetToBaselineRequested();
+    void onSaveAsNewVersionRequested();
+
 private:
-    void createController();
+    void ensureController();
     void populateRunHistory(const QString& strategyId, const QString& strategyDefId);
+
+    bool tryResolveSessionSwitch(const Backtest::Workspace::SessionKey& nextKey);
+    void activateSession(const Backtest::Workspace::SessionKey& key, bool clearResultPanels);
+
+    void syncActiveSessionFromPanel();
+
+    bool persistActiveLiveSession();
+    void saveAsNewVersionForActiveSession();
+
+    Backtest::Workspace::Session makeLiveSession(const Backtest::Workspace::SessionKey& key,
+                                                   const QString& displayName,
+                                                   const QString& portfolioPath,
+                                                   const QJsonObject& pipelineConfig,
+                                                   const QString& strategyDefId,
+                                                   int strategyVersion,
+                                                   const QString& catalogVersionId) const;
 
     CIBTradeSystemView*              m_view     = nullptr;
     ISystemBackend*                  m_backend  = nullptr;
     BacktestUI::BacktestWorkspaceDock* m_dock   = nullptr;
     Backtest::BacktestController*    m_controller = nullptr;
+
+    std::unique_ptr<IUnsavedChangesPrompt> m_unsavedPrompt;
+
+    QHash<Backtest::Workspace::SessionKey, Backtest::Workspace::Session> m_sessions;
+    std::optional<Backtest::Workspace::SessionKey> m_activeKey;
 };
 
 #endif // BACKTESTWORKSPACECOORDINATOR_H

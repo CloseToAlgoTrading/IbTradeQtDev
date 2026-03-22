@@ -1,5 +1,6 @@
 #include "BacktestUI/BacktestRunConfigPanel.h"
 #include "BacktestConstants.h"
+#include "Backtest/BacktestWorkspaceSession.h"
 #include "Pipeline/UniverseResolver.h"
 #include "RuntimePolicyEditor.h"
 #include <QJsonDocument>
@@ -139,6 +140,84 @@ void BacktestRunConfigPanel::buildForm() {
     layout->addWidget(m_progressBar);
 
     connect(m_runButton, &QPushButton::clicked, this, &BacktestRunConfigPanel::onRunClicked);
+
+    wireUserEditSignals();
+}
+
+void BacktestRunConfigPanel::wireUserEditSignals()
+{
+    auto emitIfUser = [this]() {
+        if (!m_programmaticUpdate)
+            emit userEdited();
+    };
+    connect(m_symbolsEdit, &QLineEdit::textChanged, this, [emitIfUser](const QString&) { emitIfUser(); });
+    connect(m_startDateEdit, &QDateEdit::dateChanged, this, [emitIfUser](const QDate&) { emitIfUser(); });
+    connect(m_endDateEdit, &QDateEdit::dateChanged, this, [emitIfUser](const QDate&) { emitIfUser(); });
+    connect(m_capitalSpin, qOverload<double>(&QDoubleSpinBox::valueChanged), this,
+            [emitIfUser](double) { emitIfUser(); });
+    connect(m_benchmarkEdit, &QLineEdit::textChanged, this, [emitIfUser](const QString&) { emitIfUser(); });
+    connect(m_resolutionCombo, &QComboBox::currentTextChanged, this, [emitIfUser](const QString&) { emitIfUser(); });
+    connect(m_fillModelCombo, &QComboBox::currentTextChanged, this, [emitIfUser](const QString&) { emitIfUser(); });
+    connect(m_fillTimingCombo, &QComboBox::currentTextChanged, this, [emitIfUser](const QString&) { emitIfUser(); });
+    connect(m_slippageSpin, qOverload<double>(&QDoubleSpinBox::valueChanged), this,
+            [emitIfUser](double) { emitIfUser(); });
+    connect(m_dataSourceCombo, &QComboBox::currentTextChanged, this, [emitIfUser](const QString&) { emitIfUser(); });
+    connect(m_policyEditor, &RuntimePolicyEditor::policyChanged, this,
+            [emitIfUser](const Pipeline::StrategyRuntimePolicy&) { emitIfUser(); });
+}
+
+QString BacktestRunConfigPanel::mergedPipelineConfigJson() const
+{
+    if (m_pipelineConfigJson.isEmpty())
+        return {};
+    QJsonObject cfg = QJsonDocument::fromJson(m_pipelineConfigJson.toUtf8()).object();
+    cfg = m_policyEditor->applyToJson(cfg);
+    return QString::fromUtf8(QJsonDocument(cfg).toJson(QJsonDocument::Compact));
+}
+
+Backtest::Workspace::RunFieldsSnapshot BacktestRunConfigPanel::runFieldsSnapshot() const
+{
+    Backtest::Workspace::RunFieldsSnapshot r;
+    r.symbolsText     = m_symbolsEdit->text();
+    r.startDate       = QDateTime(m_startDateEdit->date(), QTime(0, 0), Qt::UTC);
+    r.endDate         = QDateTime(m_endDateEdit->date(), QTime(23, 59, 59), Qt::UTC);
+    r.initialCapital  = m_capitalSpin->value();
+    r.benchmarkSymbol = m_benchmarkEdit->text().trimmed().toUpper();
+    r.resolution      = m_resolutionCombo->currentText();
+    r.fillModel       = m_fillModelCombo->currentText();
+    r.fillTiming      = m_fillTimingCombo->currentText();
+    r.slippageBps     = m_slippageSpin->value();
+    r.dataSourceId    = m_dataSourceCombo->currentText();
+    return r;
+}
+
+void BacktestRunConfigPanel::applyRunFieldsSnapshot(const Backtest::Workspace::RunFieldsSnapshot& s)
+{
+    QSignalBlocker b1(m_symbolsEdit);
+    QSignalBlocker b2(m_startDateEdit);
+    QSignalBlocker b3(m_endDateEdit);
+    QSignalBlocker b4(m_capitalSpin);
+    QSignalBlocker b5(m_benchmarkEdit);
+    QSignalBlocker b6(m_resolutionCombo);
+    QSignalBlocker b7(m_fillModelCombo);
+    QSignalBlocker b8(m_fillTimingCombo);
+    QSignalBlocker b9(m_slippageSpin);
+    QSignalBlocker b10(m_dataSourceCombo);
+
+    m_symbolsEdit->setText(s.symbolsText);
+    m_startDateEdit->setDate(s.startDate.toUTC().date());
+    m_endDateEdit->setDate(s.endDate.toUTC().date());
+    m_capitalSpin->setValue(s.initialCapital);
+    m_benchmarkEdit->setText(s.benchmarkSymbol);
+    const int resIdx = m_resolutionCombo->findText(s.resolution);
+    if (resIdx >= 0) m_resolutionCombo->setCurrentIndex(resIdx);
+    const int fmIdx = m_fillModelCombo->findText(s.fillModel);
+    if (fmIdx >= 0) m_fillModelCombo->setCurrentIndex(fmIdx);
+    const int ftIdx = m_fillTimingCombo->findText(s.fillTiming);
+    if (ftIdx >= 0) m_fillTimingCombo->setCurrentIndex(ftIdx);
+    m_slippageSpin->setValue(s.slippageBps);
+    const int dsIdx = m_dataSourceCombo->findText(s.dataSourceId);
+    if (dsIdx >= 0) m_dataSourceCombo->setCurrentIndex(dsIdx);
 }
 
 void BacktestRunConfigPanel::applyProfile(const Backtest::BacktestProfile& profile) {
@@ -152,39 +231,55 @@ void BacktestRunConfigPanel::applyProfile(const Backtest::BacktestProfile& profi
     if (srcIdx >= 0) m_dataSourceCombo->setCurrentIndex(srcIdx);
 }
 
+void BacktestRunConfigPanel::applyPipelineJsonToForm(const QString& pipelineConfigJson)
+{
+    m_pipelineConfigJson = pipelineConfigJson;
+    if (pipelineConfigJson.isEmpty())
+        return;
+
+    QJsonObject cfg = QJsonDocument::fromJson(pipelineConfigJson.toUtf8()).object();
+
+    auto resolved = Pipeline::UniverseResolver::resolve(cfg);
+    if (resolved.mode == Pipeline::UniverseResolutionResult::Mode::ExplicitStaticSymbols
+        && !resolved.symbols.isEmpty()) {
+        QStringList syms;
+        for (const auto& s : resolved.symbols) syms.append(s);
+        m_symbolsEdit->setText(syms.join(','));
+        m_symbolsEdit->setReadOnly(true);
+        m_symbolsEdit->setToolTip(resolved.reason);
+    } else {
+        m_symbolsEdit->setReadOnly(false);
+        m_symbolsEdit->setToolTip(resolved.reason);
+    }
+    m_universeLabel->setText(resolved.reason);
+
+    m_policyEditor->loadFromJson(cfg);
+}
+
+void BacktestRunConfigPanel::setWorkingPipelineFromJson(const QJsonObject& cfg)
+{
+    m_programmaticUpdate = true;
+    const QString json = QString::fromUtf8(
+        QJsonDocument(cfg).toJson(QJsonDocument::Compact));
+    applyPipelineJsonToForm(json);
+    m_programmaticUpdate = false;
+}
+
 void BacktestRunConfigPanel::setStrategyContext(const QString& strategyId,
                                                  const QString& displayName,
                                                  const QString& portfolioPath,
                                                  const QString& pipelineConfigJson,
                                                  const QString& strategyDefId,
                                                  int            strategyVersion) {
+    m_programmaticUpdate = true;
     m_strategyId         = strategyId;
     m_displayName        = displayName;
     m_portfolioPath      = portfolioPath;
-    m_pipelineConfigJson = pipelineConfigJson;
     m_strategyDefId      = strategyDefId;
     m_strategyVersion    = strategyVersion > 0 ? strategyVersion : 1;
 
-    // Auto-populate symbols and runtime policy from pipeline config.
-    if (!pipelineConfigJson.isEmpty()) {
-        QJsonObject cfg = QJsonDocument::fromJson(pipelineConfigJson.toUtf8()).object();
-
-        auto resolved = Pipeline::UniverseResolver::resolve(cfg);
-        if (resolved.mode == Pipeline::UniverseResolutionResult::Mode::ExplicitStaticSymbols
-            && !resolved.symbols.isEmpty()) {
-            QStringList syms;
-            for (const auto& s : resolved.symbols) syms.append(s);
-            m_symbolsEdit->setText(syms.join(','));
-            m_symbolsEdit->setReadOnly(true);
-            m_symbolsEdit->setToolTip(resolved.reason);
-        } else {
-            m_symbolsEdit->setReadOnly(false);
-            m_symbolsEdit->setToolTip(resolved.reason);
-        }
-        m_universeLabel->setText(resolved.reason);
-
-        m_policyEditor->loadFromJson(cfg);
-    }
+    applyPipelineJsonToForm(pipelineConfigJson);
+    m_programmaticUpdate = false;
 }
 
 Backtest::BacktestRunConfig BacktestRunConfigPanel::currentConfig() const {

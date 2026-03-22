@@ -65,6 +65,7 @@ win32 {
 
 SOURCES += \
     main.cpp \
+    backtest/tst_workspace_session.cpp \
     ../Brokers/IB/src/Decimal.cpp \
     ../CObjects/caccountsummary.cpp \
     ../CObjects/cposition.cpp \
@@ -118,6 +119,7 @@ SOURCES += \
     ../Backtest/SimulatedExecutionAdapter.cpp \
     ../Backtest/BacktestMetricsCollector.cpp \
     ../Backtest/BacktestSession.cpp \
+    ../Backtest/BacktestWorkspaceSession.cpp \
     ../Backtest/YahooFinanceDataSource.cpp \
     ../Backtest/HistoricalDataManager.cpp \
     ../Backtest/BacktestController.cpp \
@@ -266,6 +268,7 @@ HEADERS += \
     backtest/tst_backtest_extended.h \
     backtest/tst_live_backtest.h \
     backtest/tst_backtest_engine_coverage.h \
+    backtest/tst_workspace_session.h \
     backend/tst_storage_config.h \
     backend/tst_persistence_factory.h \
     backend/tst_model_tree_repository.h \

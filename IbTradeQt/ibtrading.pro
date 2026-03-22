@@ -131,6 +131,7 @@ SOURCES += \
     Logger/MyLogger.cpp \
     Logging/UiLogCategories.cpp \
     MainSystem/cpresenter.cpp \
+    MainSystem/QtUnsavedChangesPrompt.cpp \
     MainSystem/BacktestWorkspaceCoordinator.cpp \
     MainSystem/StrategyManagementCoordinator.cpp \
     ReqManager/globalreqmanager.cpp \
@@ -166,6 +167,7 @@ SOURCES += \
     Backtest/SimulatedExecutionAdapter.cpp \
     Backtest/BacktestMetricsCollector.cpp \
     Backtest/BacktestSession.cpp \
+    Backtest/BacktestWorkspaceSession.cpp \
     Backtest/YahooFinanceDataSource.cpp \
     Backtest/HistoricalDataManager.cpp \
     Backtest/BacktestController.cpp \
@@ -354,6 +356,7 @@ HEADERS += \
     Backtest/BenchmarkComparison.h \
     Backtest/BacktestReportWriter.h \
     Backtest/BacktestSession.h \
+    Backtest/BacktestWorkspaceSession.h \
     Backtest/BacktestDataTypes.h \
     Backtest/HistoricalDataManager.h \
     Backtest/BacktestController.h \
@@ -450,6 +453,7 @@ HEADERS += \
     Brokers/BrokerConnectionFactory.h \
     Brokers/PaperBrokerStub.h \
     MainSystem/cpresenter.h \
+    MainSystem/IUnsavedChangesPrompt.h \
     MainSystem/BacktestWorkspaceCoordinator.h \
     MainSystem/StrategyManagementCoordinator.h \
     ReqManager/globalreqmanager.h \

@@ -4,17 +4,63 @@
 #include "ibtradesystemview.h"
 #include "BacktestUI/BacktestWorkspaceDock.h"
 #include "BacktestUI/BacktestStrategySelector.h"
+#include "BacktestUI/BacktestRunConfigPanel.h"
 #include "Backtest/BacktestController.h"
 #include "cbasicroot.h"
+#include "Strategies/Generic/ModelType.h"
+#include "Strategies/Generic/cgenericmodelApi.h"
 #include "DB/dbquery.h"
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QMessageBox>
 #include <QtSql/QSqlDatabase>
 
+using Backtest::Workspace::Session;
+using Backtest::Workspace::SessionKey;
+using Backtest::Workspace::SessionKind;
+using Backtest::Workspace::recomputeSessionDirty;
+
+namespace {
+
+QString findMatchingVersionNumber(ISystemBackend* backend,
+                                  const QString& catalogStrategyId,
+                                  const QJsonObject& cfg)
+{
+    if (!backend)
+        return {};
+    const QString canon = Backtest::Workspace::canonicalJsonString(cfg);
+    for (const QJsonValue& v : backend->listStrategyVersions(catalogStrategyId)) {
+        const QJsonObject o = v.toObject();
+        const QJsonDocument dj = QJsonDocument::fromJson(
+            o.value(QStringLiteral("configJson")).toString().toUtf8());
+        if (!dj.isObject())
+            continue;
+        if (Backtest::Workspace::canonicalJsonString(dj.object()) == canon) {
+            const int num = o.value(QStringLiteral("versionNumber")).toInt(0);
+            return QString::number(num);
+        }
+    }
+    return {};
+}
+
+} // namespace
+
 BacktestWorkspaceCoordinator::BacktestWorkspaceCoordinator(QObject* parent)
     : QObject(parent)
+    , m_unsavedPrompt(std::make_unique<QtUnsavedChangesPrompt>())
 {
+}
+
+BacktestWorkspaceCoordinator::~BacktestWorkspaceCoordinator() = default;
+
+
+void BacktestWorkspaceCoordinator::setUnsavedChangesPrompt(
+    std::unique_ptr<IUnsavedChangesPrompt> prompt)
+{
+    if (prompt)
+        m_unsavedPrompt = std::move(prompt);
+    else
+        m_unsavedPrompt = std::make_unique<QtUnsavedChangesPrompt>();
 }
 
 bool BacktestWorkspaceCoordinator::isBacktestRunning() const
@@ -26,12 +72,30 @@ void BacktestWorkspaceCoordinator::setView(CIBTradeSystemView* view) { m_view = 
 void BacktestWorkspaceCoordinator::setBackend(ISystemBackend* backend) { m_backend = backend; }
 void BacktestWorkspaceCoordinator::setDock(BacktestUI::BacktestWorkspaceDock* dock) { m_dock = dock; }
 
+void BacktestWorkspaceCoordinator::ensureController()
+{
+    if (m_controller)
+        return;
+    m_controller = new Backtest::BacktestController(
+        NHelper::getStorageConfig().backtestStore.path, nullptr, this);
+
+    connect(m_controller, &Backtest::BacktestController::progressChanged,
+            m_dock, &BacktestUI::BacktestWorkspaceDock::setProgress);
+    connect(m_controller, &Backtest::BacktestController::statusChanged,
+            m_dock, &BacktestUI::BacktestWorkspaceDock::setStatus);
+    connect(m_controller, &Backtest::BacktestController::finished,
+            this, &BacktestWorkspaceCoordinator::onBacktestFinished);
+    connect(m_controller, &Backtest::BacktestController::failed,
+            this, &BacktestWorkspaceCoordinator::onBacktestFailed);
+}
+
 void BacktestWorkspaceCoordinator::wireSignals()
 {
     if (!m_dock || !m_view) return;
 
     connect(m_dock, &BacktestUI::BacktestWorkspaceDock::runRequested,
             this, [this](const Backtest::BacktestRunConfig& config) {
+        ensureController();
         if (!m_controller) return;
         m_dock->setRunning(true);
         m_controller->start(config);
@@ -39,6 +103,17 @@ void BacktestWorkspaceCoordinator::wireSignals()
 
     connect(m_dock, &BacktestUI::BacktestWorkspaceDock::loadRunRequested,
             this, &BacktestWorkspaceCoordinator::onLoadRun);
+
+    connect(m_dock, &BacktestUI::BacktestWorkspaceDock::userWorkspacePipelineEdited,
+            this, &BacktestWorkspaceCoordinator::onUserPipelineEdited);
+    connect(m_dock, &BacktestUI::BacktestWorkspaceDock::userRunFieldsEdited,
+            this, &BacktestWorkspaceCoordinator::onUserRunFieldsEdited);
+    connect(m_dock, &BacktestUI::BacktestWorkspaceDock::saveChangesRequested,
+            this, &BacktestWorkspaceCoordinator::onSaveChangesRequested);
+    connect(m_dock, &BacktestUI::BacktestWorkspaceDock::resetToBaselineRequested,
+            this, &BacktestWorkspaceCoordinator::onResetToBaselineRequested);
+    connect(m_dock, &BacktestUI::BacktestWorkspaceDock::saveAsNewVersionRequested,
+            this, &BacktestWorkspaceCoordinator::onSaveAsNewVersionRequested);
 
     auto* selector = m_view->backtestStrategySelector();
     if (selector) {
@@ -53,8 +128,16 @@ void BacktestWorkspaceCoordinator::wireSignals()
 
         connect(selector, &BacktestUI::BacktestStrategySelector::blockSelected,
                 this, [this](const QString& cat, const QString& key,
-                              bool isArr, int idx, const QJsonObject& cfg) {
-            if (m_dock) m_dock->showBlockDetails(cat, key, isArr, idx, cfg);
+                              bool isArr, int idx, const QJsonObject&) {
+            if (!m_dock || !m_activeKey || !m_sessions.contains(*m_activeKey))
+                return;
+            Session& s = m_sessions[*m_activeKey];
+            // Use session working pipeline only — tree PipelineJsonRole can lag edits from
+            // Block Details and would overwrite unsaved changes.
+            syncActiveSessionFromPanel();
+            recomputeSessionDirty(s);
+            m_dock->setSessionDirtyState(s.dirty);
+            m_dock->showBlockDetails(cat, key, isArr, idx, s.workingPipeline);
         });
 
         connect(selector, &BacktestUI::BacktestStrategySelector::refreshRequested,
@@ -62,20 +145,218 @@ void BacktestWorkspaceCoordinator::wireSignals()
     }
 }
 
-void BacktestWorkspaceCoordinator::createController()
+void BacktestWorkspaceCoordinator::syncActiveSessionFromPanel()
 {
-    delete m_controller;
-    m_controller = new Backtest::BacktestController(
-        NHelper::getStorageConfig().backtestStore.path, nullptr, this);
+    if (!m_dock || !m_activeKey || !m_sessions.contains(*m_activeKey))
+        return;
+    Session& s = m_sessions[*m_activeKey];
+    auto* panel = m_dock->runConfigPanel();
+    if (!panel)
+        return;
+    s.workingRunFields = panel->runFieldsSnapshot();
+    const QString merged = panel->mergedPipelineConfigJson();
+    if (!merged.isEmpty()) {
+        const QJsonDocument d = QJsonDocument::fromJson(merged.toUtf8());
+        if (d.isObject())
+            s.workingPipeline = d.object();
+    }
+    recomputeSessionDirty(s);
+}
 
-    connect(m_controller, &Backtest::BacktestController::progressChanged,
-            m_dock, &BacktestUI::BacktestWorkspaceDock::setProgress);
-    connect(m_controller, &Backtest::BacktestController::statusChanged,
-            m_dock, &BacktestUI::BacktestWorkspaceDock::setStatus);
-    connect(m_controller, &Backtest::BacktestController::finished,
-            this, &BacktestWorkspaceCoordinator::onBacktestFinished);
-    connect(m_controller, &Backtest::BacktestController::failed,
-            this, &BacktestWorkspaceCoordinator::onBacktestFailed);
+void BacktestWorkspaceCoordinator::onUserPipelineEdited(const QJsonObject& pipeline)
+{
+    if (!m_activeKey || !m_sessions.contains(*m_activeKey))
+        return;
+    Session& s = m_sessions[*m_activeKey];
+    if (auto* panel = m_dock ? m_dock->runConfigPanel() : nullptr)
+        panel->setWorkingPipelineFromJson(pipeline);
+    s.workingPipeline = pipeline;
+    syncActiveSessionFromPanel();
+    recomputeSessionDirty(s);
+    m_dock->setSessionDirtyState(s.dirty);
+    if (s.lastRunId.isEmpty())
+        return;
+    s.resultsStale = true;
+    m_dock->setResultsStale(true);
+}
+
+void BacktestWorkspaceCoordinator::onUserRunFieldsEdited()
+{
+    syncActiveSessionFromPanel();
+    if (!m_activeKey || !m_sessions.contains(*m_activeKey))
+        return;
+    Session& s = m_sessions[*m_activeKey];
+    m_dock->setSessionDirtyState(s.dirty);
+    if (!s.lastRunId.isEmpty()) {
+        s.resultsStale = true;
+        m_dock->setResultsStale(true);
+    }
+}
+
+void BacktestWorkspaceCoordinator::onSaveChangesRequested()
+{
+    if (!m_activeKey || !m_sessions.contains(*m_activeKey))
+        return;
+    Session& s = m_sessions[*m_activeKey];
+    if (s.key.kind != SessionKind::LiveNode) {
+        QMessageBox::information(m_view, QStringLiteral("Save"),
+            QStringLiteral("Use \"Save as New Version\" for catalog preview."));
+        return;
+    }
+    if (!persistActiveLiveSession())
+        return;
+    m_dock->applyWorkspaceSession(s, false);
+    m_dock->setSessionDirtyState(s.dirty);
+}
+
+void BacktestWorkspaceCoordinator::onResetToBaselineRequested()
+{
+    if (!m_activeKey || !m_sessions.contains(*m_activeKey))
+        return;
+    Session& s = m_sessions[*m_activeKey];
+    s.workingPipeline = s.baselinePipeline;
+    s.workingRunFields = s.baselineRunFields;
+    recomputeSessionDirty(s);
+    m_dock->applyWorkspaceSession(s, false);
+}
+
+void BacktestWorkspaceCoordinator::onSaveAsNewVersionRequested()
+{
+    saveAsNewVersionForActiveSession();
+}
+
+bool BacktestWorkspaceCoordinator::persistActiveLiveSession()
+{
+    if (!m_backend || !m_activeKey || !m_sessions.contains(*m_activeKey))
+        return false;
+    Session& s = m_sessions[*m_activeKey];
+    if (s.key.kind != SessionKind::LiveNode)
+        return false;
+    syncActiveSessionFromPanel();
+    if (!m_backend->updatePipelineConfig(s.key.nodeId, s.workingPipeline))
+        return false;
+    s.baselinePipeline = s.workingPipeline;
+    s.baselineRunFields = s.workingRunFields;
+    recomputeSessionDirty(s);
+    return true;
+}
+
+void BacktestWorkspaceCoordinator::saveAsNewVersionForActiveSession()
+{
+    if (!m_backend || !m_activeKey || !m_sessions.contains(*m_activeKey))
+        return;
+    Session& s = m_sessions[*m_activeKey];
+    syncActiveSessionFromPanel();
+
+    const QString catalogStrategyId = s.strategyDefId.isEmpty()
+        ? s.catalogStrategyIdForCatalogPreview
+        : s.strategyDefId;
+    if (catalogStrategyId.isEmpty()) {
+        QMessageBox::warning(m_view, QStringLiteral("Save as New Version"),
+            QStringLiteral("No catalog strategy id."));
+        return;
+    }
+
+    const QString matchVer = findMatchingVersionNumber(
+        m_backend, catalogStrategyId, s.workingPipeline);
+    if (!matchVer.isEmpty()) {
+        QMessageBox::information(m_view, QStringLiteral("Save as New Version"),
+            QStringLiteral("This configuration already exists as version %1").arg(matchVer));
+        return;
+    }
+
+    const QString newVerId = m_backend->createStrategyVersion(
+        catalogStrategyId,
+        s.workingPipeline,
+        QStringLiteral("Saved from backtest workspace"));
+    if (newVerId.isEmpty()) {
+        QMessageBox::warning(m_view, QStringLiteral("Save as New Version"),
+            QStringLiteral("Failed to create version."));
+        return;
+    }
+    QMessageBox::information(m_view, QStringLiteral("Save as New Version"),
+        QStringLiteral("New version created successfully."));
+    emit catalogRefreshNeeded();
+}
+
+Session BacktestWorkspaceCoordinator::makeLiveSession(const SessionKey& key,
+                                                   const QString& displayName,
+                                                   const QString& portfolioPath,
+                                                   const QJsonObject& pipelineConfig,
+                                                   const QString& strategyDefId,
+                                                   int strategyVersion,
+                                                   const QString& catalogVersionId) const
+{
+    Session s;
+    s.key = key;
+    s.displayName = displayName;
+    s.portfolioPath = portfolioPath;
+    s.strategyDefId = strategyDefId;
+    s.strategyVersion = strategyVersion > 0 ? strategyVersion : 1;
+    s.catalogVersionId = catalogVersionId;
+    s.baselinePipeline = pipelineConfig;
+    s.workingPipeline = pipelineConfig;
+    return s;
+}
+
+bool BacktestWorkspaceCoordinator::tryResolveSessionSwitch(const SessionKey& nextKey)
+{
+    if (!m_activeKey || *m_activeKey == nextKey)
+        return true;
+
+    if (!m_sessions.contains(*m_activeKey))
+        return true;
+
+    Session& cur = m_sessions[*m_activeKey];
+    recomputeSessionDirty(cur);
+    if (!cur.dirty)
+        return true;
+
+    const UnsavedPromptChoice choice = m_unsavedPrompt->askSaveDiscardCancel(
+        m_view,
+        QStringLiteral("Unsaved changes"),
+        QStringLiteral("Save changes to the current session before switching?"));
+
+    if (choice == UnsavedPromptChoice::Cancel)
+        return false;
+
+    if (choice == UnsavedPromptChoice::Save) {
+        if (cur.key.kind == SessionKind::CatalogVersion) {
+            QMessageBox::information(m_view, QStringLiteral("Unsaved changes"),
+                QStringLiteral("Catalog preview cannot be saved to the live tree. "
+                               "Use \"Save as New Version\" or discard."));
+            return false;
+        }
+        if (!persistActiveLiveSession())
+            return false;
+    }
+
+    m_sessions.remove(*m_activeKey);
+    m_activeKey.reset();
+    return true;
+}
+
+void BacktestWorkspaceCoordinator::activateSession(const SessionKey& key, bool clearResultPanels)
+{
+    if (!m_dock || !m_sessions.contains(key))
+        return;
+    m_activeKey = key;
+    Session& s = m_sessions[key];
+    recomputeSessionDirty(s);
+    m_dock->applyWorkspaceSession(s, clearResultPanels);
+
+    if (key.kind == SessionKind::LiveNode) {
+        if (m_view) {
+            m_view->switchToBacktestTab();
+            if (auto* sel = m_view->backtestStrategySelector())
+                sel->highlightStrategy(key.nodeId);
+        }
+        populateRunHistory(key.nodeId, s.strategyDefId);
+    } else {
+        if (m_view)
+            m_view->switchToBacktestTab();
+        populateRunHistory(QString(), s.strategyDefId);
+    }
 }
 
 void BacktestWorkspaceCoordinator::openStrategy(
@@ -84,38 +365,47 @@ void BacktestWorkspaceCoordinator::openStrategy(
 {
     if (!m_dock) return;
 
+    SessionKey key;
+    key.kind = SessionKind::LiveNode;
+    key.nodeId = strategyId;
+
+    if (m_activeKey && *m_activeKey == key && m_sessions.contains(key)) {
+        activateSession(key, false);
+        return;
+    }
+
+    if (!tryResolveSessionSwitch(key))
+        return;
+
     QString strategyDefId;
     QString catalogVersionId;
     int     strategyVersion = 1;
     if (m_backend) {
         QJsonObject defJson = m_backend->strategyDefinitionForNode(strategyId);
         if (!defJson.isEmpty()) {
-            strategyDefId    = defJson.value("strategyDefId").toString();
-            strategyVersion  = defJson.value("version").toInt(1);
-            catalogVersionId = defJson.value("versionId").toString();
+            strategyDefId    = defJson.value(QStringLiteral("strategyDefId")).toString();
+            strategyVersion  = defJson.value(QStringLiteral("version")).toInt(1);
+            catalogVersionId = defJson.value(QStringLiteral("versionId")).toString();
         }
     }
 
-    createController();
-
-    Backtest::BacktestProfile profile =
-        Backtest::BacktestProfile::fromJson(
-            pipelineConfig.value("backtestProfile").toObject());
-
-    const QString pipelineConfigJson = QString::fromUtf8(
-        QJsonDocument(pipelineConfig).toJson(QJsonDocument::Compact));
-
-    m_dock->selectStrategy(strategyId, displayName, portfolioPath,
-                           profile, pipelineConfigJson,
-                           strategyDefId, strategyVersion, catalogVersionId);
-
-    if (m_view) {
-        m_view->switchToBacktestTab();
-        if (auto* sel = m_view->backtestStrategySelector())
-            sel->highlightStrategy(strategyId);
+    if (m_sessions.contains(key)) {
+        m_activeKey = key;
+        activateSession(key, false);
+        return;
     }
 
-    populateRunHistory(strategyId, strategyDefId);
+    Session s = makeLiveSession(key, displayName, portfolioPath, pipelineConfig,
+                                strategyDefId, strategyVersion, catalogVersionId);
+    m_sessions.insert(key, s);
+    activateSession(key, true);
+
+    Session& stored = m_sessions[key];
+    syncActiveSessionFromPanel();
+    stored.baselineRunFields = stored.workingRunFields;
+    stored.baselinePipeline = stored.workingPipeline;
+    recomputeSessionDirty(stored);
+    m_dock->applyWorkspaceSession(stored, false);
 }
 
 void BacktestWorkspaceCoordinator::openCatalogVersion(
@@ -123,11 +413,29 @@ void BacktestWorkspaceCoordinator::openCatalogVersion(
 {
     if (!m_backend || !m_dock) return;
 
+    SessionKey key;
+    key.kind = SessionKind::CatalogVersion;
+    key.strategyId = catalogStrategyId;
+    key.versionId = catalogVersionId;
+
+    if (m_activeKey && *m_activeKey == key && m_sessions.contains(key)) {
+        activateSession(key, false);
+        return;
+    }
+
+    if (!tryResolveSessionSwitch(key))
+        return;
+
+    if (m_sessions.contains(key)) {
+        activateSession(key, false);
+        return;
+    }
+
     QJsonArray versions = m_backend->listStrategyVersions(catalogStrategyId);
     QJsonObject verJson;
     for (const QJsonValue& v : versions) {
         QJsonObject obj = v.toObject();
-        if (obj.value("versionId").toString() == catalogVersionId) {
+        if (obj.value(QStringLiteral("versionId")).toString() == catalogVersionId) {
             verJson = obj;
             break;
         }
@@ -138,31 +446,38 @@ void BacktestWorkspaceCoordinator::openCatalogVersion(
     QString displayName = QStringLiteral("Strategy");
     for (const QJsonValue& c : catalog) {
         QJsonObject obj = c.toObject();
-        if (obj.value("strategyId").toString() == catalogStrategyId) {
-            displayName = obj.value("name").toString(displayName);
+        if (obj.value(QStringLiteral("strategyId")).toString() == catalogStrategyId) {
+            displayName = obj.value(QStringLiteral("name")).toString(displayName);
             break;
         }
     }
 
-    int versionNumber = verJson.value("versionNumber").toInt(1);
-    QString configJson = verJson.value("configJson").toString();
-
-    createController();
+    int versionNumber = verJson.value(QStringLiteral("versionNumber")).toInt(1);
+    QString configJson = verJson.value(QStringLiteral("configJson")).toString();
 
     QJsonDocument configDoc = QJsonDocument::fromJson(configJson.toUtf8());
     QJsonObject configObj = configDoc.object();
-    Backtest::BacktestProfile profile =
-        Backtest::BacktestProfile::fromJson(
-            configObj.value("backtestProfile").toObject());
 
-    m_dock->selectStrategy(
-        QString(),
-        displayName + QStringLiteral(" v") + QString::number(versionNumber),
-        QString(), profile, configJson,
-        catalogStrategyId, versionNumber, catalogVersionId);
+    Session s;
+    s.key = key;
+    s.displayName = displayName + QStringLiteral(" v") + QString::number(versionNumber);
+    s.portfolioPath.clear();
+    s.strategyDefId = catalogStrategyId;
+    s.strategyVersion = versionNumber;
+    s.catalogVersionId = catalogVersionId;
+    s.catalogStrategyIdForCatalogPreview = catalogStrategyId;
+    s.baselinePipeline = configObj;
+    s.workingPipeline = configObj;
 
-    if (m_view)
-        m_view->switchToBacktestTab();
+    m_sessions.insert(key, s);
+    activateSession(key, true);
+
+    Session& stored = m_sessions[key];
+    syncActiveSessionFromPanel();
+    stored.baselineRunFields = stored.workingRunFields;
+    stored.baselinePipeline = stored.workingPipeline;
+    recomputeSessionDirty(stored);
+    m_dock->applyWorkspaceSession(stored, false);
 }
 
 void BacktestWorkspaceCoordinator::refreshStrategies()
@@ -195,9 +510,9 @@ void BacktestWorkspaceCoordinator::refreshStrategies()
 
                 QJsonObject defJson = m_backend->strategyDefinitionForNode(stratId);
                 if (!defJson.isEmpty()) {
-                    item.strategyDefId    = defJson.value("strategyDefId").toString();
-                    item.version          = defJson.value("version").toInt(1);
-                    item.catalogVersionId = defJson.value("versionId").toString();
+                    item.strategyDefId    = defJson.value(QStringLiteral("strategyDefId")).toString();
+                    item.version          = defJson.value(QStringLiteral("version")).toInt(1);
+                    item.catalogVersionId = defJson.value(QStringLiteral("versionId")).toString();
                 }
 
                 items.append(item);
@@ -211,8 +526,8 @@ void BacktestWorkspaceCoordinator::refreshStrategies()
     QJsonArray catalog = m_backend->listStrategyCatalog(false);
     for (const QJsonValue& c : catalog) {
         QJsonObject sObj = c.toObject();
-        QString stratId   = sObj.value("strategyId").toString();
-        QString stratName = sObj.value("name").toString();
+        QString stratId   = sObj.value(QStringLiteral("strategyId")).toString();
+        QString stratName = sObj.value(QStringLiteral("name")).toString();
 
         QJsonArray vers = m_backend->listStrategyVersions(stratId);
         for (const QJsonValue& v : vers) {
@@ -220,10 +535,10 @@ void BacktestWorkspaceCoordinator::refreshStrategies()
             BacktestUI::CatalogVersionItem ci;
             ci.strategyId    = stratId;
             ci.strategyName  = stratName;
-            ci.versionId     = vObj.value("versionId").toString();
-            ci.versionNumber = vObj.value("versionNumber").toInt(1);
-            ci.configJson    = vObj.value("configJson").toString();
-            ci.isPublished   = vObj.value("isPublished").toBool();
+            ci.versionId     = vObj.value(QStringLiteral("versionId")).toString();
+            ci.versionNumber = vObj.value(QStringLiteral("versionNumber")).toInt(1);
+            ci.configJson    = vObj.value(QStringLiteral("configJson")).toString();
+            ci.isPublished   = vObj.value(QStringLiteral("isPublished")).toBool();
             catalogItems.append(ci);
         }
     }
@@ -233,6 +548,7 @@ void BacktestWorkspaceCoordinator::refreshStrategies()
 void BacktestWorkspaceCoordinator::populateRunHistory(
     const QString& strategyId, const QString& strategyDefId)
 {
+    ensureController();
     if (!m_controller) return;
     const QString conn = m_controller->dbConnectionName();
 
@@ -241,21 +557,21 @@ void BacktestWorkspaceCoordinator::populateRunHistory(
         if (q.exec()) {
             while (q.next()) {
                 DbBacktestRunSummary s;
-                s.runId        = q.value("runId").toString();
-                s.strategyId   = q.value("strategyId").toString();
-                s.symbols      = q.value("symbols").toString();
-                s.startDate    = q.value("startDate").toString();
-                s.endDate      = q.value("endDate").toString();
-                s.status       = q.value("status").toString();
-                s.dataSourceId = q.value("dataSourceId").toString();
-                s.createdAt    = q.value("createdAt").toString();
-                s.totalReturn  = q.value("totalReturn").toDouble();
-                s.sharpeRatio  = q.value("sharpeRatio").toDouble();
-                s.strategyDefId   = q.value("strategyDefId").toString();
-                s.scopeType       = q.value("scopeType").toString();
-                s.scopeRefId      = q.value("scopeRefId").toString();
-                s.strategyVersion = q.value("strategyVersion").isNull()
-                                        ? 1 : q.value("strategyVersion").toInt();
+                s.runId        = q.value(QStringLiteral("runId")).toString();
+                s.strategyId   = q.value(QStringLiteral("strategyId")).toString();
+                s.symbols      = q.value(QStringLiteral("symbols")).toString();
+                s.startDate    = q.value(QStringLiteral("startDate")).toString();
+                s.endDate      = q.value(QStringLiteral("endDate")).toString();
+                s.status       = q.value(QStringLiteral("status")).toString();
+                s.dataSourceId = q.value(QStringLiteral("dataSourceId")).toString();
+                s.createdAt    = q.value(QStringLiteral("createdAt")).toString();
+                s.totalReturn  = q.value(QStringLiteral("totalReturn")).toDouble();
+                s.sharpeRatio  = q.value(QStringLiteral("sharpeRatio")).toDouble();
+                s.strategyDefId   = q.value(QStringLiteral("strategyDefId")).toString();
+                s.scopeType       = q.value(QStringLiteral("scopeType")).toString();
+                s.scopeRefId      = q.value(QStringLiteral("scopeRefId")).toString();
+                s.strategyVersion = q.value(QStringLiteral("strategyVersion")).isNull()
+                                        ? 1 : q.value(QStringLiteral("strategyVersion")).toInt();
                 summaries.append(s);
             }
         }
@@ -264,13 +580,15 @@ void BacktestWorkspaceCoordinator::populateRunHistory(
 
     if (!strategyDefId.isEmpty())
         populate(query_fetchRunsForDefinition(strategyDefId, conn));
-    else
+    else if (!strategyId.isEmpty())
         populate(query_fetchRunsForStrategy(strategyId, conn));
 }
 
 void BacktestWorkspaceCoordinator::onLoadRun(const QString& runId)
 {
-    if (!m_dock || !m_controller) return;
+    if (!m_dock) return;
+    ensureController();
+    if (!m_controller) return;
 
     const QString conn = m_controller->dbConnectionName();
     QSqlDatabase db = QSqlDatabase::database(conn);
@@ -281,29 +599,29 @@ void BacktestWorkspaceCoordinator::onLoadRun(const QString& runId)
     {
         auto q = query_fetchBacktestRun(runId, conn);
         if (q.exec() && q.next()) {
-            loaded.record.runId               = q.value("runId").toString();
-            loaded.record.strategyId          = q.value("strategyId").toString();
-            loaded.record.strategyDisplayName = q.value("strategyDisplayName").toString();
-            loaded.record.portfolioPath       = q.value("portfolioPath").toString();
-            loaded.record.symbols             = q.value("symbols").toString();
-            loaded.record.startDate           = q.value("startDate").toString();
-            loaded.record.endDate             = q.value("endDate").toString();
-            loaded.record.status              = q.value("status").toString();
+            loaded.record.runId               = q.value(QStringLiteral("runId")).toString();
+            loaded.record.strategyId          = q.value(QStringLiteral("strategyId")).toString();
+            loaded.record.strategyDisplayName = q.value(QStringLiteral("strategyDisplayName")).toString();
+            loaded.record.portfolioPath       = q.value(QStringLiteral("portfolioPath")).toString();
+            loaded.record.symbols             = q.value(QStringLiteral("symbols")).toString();
+            loaded.record.startDate           = q.value(QStringLiteral("startDate")).toString();
+            loaded.record.endDate             = q.value(QStringLiteral("endDate")).toString();
+            loaded.record.status              = q.value(QStringLiteral("status")).toString();
         }
     }
 
     {
         auto q = query_fetchBacktestMetrics(runId, conn);
         if (q.exec() && q.next()) {
-            loaded.result.totalReturn      = q.value("totalReturn").toDouble();
-            loaded.result.annualizedReturn = q.value("annualizedReturn").toDouble();
-            loaded.result.sharpeRatio      = q.value("sharpeRatio").toDouble();
-            loaded.result.maxDrawdown      = q.value("maxDrawdown").toDouble();
-            loaded.result.winRate          = q.value("winRate").toDouble();
-            loaded.result.totalTrades      = q.value("totalTrades").toInt();
-            loaded.result.initialCapital   = q.value("initialCapital").toDouble();
-            loaded.result.finalCapital     = q.value("finalCapital").toDouble();
-            loaded.result.alphaVsBenchmark = q.value("alpha").toDouble();
+            loaded.result.totalReturn      = q.value(QStringLiteral("totalReturn")).toDouble();
+            loaded.result.annualizedReturn = q.value(QStringLiteral("annualizedReturn")).toDouble();
+            loaded.result.sharpeRatio      = q.value(QStringLiteral("sharpeRatio")).toDouble();
+            loaded.result.maxDrawdown      = q.value(QStringLiteral("maxDrawdown")).toDouble();
+            loaded.result.winRate          = q.value(QStringLiteral("winRate")).toDouble();
+            loaded.result.totalTrades      = q.value(QStringLiteral("totalTrades")).toInt();
+            loaded.result.initialCapital   = q.value(QStringLiteral("initialCapital")).toDouble();
+            loaded.result.finalCapital     = q.value(QStringLiteral("finalCapital")).toDouble();
+            loaded.result.alphaVsBenchmark = q.value(QStringLiteral("alpha")).toDouble();
         }
     }
 
@@ -312,13 +630,13 @@ void BacktestWorkspaceCoordinator::onLoadRun(const QString& runId)
         if (q.exec()) {
             while (q.next()) {
                 Backtest::LedgerSnapshot s;
-                s.timestamp      = QDateTime::fromString(q.value("timestamp").toString(), Qt::ISODate);
-                s.portfolioValue = q.value("value").toDouble();
+                s.timestamp      = QDateTime::fromString(q.value(QStringLiteral("timestamp")).toString(), Qt::ISODate);
+                s.portfolioValue = q.value(QStringLiteral("value")).toDouble();
                 loaded.result.equityCurve.append(s);
 
                 Backtest::LedgerSnapshot bm;
                 bm.timestamp      = s.timestamp;
-                bm.portfolioValue = q.value("benchmarkValue").toDouble();
+                bm.portfolioValue = q.value(QStringLiteral("benchmarkValue")).toDouble();
                 loaded.result.benchmark.equityCurve.append(bm);
             }
         }
@@ -331,12 +649,12 @@ void BacktestWorkspaceCoordinator::onLoadRun(const QString& runId)
             while (q.next()) {
                 Backtest::FilledOrder f;
                 f.orderId   = ++id;
-                f.symbol    = q.value("symbol").toString();
-                f.quantity  = (q.value("side").toString() == QLatin1String("BUY"))
-                    ? q.value("quantity").toDouble()
-                    : -q.value("quantity").toDouble();
-                f.fillPrice = q.value("fillPrice").toDouble();
-                f.timestamp = QDateTime::fromString(q.value("timestamp").toString(), Qt::ISODate);
+                f.symbol    = q.value(QStringLiteral("symbol")).toString();
+                f.quantity  = (q.value(QStringLiteral("side")).toString() == QLatin1String("BUY"))
+                    ? q.value(QStringLiteral("quantity")).toDouble()
+                    : -q.value(QStringLiteral("quantity")).toDouble();
+                f.fillPrice = q.value(QStringLiteral("fillPrice")).toDouble();
+                f.timestamp = QDateTime::fromString(q.value(QStringLiteral("timestamp")).toString(), Qt::ISODate);
                 loaded.result.tradeLog.append(f);
             }
         }
@@ -351,6 +669,14 @@ void BacktestWorkspaceCoordinator::onBacktestFinished(const Backtest::BacktestLo
     m_dock->setRunning(false);
     m_dock->displayResult(run);
 
+    if (m_activeKey && m_sessions.contains(*m_activeKey)) {
+        Session& s = m_sessions[*m_activeKey];
+        s.lastRunId = run.record.runId;
+        s.resultsStale = false;
+        m_dock->setResultsStale(false);
+    }
+
+    ensureController();
     const QString conn = m_controller ? m_controller->dbConnectionName()
                                        : QString();
     auto q = query_fetchRunsForStrategy(run.record.strategyId, conn);
@@ -358,16 +684,16 @@ void BacktestWorkspaceCoordinator::onBacktestFinished(const Backtest::BacktestLo
         QList<DbBacktestRunSummary> summaries;
         while (q.next()) {
             DbBacktestRunSummary s;
-            s.runId        = q.value("runId").toString();
-            s.strategyId   = q.value("strategyId").toString();
-            s.symbols      = q.value("symbols").toString();
-            s.startDate    = q.value("startDate").toString();
-            s.endDate      = q.value("endDate").toString();
-            s.status       = q.value("status").toString();
-            s.dataSourceId = q.value("dataSourceId").toString();
-            s.createdAt    = q.value("createdAt").toString();
-            s.totalReturn  = q.value("totalReturn").toDouble();
-            s.sharpeRatio  = q.value("sharpeRatio").toDouble();
+            s.runId        = q.value(QStringLiteral("runId")).toString();
+            s.strategyId   = q.value(QStringLiteral("strategyId")).toString();
+            s.symbols      = q.value(QStringLiteral("symbols")).toString();
+            s.startDate    = q.value(QStringLiteral("startDate")).toString();
+            s.endDate      = q.value(QStringLiteral("endDate")).toString();
+            s.status       = q.value(QStringLiteral("status")).toString();
+            s.dataSourceId = q.value(QStringLiteral("dataSourceId")).toString();
+            s.createdAt    = q.value(QStringLiteral("createdAt")).toString();
+            s.totalReturn  = q.value(QStringLiteral("totalReturn")).toDouble();
+            s.sharpeRatio  = q.value(QStringLiteral("sharpeRatio")).toDouble();
             summaries.append(s);
         }
         m_dock->setRunHistory(summaries);
@@ -378,9 +704,9 @@ void BacktestWorkspaceCoordinator::onBacktestFinished(const Backtest::BacktestLo
         && !run.record.catalogVersionId.isEmpty())
     {
         QJsonObject versionInfo = m_backend->strategyVersionInfo(run.record.catalogVersionId);
-        QString versionConfigJson = versionInfo.value("configJson").toString();
+        QString versionConfigJson = versionInfo.value(QStringLiteral("configJson")).toString();
         QJsonObject fullRunConfig = QJsonDocument::fromJson(run.record.configJson.toUtf8()).object();
-        QString runPipelineJson = fullRunConfig.value("pipelineConfigJson").toString();
+        QString runPipelineJson = fullRunConfig.value(QStringLiteral("pipelineConfigJson")).toString();
         QJsonDocument runPipelineDoc = QJsonDocument::fromJson(runPipelineJson.toUtf8());
         QJsonDocument verConfigDoc   = QJsonDocument::fromJson(versionConfigJson.toUtf8());
 

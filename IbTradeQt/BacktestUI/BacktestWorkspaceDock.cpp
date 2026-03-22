@@ -10,6 +10,8 @@
 #include <QLabel>
 #include <QTabWidget>
 #include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QPushButton>
 #include <QWidget>
 #include <QFont>
 #include <QSizePolicy>
@@ -26,8 +28,6 @@ BacktestWorkspaceDock::BacktestWorkspaceDock(QWidget* parent)
     setFeatures(QDockWidget::DockWidgetMovable  |
                 QDockWidget::DockWidgetFloatable |
                 QDockWidget::DockWidgetClosable);
-    // Avoid a tall minimum height here: QTabWidget uses the max of all tab pages’
-    // size hints, which would cap how far the bottom Events dock can expand upward.
     setMinimumWidth(UiTheme::kBacktestWorkspaceMinWidth);
     setMinimumHeight(UiTheme::kBacktestWorkspaceMinHeight);
     buildDock();
@@ -44,7 +44,27 @@ void BacktestWorkspaceDock::buildDock() {
     m_headerLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     outerLayout->addWidget(m_headerLabel);
 
-    // Single tab strip: run/runtime configuration + results (+ Block Details when opened)
+    m_staleLabel = new QLabel(QString());
+    m_staleLabel->setObjectName(QStringLiteral("BacktestStaleResultsLabel"));
+    m_staleLabel->setWordWrap(true);
+    m_staleLabel->setVisible(false);
+    outerLayout->addWidget(m_staleLabel);
+
+    m_actionRowLayout = new QHBoxLayout();
+    m_actionRowLayout->setSpacing(4);
+    m_saveBtn = new QPushButton(QStringLiteral("Save Changes"));
+    m_resetBtn = new QPushButton(QStringLiteral("Reset to Baseline"));
+    m_saveVerBtn = new QPushButton(QStringLiteral("Save as New Version"));
+    m_actionRowLayout->addWidget(m_saveBtn);
+    m_actionRowLayout->addWidget(m_resetBtn);
+    m_actionRowLayout->addWidget(m_saveVerBtn);
+    m_actionRowLayout->addStretch();
+    outerLayout->addLayout(m_actionRowLayout);
+
+    connect(m_saveBtn, &QPushButton::clicked, this, &BacktestWorkspaceDock::saveChangesRequested);
+    connect(m_resetBtn, &QPushButton::clicked, this, &BacktestWorkspaceDock::resetToBaselineRequested);
+    connect(m_saveVerBtn, &QPushButton::clicked, this, &BacktestWorkspaceDock::saveAsNewVersionRequested);
+
     m_tabWidget = new QTabWidget();
     m_tabWidget->setObjectName(QStringLiteral("BacktestWorkspaceMainTabs"));
     m_tabWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -57,14 +77,13 @@ void BacktestWorkspaceDock::buildDock() {
 
     connect(m_inspector, &BlockInspectorPanel::configChanged,
             this, [this](const QJsonObject& newConfig) {
-        m_pipelineConfig = newConfig;
-        QString json = QString::fromUtf8(
-            QJsonDocument(newConfig).toJson(QJsonDocument::Compact));
-        m_configPanel->setStrategyContext(
-            m_currentStrategyId, m_currentDisplayName,
-            m_currentPortfolioPath, json,
-            m_currentStrategyDefId, m_currentStrategyVersion);
+        if (m_programmaticDockUpdate)
+            return;
+        emit userWorkspacePipelineEdited(newConfig);
     });
+
+    connect(m_configPanel, &BacktestRunConfigPanel::userEdited,
+            this, &BacktestWorkspaceDock::userRunFieldsEdited);
 
     m_historyPanel = new BacktestRunHistoryPanel();
     m_equityChart  = new EquityChartWidget();
@@ -86,37 +105,74 @@ void BacktestWorkspaceDock::buildDock() {
             this, &BacktestWorkspaceDock::loadRunRequested);
 }
 
-void BacktestWorkspaceDock::selectStrategy(const QString& strategyId,
-                                            const QString& displayName,
-                                            const QString& portfolioPath,
-                                            const Backtest::BacktestProfile& profile,
-                                            const QString& pipelineConfigJson,
-                                            const QString& strategyDefId,
-                                            int            strategyVersion,
-                                            const QString& catalogVersionId) {
-    m_currentStrategyId      = strategyId;
-    m_currentDisplayName     = displayName;
-    m_currentPortfolioPath   = portfolioPath;
-    m_currentStrategyDefId   = strategyDefId;
-    m_currentStrategyVersion = strategyVersion > 0 ? strategyVersion : 1;
+void BacktestWorkspaceDock::applyWorkspaceSession(const Backtest::Workspace::Session& session,
+                                                 bool clearResultPanels) {
+    m_programmaticDockUpdate = true;
 
-    updateStrategyHeader();
+    m_currentStrategyId = session.key.kind == Backtest::Workspace::SessionKind::LiveNode
+        ? session.key.nodeId
+        : QString();
+    m_isCatalogPreview = (session.key.kind == Backtest::Workspace::SessionKind::CatalogVersion);
+    m_currentDisplayName     = session.displayName;
+    m_currentPortfolioPath   = session.portfolioPath;
+    m_currentStrategyDefId   = session.strategyDefId;
+    m_currentStrategyVersion = session.strategyVersion > 0 ? session.strategyVersion : 1;
 
-    m_configPanel->setStrategyContext(strategyId, displayName, portfolioPath,
-                                      pipelineConfigJson,
-                                      strategyDefId, m_currentStrategyVersion);
-    m_configPanel->setCatalogVersionId(catalogVersionId);
+    const QString pipeJson = QString::fromUtf8(
+        QJsonDocument(session.workingPipeline).toJson(QJsonDocument::Compact));
+
+    m_configPanel->setStrategyContext(
+        m_currentStrategyId, session.displayName, session.portfolioPath,
+        pipeJson, session.strategyDefId, m_currentStrategyVersion);
+    m_configPanel->setCatalogVersionId(session.catalogVersionId);
+
+    const Backtest::BacktestProfile profile =
+        Backtest::BacktestProfile::fromJson(
+            session.workingPipeline.value(QStringLiteral("backtestProfile")).toObject());
     m_configPanel->applyProfile(profile);
 
-    m_pipelineConfig = QJsonDocument::fromJson(pipelineConfigJson.toUtf8()).object();
+    m_configPanel->applyRunFieldsSnapshot(session.workingRunFields);
+
+    m_pipelineConfig = session.workingPipeline;
     hideBlockDetails();
 
-    m_equityChart->clear();
-    m_candleChart->clear();
-    m_tradeLog->clear();
-    m_historyPanel->clear();
+    if (clearResultPanels) {
+        m_equityChart->clear();
+        m_candleChart->clear();
+        m_tradeLog->clear();
+        m_historyPanel->clear();
+    }
+
+    m_sessionDirty = session.dirty;
+    setResultsStale(session.resultsStale);
+    updateStrategyHeader();
+    rebuildActionRow();
 
     m_tabWidget->setCurrentIndex(0);
+    m_programmaticDockUpdate = false;
+}
+
+void BacktestWorkspaceDock::setSessionDirtyState(bool dirty)
+{
+    m_sessionDirty = dirty;
+    updateStrategyHeader();
+}
+
+void BacktestWorkspaceDock::setResultsStale(bool stale)
+{
+    m_staleLabel->setVisible(stale);
+    if (stale) {
+        m_staleLabel->setText(QStringLiteral(
+            "<i>Results shown are from the last run and may be outdated.</i>"));
+    }
+}
+
+void BacktestWorkspaceDock::rebuildActionRow()
+{
+    m_saveBtn->setVisible(!m_isCatalogPreview);
+    m_resetBtn->setText(m_isCatalogPreview
+        ? QStringLiteral("Reset to Version Baseline")
+        : QStringLiteral("Reset to Node Baseline"));
 }
 
 void BacktestWorkspaceDock::updateStrategyHeader() {
@@ -127,16 +183,24 @@ void BacktestWorkspaceDock::updateStrategyHeader() {
             "&nbsp;|&nbsp;def v%1</span>")
             .arg(m_currentStrategyVersion);
     }
-    /* Colors tuned for dark header (see #BacktestWorkspaceContextHeader in operations-console.qss) */
+    const QString idShown = m_currentStrategyId.isEmpty()
+        ? m_currentStrategyDefId.left(8)
+        : m_currentStrategyId.left(8);
+    QString dirtyTag;
+    if (m_sessionDirty) {
+        dirtyTag = QStringLiteral(
+            "<span style='color:#ffb347; font-size:11px;'>&nbsp;|&nbsp;Modified</span>");
+    }
     const QString text = QString(
         "<b style='color:#f0f0f0;'>%1</b>"
         "<span style='color:#b8b8b8; font-size:11px;'>&nbsp;&nbsp;%2</span>"
         "<span style='color:#909090; font-size:10px;'>&nbsp;|&nbsp;ID: %3</span>"
-        "%4")
+        "%4%5")
         .arg(m_currentDisplayName)
         .arg(m_currentPortfolioPath)
-        .arg(m_currentStrategyId.left(8))
-        .arg(versionBadge);
+        .arg(idShown)
+        .arg(versionBadge)
+        .arg(dirtyTag);
     m_headerLabel->setText(text);
 }
 
@@ -164,7 +228,6 @@ void BacktestWorkspaceDock::displayResult(const Backtest::BacktestLoadedRun& run
     }
 
     m_tradeLog->setFills(result.tradeLog);
-    // Tabs: 0 Run Configuration, 1 Run History, 2 Equity Curve, …
     m_tabWidget->setCurrentIndex(2);
 }
 

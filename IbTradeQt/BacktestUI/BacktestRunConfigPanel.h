@@ -13,6 +13,7 @@
 
 #include <QWidget>
 #include "Backtest/BacktestDataTypes.h"
+#include "Backtest/BacktestWorkspaceSession.h"
 
 class QLineEdit;
 class QDateEdit;
@@ -51,6 +52,18 @@ public:
 
     void setCatalogVersionId(const QString& versionId) { m_catalogVersionId = versionId; }
 
+    QString mergedPipelineConfigJson() const;
+
+    /// Keep the embedded pipeline JSON (and derived universe/policy UI) in sync with
+    /// the authoritative working pipeline when Block Details edits the JSON outside
+    /// this panel (e.g. BlockInspectorPanel). Required before mergedPipelineConfigJson().
+    void setWorkingPipelineFromJson(const QJsonObject& cfg);
+
+    Backtest::Workspace::RunFieldsSnapshot runFieldsSnapshot() const;
+    void applyRunFieldsSnapshot(const Backtest::Workspace::RunFieldsSnapshot& s);
+
+    void setProgrammaticUpdate(bool on) { m_programmaticUpdate = on; }
+
     // Progress / status (called by BacktestWorkspaceDock)
     void setProgress(int percent);
     void setStatus(const QString& status);
@@ -58,12 +71,15 @@ public:
 
 signals:
     void runRequested(const Backtest::BacktestRunConfig& config);
+    void userEdited();
 
 private slots:
     void onRunClicked();
 
 private:
     void buildForm();
+    void wireUserEditSignals();
+    void applyPipelineJsonToForm(const QString& pipelineConfigJson);
 
     // Strategy context (set from outside, not editable in the form)
     QString m_strategyId;
@@ -92,6 +108,8 @@ private:
     QLabel*         m_universeLabel    = nullptr;
 
     RuntimePolicyEditor* m_policyEditor = nullptr;
+
+    bool m_programmaticUpdate = false;
 };
 
 } // namespace BacktestUI
