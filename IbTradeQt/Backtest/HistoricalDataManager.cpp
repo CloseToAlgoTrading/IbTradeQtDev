@@ -1,4 +1,5 @@
 #include "Backtest/HistoricalDataManager.h"
+#include "Backtest/MarketSessionUtils.h"
 #include "Backtest/YahooFinanceDataSource.h"
 #include "DB/dbquery.h"
 #include <QSqlQuery>
@@ -11,6 +12,44 @@
 Q_LOGGING_CATEGORY(lcHistData, "backtest.historical")
 
 namespace Backtest {
+
+namespace {
+
+QDateTime effectiveToForYahooDay1(const QStringList& symbolsInBatch,
+                                  const QString& dataSourceId,
+                                  const QString& resolution,
+                                  const QDateTime& to)
+{
+    if (dataSourceId != QLatin1String("yahoo") || resolution != QLatin1String("Day1"))
+        return to;
+    if (symbolsInBatch.isEmpty() || !allSymbolsClassifyAsUsEquity(symbolsInBatch))
+        return to;
+    return clampEndDateTimeForUsEquityDaily(to);
+}
+
+/// Yahoo daily bars use ~session-close UTC (e.g. 21:00); UI `to` is often end-of-calendar-day
+/// (23:59:59). Comparing QDateTime would set needAfter every run even when that day is cached.
+bool cacheNeedsBefore(const QDateTime& from,
+                      const QDateTime& cachedMin,
+                      const QString& resolution,
+                      const QString& dataSourceId)
+{
+    if (dataSourceId == QLatin1String("yahoo") && resolution == QLatin1String("Day1"))
+        return from.toUTC().date() < cachedMin.toUTC().date();
+    return from < cachedMin;
+}
+
+bool cacheNeedsAfter(const QDateTime& effectiveTo,
+                      const QDateTime& cachedMax,
+                      const QString& resolution,
+                      const QString& dataSourceId)
+{
+    if (dataSourceId == QLatin1String("yahoo") && resolution == QLatin1String("Day1"))
+        return effectiveTo.toUTC().date() > cachedMax.toUTC().date();
+    return effectiveTo > cachedMax;
+}
+
+} // namespace
 
 HistoricalDataManager::HistoricalDataManager(const QString& dbConnectionName,
                                                QNetworkAccessManager* networkManager,
@@ -40,12 +79,15 @@ QVector<IBComm::HistoricalBar> HistoricalDataManager::getBars(
     const QString fromUtc = toUtcIso(from);
     const QString toUtc   = toUtcIso(to);
 
+    const QDateTime effectiveTo =
+        effectiveToForYahooDay1(QStringList{symbol}, dataSourceId, resolution, to);
+
     CachedRange cached = queryCachedRange(symbol, resolution, dataSourceId);
 
     bool needFetchBefore = false;
     bool needFetchAfter  = false;
     QDateTime fetchFrom  = from;
-    QDateTime fetchTo    = to;
+    QDateTime fetchTo    = effectiveTo;
 
     if (!cached.hasData) {
         // No cache at all — fetch the entire range
@@ -54,20 +96,30 @@ QVector<IBComm::HistoricalBar> HistoricalDataManager::getBars(
         QDateTime cachedMin = fromUtcIso(cached.minTs);
         QDateTime cachedMax = fromUtcIso(cached.maxTs);
 
-        if (from < cachedMin) needFetchBefore = true;
-        if (to   > cachedMax) needFetchAfter  = true;
+        if (cacheNeedsBefore(from, cachedMin, resolution, dataSourceId))
+            needFetchBefore = true;
+        if (cacheNeedsAfter(effectiveTo, cachedMax, resolution, dataSourceId))
+            needFetchAfter = true;
+
+        // Trailing gap is US equity weekend-only — Yahoo has no daily bars; skip fetch.
+        if (needFetchAfter && !needFetchBefore && dataSourceId == QLatin1String("yahoo")
+            && resolution == QLatin1String("Day1")
+            && classifyYahooSymbol(symbol) == InstrumentKind::EquityUs
+            && isWeekendOnlyYahooEquityGap(cachedMax.addDays(1), effectiveTo)) {
+            needFetchAfter = false;
+        }
 
         // Compute the minimal fetch range covering both gaps
         if (needFetchBefore && needFetchAfter) {
             // Fetch from before cachedMin to after cachedMax
             fetchFrom = from;
-            fetchTo   = to;
+            fetchTo   = effectiveTo;
         } else if (needFetchBefore) {
             fetchFrom = from;
             fetchTo   = cachedMin.addDays(-1);
         } else if (needFetchAfter) {
             fetchFrom = cachedMax.addDays(1);
-            fetchTo   = to;
+            fetchTo   = effectiveTo;
         }
     }
 
@@ -98,10 +150,13 @@ QMap<QString, QVector<IBComm::HistoricalBar>> HistoricalDataManager::getBarsMult
     const QDateTime& to,
     QString* dataRefreshedAt)
 {
+    const QDateTime effectiveTo =
+        effectiveToForYahooDay1(symbols, dataSourceId, resolution, to);
+
     // Determine which symbols need fetching and what range is missing
     QStringList symbolsToFetch;
-    QDateTime   fetchFrom = to;   // will be min'd down
-    QDateTime   fetchTo   = from; // will be max'd up
+    QDateTime   fetchFrom = effectiveTo; // will be min'd down
+    QDateTime   fetchTo   = from;      // will be max'd up
 
     for (const QString& sym : symbols) {
         CachedRange cached = queryCachedRange(sym, resolution, dataSourceId);
@@ -109,19 +164,26 @@ QMap<QString, QVector<IBComm::HistoricalBar>> HistoricalDataManager::getBarsMult
         if (!cached.hasData) {
             symbolsToFetch.append(sym);
             fetchFrom = qMin(fetchFrom, from);
-            fetchTo   = qMax(fetchTo,   to);
+            fetchTo   = qMax(fetchTo, effectiveTo);
         } else {
             QDateTime cachedMin = fromUtcIso(cached.minTs);
             QDateTime cachedMax = fromUtcIso(cached.maxTs);
 
-            bool needBefore = (from < cachedMin);
-            bool needAfter  = (to   > cachedMax);
+            bool needBefore = cacheNeedsBefore(from, cachedMin, resolution, dataSourceId);
+            bool needAfter  = cacheNeedsAfter(effectiveTo, cachedMax, resolution, dataSourceId);
+
+            if (needAfter && !needBefore && dataSourceId == QLatin1String("yahoo")
+                && resolution == QLatin1String("Day1")
+                && classifyYahooSymbol(sym) == InstrumentKind::EquityUs
+                && isWeekendOnlyYahooEquityGap(cachedMax.addDays(1), effectiveTo)) {
+                needAfter = false;
+            }
 
             if (needBefore || needAfter) {
                 symbolsToFetch.append(sym);
                 // Expand fetch window to cover all gaps across all symbols
                 if (needBefore) fetchFrom = qMin(fetchFrom, from);
-                if (needAfter)  fetchTo   = qMax(fetchTo,   to);
+                if (needAfter)  fetchTo   = qMax(fetchTo, effectiveTo);
             }
         }
     }

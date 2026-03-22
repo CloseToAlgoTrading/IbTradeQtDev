@@ -24,6 +24,8 @@
 #include <cmath>
 
 #include <QEventLoop>
+#include <QDate>
+#include <QTimeZone>
 
 #include "Backtest/YahooFinanceDataSource.h"
 #include "Backtest/BenchmarkComparison.h"
@@ -94,12 +96,16 @@ public:
         m_errorSymbols.insert(symbol);
     }
 
+    int requestCount() const { return m_requestCount; }
+
 protected:
     QNetworkReply* createRequest(Operation op,
                                  const QNetworkRequest& req,
                                  QIODevice* /*outgoing*/) override
     {
         if (op != GetOperation) return QNetworkAccessManager::createRequest(op, req, nullptr);
+
+        ++m_requestCount;
 
         // Extract symbol from URL path: /v8/finance/chart/{symbol}
         const QString path   = req.url().path();
@@ -128,6 +134,7 @@ private:
 
     QMap<QString, QByteArray> m_responses;
     QSet<QString>             m_errorSymbols;
+    int                         m_requestCount = 0;
 };
 
 // ---------------------------------------------------------------------------
@@ -308,6 +315,64 @@ private slots:
 
         QVERIFY(finished);
         QCOMPARE(bars.size(), 3);  // days 2, 3, 4
+    }
+
+    void invalidRange_emitsFinishedWithoutRequest() {
+        auto* mgr = new MockNetworkAccessManager();
+        Backtest::YahooFinanceDataSource src;
+        src.setNetworkManager(mgr);
+        bool finished = false;
+        connect(&src, &Backtest::IHistoricalDataSource::loadFinished, [&]() { finished = true; });
+        const QDateTime from = QDateTime(QDate(2025, 6, 1), QTime(0, 0), Qt::UTC);
+        const QDateTime to   = QDateTime(QDate(2020, 1, 1), QTime(0, 0), Qt::UTC);
+        src.requestBars({QStringLiteral("SPY")}, from, to, Backtest::BarResolution::Day1);
+        QVERIFY(finished);
+        QCOMPARE(mgr->requestCount(), 0);
+    }
+
+    void sameCalendarDay_normalizesNonZeroRange() {
+        const qint64 base = QDateTime(QDate(2024, 1, 5), QTime(21, 0), QTimeZone::utc()).toSecsSinceEpoch();
+        QVector<std::tuple<qint64, double, double, double, double, double>> rows = {
+            {base, 100.0, 101.0, 99.0, 100.5, 1000000},
+        };
+
+        auto* mgr = new MockNetworkAccessManager();
+        mgr->addSymbolResponse(QStringLiteral("SPY"), buildYahooJson(QStringLiteral("SPY"), rows));
+
+        Backtest::YahooFinanceDataSource src;
+        src.setNetworkManager(mgr);
+
+        QVector<IBComm::HistoricalBar> bars;
+        bool finished = false;
+
+        connect(&src, &Backtest::IHistoricalDataSource::barLoaded,
+                [&](const IBComm::HistoricalBar& b) { bars.append(b); });
+        connect(&src, &Backtest::IHistoricalDataSource::loadFinished, [&]() { finished = true; });
+
+        const QDateTime from = QDateTime(QDate(2024, 1, 5), QTime(3, 0), Qt::UTC);
+        const QDateTime to   = QDateTime(QDate(2024, 1, 5), QTime(18, 0), Qt::UTC);
+        src.requestBars({QStringLiteral("SPY")}, from, to, Backtest::BarResolution::Day1);
+
+        QEventLoop loop;
+        connect(&src, &Backtest::IHistoricalDataSource::loadFinished, &loop, &QEventLoop::quit);
+        connect(&src, &Backtest::IHistoricalDataSource::loadFailed,   &loop, &QEventLoop::quit);
+        if (!finished) loop.exec();
+
+        QVERIFY(finished);
+        QCOMPARE(mgr->requestCount(), 1);
+        QCOMPARE(bars.size(), 1);
+    }
+
+    void allWhitespaceSymbols_emitsFinishedNoRequests() {
+        auto* mgr = new MockNetworkAccessManager();
+        Backtest::YahooFinanceDataSource src;
+        src.setNetworkManager(mgr);
+        bool finished = false;
+        connect(&src, &Backtest::IHistoricalDataSource::loadFinished, [&]() { finished = true; });
+        src.requestBars({QStringLiteral("  "), QStringLiteral("")}, QDateTime(), QDateTime(),
+                        Backtest::BarResolution::Day1);
+        QVERIFY(finished);
+        QCOMPARE(mgr->requestCount(), 0);
     }
 };
 

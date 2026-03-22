@@ -1,4 +1,5 @@
 #include "Backtest/BacktestController.h"
+#include "Backtest/BacktestRunPersistence.h"
 #include "Backtest/HistoricalDataManager.h"
 #include "Backtest/BacktestConstants.h"
 #include "Pipeline/UniverseResolver.h"
@@ -79,10 +80,13 @@ void BacktestController::start(const BacktestRunConfig& config) {
     m_currentRunId  = QUuid::createUuid().toString(QUuid::WithoutBraces);
     m_dataRefreshedAt.clear();
 
+    const QString persistedStrategyId =
+        Persistence::resolvedStrategyIdForPersistence(config, m_currentRunId);
+
     // Persist initial run record with status "Created"
     DbBacktestRun runRecord;
     runRecord.runId               = m_currentRunId;
-    runRecord.strategyId          = config.strategyId;
+    runRecord.strategyId          = persistedStrategyId;
     runRecord.strategyDisplayName = config.strategyDisplayName;
     runRecord.portfolioPath       = config.portfolioPath;
     runRecord.configJson          = QString::fromUtf8(
@@ -172,70 +176,70 @@ void BacktestController::start(const BacktestRunConfig& config) {
     const QString benchmarkSymbol = config.benchmarkSymbol;
 
     connect(m_workerThread, &QThread::started, m_session, [=]() mutable {
-        // Open a DB connection on this thread
-        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", workerConnName);
-        db.setDatabaseName(dbFileName);
-        const bool dbOk = db.open();
-        if (!dbOk) {
-            qCWarning(lcBacktestController) << "BacktestController worker: cannot open DB — fetching without cache";
-        }
-
-        // Use HistoricalDataManager to fetch and cache strategy bars.
-        // Pass the bars directly to BacktestSession to eliminate the double-fetch.
-        if (dbOk && dataSourceId == QLatin1String("yahoo")) {
-            HistoricalDataManager mgr(workerConnName, netMgr);
-            QString refreshedAt;
-            QMap<QString, QVector<IBComm::HistoricalBar>> strategyBars =
-                mgr.getBarsMulti(symbols, resolution, dataSourceId,
-                                 startDate, endDate, &refreshedAt);
-
-            // Inject pre-fetched strategy bars — BacktestSession will skip its own fetch
-            m_session->setPreloadedBars(strategyBars);
-
-            // Pre-fetch and inject benchmark bars too (avoid second network round-trip)
-            if (!benchmarkSymbol.isEmpty()) {
-                QMap<QString, QVector<IBComm::HistoricalBar>> bmMap =
-                    mgr.getBarsMulti({benchmarkSymbol}, QStringLiteral("Day1"),
-                                     dataSourceId, startDate, endDate, nullptr);
-                m_session->setPreloadedBenchmarkBars(bmMap.value(benchmarkSymbol));
-            }
-
-            // Build QMap<QString, QList<DbHistoricalBar>> for the candlestick UI and
-            // relay both refreshedAt and bars to main thread for display after the run.
-            QMap<QString, QList<DbHistoricalBar>> uiBars;
-            for (auto it = strategyBars.begin(); it != strategyBars.end(); ++it) {
-                QList<DbHistoricalBar> dbList;
-                for (const auto& bar : it.value()) {
-                    DbHistoricalBar db;
-                    db.symbol       = bar.symbol;
-                    db.resolution   = resolution;
-                    db.dataSourceId = dataSourceId;
-                    db.timestamp    = bar.timestamp.toUTC().toString(Qt::ISODate);
-                    db.open         = bar.open;
-                    db.high         = bar.high;
-                    db.low          = bar.low;
-                    db.close        = bar.close;
-                    db.volume       = bar.volume;
-                    dbList.append(db);
-                }
-                uiBars[it.key()] = dbList;
-            }
-            QMetaObject::invokeMethod(self, [self, refreshedAt, uiBars]() {
-                self->m_dataRefreshedAt = refreshedAt;
-                self->m_lastHistBars    = uiBars;
-            }, Qt::QueuedConnection);
-        }
-        // For CSV/JSONL sources, BacktestSession handles loading itself (no network)
-
-        // Run the simulation
-        m_session->run();
-
-        // Clean up worker DB connection
+        // Scope the QSqlDatabase handle so no instance outlives removeDatabase (Qt requirement).
         {
-            QSqlDatabase dbClose = QSqlDatabase::database(workerConnName);
-            if (dbClose.isOpen()) dbClose.close();
+            QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", workerConnName);
+            db.setDatabaseName(dbFileName);
+            const bool dbOk = db.open();
+            if (!dbOk) {
+                qCWarning(lcBacktestController) << "BacktestController worker: cannot open DB — fetching without cache";
+            }
+
+            // Use HistoricalDataManager to fetch and cache strategy bars.
+            // Pass the bars directly to BacktestSession to eliminate the double-fetch.
+            if (dbOk && dataSourceId == QLatin1String("yahoo")) {
+                HistoricalDataManager mgr(workerConnName, netMgr);
+                QString refreshedAt;
+                QMap<QString, QVector<IBComm::HistoricalBar>> strategyBars =
+                    mgr.getBarsMulti(symbols, resolution, dataSourceId,
+                                     startDate, endDate, &refreshedAt);
+
+                // Inject pre-fetched strategy bars — BacktestSession will skip its own fetch
+                m_session->setPreloadedBars(strategyBars);
+
+                // Pre-fetch and inject benchmark bars too (avoid second network round-trip)
+                if (!benchmarkSymbol.isEmpty()) {
+                    QMap<QString, QVector<IBComm::HistoricalBar>> bmMap =
+                        mgr.getBarsMulti({benchmarkSymbol}, QStringLiteral("Day1"),
+                                         dataSourceId, startDate, endDate, nullptr);
+                    m_session->setPreloadedBenchmarkBars(bmMap.value(benchmarkSymbol));
+                }
+
+                // Build QMap<QString, QList<DbHistoricalBar>> for the candlestick UI and
+                // relay both refreshedAt and bars to main thread for display after the run.
+                QMap<QString, QList<DbHistoricalBar>> uiBars;
+                for (auto it = strategyBars.begin(); it != strategyBars.end(); ++it) {
+                    QList<DbHistoricalBar> dbList;
+                    for (const auto& bar : it.value()) {
+                        DbHistoricalBar db;
+                        db.symbol       = bar.symbol;
+                        db.resolution   = resolution;
+                        db.dataSourceId = dataSourceId;
+                        db.timestamp    = bar.timestamp.toUTC().toString(Qt::ISODate);
+                        db.open         = bar.open;
+                        db.high         = bar.high;
+                        db.low          = bar.low;
+                        db.close        = bar.close;
+                        db.volume       = bar.volume;
+                        dbList.append(db);
+                    }
+                    uiBars[it.key()] = dbList;
+                }
+                QMetaObject::invokeMethod(self, [self, refreshedAt, uiBars]() {
+                    self->m_dataRefreshedAt = refreshedAt;
+                    self->m_lastHistBars    = uiBars;
+                }, Qt::QueuedConnection);
+            }
+            // For CSV/JSONL sources, BacktestSession handles loading itself (no network)
+
+            // Run the simulation
+            m_session->run();
+
+            if (db.isOpen())
+                db.close();
         }
-        QSqlDatabase::removeDatabase(workerConnName);
+        if (QSqlDatabase::contains(workerConnName))
+            QSqlDatabase::removeDatabase(workerConnName);
     });
 
     m_session->moveToThread(m_workerThread);
@@ -259,7 +263,8 @@ void BacktestController::onSessionFinished(const BacktestResult& result) {
 
     BacktestLoadedRun loaded;
     loaded.record.runId               = m_currentRunId;
-    loaded.record.strategyId          = m_currentConfig.strategyId;
+    loaded.record.strategyId =
+        Persistence::resolvedStrategyIdForPersistence(m_currentConfig, m_currentRunId);
     loaded.record.strategyDisplayName = m_currentConfig.strategyDisplayName;
     loaded.record.portfolioPath       = m_currentConfig.portfolioPath;
     loaded.record.symbols             = m_currentConfig.symbolsJoined();

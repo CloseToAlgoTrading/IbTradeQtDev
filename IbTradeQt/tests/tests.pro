@@ -20,6 +20,7 @@ CONFIG(debug, debug|release) {
 DEFINES += SRCDIR=\\\"$$PWD\\\"
 
 INCLUDEPATH += \
+    $$PWD \
     $$PWD/.. \
     $$PWD/../Backend \
     $$PWD/../Backtest \
@@ -65,7 +66,11 @@ win32 {
 
 SOURCES += \
     main.cpp \
+    db/tst_dbhandler_disconnect.cpp \
+    backtest/tst_market_session_utils.cpp \
+    backtest/tst_historical_data_manager_cache.cpp \
     backtest/tst_workspace_session.cpp \
+    backtest/tst_backtest_run_persistence.cpp \
     ../Brokers/IB/src/Decimal.cpp \
     ../CObjects/caccountsummary.cpp \
     ../CObjects/cposition.cpp \
@@ -120,7 +125,9 @@ SOURCES += \
     ../Backtest/BacktestMetricsCollector.cpp \
     ../Backtest/BacktestSession.cpp \
     ../Backtest/BacktestWorkspaceSession.cpp \
+    ../Backtest/BacktestRunPersistence.cpp \
     ../Backtest/YahooFinanceDataSource.cpp \
+    ../Backtest/MarketSessionUtils.cpp \
     ../Backtest/HistoricalDataManager.cpp \
     ../Backtest/BacktestController.cpp \
     ../SharedUI/StrategyTreeDelegate.cpp \
@@ -262,13 +269,18 @@ HEADERS += \
     ../Backtest/BacktestReportWriter.h \
     ../Backtest/BacktestSession.h \
     ../Backtest/BacktestController.h \
+    ../Backtest/MarketSessionUtils.h \
     ../Backtest/HistoricalDataManager.h \
     backtest/tst_backtest.h \
     backtest/tst_yahoo_backtest.h \
+    backtest/tst_market_session_utils.h \
+    backtest/tst_historical_data_manager_cache.h \
     backtest/tst_backtest_extended.h \
     backtest/tst_live_backtest.h \
     backtest/tst_backtest_engine_coverage.h \
     backtest/tst_workspace_session.h \
+    backtest/tst_backtest_run_persistence.h \
+    db/tst_dbhandler_disconnect.h \
     backend/tst_storage_config.h \
     backend/tst_persistence_factory.h \
     backend/tst_model_tree_repository.h \

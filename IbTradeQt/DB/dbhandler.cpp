@@ -1,6 +1,7 @@
 #include "dbhandler.h"
 #include "NHelper.h"
 #include "dbquery.h"
+#include <QtSql/QSqlDatabase>
 #include <QtSql/QSqlQuery>
 #include <QtSql/QSqlError>
 #include <QLoggingCategory>
@@ -62,9 +63,14 @@ void DBHandler::initializeBacktestTables() {
 }
 
 void DBHandler::disconnectDB() {
-    if (m_db.isOpen()) {
+    if (!QSqlDatabase::contains(m_uniqueConnectionName))
+        return;
+
+    if (m_db.isOpen())
         m_db.close();
-    }
+
+    // QSqlDatabase must not reference this connection name when removeDatabase runs.
+    m_db = QSqlDatabase();
 
     QSqlDatabase::removeDatabase(m_uniqueConnectionName);
 }

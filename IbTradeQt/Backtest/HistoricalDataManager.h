@@ -6,6 +6,8 @@
 // Responsibilities:
 //   1. Query HistoricalBars table for cached range per (symbol, resolution, dataSourceId).
 //   2. Compute missing sub-ranges (before, after, or completely absent).
+//      For Yahoo + Day1, gap checks use UTC *calendar dates* vs cached min/max so
+//      end-of-day `to` (23:59) does not imply a trailing gap vs ~21:00 UTC bars.
 //   3. Fetch only missing ranges from Yahoo Finance / CSV.
 //   4. Insert fetched bars with INSERT OR REPLACE — new fetch always trusted;
 //      no provenance retention, no versioning.

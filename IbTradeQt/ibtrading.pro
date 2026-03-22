@@ -168,7 +168,9 @@ SOURCES += \
     Backtest/BacktestMetricsCollector.cpp \
     Backtest/BacktestSession.cpp \
     Backtest/BacktestWorkspaceSession.cpp \
+    Backtest/BacktestRunPersistence.cpp \
     Backtest/YahooFinanceDataSource.cpp \
+    Backtest/MarketSessionUtils.cpp \
     Backtest/HistoricalDataManager.cpp \
     Backtest/BacktestController.cpp \
     BacktestUI/BacktestWorkspaceDock.cpp \
@@ -353,10 +355,12 @@ HEADERS += \
     Backtest/JsonlHistoricalDataSource.h \
     Backtest/CsvHistoricalDataSource.h \
     Backtest/YahooFinanceDataSource.h \
+    Backtest/MarketSessionUtils.h \
     Backtest/BenchmarkComparison.h \
     Backtest/BacktestReportWriter.h \
     Backtest/BacktestSession.h \
     Backtest/BacktestWorkspaceSession.h \
+    Backtest/BacktestRunPersistence.h \
     Backtest/BacktestDataTypes.h \
     Backtest/HistoricalDataManager.h \
     Backtest/BacktestController.h \

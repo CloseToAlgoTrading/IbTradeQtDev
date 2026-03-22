@@ -15,6 +15,9 @@ public:
     bool connectDB(const QString& dbName);
     void disconnectDB();
 
+    /// SQLite connection name (unique per DBHandler instance). Useful for diagnostics and tests.
+    QString connectionName() const { return m_uniqueConnectionName; }
+
     bool createTrigger(QSqlDatabase& db);
 
 private:

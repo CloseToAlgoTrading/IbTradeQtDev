@@ -25,10 +25,14 @@
 #include "integration/tst_phase_e_remaining_routers.h"
 #include "backtest/tst_backtest.h"
 #include "backtest/tst_yahoo_backtest.h"
+#include "backtest/tst_market_session_utils.h"
+#include "backtest/tst_historical_data_manager_cache.h"
 #include "backtest/tst_backtest_extended.h"
 #include "backtest/tst_live_backtest.h"
 #include "backtest/tst_backtest_engine_coverage.h"
+#include "db/tst_dbhandler_disconnect.h"
 #include "backtest/tst_workspace_session.h"
+#include "backtest/tst_backtest_run_persistence.h"
 #include "backend/tst_storage_config.h"
 #include "backend/tst_persistence_factory.h"
 #include "backend/tst_model_tree_repository.h"
@@ -107,6 +111,8 @@ int main(int argc, char *argv[])
     { TestFullBacktestSession tc;            status |= QTest::qExec(&tc, argc, argv); }
 
     // Backtester — Yahoo Finance data source + benchmark comparison
+    { TestHistoricalDataManagerCache tc;      status |= QTest::qExec(&tc, argc, argv); }
+    { TestMarketSessionUtils tc;              status |= QTest::qExec(&tc, argc, argv); }
     { TestYahooFinanceDataSource tc;         status |= QTest::qExec(&tc, argc, argv); }
     { TestBenchmarkComparison tc;            status |= QTest::qExec(&tc, argc, argv); }
     { TestMACrossoverBacktest tc;            status |= QTest::qExec(&tc, argc, argv); }
@@ -114,7 +120,9 @@ int main(int argc, char *argv[])
     { TestYahooBacktestSessionMockFailure tc; status |= QTest::qExec(&tc, argc, argv); }
     { TestYahooBacktestPipelineVariants tc;   status |= QTest::qExec(&tc, argc, argv); }
     { TestBacktestEngineCoverage tc;          status |= QTest::qExec(&tc, argc, argv); }
+    { TestDbHandlerDisconnect tc;             status |= QTest::qExec(&tc, argc, argv); }
     { TestWorkspaceSession tc;                status |= QTest::qExec(&tc, argc, argv); }
+    { TestBacktestRunPersistence tc;          status |= QTest::qExec(&tc, argc, argv); }
 
     // Extended LEGO backtests (CSV + default pipeline JSON). Run: IBTRADING_EXTENDED_BACKTEST=1 ./tests
     if (qEnvironmentVariable("IBTRADING_EXTENDED_BACKTEST") == "1") {
