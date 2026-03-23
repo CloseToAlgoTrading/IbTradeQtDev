@@ -10,6 +10,9 @@
 
 namespace Blocks {
 
+/// Fast vs slow SMA crossover: **`onTick`** drives state and emits signals. **`onHistoricalBars`** replays the same
+/// logic **bar-by-bar** (aligned with tick streaming). **`processSemantic`** is a passthrough; tick-originated
+/// signals are merged by the runner.
 class MovingAverageCrossoverAlphaBlock : public Pipeline::IAlphaBlock {
     Q_OBJECT
 
@@ -26,6 +29,7 @@ public:
     void initialize() override;
     void shutdown() override;
 
+    /// Appends each bar’s close in order and runs the same crossover check as `onTick` (one step per bar).
     void onHistoricalBars(const QVector<Pipeline::OHLCVBar>& bars);
 
     Pipeline::ModelDataList processSemantic(const Pipeline::ModelDataList& in,

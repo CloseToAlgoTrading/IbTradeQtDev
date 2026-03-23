@@ -144,7 +144,7 @@ void StrategyDetailPanel::buildUi()
 
     m_newVersionBtn = new QPushButton(QStringLiteral("Save as New Version"));
     m_publishBtn    = new QPushButton(QStringLiteral("Publish"));
-    m_archiveBtn    = new QPushButton(QStringLiteral("Archive Strategy"));
+    m_archiveBtn    = new QPushButton(QStringLiteral("Delete Strategy..."));
     m_useInLiveBtn  = new QPushButton(QStringLiteral("Use in Live"));
     m_openBtBtn     = new QPushButton(QStringLiteral("Open in Backtest"));
 

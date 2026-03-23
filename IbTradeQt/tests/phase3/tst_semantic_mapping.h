@@ -2,6 +2,7 @@
 #define TST_SEMANTIC_MAPPING_H
 
 #include <QtTest>
+#include <QDateTime>
 #include "Pipeline/SemanticModelDataMapper.h"
 #include "Pipeline/SemanticPipelineChain.h"
 #include "Strategies/Generic/UnifiedModelData.h"
@@ -56,6 +57,21 @@ private slots:
             Pipeline::SemanticMapping::signalsFromModelData(merged, QStringLiteral("cid"), QStringLiteral("alpha"));
         QCOMPARE(out.size(), 1);
         QCOMPARE(out[0].direction, Pipeline::Signal::Sell);
+    }
+
+    void targetPositions_downRow_is_delta_not_absolute_short()
+    {
+        Pipeline::ModelDataList md = createDataList();
+        md->append(UnifiedModelData(QStringLiteral("Z"), DIRECTION_DOWN, 1.0, 220.0, 0.0));
+
+        QMap<QString, double> pos;
+        pos[QStringLiteral("Z")] = 220.0;
+
+        const QVector<Pipeline::ExecutionIntent> intents =
+            Pipeline::SemanticMapping::executionIntentsFromModelData(
+                md, pos, QStringLiteral("c1"), QDateTime::currentDateTimeUtc());
+        QCOMPARE(intents.size(), 1);
+        QCOMPARE(intents[0].quantity, -220.0);
     }
 };
 

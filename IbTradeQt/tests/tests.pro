@@ -68,6 +68,7 @@ SOURCES += \
     main.cpp \
     db/tst_dbhandler_disconnect.cpp \
     backtest/tst_market_session_utils.cpp \
+    blocks/tst_quant_momentum_blocks.cpp \
     backtest/tst_instrument_metadata_resolver.cpp \
     backtest/tst_historical_data_manager_cache.cpp \
     backtest/tst_workspace_session.cpp \
@@ -312,7 +313,10 @@ HEADERS += \
     ../Backtest/HistoricalDataManager.h \
     backtest/tst_backtest.h \
     backtest/tst_yahoo_backtest.h \
+    backtest/tst_momentum_strategy_e2e.h \
+    backtest/tst_momentum_three_stock_validation.h \
     backtest/tst_market_session_utils.h \
+    blocks/tst_quant_momentum_blocks.h \
     backtest/tst_instrument_metadata_resolver.h \
     backtest/tst_historical_data_manager_cache.h \
     backtest/tst_backtest_extended.h \

@@ -5,6 +5,7 @@
 #include <QJsonDocument>
 #include <QVariant>
 #include <QUuid>
+#include <QStringList>
 #include <QLoggingCategory>
 
 Q_LOGGING_CATEGORY(lcModelTreePg, "backend.modelTree.postgres")
@@ -781,6 +782,74 @@ bool ModelTreeRepositoryPostgres::archiveStrategyCatalog(const QString& strategy
         return false;
     }
     return q.numRowsAffected() > 0;
+}
+
+bool ModelTreeRepositoryPostgres::deleteStrategyCatalogCascade(const QString& strategyId,
+                                                                const QStringList& purgeProfileOwnerRefs)
+{
+    QSqlDatabase database = db();
+    if (!database.transaction()) {
+        qCWarning(lcModelTreePg) << "ModelTreeRepositoryPostgres::deleteStrategyCatalogCascade: begin failed:"
+                                 << database.lastError().text();
+        return false;
+    }
+
+    for (const QString& ref : purgeProfileOwnerRefs) {
+        if (ref.isEmpty())
+            continue;
+        QSqlQuery qp(database);
+        qp.prepare(QStringLiteral("DELETE FROM backtest_run_profiles WHERE owner_ref_id = :ref"));
+        qp.bindValue(QStringLiteral(":ref"), ref);
+        if (!qp.exec()) {
+            qCWarning(lcModelTreePg) << "ModelTreeRepositoryPostgres::deleteStrategyCatalogCascade: delete profiles failed:"
+                                     << qp.lastError().text();
+            database.rollback();
+            return false;
+        }
+    }
+
+    QSqlQuery qv(database);
+    qv.prepare(QStringLiteral("DELETE FROM strategy_versions WHERE strategy_id = :sid"));
+    qv.bindValue(QStringLiteral(":sid"), strategyId);
+    if (!qv.exec()) {
+        qCWarning(lcModelTreePg) << "ModelTreeRepositoryPostgres::deleteStrategyCatalogCascade: delete versions failed:"
+                                 << qv.lastError().text();
+        database.rollback();
+        return false;
+    }
+
+    QSqlQuery qb(database);
+    qb.prepare(QStringLiteral("DELETE FROM live_strategy_bindings WHERE strategy_def_id = :sid"));
+    qb.bindValue(QStringLiteral(":sid"), strategyId);
+    if (!qb.exec()) {
+        qCWarning(lcModelTreePg) << "ModelTreeRepositoryPostgres::deleteStrategyCatalogCascade: delete bindings failed:"
+                                 << qb.lastError().text();
+        database.rollback();
+        return false;
+    }
+
+    QSqlQuery qs(database);
+    qs.prepare(QStringLiteral("DELETE FROM strategies WHERE strategy_id = :sid"));
+    qs.bindValue(QStringLiteral(":sid"), strategyId);
+    if (!qs.exec()) {
+        qCWarning(lcModelTreePg) << "ModelTreeRepositoryPostgres::deleteStrategyCatalogCascade: delete strategy failed:"
+                                 << qs.lastError().text();
+        database.rollback();
+        return false;
+    }
+
+    if (qs.numRowsAffected() <= 0) {
+        database.rollback();
+        return false;
+    }
+
+    if (!database.commit()) {
+        qCWarning(lcModelTreePg) << "ModelTreeRepositoryPostgres::deleteStrategyCatalogCascade: commit failed:"
+                                 << database.lastError().text();
+        database.rollback();
+        return false;
+    }
+    return true;
 }
 
 int ModelTreeRepositoryPostgres::removeOrphanedCatalogEntries()

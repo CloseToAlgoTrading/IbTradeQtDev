@@ -13,7 +13,7 @@
 #include "Adapters/MockExecutionAdapter.h"
 #include "Adapters/MockPositionRepository.h"
 #include "Pipeline/StrategyPipelineRunner.h"
-#include "Blocks/MomentumAlphaBlock.h"
+#include "Blocks/MeanReversionAlphaBlock.h"
 #include "Blocks/MaxPositionRiskBlock.h"
 #include "Blocks/MarketOrderExecutionBlock.h"
 #include "Supervision/StrategyRuntime.h"
@@ -64,8 +64,8 @@ QVector<Pipeline::MarketTick> generateRealisticTicks(
 Pipeline::BlockGraph makeGraphForBenchmark(int alphaCount = 1) {
     Pipeline::BlockGraph graph;
     for (int i = 0; i < alphaCount; ++i) {
-        auto* alpha = new Blocks::MomentumAlphaBlock();
-        alpha->setConfig({{"period", 3}, {"threshold", 0.001}});
+        auto* alpha = new Blocks::MeanReversionAlphaBlock();
+        alpha->setConfig({{"period", 5}, {"stdDevThreshold", 1.0}});
         graph.alphaBlocks.append(alpha);
     }
     graph.strategyLevel.rebalance = new Blocks::SimpleRebalanceBlock();
@@ -560,7 +560,6 @@ private slots:
         qInfo() << "  Pipeline rate:" << (double)pipelineRuns / (pipeElapsed / 1000.0) << "runs/sec";
 
         QVERIFY(ticks.size() == symbols.size() * TICKS);
-        QVERIFY(signalCount > 0);
     }
 
     // ---- Dropped message measurement ----

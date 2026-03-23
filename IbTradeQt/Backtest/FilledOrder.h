@@ -10,6 +10,8 @@ struct FilledOrder {
     int         orderId    = 0;
     QString     symbol;
     double      quantity   = 0.0;   // positive = buy, negative = sell
+    /// Mid / reference price at decision time (before slippage model); for display vs fillPrice.
+    double      marketPrice = 0.0;
     double      fillPrice  = 0.0;
     double      commission = 0.0;   // zero in v1, field reserved
     double      fees       = 0.0;   // zero in v1, field reserved

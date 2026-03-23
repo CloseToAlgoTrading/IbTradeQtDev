@@ -122,7 +122,8 @@ void StrategyPipelineRunner::runPipeline()
     m_runtimeState.pendingSignals.clear();
     allSignals += alphaSignals;
 
-    const QMap<QString, double> currentPos = getCurrentPositions();
+    refreshHoldings();
+    const QMap<QString, double>& currentPos = m_runtimeContext.holdings;
     const QVector<TargetPosition> targets = runMultiLevelRebalance(
         allSignals, universe, currentPos, corrId);
     const QVector<ExecutionIntent> intents = runMultiLevelRisk(targets, currentPos, corrId);
@@ -141,7 +142,8 @@ void StrategyPipelineRunner::runPipelineWithSignals(const QVector<Signal>& input
 
     const QVector<QString> universe = runSelection();
     const QVector<Signal> alphaSignals = mergeSignals(inputSignals, corrId);
-    const QMap<QString, double> currentPos = getCurrentPositions();
+    refreshHoldings();
+    const QMap<QString, double>& currentPos = m_runtimeContext.holdings;
     const QVector<TargetPosition> targets = runMultiLevelRebalance(alphaSignals, universe, currentPos, corrId);
     const QVector<ExecutionIntent> intents = runMultiLevelRisk(targets, currentPos, corrId);
     m_lastIntents = intents;
@@ -160,7 +162,8 @@ void StrategyPipelineRunner::runEmergencyRiskPipeline(const Pipeline::Signal& ri
     if (m_runtimePolicy.riskCanCancelPendingOrders && m_executionPort)
         (void)m_executionPort->cancelAllPending();
 
-    const QMap<QString, double> currentPos = getCurrentPositions();
+    refreshHoldings();
+    const QMap<QString, double>& currentPos = m_runtimeContext.holdings;
     const QVector<TargetPosition> candidates =
         buildEmergencyTargets(riskSignal, currentPos, ts, corrId);
 
@@ -258,7 +261,8 @@ void StrategyPipelineRunner::finishPipelineAfterSemanticAlpha()
         corrId,
         lastAlphaId);
 
-    const QMap<QString, double> currentPos = getCurrentPositions();
+    refreshHoldings();
+    const QMap<QString, double>& currentPos = m_runtimeContext.holdings;
 
     if (semanticModelRebalance) {
         runSemanticModelPipeline(mdAfterPending, currentPos, corrId, ts, universe);
@@ -288,27 +292,60 @@ void StrategyPipelineRunner::runSemanticModelPipeline(
 {
     Q_UNUSED(ts);
 
-    ModelDataList md = mdIn;
+    const bool legacyMultiLevelRebalance =
+        m_graph.portfolioLevel.rebalance != nullptr || m_graph.accountLevel.rebalance != nullptr;
 
+    if (legacyMultiLevelRebalance) {
+        ModelDataList md = mdIn;
+        if (m_graph.strategyLevel.rebalance)
+            md = m_graph.strategyLevel.rebalance->processSemantic(md, currentPos, corrId);
+        if (m_graph.portfolioLevel.rebalance)
+            md = m_graph.portfolioLevel.rebalance->processSemantic(md, currentPos, corrId);
+        if (m_graph.accountLevel.rebalance)
+            md = m_graph.accountLevel.rebalance->processSemantic(md, currentPos, corrId);
+
+        for (auto* risk : m_graph.strategyLevel.risks)
+            md = risk->processSemantic(md, currentPos, corrId);
+        for (auto* risk : m_graph.portfolioLevel.risks)
+            md = risk->processSemantic(md, currentPos, corrId);
+        for (auto* risk : m_graph.accountLevel.risks)
+            md = risk->processSemantic(md, currentPos, corrId);
+
+        const QDateTime intentTs = now();
+        m_lastIntents = SemanticMapping::executionIntentsFromModelData(md, currentPos, corrId, intentTs);
+
+        if (m_graph.executionBlock)
+            m_graph.executionBlock->executeSemantic(md, currentPos, corrId, intentTs);
+        else
+            executeIntents(m_lastIntents);
+
+        emitPipelineCompleted(corrId, m_lastIntents.size());
+        return;
+    }
+
+    QVector<TargetPosition> targets;
     if (m_graph.strategyLevel.rebalance)
-        md = m_graph.strategyLevel.rebalance->processSemantic(mdIn, currentPos, corrId);
-    if (m_graph.portfolioLevel.rebalance)
-        md = m_graph.portfolioLevel.rebalance->processSemantic(mdIn, currentPos, corrId);
-    if (m_graph.accountLevel.rebalance)
-        md = m_graph.accountLevel.rebalance->processSemantic(mdIn, currentPos, corrId);
+        targets = m_graph.strategyLevel.rebalance->processSemanticTargets(mdIn, currentPos, corrId);
+    else
+        targets = SemanticMapping::targetPositionsFromModelData(mdIn, currentPos, corrId);
+
+    targets = SemanticMapping::mergeTargetPositionsBySymbolLastWins(targets);
 
     for (auto* risk : m_graph.strategyLevel.risks)
-        md = risk->processSemantic(md, currentPos, corrId);
+        targets = risk->processSemanticTargets(targets, currentPos, corrId);
     for (auto* risk : m_graph.portfolioLevel.risks)
-        md = risk->processSemantic(md, currentPos, corrId);
+        targets = risk->processSemanticTargets(targets, currentPos, corrId);
     for (auto* risk : m_graph.accountLevel.risks)
-        md = risk->processSemantic(md, currentPos, corrId);
+        targets = risk->processSemanticTargets(targets, currentPos, corrId);
+
+    targets = SemanticMapping::mergeTargetPositionsBySymbolLastWins(targets);
 
     const QDateTime intentTs = now();
-    m_lastIntents = SemanticMapping::executionIntentsFromModelData(md, currentPos, corrId, intentTs);
+    m_lastIntents =
+        SemanticMapping::executionIntentsFromTargetPositions(targets, currentPos, corrId, intentTs);
 
     if (m_graph.executionBlock)
-        m_graph.executionBlock->executeSemantic(md, currentPos, corrId, intentTs);
+        m_graph.executionBlock->execute(m_lastIntents);
     else
         executeIntents(m_lastIntents);
 

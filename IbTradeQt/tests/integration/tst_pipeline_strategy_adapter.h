@@ -206,7 +206,7 @@ private slots:
 
     void runtime_receivesTicksFromRouter()
     {
-        QJsonObject config = loadConfig("simple_momentum_pipeline.json");
+        QJsonObject config = loadConfig("simple_tick_pipeline.json");
         MockExecutionAdapter exec;
         MockPositionRepository repo;
 

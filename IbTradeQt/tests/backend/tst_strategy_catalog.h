@@ -592,6 +592,22 @@ private slots:
         QVERIFY(foundInAll);
     }
 
+    void testDeleteStrategyCatalogCascade() {
+        setupBackend();
+        QString stratId = m_backend->createStrategyCatalogEntry(
+            QStringLiteral("DelStrat"), static_cast<int>(ModelType::STRATEGY_PIPELINE));
+        QVERIFY(!stratId.isEmpty());
+        QVERIFY(!m_backend->listStrategyVersions(stratId).isEmpty());
+
+        QVERIFY(m_backend->deleteStrategyCatalogCascade(stratId));
+
+        QVERIFY(m_backend->strategyCatalogEntry(stratId).isEmpty());
+        QVERIFY(m_backend->listStrategyVersions(stratId).isEmpty());
+        for (const auto& v : m_backend->listStrategyCatalog(true)) {
+            QVERIFY(v.toObject()[QStringLiteral("strategyId")].toString() != stratId);
+        }
+    }
+
     void testNodeConfigDivergedSignal() {
         setupBackend();
         QString acctId  = m_backend->createAccount("A");

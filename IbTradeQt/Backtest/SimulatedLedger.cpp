@@ -67,7 +67,18 @@ void SimulatedLedger::onBarClose(const QString& /*symbol*/, const QDateTime& ts)
     snap.cash           = m_cash;
     snap.unrealizedPnl  = unrealizedPnl();
     snap.realizedPnl    = m_realizedPnl;
-    snap.portfolioValue = m_cash + snap.unrealizedPnl;
+    // Equity = cash + market value of holdings (not cash + unrealized: that double-counts cost)
+    double holdingsMtm = 0.0;
+    for (auto it = m_positions.cbegin(); it != m_positions.cend(); ++it) {
+        const Ports::PositionRow& row = it.value();
+        if (qFuzzyIsNull(row.quantity))
+            continue;
+        double px = row.avgCost;
+        if (m_priceStore->hasTick(row.symbol))
+            px = m_priceStore->lastTick(row.symbol).mid();
+        holdingsMtm += row.quantity * px;
+    }
+    snap.portfolioValue = m_cash + holdingsMtm;
 
     emit snapshot(snap);
 }

@@ -43,6 +43,7 @@ signals:
                              const QJsonObject& pipelineConfig);
     void publishRequested(const QString& strategyId, const QString& versionId);
     void archiveRequested(const QString& strategyId);
+    void deleteStrategyRequested(const QString& strategyId);
     void useInLiveRequested(const QString& strategyId, const QString& versionId);
     void openInBacktestRequested(const QString& strategyId, const QString& versionId);
     void addBlockRequested(const QString& strategyId,

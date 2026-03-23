@@ -4,12 +4,17 @@
 #include <QObject>
 #include <QVector>
 #include <QMap>
+#include <optional>
 #include "Ports/IOrderExecutionPort.h"
 #include "Backtest/BacktestConfig.h"
 #include "Backtest/FilledOrder.h"
 #include "Backtest/MarketPriceStore.h"
 #include "Pipeline/Contracts.h"
 #include "Common/IClock.h"
+
+namespace Pipeline {
+class IHistoricalRead;
+}
 
 namespace Backtest {
 
@@ -25,6 +30,13 @@ public:
                                        MarketPriceStore* priceStore,
                                        IClock* clock,
                                        QObject* parent = nullptr);
+
+    /// Resolves fill price: when the replay clock matches the store's last tick for the symbol,
+    /// that tick wins (same bar close the pipeline just saw). Otherwise use historical bars,
+    /// then any stale store tick (e.g. casing mismatch until normalized).
+    void setHistoricalFillFallback(Pipeline::IHistoricalRead* historical,
+                                   const QString& resolution,
+                                   const QString& dataSourceId);
 
     // IOrderExecutionPort
     Expected<Ports::OrderResult, Error> placeOrder(
@@ -48,6 +60,8 @@ signals:
     void filled(const Backtest::FilledOrder& fill);
 
 private:
+    std::optional<Pipeline::MarketTick> resolveTickForSymbol(const QString& symNorm) const;
+
     double computeFillPrice(const Pipeline::ExecutionIntent& intent,
                             const Pipeline::MarketTick& tick) const;
 
@@ -59,6 +73,9 @@ private:
     FillTiming                          m_fillTiming;
     MarketPriceStore*                   m_priceStore;
     IClock*                             m_clock;
+    Pipeline::IHistoricalRead*          m_histFallback = nullptr;
+    QString                             m_histResolution;
+    QString                             m_histDataSourceId;
     QVector<Pipeline::ExecutionIntent>  m_pendingOrders;
     QVector<FilledOrder>                m_filledOrders;
     QMap<int, FilledOrder>              m_orderById;

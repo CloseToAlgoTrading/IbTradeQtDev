@@ -280,9 +280,23 @@ void CPresenter::MapSignals()
             this, [this, pPConfigModel]() {
         if (pPConfigModel) {
             pPConfigModel->setupModelData();
-            pIbtsView->slotUpdateTreeViewAll();
+            if (m_pSystemTreeModel)
+                m_pSystemTreeModel->rebuildFromRoot();
+            if (pIbtsView)
+                pIbtsView->slotUpdateTreeViewAll();
         }
     });
+
+    if (m_backend && m_pSystemTreeModel) {
+        connect(m_backend, &ISystemBackend::nodeRemoved, this, [this](const QString&) {
+            if (m_pSystemTreeModel)
+                m_pSystemTreeModel->rebuildFromRoot();
+        }, Qt::QueuedConnection);
+        connect(m_backend, &ISystemBackend::nodeCreated, this, [this](const QString&, const QString&, int) {
+            if (m_pSystemTreeModel)
+                m_pSystemTreeModel->rebuildFromRoot();
+        }, Qt::QueuedConnection);
+    }
 
     // ── Tab switch → refresh ─────────────────────────────────────────────
     if (auto* tabs = this->pIbtsView->mainTabWidget()) {

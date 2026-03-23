@@ -1,20 +1,23 @@
 #include "IRiskBlock.h"
 
+#include "PipelineRuntimeContext.h"
 #include "SemanticModelDataMapper.h"
 
 namespace Pipeline {
 
-ModelDataList IRiskBlock::processSemantic(
-    const ModelDataList& in,
+QVector<TargetPosition> IRiskBlock::processSemanticTargets(
+    const QVector<TargetPosition>& targetsIn,
     const QMap<QString, double>& currentPositions,
     const QString& correlationId)
 {
-    QVector<TargetPosition> targets =
-        SemanticMapping::targetPositionsFromModelData(in, currentPositions, correlationId);
-
+    Q_UNUSED(correlationId);
+    const QMap<QString, double>& pos = holdingsForBlocks(m_runtimeContext, currentPositions);
     QVector<TargetPosition> approved;
-    for (const auto& target : targets) {
-        const RiskDecision decision = evaluate(target, targets, currentPositions);
+    approved.reserve(targetsIn.size());
+    for (const auto& targetIn : targetsIn) {
+        TargetPosition target = targetIn;
+        target.currentQuantity = pos.value(target.symbol, 0.0);
+        const RiskDecision decision = evaluate(target, targetsIn, pos);
 
         switch (decision.action) {
             case RiskDecision::Action::Approve:
@@ -34,8 +37,19 @@ ModelDataList IRiskBlock::processSemantic(
             }
         }
     }
+    return approved;
+}
 
-    return SemanticMapping::modelDataFromTargetPositions(approved);
+ModelDataList IRiskBlock::processSemantic(
+    const ModelDataList& in,
+    const QMap<QString, double>& currentPositions,
+    const QString& correlationId)
+{
+    const QMap<QString, double>& pos = holdingsForBlocks(m_runtimeContext, currentPositions);
+    QVector<TargetPosition> targets =
+        SemanticMapping::targetPositionsFromModelData(in, pos, correlationId);
+    targets = processSemanticTargets(targets, currentPositions, correlationId);
+    return SemanticMapping::modelDataFromTargetPositions(targets);
 }
 
 } // namespace Pipeline

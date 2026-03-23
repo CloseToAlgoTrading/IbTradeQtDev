@@ -160,6 +160,8 @@ void StrategyRuntime::initThread()
             ctx.historical = m_liveHistoricalRead;
         }
         ctx.subscription = m_subscriptionPort;
+        ctx.strategyAllocatedCapital =
+            m_graph.config.value(QStringLiteral("strategyAllocatedCapital")).toDouble(0.0);
         m_runner->setRuntimeContext(ctx);
     }
 

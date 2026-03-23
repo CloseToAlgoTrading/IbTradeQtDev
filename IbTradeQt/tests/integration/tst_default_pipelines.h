@@ -201,11 +201,11 @@ private slots:
         delete graph.executionBlock;
     }
 
-    // --- Full integration: pipeline from config end-to-end ---
+    // --- Full integration: pipeline from config end-to-end (tick-emitting alpha) ---
 
     void integration_simpleMomentumEndToEnd()
     {
-        QJsonObject config = loadPipelineConfig("simple_momentum_pipeline.json");
+        QJsonObject config = loadPipelineConfig("simple_tick_pipeline.json");
         MockExecutionAdapter exec;
         MockPositionRepository repo;
 
@@ -218,7 +218,7 @@ private slots:
 
         QSignalSpy completedSpy(&runner, &Pipeline::StrategyPipelineRunner::pipelineCompleted);
 
-        // Feed ticks: upward trend to trigger momentum buy
+        // Feed ticks: upward trend builds deviation vs rolling mean (mean reversion emits).
         for (int i = 0; i < 25; ++i) {
             mockRouter.simulateTick("AAPL", 100.0 + i * 0.5, 100.10 + i * 0.5);
         }
@@ -270,7 +270,7 @@ private slots:
 
     void integration_runtimeFromFactory()
     {
-        QJsonObject config = loadPipelineConfig("simple_momentum_pipeline.json");
+        QJsonObject config = loadPipelineConfig("simple_tick_pipeline.json");
         MockExecutionAdapter exec;
         MockPositionRepository repo;
 
@@ -375,23 +375,24 @@ private slots:
     {
         IBComm::MarketDataRouter router;
 
-        Blocks::MomentumAlphaBlock alpha;
-        alpha.setConfig({{"period", 3}, {"threshold", 0.01}});
+        // Mean reversion emits on ticks; momentum-alpha ranks via processSemantic + historical only.
+        Blocks::MeanReversionAlphaBlock alpha;
+        alpha.setConfig({{"period", 5}, {"stdDevThreshold", 1.5}});
         QSignalSpy spy(&alpha, &Pipeline::IAlphaBlock::signalGenerated);
 
         connect(&router, &IBComm::MarketDataRouter::tick,
                 &alpha, &Pipeline::IAlphaBlock::onTick,
                 Qt::DirectConnection);
 
-        // Simulate what IBComClientImpl::tickPrice would do
-        for (int i = 0; i < 10; ++i) {
-            router.onTickPrice(1, "AAPL", 100.0 + i * 0.5, 100.05 + i * 0.5);
+        for (int i = 0; i < 5; ++i) {
+            router.onTickPrice(1, "AAPL", 100.0, 100.10);
         }
+        router.onTickPrice(1, "AAPL", 110.0, 110.10);
 
         QVERIFY(spy.count() > 0);
         auto signal = spy.last().at(0).value<Pipeline::Signal>();
         QCOMPARE(signal.symbol, QString("AAPL"));
-        QVERIFY(signal.direction == Pipeline::Signal::Buy);
+        QCOMPARE(signal.direction, Pipeline::Signal::Sell);
     }
 
     // --- MarketDataRouter ohlcvBar delivery (feed → runner only) ---
@@ -427,6 +428,7 @@ private slots:
         bar.close = 100.5;
         bar.volume = 1000.0;
         router.onOhlcvBarComplete(bar);
+        runner.flushBarClosePipeline();
 
         QCOMPARE(completedSpy.count(), 1);
 

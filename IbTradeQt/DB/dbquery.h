@@ -2,6 +2,8 @@
 #define DBQUERY_H
 
 #include "dbdatatypes.h"
+#include <QSqlDatabase>
+#include <QSqlError>
 #include <QSqlQuery>
 
 
@@ -651,6 +653,48 @@ inline QSqlQuery query_fetchRunsForDefinition(const QString& strategyDefId, cons
         "ORDER BY r.createdAt DESC");
     q.bindValue(":defId", strategyDefId);
     return q;
+}
+
+/** Removes persisted backtest rows for a v3 catalog strategy (matches catalogStrategyId or legacy strategyDefId). */
+inline bool query_deleteBacktestDataForCatalogStrategy(const QString& strategyId, const QString& conn)
+{
+    if (strategyId.isEmpty())
+        return false;
+
+    QSqlDatabase db = QSqlDatabase::database(conn);
+    if (!db.isOpen())
+        return false;
+
+    auto runSql = [&db, &strategyId](const QString& sql) -> bool {
+        QSqlQuery q(db);
+        q.prepare(sql);
+        q.bindValue(QStringLiteral(":sid"), strategyId);
+        q.bindValue(QStringLiteral(":sid2"), strategyId);
+        if (!q.exec()) {
+            qWarning() << "query_deleteBacktestDataForCatalogStrategy:" << q.lastError().text();
+            return false;
+        }
+        return true;
+    };
+
+    if (!db.transaction())
+        return false;
+
+    const QString subRuns = QStringLiteral(
+        "SELECT runId FROM BacktestRuns WHERE catalogStrategyId = :sid OR strategyDefId = :sid2");
+
+    if (!runSql(QStringLiteral("DELETE FROM BacktestMetrics WHERE runId IN (") + subRuns + QLatin1Char(')')))
+        { db.rollback(); return false; }
+    if (!runSql(QStringLiteral("DELETE FROM BacktestTrades WHERE runId IN (") + subRuns + QLatin1Char(')')))
+        { db.rollback(); return false; }
+    if (!runSql(QStringLiteral("DELETE FROM BacktestEquityCurve WHERE runId IN (") + subRuns + QLatin1Char(')')))
+        { db.rollback(); return false; }
+    if (!runSql(QStringLiteral("DELETE FROM BacktestRuns WHERE catalogStrategyId = :sid OR strategyDefId = :sid2")))
+        { db.rollback(); return false; }
+
+    if (!db.commit())
+        { db.rollback(); return false; }
+    return true;
 }
 
 #endif // DBQUERY_H

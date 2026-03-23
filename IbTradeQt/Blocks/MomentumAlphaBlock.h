@@ -2,12 +2,12 @@
 #define BLOCKS_MOMENTUMALPHABLOCK_H
 
 #include <QJsonObject>
-#include <QMap>
-#include <QVector>
 #include "../Pipeline/IAlphaBlock.h"
 
 namespace Blocks {
 
+/// Momentum from **period return on daily (or configured) bars** via `IHistoricalRead` in `processSemantic`.
+/// Does not use tick prices for ranking (`onTick` is intentionally empty).
 class MomentumAlphaBlock : public Pipeline::IAlphaBlock {
     Q_OBJECT
 
@@ -29,6 +29,7 @@ public:
         const QString& correlationId) override;
 
 public slots:
+    /// Ranking and sizing use `processSemantic` + `IHistoricalRead` only; ticks are ignored.
     void onTick(const Pipeline::MarketTick& tick) override;
 
 private:
@@ -39,7 +40,6 @@ private:
     QString m_resolution = QStringLiteral("Day1");
     QString m_dataSourceId = QStringLiteral("yahoo");
     int m_lookbackYears = 1;
-    QMap<QString, QVector<double>> m_priceHistory;
 };
 
 } // namespace Blocks

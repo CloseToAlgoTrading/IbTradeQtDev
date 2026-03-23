@@ -6,6 +6,7 @@
 #include <QList>
 #include <QString>
 #include <optional>
+#include <QStringList>
 
 /** Persistence boundary for model tree + strategy catalog (ModelStore). SQLite and PostgreSQL implementations. */
 class IModelTreeRepository
@@ -38,6 +39,9 @@ public:
     virtual QList<DbStrategy> listStrategyCatalog(bool includeArchived = false) const = 0;
     virtual bool updateStrategyCatalog(const DbStrategy& strategy) = 0;
     virtual bool archiveStrategyCatalog(const QString& strategyId) = 0;
+    /** Removes catalog row, all versions, leftover bindings, and run profiles for the given owner refs. */
+    virtual bool deleteStrategyCatalogCascade(const QString& strategyId,
+                                              const QStringList& purgeProfileOwnerRefs) = 0;
     virtual int removeOrphanedCatalogEntries() = 0;
 
     virtual bool createStrategyVersion(const DbStrategyVersion& version) = 0;

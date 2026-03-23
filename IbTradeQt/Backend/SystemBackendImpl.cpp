@@ -6,15 +6,48 @@
 #include "cpipelinestrategyadapter.h"
 #include "ModelTreeMapper.h"
 #include "PipelineConstants.h"
+#include "NHelper.h"
+#include "dbquery.h"
 #include <QUuid>
 #include <QDateTime>
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QFile>
+#include <QSqlDatabase>
+#include <QSqlQuery>
 #include <functional>
 #include <QLoggingCategory>
 
 Q_LOGGING_CATEGORY(lcSystemBackend, "backend.system")
+
+namespace {
+
+bool deleteBacktestPersistedDataForCatalog(const QString& strategyId)
+{
+    const QString path = NHelper::getStorageConfig().appDataStore.path;
+    if (path.isEmpty() || strategyId.isEmpty())
+        return false;
+
+    const QString connName = QStringLiteral("bt_cat_del_")
+        + QUuid::createUuid().toString(QUuid::WithoutBraces);
+    bool ok = false;
+    {
+        QSqlDatabase db = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), connName);
+        db.setDatabaseName(path);
+        if (!db.open()) {
+            QSqlDatabase::removeDatabase(connName);
+            return false;
+        }
+        QSqlQuery pragma(db);
+        pragma.exec(QStringLiteral("PRAGMA foreign_keys = ON"));
+        ok = query_deleteBacktestDataForCatalogStrategy(strategyId, connName);
+        db.close();
+    }
+    QSqlDatabase::removeDatabase(connName);
+    return ok;
+}
+
+} // namespace
 
 SystemBackendImpl::SystemBackendImpl(IModelTreeRepository* repo, QObject* parent)
     : ISystemBackend(parent)
@@ -963,6 +996,57 @@ bool SystemBackendImpl::archiveStrategyCatalogEntry(const QString& strategyId)
         return false;
     emit strategyCatalogChanged(strategyId);
     return true;
+}
+
+bool SystemBackendImpl::deleteStrategyCatalogCascade(const QString& strategyId)
+{
+    if (!m_repo || strategyId.isEmpty())
+        return false;
+
+    DbStrategy strat = m_repo->fetchStrategyCatalog(strategyId);
+    if (!strat.isValid())
+        return false;
+
+    QList<DbLiveStrategyBinding> bindings = m_repo->listBindingsForDefinition(strategyId);
+
+    QStringList profileRefs;
+    profileRefs.reserve(bindings.size() + 1);
+    profileRefs.append(strategyId);
+    for (const auto& b : bindings) {
+        if (!b.modelNodeId.isEmpty())
+            profileRefs.append(b.modelNodeId);
+    }
+
+    for (const auto& b : bindings) {
+        if (!b.modelNodeId.isEmpty())
+            removeNode(b.modelNodeId);
+    }
+
+    if (!m_repo->deleteStrategyCatalogCascade(strategyId, profileRefs)) {
+        qCWarning(lcSystemBackend) << "deleteStrategyCatalogCascade: model store delete failed for"
+                                   << strategyId;
+        return false;
+    }
+
+    if (!deleteBacktestPersistedDataForCatalog(strategyId)) {
+        qCWarning(lcSystemBackend) << "deleteStrategyCatalogCascade: backtest DB cleanup failed for"
+                                   << strategyId;
+    }
+
+    emit strategyCatalogChanged(strategyId);
+    return true;
+}
+
+bool SystemBackendImpl::isCatalogStrategyActiveInLive(const QString& strategyId) const
+{
+    if (!m_repo || strategyId.isEmpty())
+        return false;
+    for (const auto& b : m_repo->listBindingsForDefinition(strategyId)) {
+        CGenericModelApi* node = findNodeByUuid(b.modelNodeId);
+        if (node && node->getActiveStatus())
+            return true;
+    }
+    return false;
 }
 
 QString SystemBackendImpl::createStrategyVersion(const QString& strategyId,

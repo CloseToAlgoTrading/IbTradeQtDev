@@ -178,6 +178,13 @@ void StrategyCatalogPanel::onContextMenu(const QPoint& pos)
         removeAction = menu.addAction(QStringLiteral("Remove Block"));
     }
 
+    QAction* deleteStrategyAction = nullptr;
+    if (isStrategy) {
+        if (!menu.isEmpty())
+            menu.addSeparator();
+        deleteStrategyAction = menu.addAction(QStringLiteral("Delete Strategy..."));
+    }
+
     if (menu.isEmpty()) return;
 
     QAction* chosen = menu.exec(tv->viewport()->mapToGlobal(pos));
@@ -199,6 +206,11 @@ void StrategyCatalogPanel::onContextMenu(const QPoint& pos)
         emit removeBlockRequested(sid,
                                   m_model->blockCategory(index),
                                   m_model->blockArrayIndex(index));
+        return;
+    }
+
+    if (chosen == deleteStrategyAction && isStrategy) {
+        emit deleteStrategyRequested(sid);
         return;
     }
 

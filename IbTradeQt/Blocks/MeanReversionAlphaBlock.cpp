@@ -1,9 +1,11 @@
 #include "MeanReversionAlphaBlock.h"
 
 #include "../Pipeline/BlockSubscriptionUtils.h"
+#include "../Pipeline/IHistoricalRead.h"
 #include "../Pipeline/IDataSubscriptionPort.h"
 #include "../Pipeline/PipelineRuntimeContext.h"
 #include "UnifiedModelData.h"
+#include <QDateTime>
 #include <QJsonObject>
 #include <QUuid>
 #include <cmath>
@@ -28,6 +30,9 @@ QJsonObject MeanReversionAlphaBlock::config() const
     QJsonObject cfg;
     cfg[QStringLiteral("period")] = m_period;
     cfg[QStringLiteral("stdDevThreshold")] = m_stdDevThreshold;
+    cfg[QStringLiteral("resolution")] = m_resolution;
+    cfg[QStringLiteral("dataSourceId")] = m_dataSourceId;
+    cfg[QStringLiteral("lookbackYears")] = m_lookbackYears;
     return cfg;
 }
 
@@ -35,18 +40,18 @@ void MeanReversionAlphaBlock::setConfig(const QJsonObject& config)
 {
     m_period = config.value(QStringLiteral("period")).toInt(20);
     m_stdDevThreshold = config.value(QStringLiteral("stdDevThreshold")).toDouble(2.0);
+    m_resolution = config.value(QStringLiteral("resolution")).toString(QStringLiteral("Day1"));
+    m_dataSourceId = config.value(QStringLiteral("dataSourceId")).toString(QStringLiteral("yahoo"));
+    m_lookbackYears = config.value(QStringLiteral("lookbackYears")).toInt(1);
 }
 
 void MeanReversionAlphaBlock::initialize() { m_priceHistory.clear(); }
 void MeanReversionAlphaBlock::shutdown() { m_priceHistory.clear(); }
 
-double MeanReversionAlphaBlock::zScoreForSymbol(const QString& symbol) const
+double MeanReversionAlphaBlock::zScoreFromCloseHistory(const QVector<double>& history) const
 {
-    const auto it = m_priceHistory.constFind(symbol);
-    if (it == m_priceHistory.constEnd() || it->size() < m_period)
+    if (history.size() < m_period)
         return std::numeric_limits<double>::quiet_NaN();
-
-    const QVector<double>& history = *it;
 
     double mean = 0.0;
     for (double p : history)
@@ -64,6 +69,36 @@ double MeanReversionAlphaBlock::zScoreForSymbol(const QString& symbol) const
 
     const double currentPrice = history.last();
     return (currentPrice - mean) / stdDev;
+}
+
+double MeanReversionAlphaBlock::zScoreForSymbol(const QString& symbol) const
+{
+    const auto it = m_priceHistory.constFind(symbol);
+    if (it == m_priceHistory.constEnd() || it->size() < m_period)
+        return std::numeric_limits<double>::quiet_NaN();
+    return zScoreFromCloseHistory(*it);
+}
+
+double MeanReversionAlphaBlock::zScoreFromHistoricalBars(const QString& symbol) const
+{
+    if (!runtimeContext() || !runtimeContext()->historical)
+        return std::numeric_limits<double>::quiet_NaN();
+    const QString sym = symbol.trimmed().toUpper();
+    if (sym.isEmpty())
+        return std::numeric_limits<double>::quiet_NaN();
+
+    const QDateTime to = QDateTime::currentDateTimeUtc();
+    const QDateTime from = to.addYears(-m_lookbackYears);
+    const QVector<Pipeline::HistoricalBarSnapshot> bars =
+        runtimeContext()->historical->getBars(sym, m_resolution, m_dataSourceId, from, to);
+    if (bars.size() < m_period)
+        return std::numeric_limits<double>::quiet_NaN();
+    const int take = qMin(m_period + 1, bars.size());
+    QVector<double> closes;
+    closes.reserve(take);
+    for (int i = bars.size() - take; i < bars.size(); ++i)
+        closes.append(bars[i].close);
+    return zScoreFromCloseHistory(closes);
 }
 
 void MeanReversionAlphaBlock::onTick(const Pipeline::MarketTick& tick)
@@ -98,7 +133,9 @@ Pipeline::ModelDataList MeanReversionAlphaBlock::processSemantic(
 
     Pipeline::ModelDataList out = createDataList();
     for (const auto& row : *in) {
-        const double zScore = zScoreForSymbol(row.symbol);
+        double zScore = zScoreForSymbol(row.symbol);
+        if (std::isnan(zScore))
+            zScore = zScoreFromHistoricalBars(row.symbol);
         if (std::isnan(zScore) || std::abs(zScore) <= m_stdDevThreshold)
             continue;
 

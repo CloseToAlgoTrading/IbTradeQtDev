@@ -38,7 +38,6 @@ private slots:
     void onStrategySelected(const QString& strategyId);
     void onCreateStrategy(const QString& name, const QJsonObject& initialConfig);
     void onRenameStrategy(const QString& strategyId, const QString& newName);
-    void onDeleteStrategy(const QString& strategyId);
     void onPublishVersion(const QString& strategyId, const QString& versionId);
     void onUnpublishVersion(const QString& strategyId, const QString& versionId);
     void onSaveVersion(const QString& strategyId, const QJsonObject& config,
@@ -47,6 +46,8 @@ private slots:
     void onDeployVersion(const QString& strategyId, const QString& versionId,
                          const QString& targetStrategyNodeId);
     void onBacktestVersion(const QString& strategyId, const QString& versionId);
+
+    void confirmAndDeleteStrategy(const QString& strategyId);
 
 private:
     CIBTradeSystemView*                  m_view    = nullptr;

@@ -17,6 +17,26 @@
 
 Q_LOGGING_CATEGORY(lcBacktestSession, "backtest.session")
 
+namespace {
+
+QString barResolutionToPipelineString(Backtest::BarResolution r)
+{
+    using BR = Backtest::BarResolution;
+    switch (r) {
+    case BR::Tick:  return QStringLiteral("Tick");
+    case BR::Sec5:  return QStringLiteral("Sec5");
+    case BR::Min1:  return QStringLiteral("Min1");
+    case BR::Min5:  return QStringLiteral("Min5");
+    case BR::Min15: return QStringLiteral("Min15");
+    case BR::Min30: return QStringLiteral("Min30");
+    case BR::Hour1: return QStringLiteral("Hour1");
+    case BR::Day1:  return QStringLiteral("Day1");
+    }
+    return QStringLiteral("Day1");
+}
+
+} // namespace
+
 namespace Backtest {
 
 BacktestSession::BacktestSession(const BacktestConfig& config, QObject* parent)
@@ -39,15 +59,24 @@ void BacktestSession::run()
         return;
 
     if (!m_preloadedBars.isEmpty()) {
-        // Bars were pre-fetched by HistoricalDataManager — skip network fetch
-        int totalBars = 0;
+        // Bars were pre-fetched by HistoricalDataManager — skip network fetch.
+        // Replay must be globally time-ordered (same as Yahoo load path): per-symbol iteration
+        // would process all of GOOG then MSFT then NVDA, inverting calendar causality and
+        // mis-ordering fills vs trade-log timestamps (false "shorts" in cumulative reports).
+        QVector<IBComm::HistoricalBar> sortedBars;
         for (auto it = m_preloadedBars.begin(); it != m_preloadedBars.end(); ++it) {
-            for (const auto& bar : it.value()) {
-                m_replayer->addBar(bar, true);
-                ++totalBars;
-            }
+            for (const auto& bar : it.value())
+                sortedBars.append(bar);
         }
-        qCDebug(lcBacktestSession) << "BacktestSession: using" << totalBars
+        std::sort(sortedBars.begin(), sortedBars.end(),
+                  [](const IBComm::HistoricalBar& a, const IBComm::HistoricalBar& b) {
+                      if (a.timestamp != b.timestamp)
+                          return a.timestamp < b.timestamp;
+                      return a.symbol < b.symbol;
+                  });
+        for (const auto& bar : sortedBars)
+            m_replayer->addBar(bar, true);
+        qCDebug(lcBacktestSession) << "BacktestSession: using" << sortedBars.size()
                  << "preloaded bars for" << m_preloadedBars.keys();
     } else {
         loadHistoricalData();
@@ -183,7 +212,20 @@ void BacktestSession::buildObjectGraph()
         if (m_historicalReadAdapter)
             ctx.historical = m_historicalReadAdapter.get();
         ctx.subscription = m_noOpSubscriptionPort.get();
+        ctx.clock = m_clock.get();
+        double cap = pipelineConfig.value(QStringLiteral("strategyAllocatedCapital")).toDouble(0.0);
+        if (cap <= 0.0)
+            cap = m_config.initialCapital;
+        ctx.strategyAllocatedCapital = cap;
         m_pipelineRunner->setRuntimeContext(ctx);
+    }
+
+    if (m_historicalReadAdapter) {
+        const QString ds = m_config.dataSourceId.isEmpty() ? QStringLiteral("yahoo")
+                                                           : m_config.dataSourceId;
+        m_execAdapter->setHistoricalFillFallback(m_historicalReadAdapter.get(),
+                                                 barResolutionToPipelineString(m_config.resolution),
+                                                 ds);
     }
 
     // --- Wire signals in priority order (all Qt::DirectConnection, same thread) ---
@@ -333,6 +375,8 @@ void BacktestSession::driveReplayLoop()
             }, Qt::DirectConnection);
 
     m_replayer->replay();
+    if (m_pipelineRunner)
+        m_pipelineRunner->flushBarClosePipeline();
 }
 
 void BacktestSession::loadBenchmarkData()

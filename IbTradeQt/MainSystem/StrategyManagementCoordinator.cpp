@@ -51,7 +51,10 @@ void StrategyManagementCoordinator::wireSignals()
             this, &StrategyManagementCoordinator::onPublishVersion);
 
     connect(m_panel, &StrategyMgmt::StrategyManagementPanel::archiveRequested,
-            this, [this](const QString& strategyId) { onDeleteStrategy(strategyId); });
+            this, &StrategyManagementCoordinator::confirmAndDeleteStrategy);
+
+    connect(m_panel, &StrategyMgmt::StrategyManagementPanel::deleteStrategyRequested,
+            this, &StrategyManagementCoordinator::confirmAndDeleteStrategy);
 
     connect(m_panel, &StrategyMgmt::StrategyManagementPanel::useInLiveRequested,
             this, [this](const QString& sid, const QString& vid) {
@@ -206,12 +209,41 @@ void StrategyManagementCoordinator::onRenameStrategy(const QString& /*strategyId
     // Placeholder for future rename support
 }
 
-void StrategyManagementCoordinator::onDeleteStrategy(const QString& strategyId)
+void StrategyManagementCoordinator::confirmAndDeleteStrategy(const QString& strategyId)
 {
-    if (!m_backend || !m_panel) return;
-    m_backend->archiveStrategyCatalogEntry(strategyId);
+    if (!m_backend || !m_view || !m_panel || strategyId.isEmpty())
+        return;
+
+    if (m_backend->isCatalogStrategyActiveInLive(strategyId)) {
+        QMessageBox::information(
+            m_view,
+            QStringLiteral("Cannot Delete Strategy"),
+            QStringLiteral("This strategy is active in Live Trading (the \"On\" checkbox is enabled for at "
+                           "least one deployment). Turn it off, then delete again."));
+        return;
+    }
+
+    const auto answer = QMessageBox::question(
+        m_view,
+        QStringLiteral("Delete Strategy"),
+        QStringLiteral("Permanently delete this strategy and all of its versions, backtest runs, "
+                       "and live trading entries that use it? This cannot be undone."),
+        QMessageBox::Yes | QMessageBox::No,
+        QMessageBox::No);
+    if (answer != QMessageBox::Yes)
+        return;
+
+    if (!m_backend->deleteStrategyCatalogCascade(strategyId)) {
+        QMessageBox::warning(
+            m_view,
+            QStringLiteral("Delete Failed"),
+            QStringLiteral("The strategy could not be deleted. See the application log for details."));
+        return;
+    }
+
     refreshCatalog();
     m_panel->detailPanel()->clear();
+    emit refreshLiveTree();
 }
 
 void StrategyManagementCoordinator::onPublishVersion(const QString& strategyId,

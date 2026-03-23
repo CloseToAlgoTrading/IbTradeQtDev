@@ -45,14 +45,16 @@ void MovingAverageCrossoverAlphaBlock::onTick(const Pipeline::MarketTick& tick)
 
 void MovingAverageCrossoverAlphaBlock::onHistoricalBars(const QVector<Pipeline::OHLCVBar>& bars)
 {
-    if (bars.isEmpty()) return;
+    if (bars.isEmpty())
+        return;
     const QString& symbol = bars.first().symbol;
     auto& history = m_closes[symbol];
     for (const auto& bar : bars) {
         history.append(bar.close);
+        while (history.size() > m_slowPeriod + 1)
+            history.removeFirst();
+        checkCrossover(symbol, bar.timestamp);
     }
-    while (history.size() > m_slowPeriod + 1)
-        history.removeFirst();
 }
 
 void MovingAverageCrossoverAlphaBlock::checkCrossover(const QString& symbol, const QDateTime& ts)
@@ -103,9 +105,7 @@ Pipeline::ModelDataList MovingAverageCrossoverAlphaBlock::processSemantic(
     const QString& correlationId)
 {
     Q_UNUSED(correlationId);
-    // Crossover edge detection and m_prevFastAboveSlow are driven from onTick; tick
-    // signals are merged into the semantic ModelDataList by the runner. Passthrough
-    // avoids a second, inconsistent crossover pass here.
+    // Crossover state is updated in onTick / onHistoricalBars; runner merges tick signals.
     return in;
 }
 

@@ -78,6 +78,10 @@ public:
     virtual QJsonArray  listStrategyCatalog(bool includeArchived = false) const = 0;
     // Archives a catalog entry (soft delete). Does not remove bindings or run history.
     virtual bool        archiveStrategyCatalogEntry(const QString& strategyId) = 0;
+    /** Removes catalog strategy, all versions, live tree nodes bound to it, run profiles, and backtest runs. */
+    virtual bool        deleteStrategyCatalogCascade(const QString& strategyId) = 0;
+    /** True if any live portfolio strategy node bound to this catalog id has "On" enabled. */
+    virtual bool        isCatalogStrategyActiveInLive(const QString& strategyId) const = 0;
 
     // Creates an immutable config snapshot (version) for a strategy family.
     // Returns the new version UUID, or empty string on failure.

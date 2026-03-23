@@ -12,10 +12,13 @@
 #include "Blocks/MarketOrderExecutionBlock.h"
 #include "Blocks/StaticListSelectionBlock.h"
 #include "Pipeline/IDataSubscriptionPort.h"
+#include "Pipeline/IHistoricalRead.h"
 #include "Pipeline/PipelineRuntimeContext.h"
+#include "Pipeline/SemanticModelDataMapper.h"
 #include "Adapters/MockExecutionAdapter.h"
 #include "Adapters/MockPositionRepository.h"
 #include "Testing/MockMarketDataRouter.h"
+#include "Strategies/Generic/UnifiedModelData.h"
 
 // Inline test alpha: emits Buy when mid > threshold
 class RunnerTestAlpha : public Pipeline::IAlphaBlock {
@@ -570,32 +573,42 @@ private slots:
 
     void exampleBlocksMomentumAlpha()
     {
+        struct HistoricalStub : public Pipeline::IHistoricalRead {
+            QVector<Pipeline::HistoricalBarSnapshot> getBars(
+                const QString&,
+                const QString&,
+                const QString&,
+                const QDateTime&,
+                const QDateTime&) override
+            {
+                QVector<Pipeline::HistoricalBarSnapshot> bars;
+                Pipeline::HistoricalBarSnapshot s;
+                s.close = 100.0;
+                bars.append(s);
+                s.close = 100.0;
+                bars.append(s);
+                s.close = 110.0;
+                bars.append(s);
+                return bars;
+            }
+        };
+
+        HistoricalStub hist;
         Blocks::MomentumAlphaBlock alpha;
-        alpha.setConfig({{"period", 3}, {"threshold", 0.01}});
+        alpha.setConfig({{"period", 2}, {"threshold", 0.01}, {"topN", 1}});
         alpha.initialize();
 
-        qRegisterMetaType<Pipeline::Signal>("Pipeline::Signal");
-        QSignalSpy spy(&alpha, &Pipeline::IAlphaBlock::signalGenerated);
+        Pipeline::PipelineRuntimeContext ctx;
+        ctx.historical = &hist;
+        alpha.setRuntimeContext(&ctx);
 
-        QDateTime base(QDate(2026, 3, 4), QTime(10, 0, 0), QTimeZone::utc());
-        Pipeline::MarketTick t;
-        t.symbol = "AAPL";
-
-        // Build up price history (need > period entries for momentum calculation)
-        for (int i = 0; i < 5; ++i) {
-            t.bid = 100.0 + i * 2;
-            t.ask = 100.5 + i * 2;
-            t.timestamp = base.addSecs(i * 60);
-            alpha.onTick(t);
-        }
-
-        // With 5 ticks over period=3, momentum should be significant
-        QVERIFY(spy.count() > 0);
-
-        auto sig = spy.last().at(0).value<Pipeline::Signal>();
-        QCOMPARE(sig.symbol, QString("AAPL"));
-        QCOMPARE(sig.direction, Pipeline::Signal::Buy);
-        QVERIFY(sig.confidence > 0.0);
+        Pipeline::ModelDataList in =
+            Pipeline::SemanticMapping::buildModelDataFromSymbols({QStringLiteral("AAPL")});
+        Pipeline::ModelDataList out = alpha.processSemantic(in, QStringLiteral("c1"));
+        QVERIFY(out);
+        QCOMPARE(out->size(), 1);
+        QCOMPARE(out->at(0).symbol, QStringLiteral("AAPL"));
+        QCOMPARE(out->at(0).direction, DIRECTION_UP);
 
         alpha.shutdown();
     }

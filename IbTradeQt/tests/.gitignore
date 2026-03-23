@@ -8,3 +8,7 @@ moc_predefs.h
 moc_*.cpp
 qrc_*.cpp
 ibtrading_tests
+
+# Generated E2E HTML report (open locally after running TestMomentumStrategyE2E)
+momentum_e2e_report.html
+momentum_3stock_validation.html

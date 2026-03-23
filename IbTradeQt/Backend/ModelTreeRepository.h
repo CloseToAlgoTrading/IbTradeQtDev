@@ -6,6 +6,7 @@
 #include "DB/dbdatatypes.h"
 #include <QList>
 #include <QString>
+#include <QStringList>
 #include <optional>
 
 class QSqlDatabase;
@@ -42,6 +43,8 @@ public:
     QList<DbStrategy> listStrategyCatalog(bool includeArchived = false) const override;
     bool updateStrategyCatalog(const DbStrategy& strategy) override;
     bool archiveStrategyCatalog(const QString& strategyId) override;
+    bool deleteStrategyCatalogCascade(const QString& strategyId,
+                                      const QStringList& purgeProfileOwnerRefs) override;
     int  removeOrphanedCatalogEntries() override;
 
     bool createStrategyVersion(const DbStrategyVersion& version) override;

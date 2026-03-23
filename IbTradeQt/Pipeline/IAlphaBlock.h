@@ -35,13 +35,17 @@ public:
     virtual void setRuntimeContext(const PipelineRuntimeContext* ctx) { m_runtimeContext = ctx; }
     const PipelineRuntimeContext* runtimeContext() const { return m_runtimeContext; }
 
-    /// Legacy-aligned semantic evaluation: consume prior stage output, return updated list.
+    /// Consume prior stage output, return updated list. Concrete blocks choose one primary path (see class docs):
+    /// **Historical / bar semantic** — rank or score from `IHistoricalRead` (or bar replay); `onTick` may be empty.
+    /// **Tick / streaming** — `onTick` updates rolling state and may emit `signalGenerated`; `processSemantic` may
+    /// mirror that state or pass through, depending on the block.
     virtual ModelDataList processSemantic(const ModelDataList& in, const QString& correlationId);
 
     /// When true, `processSemantic` may complete asynchronously; the runner waits for `semanticReady`.
     virtual bool semanticCompletionIsAsync() const { return false; }
 
 public slots:
+    /// Required by the interface; implementations that only use `processSemantic` + historical data typically no-op.
     virtual void onTick(const Pipeline::MarketTick& tick) = 0;
 
     virtual void onBarClose(const Pipeline::OHLCVBar& bar) {

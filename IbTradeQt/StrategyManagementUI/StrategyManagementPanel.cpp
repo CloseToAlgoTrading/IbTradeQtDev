@@ -66,6 +66,8 @@ void StrategyManagementPanel::buildUi()
             this, &StrategyManagementPanel::addBlockRequested);
     connect(m_catalogPanel, &StrategyCatalogPanel::removeBlockRequested,
             this, &StrategyManagementPanel::removeBlockRequested);
+    connect(m_catalogPanel, &StrategyCatalogPanel::deleteStrategyRequested,
+            this, &StrategyManagementPanel::deleteStrategyRequested);
 }
 
 void StrategyManagementPanel::populateCatalog(const QJsonArray& catalogEntries,

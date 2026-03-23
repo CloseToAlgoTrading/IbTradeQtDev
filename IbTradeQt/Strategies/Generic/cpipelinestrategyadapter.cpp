@@ -6,6 +6,7 @@
 #include "GlobalDef.h"
 #include "Pipeline/PipelineFactory.h"
 #include "Pipeline/PipelineRuntimeContext.h"
+#include "Common/IClock.h"
 #include "Pipeline/PipelineConstants.h"
 #include "Pipeline/StrategyPipelineRunner.h"
 #include "Pipeline/UniverseResolver.h"
@@ -34,6 +35,9 @@ CPipelineStrategyAdapter::CPipelineStrategyAdapter(QObject* parent)
 {
     MandatoryFieldRegistration::registerStrategyFields(*this);
     m_ParametersMap[MandatoryParams::Name] = QStringLiteral("Pipeline Strategy");
+    registerMandatoryParam(QStringLiteral("strategyAllocatedCapital"), 0.0);
+    registerMandatoryParam(QStringLiteral("runtime_rebalanceMode"), QStringLiteral("Immediate"));
+    registerMandatoryParam(QStringLiteral("runtime_rebalanceIntervalN"), 1);
 }
 
 CPipelineStrategyAdapter::~CPipelineStrategyAdapter()
@@ -166,6 +170,9 @@ bool CPipelineStrategyAdapter::start()
             {
                 Pipeline::PipelineRuntimeContext rtx;
                 rtx.subscription = this;
+                rtx.clock = m_injectedContext.clock;
+                double cap = m_pipelineConfig.value(QStringLiteral("strategyAllocatedCapital")).toDouble(0.0);
+                rtx.strategyAllocatedCapital = cap;
                 m_backtestRunner->setRuntimeContext(rtx);
             }
 
@@ -591,6 +598,20 @@ void CPipelineStrategyAdapter::updateParametersFromConfig()
     default:                      modeStr = QStringLiteral("dry_run");  break;
     }
     m_ParametersMap[QStringLiteral("execution_mode")] = modeStr;
+
+    if (m_pipelineConfig.contains(QStringLiteral("strategyAllocatedCapital")))
+        m_ParametersMap[QStringLiteral("strategyAllocatedCapital")] =
+            m_pipelineConfig[QStringLiteral("strategyAllocatedCapital")].toDouble();
+    else
+        m_ParametersMap[QStringLiteral("strategyAllocatedCapital")] = 0.0;
+
+    {
+        const QJsonObject rp = m_pipelineConfig.value(QStringLiteral("runtimePolicy")).toObject();
+        m_ParametersMap[QStringLiteral("runtime_rebalanceMode")] =
+            rp.value(QStringLiteral("rebalanceMode")).toString(QStringLiteral("Immediate"));
+        m_ParametersMap[QStringLiteral("runtime_rebalanceIntervalN")] =
+            rp.value(QStringLiteral("rebalanceIntervalN")).toInt(1);
+    }
 }
 
 void CPipelineStrategyAdapter::updateConfigFromParameters()
@@ -654,6 +675,17 @@ void CPipelineStrategyAdapter::updateConfigFromParameters()
         risks[i] = risk;
     }
     m_pipelineConfig[Pipeline::Key::Risks] = risks;
+
+    if (m_ParametersMap.contains(QStringLiteral("strategyAllocatedCapital")))
+        m_pipelineConfig[QStringLiteral("strategyAllocatedCapital")] =
+            m_ParametersMap[QStringLiteral("strategyAllocatedCapital")].toDouble();
+
+    QJsonObject rp = m_pipelineConfig.value(QStringLiteral("runtimePolicy")).toObject();
+    if (m_ParametersMap.contains(QStringLiteral("runtime_rebalanceMode")))
+        rp[QStringLiteral("rebalanceMode")] = m_ParametersMap[QStringLiteral("runtime_rebalanceMode")].toString();
+    if (m_ParametersMap.contains(QStringLiteral("runtime_rebalanceIntervalN")))
+        rp[QStringLiteral("rebalanceIntervalN")] = m_ParametersMap[QStringLiteral("runtime_rebalanceIntervalN")].toInt();
+    m_pipelineConfig[QStringLiteral("runtimePolicy")] = rp;
 }
 
 void CPipelineStrategyAdapter::updateInfoFromRuntime()

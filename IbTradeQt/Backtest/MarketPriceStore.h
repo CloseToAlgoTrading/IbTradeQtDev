@@ -27,7 +27,9 @@ public:
 
 public slots:
     void onTick(const Pipeline::MarketTick& tick) {
-        m_cache[tick.symbol] = tick;
+        Pipeline::MarketTick t = tick;
+        t.symbol = tick.symbol.trimmed().toUpper();
+        m_cache[t.symbol] = t;
     }
 
 private:

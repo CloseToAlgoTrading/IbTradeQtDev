@@ -1,11 +1,30 @@
 #include "SemanticModelDataMapper.h"
 
 #include <QDateTime>
+#include <QMap>
 #include <QtMath>
+#include <algorithm>
 #include <cmath>
 
 namespace Pipeline {
 namespace SemanticMapping {
+
+static QMap<QString, double> positionMapUpperKeys(const QMap<QString, double>& in)
+{
+    QMap<QString, double> out;
+    for (auto it = in.constBegin(); it != in.constEnd(); ++it)
+        out[it.key().trimmed().toUpper()] = it.value();
+    return out;
+}
+
+/// Long-only: sell intent cannot exceed long size (avoids shorts when sell amount > position).
+static double clampSellDeltaForLongOnly(double currentPosition, double delta)
+{
+    if (delta >= 0.0)
+        return delta;
+    const double longQty = std::max(0.0, currentPosition);
+    return std::max(delta, -longQty);
+}
 
 ModelDataList buildModelDataFromSymbols(const QVector<QString>& symbols)
 {
@@ -93,14 +112,20 @@ QVector<TargetPosition> targetPositionsFromModelData(
     QVector<TargetPosition> out;
     if (!data)
         return out;
+    const QMap<QString, double> posUpper = positionMapUpperKeys(currentPositions);
     for (const auto& row : *data) {
         TargetPosition tp;
         tp.symbol = row.symbol;
-        tp.currentQuantity = currentPositions.value(row.symbol, 0.0);
+        tp.currentQuantity = posUpper.value(row.symbol.trimmed().toUpper(), 0.0);
+        // Rows from modelDataFromTargetPositions use amount = |delta|; UP/DOWN here mean delta sign (trade
+        // direction), not necessarily the alpha row’s original direction.
+        // Do not treat DOWN as absolute negative target (-amount); that double-counts vs current.
         if (row.direction == DIRECTION_UP)
-            tp.targetQuantity = row.amount > 0.0 ? row.amount : 0.0;
-        else if (row.direction == DIRECTION_DOWN)
-            tp.targetQuantity = row.amount > 0.0 ? -row.amount : 0.0;
+            tp.targetQuantity = tp.currentQuantity + (row.amount > 0.0 ? row.amount : 0.0);
+        else if (row.direction == DIRECTION_DOWN) {
+            const double longQty = std::max(0.0, tp.currentQuantity);
+            tp.targetQuantity = std::max(0.0, longQty - (row.amount > 0.0 ? row.amount : 0.0));
+        }
         else
             tp.targetQuantity = tp.currentQuantity;
         tp.correlationId = correlationId;
@@ -111,6 +136,9 @@ QVector<TargetPosition> targetPositionsFromModelData(
 
 ModelDataList modelDataFromTargetPositions(const QVector<TargetPosition>& targets)
 {
+    // UP/DOWN here = sign of (target − current), i.e. buy vs sell delta. This is not the same semantic as
+    // alpha `DIRECTION_UP` / `DIRECTION_DOWN` on the incoming model — rebalance only supplied numbers in
+    // TargetPosition; we re-label deltas for the wire format to IRiskBlock/IExecutionBlock.
     ModelDataList list = createDataList();
     for (const auto& tp : targets) {
         const double delta = tp.deltaQuantity();
@@ -133,13 +161,17 @@ QVector<ExecutionIntent> executionIntentsFromModelData(
 {
     const QVector<TargetPosition> tps =
         targetPositionsFromModelData(data, currentPositions, correlationId);
+    const QMap<QString, double> posUpper = positionMapUpperKeys(currentPositions);
     QVector<ExecutionIntent> intents;
     for (const auto& tp : tps) {
-        const double delta = tp.deltaQuantity();
+        const QString symKey = tp.symbol.trimmed().toUpper();
+        const double current = posUpper.value(symKey, 0.0);
+        double delta         = tp.targetQuantity - current;
+        delta = clampSellDeltaForLongOnly(current, delta);
         if (qFuzzyIsNull(delta))
             continue;
         ExecutionIntent intent;
-        intent.symbol = tp.symbol;
+        intent.symbol = symKey;
         intent.quantity = delta;
         intent.orderType = ExecutionIntent::Market;
         intent.riskApproval = QStringLiteral("Approved");
@@ -147,6 +179,60 @@ QVector<ExecutionIntent> executionIntentsFromModelData(
         intent.timestamp = eventTime;
         intents.append(intent);
     }
+    return intents;
+}
+
+QVector<TargetPosition> mergeTargetPositionsBySymbolLastWins(const QVector<TargetPosition>& targets)
+{
+    QMap<QString, TargetPosition> bySym;
+    for (const auto& tp : targets) {
+        const QString k = tp.symbol.trimmed().toUpper();
+        TargetPosition t = tp;
+        t.symbol = k;
+        if (t.targetQuantity < 0.0)
+            t.targetQuantity = 0.0;
+        bySym[k] = t;
+    }
+    QVector<TargetPosition> out;
+    out.reserve(bySym.size());
+    for (auto it = bySym.constBegin(); it != bySym.constEnd(); ++it)
+        out.append(it.value());
+    return out;
+}
+
+QVector<ExecutionIntent> executionIntentsFromTargetPositions(
+    const QVector<TargetPosition>& targets,
+    const QMap<QString, double>& currentPositions,
+    const QString& correlationId,
+    const QDateTime& eventTime)
+{
+    const QMap<QString, double> posUpper = positionMapUpperKeys(currentPositions);
+    QVector<ExecutionIntent> intents;
+    intents.reserve(targets.size());
+    for (const auto& tp : targets) {
+        const QString symKey = tp.symbol.trimmed().toUpper();
+        const double current = posUpper.value(symKey, 0.0);
+        double delta         = tp.targetQuantity - current;
+        delta = clampSellDeltaForLongOnly(current, delta);
+        if (qFuzzyIsNull(delta))
+            continue;
+        ExecutionIntent intent;
+        intent.symbol        = symKey;
+        intent.quantity      = delta;
+        intent.orderType     = ExecutionIntent::Market;
+        intent.riskApproval  = QStringLiteral("Approved");
+        intent.correlationId = tp.correlationId.isEmpty() ? correlationId : tp.correlationId;
+        intent.timestamp     = eventTime;
+        intents.append(intent);
+    }
+    std::sort(intents.begin(), intents.end(),
+              [](const ExecutionIntent& a, const ExecutionIntent& b) {
+                  const bool aSell = a.quantity < 0.0;
+                  const bool bSell = b.quantity < 0.0;
+                  if (aSell != bSell)
+                      return aSell;
+                  return a.symbol < b.symbol;
+              });
     return intents;
 }
 

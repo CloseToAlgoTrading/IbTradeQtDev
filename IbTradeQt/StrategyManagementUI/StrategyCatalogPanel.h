@@ -40,6 +40,7 @@ signals:
     void removeBlockRequested(const QString& strategyId,
                               const QString& category,
                               int blockIndex);
+    void deleteStrategyRequested(const QString& strategyId);
 
 private slots:
     void onItemClicked(const QModelIndex& proxyIndex);

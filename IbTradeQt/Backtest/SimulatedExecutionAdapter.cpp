@@ -1,4 +1,5 @@
 #include "SimulatedExecutionAdapter.h"
+#include "Pipeline/IHistoricalRead.h"
 #include <QLoggingCategory>
 
 Q_LOGGING_CATEGORY(lcSimExec, "backtest.exec")
@@ -23,10 +24,60 @@ SimulatedExecutionAdapter::SimulatedExecutionAdapter(
     Q_ASSERT(clock);
 }
 
+void SimulatedExecutionAdapter::setHistoricalFillFallback(Pipeline::IHistoricalRead* historical,
+                                                          const QString& resolution,
+                                                          const QString& dataSourceId)
+{
+    m_histFallback       = historical;
+    m_histResolution     = resolution;
+    m_histDataSourceId   = dataSourceId;
+}
+
+std::optional<Pipeline::MarketTick> SimulatedExecutionAdapter::resolveTickForSymbol(
+    const QString& symNorm) const
+{
+    const QDateTime toUtc = m_clock ? m_clock->now().toUTC() : QDateTime::currentDateTimeUtc();
+    const QDateTime from  = toUtc.addYears(-2);
+
+    auto tickFromHistoricalClose = [&](const Pipeline::HistoricalBarSnapshot& b) {
+        Pipeline::MarketTick t;
+        t.symbol    = symNorm;
+        t.bid       = b.close;
+        t.ask       = b.close;
+        t.timestamp = b.timestamp;
+        return t;
+    };
+
+    // Prefer IHistoricalRead when configured: same getBars(...) as SimpleRebalanceBlock sizing
+    // (last bar close in [from, toUtc]). Replay ticks can diverge if the clock instant does not
+    // exactly match tick timestamps (QDateTime equality) or if cache vs replay ordering differs.
+    if (m_histFallback) {
+        const QVector<Pipeline::HistoricalBarSnapshot> bars =
+            m_histFallback->getBars(symNorm, m_histResolution, m_histDataSourceId, from, toUtc);
+        if (!bars.isEmpty()) {
+            const auto& b = bars.last();
+            if (b.close > 0.0)
+                return tickFromHistoricalClose(b);
+        }
+    }
+
+    if (m_priceStore->hasTick(symNorm)) {
+        const Pipeline::MarketTick storeTick = m_priceStore->lastTick(symNorm);
+        if (storeTick.timestamp.toUTC() == toUtc)
+            return storeTick;
+    }
+
+    if (m_priceStore->hasTick(symNorm))
+        return m_priceStore->lastTick(symNorm);
+
+    return std::nullopt;
+}
+
 Expected<Ports::OrderResult, Error> SimulatedExecutionAdapter::placeOrder(
     const Pipeline::ExecutionIntent& intent)
 {
-    if (intent.symbol.isEmpty()) {
+    const QString symNorm = intent.symbol.trimmed().toUpper();
+    if (symNorm.isEmpty()) {
         return make_unexpected(Error{
             ErrorCode::InvalidArgument,
             "Empty symbol in ExecutionIntent",
@@ -35,11 +86,13 @@ Expected<Ports::OrderResult, Error> SimulatedExecutionAdapter::placeOrder(
     }
 
     if (m_fillTiming == FillTiming::SignalOnClose_FillNextBarOpen) {
-        m_pendingOrders.append(intent);
+        Pipeline::ExecutionIntent q = intent;
+        q.symbol                    = symNorm;
+        m_pendingOrders.append(q);
 
         Ports::OrderResult result;
         result.orderId   = m_nextOrderId++;
-        result.symbol    = intent.symbol;
+        result.symbol    = symNorm;
         result.quantity  = intent.quantity;
         result.status    = "Queued";
         result.timestamp = m_clock->now();
@@ -47,16 +100,21 @@ Expected<Ports::OrderResult, Error> SimulatedExecutionAdapter::placeOrder(
     }
 
     // Immediate fill (SignalOnTick_FillAtBidAsk or SignalOnClose_FillAtClose)
-    if (!m_priceStore->hasTick(intent.symbol)) {
+    auto tickOpt = resolveTickForSymbol(symNorm);
+    if (!tickOpt) {
         return make_unexpected(Error{
             ErrorCode::NotFound,
-            "No price available for symbol: " + intent.symbol.toStdString(),
+            "No price available for symbol: " + symNorm.toStdString(),
             "SimulatedExecutionAdapter::placeOrder"
         });
     }
 
-    Pipeline::MarketTick tick = m_priceStore->lastTick(intent.symbol);
-    FilledOrder fill = executeFill(intent, tick);
+    Pipeline::ExecutionIntent intentNorm = intent;
+    intentNorm.symbol                      = symNorm;
+    Pipeline::MarketTick tick            = *tickOpt;
+    // Ledger MTM reads MarketPriceStore; seed store when fill used historical fallback
+    m_priceStore->onTick(tick);
+    FilledOrder fill = executeFill(intentNorm, tick);
 
     m_filledOrders.append(fill);
     m_orderById[fill.orderId] = fill;
@@ -119,18 +177,24 @@ void SimulatedExecutionAdapter::onNextTickOpen(const Pipeline::MarketTick& openT
     QVector<Pipeline::ExecutionIntent> toFill;
     toFill.swap(m_pendingOrders);
 
-    for (const Pipeline::ExecutionIntent& intent : toFill) {
-        // Use the provided openTick if symbol matches, otherwise fall back to price store
+    for (Pipeline::ExecutionIntent intent : toFill) {
+        const QString symNorm = intent.symbol.trimmed().toUpper();
+        intent.symbol         = symNorm;
+
+        // Use the provided openTick if symbol matches, otherwise fall back to price store / history
         Pipeline::MarketTick tick = openTick;
-        if (intent.symbol != openTick.symbol) {
-            if (!m_priceStore->hasTick(intent.symbol)) {
-                qCWarning(lcSimExec) << "SimulatedExecutionAdapter: no price for" << intent.symbol
-                           << "— skipping pending order";
+        const QString openSym     = openTick.symbol.trimmed().toUpper();
+        if (symNorm != openSym) {
+            auto tickOpt = resolveTickForSymbol(symNorm);
+            if (!tickOpt) {
+                qCWarning(lcSimExec) << "SimulatedExecutionAdapter: no price for" << symNorm
+                                     << "— skipping pending order";
                 continue;
             }
-            tick = m_priceStore->lastTick(intent.symbol);
+            tick = *tickOpt;
         }
 
+        m_priceStore->onTick(tick);
         FilledOrder fill = executeFill(intent, tick);
         m_filledOrders.append(fill);
         m_orderById[fill.orderId] = fill;
@@ -179,6 +243,7 @@ FilledOrder SimulatedExecutionAdapter::executeFill(
     fill.orderId       = m_nextOrderId++;
     fill.symbol        = intent.symbol;
     fill.quantity      = intent.quantity;
+    fill.marketPrice   = tick.mid();
     fill.fillPrice     = computeFillPrice(intent, tick);
     fill.timestamp     = m_clock->now();
     fill.correlationId = intent.correlationId;

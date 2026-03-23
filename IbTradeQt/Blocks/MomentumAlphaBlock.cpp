@@ -6,7 +6,6 @@
 #include "../Pipeline/SemanticModelDataMapper.h"
 #include <QDateTime>
 #include <QJsonObject>
-#include <QUuid>
 #include <algorithm>
 #include <cmath>
 
@@ -48,8 +47,8 @@ void MomentumAlphaBlock::setConfig(const QJsonObject& config)
     m_lookbackYears = config.value(QStringLiteral("lookbackYears")).toInt(1);
 }
 
-void MomentumAlphaBlock::initialize() { m_priceHistory.clear(); }
-void MomentumAlphaBlock::shutdown() { m_priceHistory.clear(); }
+void MomentumAlphaBlock::initialize() {}
+void MomentumAlphaBlock::shutdown() {}
 
 Pipeline::ModelDataList MomentumAlphaBlock::processSemantic(
     const Pipeline::ModelDataList& in,
@@ -62,8 +61,11 @@ Pipeline::ModelDataList MomentumAlphaBlock::processSemantic(
         return in;
     }
 
-    const QDateTime to = QDateTime::currentDateTimeUtc();
+    const QDateTime to =
+        m_clock ? m_clock->now().toUTC() : QDateTime::currentDateTimeUtc();
     const QDateTime from = to.addYears(-m_lookbackYears);
+
+    const int period = qMax(1, m_period);
 
     QMap<QString, double> momentumBySymbol;
     for (const auto& row : *in) {
@@ -72,13 +74,13 @@ Pipeline::ModelDataList MomentumAlphaBlock::processSemantic(
             continue;
         QVector<Pipeline::HistoricalBarSnapshot> bars =
             runtimeContext()->historical->getBars(sym, m_resolution, m_dataSourceId, from, to);
-        if (bars.size() < 2)
+        if (bars.size() <= period)
             continue;
-        const double firstClose = bars.first().close;
+        const double baseClose = bars[bars.size() - 1 - period].close;
         const double lastClose = bars.last().close;
-        if (firstClose <= 0.0)
+        if (baseClose <= 0.0)
             continue;
-        momentumBySymbol.insert(sym, (lastClose - firstClose) / firstClose);
+        momentumBySymbol.insert(sym, (lastClose - baseClose) / baseClose);
     }
     if (momentumBySymbol.isEmpty()) {
         if (runtimeContext()->subscription) {
@@ -119,31 +121,7 @@ Pipeline::ModelDataList MomentumAlphaBlock::processSemantic(
 
 void MomentumAlphaBlock::onTick(const Pipeline::MarketTick& tick)
 {
-    auto& history = m_priceHistory[tick.symbol];
-    history.append(tick.mid());
-    if (history.size() > m_period + 1) {
-        history.removeFirst();
-    }
-
-    if (history.size() < 2) return;
-
-    double oldPrice = history.first();
-    double newPrice = history.last();
-    if (oldPrice <= 0.0) return;
-
-    double momentum = (newPrice - oldPrice) / oldPrice;
-
-    if (std::abs(momentum) > m_threshold) {
-        Pipeline::Signal signal;
-        signal.symbol = tick.symbol;
-        signal.direction = (momentum > 0)
-            ? Pipeline::Signal::Buy : Pipeline::Signal::Sell;
-        signal.confidence = std::min(std::abs(momentum) / m_threshold, 1.0);
-        signal.correlationId = QUuid::createUuid().toString(QUuid::WithoutBraces);
-        signal.timestamp = tick.timestamp;
-        signal.alphaBlockId = id();
-        emit signalGenerated(signal);
-    }
+    Q_UNUSED(tick);
 }
 
 } // namespace Blocks

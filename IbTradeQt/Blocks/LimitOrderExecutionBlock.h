@@ -22,6 +22,8 @@ public:
     QJsonObject config() const override;
     void setConfig(const QJsonObject& config) override;
 
+    void setRuntimeContext(const Pipeline::PipelineRuntimeContext* ctx) override;
+
 public slots:
     void execute(const QVector<Pipeline::ExecutionIntent>& intents) override;
 
@@ -33,7 +35,9 @@ public slots:
 
 private:
     Ports::IOrderExecutionPort* m_executionPort = nullptr;
+    const Pipeline::PipelineRuntimeContext* m_runtimeContext = nullptr;
     double m_minQuantity = 1.0;
+    /// When `ExecutionIntent::limitPrice` is unset: buy uses ref*(1-offset), sell ref*(1+offset); ref = last tick mid.
     double m_limitOffset = 0.01;
 };
 

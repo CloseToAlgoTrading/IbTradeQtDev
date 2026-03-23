@@ -111,6 +111,14 @@ QVector<IBComm::HistoricalBar> HistoricalDataManager::getBars(
         if (cacheNeedsAfter(effectiveTo, cachedMax, resolution, dataSourceId))
             needFetchAfter = true;
 
+        // If the cache already runs through `effectiveTo`, a missing prefix (request `from`
+        // before cachedMin) does not require a network fetch: readFromCache still returns
+        // bars in [cachedMin, effectiveTo] ∩ [from, to]. Prefix fetches often fail under
+        // mock Yahoo in tests and leave momentum (and similar) with only symbols that
+        // happened to hit the cache without a gap.
+        if (needFetchBefore && cachedMax >= effectiveTo)
+            needFetchBefore = false;
+
         // Trailing gap is US equity weekend-only — Yahoo has no daily bars; skip fetch.
         if (needFetchAfter && !needFetchBefore && dataSourceId == QLatin1String("yahoo")
             && resolution == QLatin1String("Day1")
@@ -186,6 +194,9 @@ QMap<QString, QVector<IBComm::HistoricalBar>> HistoricalDataManager::getBarsMult
 
             bool needBefore = cacheNeedsBefore(from, cachedMin, resolution, dataSourceId);
             bool needAfter  = cacheNeedsAfter(effectiveTo, cachedMax, resolution, dataSourceId);
+
+            if (needBefore && cachedMax >= effectiveTo)
+                needBefore = false;
 
             if (needAfter && !needBefore && dataSourceId == QLatin1String("yahoo")
                 && resolution == QLatin1String("Day1")

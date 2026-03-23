@@ -34,6 +34,8 @@
 #include "backtest/tst_live_backtest.h"
 #include "backtest/tst_semantic_live_historical.h"
 #include "backtest/tst_backtest_engine_coverage.h"
+#include "backtest/tst_momentum_strategy_e2e.h"
+#include "backtest/tst_momentum_three_stock_validation.h"
 #include "db/tst_dbhandler_disconnect.h"
 #include "backtest/tst_workspace_session.h"
 #include "backtest/tst_backtest_run_persistence.h"
@@ -49,139 +51,156 @@
 #include "integration/tst_adapter_pure_backtest.h"
 #include "integration/tst_semantic_e2e.h"
 #include "parity/tst_pipeline_parity.h"
+#include "blocks/tst_quant_momentum_blocks.h"
 #include "ui/tst_runtime_policy_editor.h"
+
+// When IBTRADING_TEST_CLASS is set (e.g. TestMomentumThreeStockValidation), only that suite runs.
+// Use with a function filter so other QObject classes do not report "function not found":
+//   IBTRADING_TEST_CLASS=TestMomentumThreeStockValidation ./release/ibtrading_tests momentum_top2_three_stock_histPriceValidationHtml
+#define IBTRADING_RUN_TEST(Class, VarName) \
+    do { \
+        if (testClassFilter.isEmpty() || testClassFilter == QStringLiteral(#Class)) { \
+            Class VarName; \
+            status |= QTest::qExec(&VarName, argc, argv); \
+        } \
+    } while (0)
 
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
     Pipeline::registerPipelineMetaTypes();
     int status = 0;
+    const QString testClassFilter = qEnvironmentVariable("IBTRADING_TEST_CLASS").trimmed();
 
     // Phase 1
-    { TestContracts tc;        status |= QTest::qExec(&tc, argc, argv); }
-    { TestMergePolicies tc;    status |= QTest::qExec(&tc, argc, argv); }
-    { TestMarketDataRouter tc; status |= QTest::qExec(&tc, argc, argv); }
-    { TestBlockInterfaces tc;  status |= QTest::qExec(&tc, argc, argv); }
-    { TestExpected tc;         status |= QTest::qExec(&tc, argc, argv); }
-    { TestScope tc;            status |= QTest::qExec(&tc, argc, argv); }
-    { TestSubscriptionRequestStore tc; status |= QTest::qExec(&tc, argc, argv); }
+    IBTRADING_RUN_TEST(TestContracts, tc);
+    IBTRADING_RUN_TEST(TestMergePolicies, tc);
+    IBTRADING_RUN_TEST(TestMarketDataRouter, tc);
+    IBTRADING_RUN_TEST(TestBlockInterfaces, tc);
+    IBTRADING_RUN_TEST(TestExpected, tc);
+    IBTRADING_RUN_TEST(TestScope, tc);
+    IBTRADING_RUN_TEST(TestSubscriptionRequestStore, tc);
 
     // Phase 2
-    { TestReplay tc;           status |= QTest::qExec(&tc, argc, argv); }
-    { TestAdapters tc;         status |= QTest::qExec(&tc, argc, argv); }
-    { TestIntegration tc;      status |= QTest::qExec(&tc, argc, argv); }
+    IBTRADING_RUN_TEST(TestReplay, tc);
+    IBTRADING_RUN_TEST(TestAdapters, tc);
+    IBTRADING_RUN_TEST(TestIntegration, tc);
 
     // Phase 3
-    { TestBlockRegistry tc;    status |= QTest::qExec(&tc, argc, argv); }
-    { TestPipelineRunner tc;   status |= QTest::qExec(&tc, argc, argv); }
-    { TestSemanticMapping tc;  status |= QTest::qExec(&tc, argc, argv); }
+    IBTRADING_RUN_TEST(TestBlockRegistry, tc);
+    IBTRADING_RUN_TEST(TestPipelineRunner, tc);
+    IBTRADING_RUN_TEST(TestSemanticMapping, tc);
 
     // Phase 4
-    { TestSupervision tc;      status |= QTest::qExec(&tc, argc, argv); }
+    IBTRADING_RUN_TEST(TestSupervision, tc);
 
     // Phase 5
-    { TestObservability tc;    status |= QTest::qExec(&tc, argc, argv); }
+    IBTRADING_RUN_TEST(TestObservability, tc);
 
     // Phase 6 - Benchmarks
-    { TestBenchmark tc;        status |= QTest::qExec(&tc, argc, argv); }
+    IBTRADING_RUN_TEST(TestBenchmark, tc);
 
     // Integration - Default Pipelines
-    { TestDefaultPipelines tc; status |= QTest::qExec(&tc, argc, argv); }
+    IBTRADING_RUN_TEST(TestDefaultPipelines, tc);
 
     // Integration - Pipeline Strategy Adapter
-    { TestPipelineStrategyAdapter tc; status |= QTest::qExec(&tc, argc, argv); }
+    IBTRADING_RUN_TEST(TestPipelineStrategyAdapter, tc);
 
     // Integration - Live Execution Wiring
-    { TestLiveExecutionWiring tc; status |= QTest::qExec(&tc, argc, argv); }
+    IBTRADING_RUN_TEST(TestLiveExecutionWiring, tc);
 
     // Integration - Typed Routers
-    { TestTypedRouters tc; status |= QTest::qExec(&tc, argc, argv); }
+    IBTRADING_RUN_TEST(TestTypedRouters, tc);
 
     // Phase B - Legacy subscriber migration
-    { TestPhaseBMigration tc; status |= QTest::qExec(&tc, argc, argv); }
+    IBTRADING_RUN_TEST(TestPhaseBMigration, tc);
 
     // Phase D - CDispatcher removal verification
-    { TestPhaseD_DispatcherRemoval tc; status |= QTest::qExec(&tc, argc, argv); }
+    IBTRADING_RUN_TEST(TestPhaseD_DispatcherRemoval, tc);
 
     // Phase E - Remaining router signals
-    { TestPhaseE_RemainingRouters tc; status |= QTest::qExec(&tc, argc, argv); }
+    IBTRADING_RUN_TEST(TestPhaseE_RemainingRouters, tc);
 
     // Backtester — Phase 1 foundations
-    { TestIClock tc;                         status |= QTest::qExec(&tc, argc, argv); }
-    { TestMarketPriceStore tc;               status |= QTest::qExec(&tc, argc, argv); }
-    { TestSimulatedLedger tc;                status |= QTest::qExec(&tc, argc, argv); }
-    { TestSimulatedExecutionAdapter tc;      status |= QTest::qExec(&tc, argc, argv); }
-    { TestBacktestMetricsCollector tc;       status |= QTest::qExec(&tc, argc, argv); }
-    { TestMarketDataReplayerExtensions tc;   status |= QTest::qExec(&tc, argc, argv); }
-    { TestCsvHistoricalDataSource tc;        status |= QTest::qExec(&tc, argc, argv); }
-    { TestJsonlHistoricalDataSource tc;      status |= QTest::qExec(&tc, argc, argv); }
-    { TestFullBacktestSession tc;            status |= QTest::qExec(&tc, argc, argv); }
+    IBTRADING_RUN_TEST(TestIClock, tc);
+    IBTRADING_RUN_TEST(TestMarketPriceStore, tc);
+    IBTRADING_RUN_TEST(TestSimulatedLedger, tc);
+    IBTRADING_RUN_TEST(TestSimulatedExecutionAdapter, tc);
+    IBTRADING_RUN_TEST(TestBacktestMetricsCollector, tc);
+    IBTRADING_RUN_TEST(TestMarketDataReplayerExtensions, tc);
+    IBTRADING_RUN_TEST(TestCsvHistoricalDataSource, tc);
+    IBTRADING_RUN_TEST(TestJsonlHistoricalDataSource, tc);
+    IBTRADING_RUN_TEST(TestFullBacktestSession, tc);
 
     // Backtester — Yahoo Finance data source + benchmark comparison
-    { TestHistoricalDataManagerCache tc;      status |= QTest::qExec(&tc, argc, argv); }
-    { TestMarketSessionUtils tc;              status |= QTest::qExec(&tc, argc, argv); }
-    { TestInstrumentMetadataResolver tc;      status |= QTest::qExec(&tc, argc, argv); }
-    { TestYahooFinanceDataSource tc;         status |= QTest::qExec(&tc, argc, argv); }
-    { TestBenchmarkComparison tc;            status |= QTest::qExec(&tc, argc, argv); }
-    { TestMACrossoverBacktest tc;            status |= QTest::qExec(&tc, argc, argv); }
-    { TestYahooBacktestSessionMockE2E tc;     status |= QTest::qExec(&tc, argc, argv); }
-    { TestYahooBacktestSessionMockFailure tc; status |= QTest::qExec(&tc, argc, argv); }
-    { TestYahooBacktestPipelineVariants tc;   status |= QTest::qExec(&tc, argc, argv); }
-    { TestBacktestEngineCoverage tc;          status |= QTest::qExec(&tc, argc, argv); }
-    { TestDbHandlerDisconnect tc;             status |= QTest::qExec(&tc, argc, argv); }
-    { TestWorkspaceSession tc;                status |= QTest::qExec(&tc, argc, argv); }
-    { TestBacktestRunPersistence tc;          status |= QTest::qExec(&tc, argc, argv); }
+    IBTRADING_RUN_TEST(TestHistoricalDataManagerCache, tc);
+    IBTRADING_RUN_TEST(TestMarketSessionUtils, tc);
+    IBTRADING_RUN_TEST(TestInstrumentMetadataResolver, tc);
+    IBTRADING_RUN_TEST(TestYahooFinanceDataSource, tc);
+    IBTRADING_RUN_TEST(TestBenchmarkComparison, tc);
+    IBTRADING_RUN_TEST(TestMACrossoverBacktest, tc);
+    IBTRADING_RUN_TEST(TestYahooBacktestSessionMockE2E, tc);
+    IBTRADING_RUN_TEST(TestYahooBacktestSessionMockFailure, tc);
+    IBTRADING_RUN_TEST(TestYahooBacktestPipelineVariants, tc);
+    IBTRADING_RUN_TEST(TestBacktestEngineCoverage, tc);
+    IBTRADING_RUN_TEST(TestMomentumStrategyE2E, tc);
+    IBTRADING_RUN_TEST(TestMomentumThreeStockValidation, tc);
+    IBTRADING_RUN_TEST(TestDbHandlerDisconnect, tc);
+    IBTRADING_RUN_TEST(TestWorkspaceSession, tc);
+    IBTRADING_RUN_TEST(TestBacktestRunPersistence, tc);
 
     // Extended LEGO backtests (CSV + default pipeline JSON). Run: IBTRADING_EXTENDED_BACKTEST=1 ./tests
     if (qEnvironmentVariable("IBTRADING_EXTENDED_BACKTEST") == "1") {
-        { TestBacktestExtendedLego tc; status |= QTest::qExec(&tc, argc, argv); }
+        IBTRADING_RUN_TEST(TestBacktestExtendedLego, tc);
     }
 
     // Live Yahoo backtests — require internet, write HTML+TXT reports (IBTRADING_LIVE_TESTS=1)
     if (qEnvironmentVariable("IBTRADING_LIVE_TESTS") == "1") {
-        { TestLiveBacktest tc; status |= QTest::qExec(&tc, argc, argv); }
+        IBTRADING_RUN_TEST(TestLiveBacktest, tc);
     }
 
     // Yahoo + semanticPipeline / semanticModelRebalance smoke (IBTRADING_SEMANTIC_LIVE_TESTS=1)
     if (qEnvironmentVariable("IBTRADING_SEMANTIC_LIVE_TESTS") == "1") {
-        { TestSemanticPipelineLiveHistorical tc; status |= QTest::qExec(&tc, argc, argv); }
+        IBTRADING_RUN_TEST(TestSemanticPipelineLiveHistorical, tc);
     }
 
-    { TestStorageConfig tc;                  status |= QTest::qExec(&tc, argc, argv); }
-    { TestPersistenceFactory tc;             status |= QTest::qExec(&tc, argc, argv); }
+    IBTRADING_RUN_TEST(TestStorageConfig, tc);
+    IBTRADING_RUN_TEST(TestPersistenceFactory, tc);
 
     // Backend - Model Tree Repository & Mapper
-    { TestModelTreeRepository tc;            status |= QTest::qExec(&tc, argc, argv); }
+    IBTRADING_RUN_TEST(TestModelTreeRepository, tc);
 
     // Backend - System Backend
-    { TestSystemBackend tc;                  status |= QTest::qExec(&tc, argc, argv); }
+    IBTRADING_RUN_TEST(TestSystemBackend, tc);
 
     // Backend - Persistence & Migration
-    { TestPersistence tc;                    status |= QTest::qExec(&tc, argc, argv); }
+    IBTRADING_RUN_TEST(TestPersistence, tc);
 
     // Backend - Runtime & Backtester Integration
-    { TestRuntime tc;                        status |= QTest::qExec(&tc, argc, argv); }
+    IBTRADING_RUN_TEST(TestRuntime, tc);
 
     // CLI Proof of Concept (no GUI dependency)
-    { TestCliProof tc;                       status |= QTest::qExec(&tc, argc, argv); }
+    IBTRADING_RUN_TEST(TestCliProof, tc);
 
     // Strategy Definition Refactoring — Phase 1-9
-    { TestStrategyDefinition tc;             status |= QTest::qExec(&tc, argc, argv); }
+    IBTRADING_RUN_TEST(TestStrategyDefinition, tc);
 
     // Strategy Catalog (v3: families + versions)
-    { TestStrategyCatalog tc;                status |= QTest::qExec(&tc, argc, argv); }
+    IBTRADING_RUN_TEST(TestStrategyCatalog, tc);
 
     // Phase 10 — Adapter pure-backtest mode + config parity
-    { TestAdapterPureBacktest tc;            status |= QTest::qExec(&tc, argc, argv); }
+    IBTRADING_RUN_TEST(TestAdapterPureBacktest, tc);
 
     // Semantic pipeline — ModelDataList rebalance/risk/execution + async alpha (mock ports)
-    { TestSemanticE2E tc;                    status |= QTest::qExec(&tc, argc, argv); }
+    IBTRADING_RUN_TEST(TestSemanticE2E, tc);
 
     // Pipeline Parity — live/backtest semantic parity verification
-    { TestPipelineParity tc;                 status |= QTest::qExec(&tc, argc, argv); }
+    IBTRADING_RUN_TEST(TestPipelineParity, tc);
+
+    IBTRADING_RUN_TEST(TestQuantMomentumBlocks, tc);
 
     // UI — RuntimePolicyEditor widget tests
-    { TestRuntimePolicyEditor tc;            status |= QTest::qExec(&tc, argc, argv); }
+    IBTRADING_RUN_TEST(TestRuntimePolicyEditor, tc);
 
     return status;
 }

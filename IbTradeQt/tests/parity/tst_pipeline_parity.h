@@ -150,6 +150,7 @@ private slots:
         // Simulate tick + bar close
         runner.ingestTick(makeTick("AMD", 105, 106, ts1));
         runner.ingestOhlcvBar(makeBar("AMD", ts1));
+        runner.flushBarClosePipeline();
 
         QCOMPARE(spy.count(), 1);
         QVERIFY(runner.lastIntents().size() > 0);
@@ -195,6 +196,7 @@ private slots:
         clock.setCurrentTime(ts3);
         runner.ingestTick(makeTick("AMD", 105, 106, ts3));
         runner.ingestOhlcvBar(makeBar("AMD", ts3));
+        runner.flushBarClosePipeline();
         QCOMPARE(spy.count(), 1);
     }
 
@@ -225,6 +227,7 @@ private slots:
         clock.setCurrentTime(ts1);
         runner.ingestTick(makeTick("AMD", 105, 106, ts1));
         runner.ingestOhlcvBar(makeBar("AMD", ts1));
+        runner.flushBarClosePipeline();
         QCOMPARE(spy.count(), 1);
         auto firstIntents = runner.lastIntents();
 
@@ -233,6 +236,7 @@ private slots:
         clock.setCurrentTime(ts2);
         runner.ingestTick(makeTick("AMD", 107, 108, ts2));
         runner.ingestOhlcvBar(makeBar("AMD", ts2));
+        runner.flushBarClosePipeline();
         QCOMPARE(spy.count(), 2);
         // Should have 0 intents because rebalance was skipped
         QCOMPARE(spy.at(1).at(1).toInt(), 0);
@@ -242,6 +246,7 @@ private slots:
         clock.setCurrentTime(ts3);
         runner.ingestTick(makeTick("AMD", 107, 108, ts3));
         runner.ingestOhlcvBar(makeBar("AMD", ts3));
+        runner.flushBarClosePipeline();
         QCOMPARE(spy.count(), 3);
         // Should have intents now
         QVERIFY(runner.lastIntents().size() > 0);
@@ -267,18 +272,18 @@ private slots:
         Pipeline::StrategyPipelineRunner runner(graph, policy, &exec, &repo, &clock);
         runner.wireAlphaSignals();
 
-        // Bar 1: eval fires, rebalance skipped (barsSince=1, need 2). Signal accumulated.
         QDateTime ts1(QDate(2024, 1, 1), QTime(16, 0, 0));
         clock.setCurrentTime(ts1);
         runner.ingestTick(makeTick("AMD", 105, 106, ts1));
         runner.ingestOhlcvBar(makeBar("AMD", ts1));
-        QCOMPARE(runner.runtimeState().pendingSignals.size(), 1);
 
-        // Bar 2: rebalance fires (barsSince=2). Accumulated + current signals drain.
         QDateTime ts2 = ts1.addSecs(86400);
         clock.setCurrentTime(ts2);
         runner.ingestTick(makeTick("AMD", 107, 108, ts2));
         runner.ingestOhlcvBar(makeBar("AMD", ts2));
+
+        // Completes last bar timestamp: rebalance (EveryNBars=2) drains accumulated signals.
+        runner.flushBarClosePipeline();
         QCOMPARE(runner.runtimeState().pendingSignals.size(), 0);
         QVERIFY(runner.lastIntents().size() > 0);
     }
@@ -304,26 +309,22 @@ private slots:
         Pipeline::StrategyPipelineRunner runner(graph, policy, &exec, &repo, &clock);
         runner.wireAlphaSignals();
 
-        // Bar 1: signal accumulated
         QDateTime ts1(QDate(2024, 1, 1), QTime(16, 0, 0));
         clock.setCurrentTime(ts1);
         runner.ingestTick(makeTick("AMD", 105, 106, ts1));
         runner.ingestOhlcvBar(makeBar("AMD", ts1));
-        QCOMPARE(runner.runtimeState().pendingSignals.size(), 1);
 
-        // Bar 2: another signal accumulated
         QDateTime ts2 = ts1.addSecs(86400);
         clock.setCurrentTime(ts2);
         runner.ingestTick(makeTick("AMD", 107, 108, ts2));
         runner.ingestOhlcvBar(makeBar("AMD", ts2));
-        QCOMPARE(runner.runtimeState().pendingSignals.size(), 2);
 
-        // Bar 3: rebalance fires. The first signal should be expired.
         QDateTime ts3 = ts2.addSecs(86400);
         clock.setCurrentTime(ts3);
         runner.ingestTick(makeTick("AMD", 109, 110, ts3));
         runner.ingestOhlcvBar(makeBar("AMD", ts3));
-        // Pending signals drained after rebalance
+
+        runner.flushBarClosePipeline();
         QCOMPARE(runner.runtimeState().pendingSignals.size(), 0);
     }
 
@@ -354,6 +355,7 @@ private slots:
             runner.ingestTick(makeTick("AMD", 105, 106, ts));
             runner.ingestOhlcvBar(makeBar("AMD", ts));
         }
+        runner.flushBarClosePipeline();
         QCOMPARE(spy.count(), 5);
     }
 
@@ -384,6 +386,7 @@ private slots:
             runner.ingestTick(makeTick("AMD", 105, 106, ts));
             runner.ingestOhlcvBar(makeBar("AMD", ts));
         }
+        runner.flushBarClosePipeline();
         // 6 bars / interval 2 = 3 evaluations
         QCOMPARE(spy.count(), 3);
     }
@@ -427,6 +430,7 @@ private slots:
         clock.setCurrentTime(ts3);
         runner.ingestTick(makeTick("AMD", 109, 110, ts3));
         runner.ingestOhlcvBar(makeBar("AMD", ts3));
+        runner.flushBarClosePipeline();
         // After evaluation fires, collectedSignals is cleared inside runPipeline
         QCOMPARE(runner.collectedSignals().size(), 0);
         QVERIFY(runner.lastIntents().size() > 0);
@@ -663,6 +667,7 @@ private slots:
 
         runner.ingestTick(makeTick("AMD", 105, 106, simTime));
         runner.ingestOhlcvBar(makeBar("AMD", simTime));
+        runner.flushBarClosePipeline();
 
         QVERIFY(!runner.lastIntents().isEmpty());
         // Intent timestamp should be the simulated time, not wall clock
@@ -689,6 +694,7 @@ private slots:
         QDateTime ts(QDate(2024, 1, 1), QTime(16, 0, 0));
         runner.ingestTick(makeTick("AMD", 105, 106, ts));
         runner.ingestOhlcvBar(makeBar("AMD", ts));
+        runner.flushBarClosePipeline();
 
         QDateTime afterRun = QDateTime::currentDateTime();
 

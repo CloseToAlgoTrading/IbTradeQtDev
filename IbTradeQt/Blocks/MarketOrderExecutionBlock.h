@@ -3,9 +3,14 @@
 
 #include <QDateTime>
 #include <QJsonObject>
+#include <QSet>
 #include "../Pipeline/IExecutionBlock.h"
 #include "../Pipeline/IRebalanceBlock.h"
 #include "../Pipeline/ISelectionBlock.h"
+
+namespace Pipeline {
+struct PipelineRuntimeContext;
+}
 #include "../Ports/IOrderExecutionPort.h"
 
 namespace Blocks {
@@ -33,8 +38,11 @@ public slots:
         const QString& correlationId,
         const QDateTime& eventTime) override;
 
+    void setRuntimeContext(const Pipeline::PipelineRuntimeContext* ctx) override;
+
 private:
     Ports::IOrderExecutionPort* m_executionPort = nullptr;
+    const Pipeline::PipelineRuntimeContext* m_runtimeContext = nullptr;
     double m_minQuantity = 1.0;
 };
 
@@ -54,7 +62,7 @@ public:
         const QVector<Pipeline::Signal>& inputSignals,
         const QMap<QString, double>& currentPositions) override;
 
-    Pipeline::ModelDataList processSemantic(
+    QVector<Pipeline::TargetPosition> processSemanticTargets(
         const Pipeline::ModelDataList& in,
         const QMap<QString, double>& currentPositions,
         const QString& correlationId) override;
@@ -65,6 +73,20 @@ private:
         const QMap<QString, double>& currentPositions,
         const QString& correlationId) const;
 
+    /// For symbols with a position but not in \a newLongSelectionUpper, set target to 0 (unless
+    /// already present in \a targets, e.g. explicit sell row).
+    void appendFullExitsForDroppedHoldings(
+        QVector<Pipeline::TargetPosition>& targets,
+        const QMap<QString, double>& currentPositions,
+        const QSet<QString>& newLongSelectionUpper,
+        const QString& correlationId,
+        const QDateTime& eventTime) const;
+
+    double resolvePriceForSymbol(const QString& symbol) const;
+
+    bool m_equalWeight = false;
+    QString m_priceResolution = QStringLiteral("Day1");
+    QString m_priceDataSourceId = QStringLiteral("yahoo");
     double m_defaultQuantity = 100.0;
 };
 

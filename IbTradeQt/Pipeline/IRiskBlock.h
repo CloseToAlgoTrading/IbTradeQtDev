@@ -53,7 +53,15 @@ public:
         const QMap<QString, double>& currentPositions
     ) = 0;
 
-    /// Default: model → targets → `evaluate` per row → `modelDataFromTargetPositions`.
+    /// Native semantic path: approve/modify `TargetPosition` rows from rebalance (no `UnifiedModelData`
+    /// delta round-trip).
+    virtual QVector<TargetPosition> processSemanticTargets(
+        const QVector<TargetPosition>& targetsIn,
+        const QMap<QString, double>& currentPositions,
+        const QString& correlationId);
+
+    /// Legacy: model rows → `targetPositionsFromModelData` → `processSemanticTargets` →
+    /// `modelDataFromTargetPositions`.
     virtual ModelDataList processSemantic(
         const ModelDataList& in,
         const QMap<QString, double>& currentPositions,

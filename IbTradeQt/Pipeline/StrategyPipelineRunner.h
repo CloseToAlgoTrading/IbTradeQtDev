@@ -74,11 +74,12 @@ struct BlockGraph {
 //   that bypasses normal evaluation/rebalance gating.
 //
 // Multi-asset synchronisation:
-//   With daily bars, AMD and NVDA both close at the same timestamp.  The replayer
-//   emits all ticks for a timestamp before any barClose, then emits one barClose
-//   per symbol.  The runner deduplicates on timestamp: it runs the pipeline only
-//   on the first barClose for each unique timestamp, by which point all alpha
-//   blocks have already processed all ticks for that bar.
+//   With daily bars, many symbols share the same bar-close timestamp. The replayer
+//   emits one ohlcvBar per symbol (same timestamp). Alpha blocks must see onBarClose for
+//   every symbol at T before runPipeline() for that day. We run the pipeline
+//   when the timestamp advances (first bar of a new time) — completing the previous
+//   timestamp — and once more at backtest end via flushBarClosePipeline() for the
+//   final timestamp.
 class StrategyPipelineRunner : public QObject {
     Q_OBJECT
 
@@ -178,6 +179,7 @@ public:
         m_runtimeContext = ctx;
         m_runtimeContext.execution = m_executionPort;
         m_runtimeContext.positions = m_positionRepo;
+        m_runtimeContext.strategyId = strategyId();
         applyRuntimeContextToBlocks();
     }
 
@@ -211,14 +213,35 @@ public slots:
             risk->onTick(tick);
     }
 
-    /// Authoritative completed bar — alphas receive full OHLCV; runner dedupes on timestamp.
+    /// Authoritative completed bar — alphas receive full OHLCV; pipeline runs when time advances.
     void ingestOhlcvBar(const Pipeline::OHLCVBar& bar) {
+        if (m_lastOhlcvBarTimestamp.isValid() && bar.timestamp != m_lastOhlcvBarTimestamp) {
+            if (m_lastOhlcvBarTimestamp != m_lastPipelineCompletedForTimestamp) {
+                // Replayer advances the tick clock through synthetic OHLC before ohlcvBar; by the
+                // time we finalize the *previous* session, now() can already be the *next* day.
+                // Simulated fills and historical fallbacks must use the bar period we close.
+                syncSimulatedClockTo(m_lastOhlcvBarTimestamp);
+                runPipeline();
+                m_lastPipelineCompletedForTimestamp = m_lastOhlcvBarTimestamp;
+            }
+        }
+        // Alphas / sizing for this bar see the bar's session time (not a future tick).
+        syncSimulatedClockTo(bar.timestamp);
         for (auto* alpha : m_graph.alphaBlocks)
             alpha->onBarClose(bar);
-        if (bar.timestamp == m_lastBarCloseTs)
+        m_lastOhlcvBarTimestamp = bar.timestamp;
+    }
+
+    /// Call after the last ohlcvBar of a session (e.g. end of MarketDataReplayer::replay)
+    /// so the final timestamp is evaluated/rebalanced.
+    void flushBarClosePipeline() {
+        if (!m_lastOhlcvBarTimestamp.isValid())
             return;
-        m_lastBarCloseTs = bar.timestamp;
-        runPipeline();
+        if (m_lastOhlcvBarTimestamp != m_lastPipelineCompletedForTimestamp) {
+            syncSimulatedClockTo(m_lastOhlcvBarTimestamp);
+            runPipeline();
+            m_lastPipelineCompletedForTimestamp = m_lastOhlcvBarTimestamp;
+        }
     }
 
     void ingestTickByTick(const Pipeline::TickByTickTrade& trade) {
@@ -271,6 +294,14 @@ private slots:
     void onSemanticAlphaReady(const Pipeline::ModelDataList& out, const QString& correlationId);
 
 private:
+    /// Backtest: SimulatedClock only. No-op for WallClock (live).
+    void syncSimulatedClockTo(const QDateTime& t) {
+        if (!m_clock || !t.isValid())
+            return;
+        if (auto* sc = dynamic_cast<SimulatedClock*>(m_clock))
+            sc->setCurrentTime(t);
+    }
+
     void applyRuntimeContextToBlocks();
     void beginPipelineSubscriptionEpoch();
     void endPipelineSubscriptionEpoch();
@@ -453,11 +484,15 @@ private:
         auto result = m_positionRepo->getAllPositions(strategyId());
         if (result) {
             for (const auto& pos : *result) {
-                positions[pos.symbol] = pos.quantity;
+                const QString k = pos.symbol.trimmed().toUpper();
+                positions[k] = pos.quantity;
             }
         }
         return positions;
     }
+
+    /// Copies `getCurrentPositions()` into `m_runtimeContext.holdings` for blocks that read the context.
+    void refreshHoldings() { m_runtimeContext.holdings = getCurrentPositions(); }
 
     void advanceSemanticAlphaChain();
     void finishPipelineAfterSemanticAlpha();
@@ -478,7 +513,8 @@ private:
     PipelineRuntimeContext          m_runtimeContext;
     QVector<Signal>                 m_collectedSignals;
     QVector<ExecutionIntent>        m_lastIntents;
-    QDateTime                       m_lastBarCloseTs;
+    QDateTime                       m_lastOhlcvBarTimestamp;
+    QDateTime                       m_lastPipelineCompletedForTimestamp;
 
     QString                         m_semanticCorrId;
     ModelDataList                   m_semanticChain;

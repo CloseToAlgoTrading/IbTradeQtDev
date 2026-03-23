@@ -24,14 +24,23 @@ public:
     virtual QJsonObject config() const = 0;
     virtual void setConfig(const QJsonObject& config) = 0;
 
-    virtual void setRuntimeContext(const PipelineRuntimeContext* ctx) { (void)ctx; }
+    virtual void setRuntimeContext(const PipelineRuntimeContext* ctx) { m_runtimeContext = ctx; }
+    const PipelineRuntimeContext* runtimeContext() const { return m_runtimeContext; }
 
     virtual QVector<TargetPosition> rebalance(
         const QVector<Signal>& inputSignals,
         const QMap<QString, double>& currentPositions
     ) = 0;
 
-    /// Default: `signalsFromModelData` → `rebalance` → `modelDataFromTargetPositions` (single mapping path).
+    /// Alpha / selection model → **target positions** (absolute share targets per symbol).
+    /// Risk and execution consume `TargetPosition` in the native semantic path (`StrategyPipelineRunner`).
+    /// Default: `signalsFromModelData` → `rebalance(signals)`.
+    virtual QVector<TargetPosition> processSemanticTargets(
+        const ModelDataList& in,
+        const QMap<QString, double>& currentPositions,
+        const QString& correlationId);
+
+    /// Legacy wire format: `processSemanticTargets` → `modelDataFromTargetPositions` (delta-encoded rows).
     virtual ModelDataList processSemantic(
         const ModelDataList& in,
         const QMap<QString, double>& currentPositions,
@@ -40,6 +49,9 @@ public:
 signals:
     void rebalanceComplete(const QVector<TargetPosition>& targets);
     void errorOccurred(const QString& message);
+
+protected:
+    const PipelineRuntimeContext* m_runtimeContext = nullptr;
 };
 
 } // namespace Pipeline

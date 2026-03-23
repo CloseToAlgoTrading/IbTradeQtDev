@@ -17,7 +17,10 @@ QString StaticListSelectionBlock::name() const { return QStringLiteral("Static L
 
 QString StaticListSelectionBlock::description() const
 {
-    return QStringLiteral("Filters universe to a configured list of symbols");
+    return QStringLiteral(
+        "Keeps symbols that appear in both the configured list and the input universe; "
+        "if the universe is empty, uses the configured list alone. Updates subscription desired symbols. "
+        "Use PassAllSelectionBlock when no filtering is needed.");
 }
 
 QJsonObject StaticListSelectionBlock::config() const

@@ -75,6 +75,8 @@ public:
     QJsonObject strategyCatalogEntry(const QString& strategyId) const override;
     QJsonArray  listStrategyCatalog(bool includeArchived = false) const override;
     bool        archiveStrategyCatalogEntry(const QString& strategyId) override;
+    bool        deleteStrategyCatalogCascade(const QString& strategyId) override;
+    bool        isCatalogStrategyActiveInLive(const QString& strategyId) const override;
 
     QString     createStrategyVersion(const QString& strategyId,
                                        const QJsonObject& config,
