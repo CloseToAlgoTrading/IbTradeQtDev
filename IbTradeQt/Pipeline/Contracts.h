@@ -76,6 +76,7 @@ struct Signal {
     Q_PROPERTY(double confidence MEMBER confidence)
     Q_PROPERTY(Direction direction MEMBER direction)
     Q_PROPERTY(QString correlationId MEMBER correlationId)
+    Q_PROPERTY(double suggestedQuantity MEMBER suggestedQuantity)
 
 public:
     enum Direction { Buy, Sell, Hold };
@@ -87,6 +88,8 @@ public:
     QString correlationId;
     QDateTime timestamp;
     QString alphaBlockId;
+    /// > 0: rebalance may use this size instead of block default (maps to UnifiedModelData::amount).
+    double suggestedQuantity = 0.0;
 
     QJsonObject toJson() const {
         QJsonObject obj;
@@ -96,6 +99,7 @@ public:
         obj["correlationId"] = correlationId;
         obj["timestamp"] = timestamp.toString(Qt::ISODateWithMs);
         obj["alphaBlockId"] = alphaBlockId;
+        obj["suggestedQuantity"] = suggestedQuantity;
         return obj;
     }
 
@@ -107,6 +111,7 @@ public:
         s.correlationId = obj["correlationId"].toString();
         s.timestamp = QDateTime::fromString(obj["timestamp"].toString(), Qt::ISODateWithMs);
         s.alphaBlockId = obj["alphaBlockId"].toString();
+        s.suggestedQuantity = obj["suggestedQuantity"].toDouble(0.0);
         return s;
     }
 };

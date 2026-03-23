@@ -8,20 +8,120 @@
 #include "cgenericmodelApi.h"
 #include "cbasemodel.h"
 #include "cpipelinestrategyadapter.h"
+#include "cbasemodel.h"
 #include "ModelStateUtils.h"
 #include "mandatoryFieldKeys.h"
 #include "Pipeline/UniverseResolver.h"
 #include "Pipeline/StrategyRuntimePolicy.h"
 #include "ThemePalette.h"
+#include "Backtest/AssetUniverseInput.h"
+#include "Backtest/InstrumentClassification.h"
+#include "Backtest/InstrumentMetadataResolver.h"
+#include <QAbstractItemView>
+#include <QComboBox>
 #include <QFormLayout>
-#include <QVBoxLayout>
-#include <QStackedWidget>
+#include <QHBoxLayout>
+#include <QHeaderView>
+#include <QHash>
+#include <QJsonArray>
 #include <QLabel>
 #include <QLineEdit>
-#include <QTextEdit>
-#include <QTabWidget>
 #include <QScrollArea>
-#include <QJsonArray>
+#include <QSignalBlocker>
+#include <QStackedWidget>
+#include <QTableWidget>
+#include <QTableWidgetItem>
+#include <QTabWidget>
+#include <QTextEdit>
+#include <QVBoxLayout>
+
+namespace {
+
+using namespace Backtest;
+
+QStringList pipelineSymbolsFromConfig(const QJsonObject& cfg)
+{
+    QStringList allSymbols;
+    auto extract = [&](const QJsonObject& entry) {
+        QJsonObject blockCfg = entry.value(QStringLiteral("config")).toObject();
+        for (const auto& s : blockCfg.value(QStringLiteral("symbols")).toArray()) {
+            const QString sym = s.toString().trimmed().toUpper();
+            if (!sym.isEmpty() && !allSymbols.contains(sym))
+                allSymbols.append(sym);
+        }
+    };
+    QJsonValue selVal = cfg.value(QStringLiteral("selection"));
+    if (selVal.isArray()) {
+        for (const auto& entry : selVal.toArray())
+            extract(entry.toObject());
+    } else if (selVal.isObject()) {
+        extract(selVal.toObject());
+    }
+    return allSymbols;
+}
+
+QString sourceLabel(const EffectiveInstrumentProfile& p)
+{
+    switch (p.provenance) {
+    case InstrumentClassificationProvenance::ClassificationOverride:
+        return QStringLiteral("User");
+    case InstrumentClassificationProvenance::ProviderMetadata:
+        return p.providerId.isEmpty() ? QStringLiteral("Provider") : p.providerId;
+    case InstrumentClassificationProvenance::InferredHeuristic:
+        return QStringLiteral("Inferred");
+    case InstrumentClassificationProvenance::Indeterminate:
+    default:
+        return QStringLiteral("—");
+    }
+}
+
+QString notesForProfile(const EffectiveInstrumentProfile& p)
+{
+    if (p.effectiveAssetKind != AssetKind::Unknown)
+        return QString();
+    if (p.classificationOverrideAssetKind.has_value())
+        return QString();
+    return QStringLiteral("Unresolved");
+}
+
+QStringList classificationOverrideComboItems()
+{
+    QStringList items;
+    items << QStringLiteral("Auto");
+    const AssetKind kinds[] = {AssetKind::Equity,  AssetKind::Etf,     AssetKind::Forex,
+                               AssetKind::Crypto, AssetKind::Future,  AssetKind::Option,
+                               AssetKind::Index,  AssetKind::Fund,    AssetKind::Bond};
+    for (AssetKind k : kinds)
+        items << assetKindToString(k);
+    return items;
+}
+
+int comboIndexForOverride(const QString& classificationOverride)
+{
+    const QStringList items = classificationOverrideComboItems();
+    const QString co      = classificationOverride.trimmed();
+    if (co.isEmpty())
+        return 0;
+    for (int i = 1; i < items.size(); ++i) {
+        if (items.at(i).compare(co, Qt::CaseInsensitive) == 0)
+            return i;
+    }
+    return 0;
+}
+
+QString overrideKindForComboIndex(int idx)
+{
+    if (idx <= 0)
+        return QString();
+    const QStringList items = classificationOverrideComboItems();
+    if (idx >= 0 && idx < items.size())
+        return items.at(idx);
+    return QString();
+}
+
+} // namespace
+
+using namespace Backtest;
 
 StrategyWorkspace::StrategyWorkspace(QWidget* parent)
     : WorkspaceBase(parent)
@@ -128,53 +228,144 @@ void StrategyWorkspace::buildAssetsTab()
                                Layout::TabContentMargin, Layout::TabContentMargin);
     layout->setSpacing(Layout::SectionSpacing);
 
-    auto* hint = new QLabel("Symbols configured in the selection block(s) of this strategy's pipeline.",
-                             m_assetsWidget);
+    auto* hint = new QLabel(AssetUniverseInput::assetsTabDescription(), m_assetsWidget);
     hint->setObjectName(QStringLiteral("workspaceFormHint"));
     hint->setWordWrap(true);
     layout->addWidget(hint);
 
     layout->addWidget(new QLabel("<b>Asset Universe</b>", m_assetsWidget));
 
+    {
+        auto* h = new QHBoxLayout();
+        h->addWidget(new QLabel(QStringLiteral("Provider metadata:"), m_assetsWidget));
+        m_assetsProviderCombo = new QComboBox(m_assetsWidget);
+        m_assetsProviderCombo->addItem(QStringLiteral("Yahoo (backtest charts)"), QStringLiteral("yahoo"));
+        m_assetsProviderCombo->addItem(QStringLiteral("Interactive Brokers (live)"), QStringLiteral("ib"));
+        m_assetsProviderCombo->setToolTip(
+            QStringLiteral("Which InstrumentMetadata provider row to use for Effective type / Source when the database has rows."));
+        h->addWidget(m_assetsProviderCombo, 1);
+        layout->addLayout(h);
+        connect(m_assetsProviderCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int idx) {
+            if (m_assetsTableUpdating)
+                return;
+            auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(m_boundModel);
+            if (!adapter)
+                return;
+            const QString    id = m_assetsProviderCombo->itemData(idx).toString();
+            QVariantMap      p  = adapter->getParameters();
+            p[QStringLiteral("instrumentMetadataProviderId")] = id;
+            adapter->setParameters(p);
+            rebuildAssetsTable();
+        });
+    }
+
     m_assetsEdit = new QLineEdit(m_assetsWidget);
-    m_assetsEdit->setPlaceholderText("e.g. AAPL, MSFT, GOOG");
+    m_assetsEdit->setPlaceholderText(AssetUniverseInput::lineEditPlaceholder());
+    m_assetsEdit->setToolTip(AssetUniverseInput::lineEditToolTip());
     connect(m_assetsEdit, &QLineEdit::editingFinished, this, [this]() {
         if (!m_boundModel) return;
         auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(m_boundModel);
         if (!adapter) return;
 
-        QStringList symbols;
-        for (const auto& s : m_assetsEdit->text().split(','))
-            if (!s.trimmed().isEmpty())
-                symbols.append(s.trimmed());
+        const auto parsed = AssetUniverseInput::parseLine(m_assetsEdit->text());
+        const QStringList& symbolOrder = parsed.symbolOrder;
+        const QHash<QString, QString>& classificationBySymbol = parsed.classificationOverrideBySymbol;
 
         QJsonArray symArr;
-        for (const auto& s : symbols) symArr.append(s);
+        for (const QString& s : symbolOrder)
+            symArr.append(s);
 
-        QJsonObject cfg = adapter->pipelineConfig();
-        QJsonValue selVal = cfg.value("selection");
+        QJsonObject cfg     = adapter->pipelineConfig();
+        QJsonValue  selVal = cfg.value(QStringLiteral("selection"));
 
         if (selVal.isArray()) {
             QJsonArray arr = selVal.toArray();
             if (!arr.isEmpty()) {
-                QJsonObject entry = arr[0].toObject();
-                QJsonObject blockCfg = entry.value("config").toObject();
-                blockCfg["symbols"] = symArr;
-                entry["config"] = blockCfg;
-                arr[0] = entry;
-                cfg["selection"] = arr;
+                QJsonObject entry    = arr[0].toObject();
+                QJsonObject blockCfg = entry.value(QStringLiteral("config")).toObject();
+                blockCfg[QStringLiteral("symbols")] = symArr;
+                entry[QStringLiteral("config")]     = blockCfg;
+                arr[0]                              = entry;
+                cfg[QStringLiteral("selection")]    = arr;
             }
         } else if (selVal.isObject()) {
-            QJsonObject entry = selVal.toObject();
-            QJsonObject blockCfg = entry.value("config").toObject();
-            blockCfg["symbols"] = symArr;
-            entry["config"] = blockCfg;
-            cfg["selection"] = entry;
+            QJsonObject entry    = selVal.toObject();
+            QJsonObject blockCfg = entry.value(QStringLiteral("config")).toObject();
+            blockCfg[QStringLiteral("symbols")] = symArr;
+            entry[QStringLiteral("config")]     = blockCfg;
+            cfg[QStringLiteral("selection")]    = entry;
         }
 
+        QVariantMap assetList = adapter->assetList();
+        for (auto it = assetList.begin(); it != assetList.end();) {
+            if (!symbolOrder.contains(it.key()))
+                it = assetList.erase(it);
+            else
+                ++it;
+        }
+
+        auto* base = static_cast<CBaseModel*>(adapter);
+        for (const QString& sym : symbolOrder) {
+            QVariantMap entry = assetList.value(sym).toMap();
+            if (classificationBySymbol.contains(sym))
+                entry[QString::fromUtf8(AssetFields::Position::ClassificationOverride)] =
+                    classificationBySymbol.value(sym);
+            else
+                entry.remove(QString::fromUtf8(AssetFields::Position::ClassificationOverride));
+            assetList.insert(sym, base->createAssetEntry(entry));
+        }
+        adapter->setAssetList(assetList);
         adapter->setPipelineConfig(cfg);
+        rebuildAssetsTable();
     });
     layout->addWidget(m_assetsEdit);
+
+    m_assetsTableHint = new QLabel(
+        "Table: effective type and source use the instrument registry when the app database is connected. "
+        "Choose Yahoo vs IB above to match backtest vs live metadata. Override is a hard classification override for this strategy.",
+        m_assetsWidget);
+    m_assetsTableHint->setObjectName(QStringLiteral("workspaceFormHint"));
+    m_assetsTableHint->setWordWrap(true);
+    layout->addWidget(m_assetsTableHint);
+
+    m_assetsTable = new QTableWidget(0, 6, m_assetsWidget);
+    m_assetsTable->setHorizontalHeaderLabels({QStringLiteral("Symbol"),
+                                              QStringLiteral("Effective type"),
+                                              QStringLiteral("Source"),
+                                              QStringLiteral("Override"),
+                                              QStringLiteral("Session policy"),
+                                              QStringLiteral("Notes")});
+    m_assetsTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    m_assetsTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    m_assetsTable->setEditTriggers(QAbstractItemView::DoubleClicked | QAbstractItemView::EditKeyPressed
+                                     | QAbstractItemView::SelectedClicked);
+    layout->addWidget(m_assetsTable);
+
+    connect(m_assetsTable, &QTableWidget::itemChanged, this, [this](QTableWidgetItem* item) {
+        if (m_assetsTableUpdating || !item || item->column() != 4)
+            return;
+        auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(m_boundModel);
+        if (!adapter)
+            return;
+        const QString sym = item->data(Qt::UserRole).toString();
+        if (sym.isEmpty())
+            return;
+        auto* base     = static_cast<CBaseModel*>(adapter);
+        QVariantMap assetList = adapter->assetList();
+        QVariantMap entry     = assetList.value(sym).toMap();
+        const QString pol     = item->text().trimmed();
+        if (pol.isEmpty())
+            entry.remove(AssetFields::Position::SessionPolicy);
+        else
+            entry[AssetFields::Position::SessionPolicy] = pol;
+        assetList.insert(sym, base->createAssetEntry(entry));
+        adapter->setAssetList(assetList);
+        {
+            QSignalBlocker b(m_assetsEdit);
+            m_assetsEdit->setText(
+                AssetUniverseInput::formatLine(pipelineSymbolsFromConfig(adapter->pipelineConfig()), assetList));
+        }
+    });
 
     m_universeInfoLabel = new QLabel(m_assetsWidget);
     m_universeInfoLabel->setObjectName(QStringLiteral("workspaceFormHint"));
@@ -255,6 +446,7 @@ void StrategyWorkspace::onContextSet()
 
     setHeaderInfo(m_boundModel->getName(), breadcrumb, ds);
     refreshProperties();
+    syncAssetsProviderComboFromModel();
     refreshAssets();
     refreshPolicy();
     restoreStrategyProperties();
@@ -281,7 +473,12 @@ void StrategyWorkspace::onContextCleared()
     while (m_infoForm->rowCount() > 0)
         m_infoForm->removeRow(0);
 
-    if (m_assetsEdit) m_assetsEdit->clear();
+    if (m_assetsEdit)
+        m_assetsEdit->clear();
+    if (m_assetsTable)
+        m_assetsTable->setRowCount(0);
+    if (m_universeInfoLabel)
+        m_universeInfoLabel->clear();
     restoreStrategyProperties();
 }
 
@@ -407,38 +604,131 @@ void StrategyWorkspace::refreshInfo()
     }
 }
 
+void StrategyWorkspace::syncAssetsProviderComboFromModel()
+{
+    auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(m_boundModel);
+    if (!adapter || !m_assetsProviderCombo)
+        return;
+    const QString v =
+        adapter->getParameters().value(QStringLiteral("instrumentMetadataProviderId")).toString();
+    const bool ib = (v.compare(QLatin1String("ib"), Qt::CaseInsensitive) == 0);
+    QSignalBlocker b(m_assetsProviderCombo);
+    m_assetsProviderCombo->setCurrentIndex(ib ? 1 : 0);
+}
+
+void StrategyWorkspace::rebuildAssetsTable()
+{
+    if (!m_assetsTable || !m_boundModel)
+        return;
+    auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(m_boundModel);
+    if (!adapter) {
+        m_assetsTable->setRowCount(0);
+        return;
+    }
+
+    const QStringList symbols   = pipelineSymbolsFromConfig(adapter->pipelineConfig());
+    const QVariantMap assetList = adapter->assetList();
+    const QString dbConn = static_cast<CBaseModel*>(adapter)->databaseConnectionName();
+    const QString providerId =
+        m_assetsProviderCombo ? m_assetsProviderCombo->currentData().toString() : QStringLiteral("yahoo");
+
+    m_assetsTableUpdating = true;
+    m_assetsTable->setRowCount(0);
+
+    int row = 0;
+    for (const QString& sym : symbols) {
+        m_assetsTable->insertRow(row);
+        const QVariantMap entry = assetList.value(sym).toMap();
+
+        auto* symItem = new QTableWidgetItem(sym);
+        symItem->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+        symItem->setData(Qt::UserRole, sym);
+        m_assetsTable->setItem(row, 0, symItem);
+
+        const EffectiveInstrumentProfile prof =
+            InstrumentMetadataResolver::resolve(dbConn, sym, providerId, entry);
+
+        auto* effItem = new QTableWidgetItem(assetKindToString(prof.effectiveAssetKind));
+        effItem->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+        m_assetsTable->setItem(row, 1, effItem);
+
+        auto* srcItem = new QTableWidgetItem(sourceLabel(prof));
+        srcItem->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+        m_assetsTable->setItem(row, 2, srcItem);
+
+        auto* combo = new QComboBox(m_assetsTable);
+        combo->addItems(classificationOverrideComboItems());
+        {
+            QSignalBlocker cb(combo);
+            combo->setCurrentIndex(
+                comboIndexForOverride(entry.value(AssetFields::Position::ClassificationOverride).toString()));
+        }
+        const QString symCopy = sym;
+        connect(combo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this, symCopy](int idx) {
+            if (m_assetsTableUpdating)
+                return;
+            auto* ad = dynamic_cast<CPipelineStrategyAdapter*>(m_boundModel);
+            if (!ad)
+                return;
+            auto* base = static_cast<CBaseModel*>(ad);
+            QVariantMap al  = ad->assetList();
+            QVariantMap ent = al.value(symCopy).toMap();
+            const QString k = overrideKindForComboIndex(idx);
+            if (k.isEmpty())
+                ent.remove(AssetFields::Position::ClassificationOverride);
+            else
+                ent[AssetFields::Position::ClassificationOverride] = k;
+            al.insert(symCopy, base->createAssetEntry(ent));
+            ad->setAssetList(al);
+            {
+                QSignalBlocker b(m_assetsEdit);
+                m_assetsEdit->setText(
+                    AssetUniverseInput::formatLine(pipelineSymbolsFromConfig(ad->pipelineConfig()), al));
+            }
+            rebuildAssetsTable();
+        });
+        m_assetsTable->setCellWidget(row, 3, combo);
+
+        const QString sess = entry.value(AssetFields::Position::SessionPolicy).toString();
+        auto* sessItem     = new QTableWidgetItem(sess);
+        sessItem->setData(Qt::UserRole, sym);
+        sessItem->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled | Qt::ItemIsEditable);
+        m_assetsTable->setItem(row, 4, sessItem);
+
+        auto* noteItem = new QTableWidgetItem(notesForProfile(prof));
+        noteItem->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+        m_assetsTable->setItem(row, 5, noteItem);
+
+        ++row;
+    }
+    m_assetsTableUpdating = false;
+}
+
 void StrategyWorkspace::refreshAssets()
 {
-    if (!m_boundModel || !m_assetsEdit) return;
+    if (!m_boundModel || !m_assetsEdit)
+        return;
 
     auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(m_boundModel);
     if (!adapter) {
         m_assetsEdit->clear();
+        if (m_assetsTable)
+            m_assetsTable->setRowCount(0);
         return;
     }
 
-    const QJsonObject& cfg = adapter->pipelineConfig();
-    QStringList allSymbols;
+    const QJsonObject cfg        = adapter->pipelineConfig();
+    const QStringList allSymbols = pipelineSymbolsFromConfig(cfg);
+    const QVariantMap assetList  = adapter->assetList();
 
-    auto extractSymbols = [&](const QJsonObject& entry) {
-        QJsonObject blockCfg = entry.value("config").toObject();
-        for (const auto& s : blockCfg.value("symbols").toArray())
-            if (!allSymbols.contains(s.toString()))
-                allSymbols.append(s.toString());
-    };
-
-    QJsonValue selVal = cfg.value("selection");
-    if (selVal.isArray()) {
-        for (const auto& entry : selVal.toArray())
-            extractSymbols(entry.toObject());
-    } else if (selVal.isObject()) {
-        extractSymbols(selVal.toObject());
+    {
+        QSignalBlocker b(m_assetsEdit);
+        m_assetsEdit->setText(AssetUniverseInput::formatLine(allSymbols, assetList));
     }
-
-    m_assetsEdit->setText(allSymbols.join(", "));
 
     auto resolved = Pipeline::UniverseResolver::resolve(cfg);
     m_universeInfoLabel->setText(resolved.reason);
+    rebuildAssetsTable();
 }
 
 void StrategyWorkspace::refreshPolicy()

@@ -10,6 +10,9 @@
 #include "Blocks/MomentumAlphaBlock.h"
 #include "Blocks/MaxPositionRiskBlock.h"
 #include "Blocks/MarketOrderExecutionBlock.h"
+#include "Blocks/StaticListSelectionBlock.h"
+#include "Pipeline/IDataSubscriptionPort.h"
+#include "Pipeline/PipelineRuntimeContext.h"
 #include "Adapters/MockExecutionAdapter.h"
 #include "Adapters/MockPositionRepository.h"
 #include "Testing/MockMarketDataRouter.h"
@@ -49,6 +52,48 @@ private:
     bool m_fired = false;
 };
 
+/// Records IDataSubscriptionPort calls for integration tests (order + payloads).
+/// File scope (not anonymous namespace) so moc and TUs agree on one type.
+/// Distinct name from phase1/tst_subscription_request_store.h (also has a recorder).
+class RunnerRecordingSubscriptionPort : public Pipeline::IDataSubscriptionPort {
+public:
+    QStringList events;
+
+    void setDesiredSymbols(const QString& ownerId, const QVector<QString>& symbols) override
+    {
+        QString joined;
+        for (const QString& s : symbols) {
+            if (!joined.isEmpty())
+                joined += QLatin1Char(',');
+            joined += s;
+        }
+        events.append(QStringLiteral("setDesired:%1:%2").arg(ownerId, joined));
+    }
+
+    void setDesiredSymbolsWithKinds(const QString& ownerId, const QVector<QString>& symbols,
+                                    quint32 kindMask) override
+    {
+        QString joined;
+        for (const QString& s : symbols) {
+            if (!joined.isEmpty())
+                joined += QLatin1Char(',');
+            joined += s;
+        }
+        events.append(
+            QStringLiteral("setDesiredKinds:%1:%2:%3").arg(ownerId, joined).arg(kindMask));
+    }
+
+    void clearOwner(const QString& ownerId) override
+    {
+        events.append(QStringLiteral("clearOwner:%1").arg(ownerId));
+    }
+
+    void clearAll() override { events.append(QStringLiteral("clearAll")); }
+
+    void beginPipelineEvaluation() override { events.append(QStringLiteral("begin")); }
+
+    void endPipelineEvaluation() override { events.append(QStringLiteral("end")); }
+};
 
 class TestPipelineRunner : public QObject
 {
@@ -198,6 +243,62 @@ private slots:
 
         QCOMPARE(completedSpy.count(), 1);
         QCOMPARE(completedSpy.at(0).at(1).toInt(), 1); // 1 intent
+    }
+
+    /// Strong integration: real runner + BlockGraph + recording IDataSubscriptionPort.
+    /// Expect begin → StaticListSelectionBlock setDesired → end (per pipelineCompleted path).
+    void subscriptionEpoch_recordingPort_seesBeginSelectionThenEnd()
+    {
+        MockExecutionAdapter mockExec;
+        MockPositionRepository mockRepo;
+
+        Blocks::StaticListSelectionBlock selection;
+        {
+            QJsonObject cfg;
+            QJsonArray syms;
+            syms.append(QStringLiteral("AAPL"));
+            cfg[QStringLiteral("symbols")] = syms;
+            selection.setConfig(cfg);
+        }
+
+        RunnerTestAlpha alpha(100.0);
+        Blocks::SimpleRebalanceBlock rebalance;
+        Blocks::MarketOrderExecutionBlock execution;
+        execution.setExecutionPort(&mockExec);
+
+        Pipeline::BlockGraph graph;
+        graph.selectionBlocks.append(&selection);
+        graph.alphaBlocks.append(&alpha);
+        graph.strategyLevel.rebalance = &rebalance;
+        graph.executionBlock = &execution;
+
+        RunnerRecordingSubscriptionPort recording;
+        Pipeline::StrategyPipelineRunner runner(graph, &mockExec, &mockRepo);
+        runner.wireAlphaSignals();
+        {
+            Pipeline::PipelineRuntimeContext ctx;
+            ctx.subscription = &recording;
+            runner.setRuntimeContext(ctx);
+        }
+
+        MockMarketDataRouter mockRouter;
+        runner.connectToMockRouter(&mockRouter);
+
+        runner.setUniverse({QStringLiteral("AAPL")});
+        mockRouter.simulateTick(QStringLiteral("AAPL"), 101.0, 102.0);
+        runner.runPipeline();
+
+        QVERIFY(!recording.events.isEmpty());
+        QCOMPARE(recording.events.first(), QStringLiteral("begin"));
+        QCOMPARE(recording.events.last(), QStringLiteral("end"));
+        bool sawAapl = false;
+        for (const QString& e : recording.events) {
+            if (e.startsWith(QStringLiteral("setDesired:")) && e.contains(QStringLiteral("AAPL"))) {
+                sawAapl = true;
+                break;
+            }
+        }
+        QVERIFY2(sawAapl, "selection block should register AAPL on the subscription port");
     }
 
     void runPipelineWithSignals()

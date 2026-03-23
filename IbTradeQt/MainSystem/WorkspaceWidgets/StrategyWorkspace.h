@@ -7,6 +7,8 @@ class QFormLayout;
 class QLabel;
 class QLineEdit;
 class QTextEdit;
+class QTableWidget;
+class QComboBox;
 class EventLogPanel;
 class BlockInspectorPanel;
 class RuntimePolicyEditor;
@@ -44,6 +46,9 @@ private:
     void refreshAssets();
     void refreshPolicy();
 
+    void rebuildAssetsTable();
+    void syncAssetsProviderComboFromModel();
+
     // Overview
     QWidget*     m_overviewWidget   = nullptr;
     QLabel*      m_ovStateSummary   = nullptr;
@@ -66,9 +71,13 @@ private:
     QTextEdit*   m_logsText         = nullptr;
 
     // Assets
-    QWidget*     m_assetsWidget     = nullptr;
-    QLineEdit*   m_assetsEdit       = nullptr;
-    QLabel*      m_universeInfoLabel = nullptr;
+    QWidget*       m_assetsWidget     = nullptr;
+    QLineEdit*     m_assetsEdit       = nullptr;
+    QComboBox*     m_assetsProviderCombo = nullptr;
+    QTableWidget*  m_assetsTable      = nullptr;
+    QLabel*        m_assetsTableHint  = nullptr;
+    QLabel*        m_universeInfoLabel = nullptr;
+    bool           m_assetsTableUpdating = false;
 
     // Policy
     RuntimePolicyEditor* m_policyEditor = nullptr;

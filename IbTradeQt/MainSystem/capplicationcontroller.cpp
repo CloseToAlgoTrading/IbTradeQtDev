@@ -28,6 +28,7 @@
 #include "IModelTreeRepository.h"
 #include <utility>
 #include "cpipelinestrategyadapter.h"
+#include "Adapters/LiveHistoricalReadAdapter.h"
 #include "IBComClientImpl.h"
 #include "Pipeline/BlockRegistry.h"
 #include "Pipeline/PipelineConstants.h"
@@ -246,6 +247,8 @@ CApplicationController::CApplicationController(QObject *parent):
 
     CPipelineStrategyAdapter::setGlobalPositionRepo(m_pLivePositionRepo);
     CPipelineStrategyAdapter::setGlobalPersistentPositionRepo(m_pPositionRepo);
+
+    Pipeline::LiveHistoricalReadAdapter::setBrokerDataProvider(pMainPresenter->getDataProvider().data());
 
     /*** Test Code ***/
     // DBManager m_dbManager;

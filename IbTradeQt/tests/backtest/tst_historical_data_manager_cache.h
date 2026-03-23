@@ -11,6 +11,7 @@ class TestHistoricalDataManagerCache : public QObject {
 private slots:
     void preloadedRange_endOfDayTo_doesNotTriggerYahooGet();
     void secondIdenticalGetBars_doesNotIncrementRequestCount();
+    void getBars_withStrategyAssetMapUsesResolverPath();
 };
 
 #endif

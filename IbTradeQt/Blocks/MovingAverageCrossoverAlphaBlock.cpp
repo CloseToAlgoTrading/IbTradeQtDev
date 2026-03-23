@@ -98,4 +98,15 @@ double MovingAverageCrossoverAlphaBlock::sma(const QVector<double>& data, int pe
     return sum / period;
 }
 
+Pipeline::ModelDataList MovingAverageCrossoverAlphaBlock::processSemantic(
+    const Pipeline::ModelDataList& in,
+    const QString& correlationId)
+{
+    Q_UNUSED(correlationId);
+    // Crossover edge detection and m_prevFastAboveSlow are driven from onTick; tick
+    // signals are merged into the semantic ModelDataList by the runner. Passthrough
+    // avoids a second, inconsistent crossover pass here.
+    return in;
+}
+
 } // namespace Blocks

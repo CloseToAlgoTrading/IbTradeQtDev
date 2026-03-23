@@ -6,8 +6,10 @@
 #include <QMap>
 #include <QJsonObject>
 #include "Contracts.h"
+#include "SemanticTypes.h"
 
 namespace Pipeline {
+struct PipelineRuntimeContext;
 
 class IRebalanceBlock : public QObject {
     Q_OBJECT
@@ -22,10 +24,18 @@ public:
     virtual QJsonObject config() const = 0;
     virtual void setConfig(const QJsonObject& config) = 0;
 
+    virtual void setRuntimeContext(const PipelineRuntimeContext* ctx) { (void)ctx; }
+
     virtual QVector<TargetPosition> rebalance(
         const QVector<Signal>& inputSignals,
         const QMap<QString, double>& currentPositions
     ) = 0;
+
+    /// Default: `signalsFromModelData` → `rebalance` → `modelDataFromTargetPositions` (single mapping path).
+    virtual ModelDataList processSemantic(
+        const ModelDataList& in,
+        const QMap<QString, double>& currentPositions,
+        const QString& correlationId);
 
 signals:
     void rebalanceComplete(const QVector<TargetPosition>& targets);

@@ -41,6 +41,17 @@ public:
         m_legacyModel->stop();
     }
 
+    Pipeline::ModelDataList processSemantic(const Pipeline::ModelDataList& in,
+                                           const QString& correlationId) override
+    {
+        m_pendingSemanticCorrelationId = correlationId;
+        if (m_legacyModel && in)
+            m_legacyModel->processData(in);
+        return in;
+    }
+
+    bool semanticCompletionIsAsync() const override { return true; }
+
 public slots:
     void onTick(const Pipeline::MarketTick& tick) override {
         m_lastTick = tick;
@@ -48,7 +59,15 @@ public slots:
 
 private slots:
     void onLegacyDataProcessed(DataListPtr data) {
-        if (!data || data->isEmpty()) return;
+        if (!m_pendingSemanticCorrelationId.isEmpty()) {
+            const QString corr = m_pendingSemanticCorrelationId;
+            m_pendingSemanticCorrelationId.clear();
+            emit semanticReady(data ? data : createDataList(), corr);
+            return;
+        }
+
+        if (!data || data->isEmpty())
+            return;
 
         for (const auto& umd : *data) {
             Pipeline::Signal signal;
@@ -75,6 +94,7 @@ private:
 
     CBasicAlphaModel* m_legacyModel;
     Pipeline::MarketTick m_lastTick;
+    QString m_pendingSemanticCorrelationId;
 };
 
 #endif // ADAPTERS_ALPHAMODELADAPTER_H

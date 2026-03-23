@@ -1,4 +1,6 @@
 #include "Backtest/HistoricalDataManager.h"
+#include "Backtest/InstrumentInference.h"
+#include "Backtest/InstrumentMetadataResolver.h"
 #include "Backtest/MarketSessionUtils.h"
 #include "Backtest/YahooFinanceDataSource.h"
 #include "DB/dbquery.h"
@@ -7,7 +9,9 @@
 #include <QNetworkAccessManager>
 #include <QEventLoop>
 #include <QTimer>
+#include <QHash>
 #include <QLoggingCategory>
+#include <QVariantMap>
 
 Q_LOGGING_CATEGORY(lcHistData, "backtest.historical")
 
@@ -18,11 +22,15 @@ namespace {
 QDateTime effectiveToForYahooDay1(const QStringList& symbolsInBatch,
                                   const QString& dataSourceId,
                                   const QString& resolution,
-                                  const QDateTime& to)
+                                  const QDateTime& to,
+                                  const QString& dbConnectionName,
+                                  const QHash<QString, QVariantMap>& strategyAssetBySymbol = {})
 {
     if (dataSourceId != QLatin1String("yahoo") || resolution != QLatin1String("Day1"))
         return to;
-    if (symbolsInBatch.isEmpty() || !allSymbolsClassifyAsUsEquity(symbolsInBatch))
+    if (symbolsInBatch.isEmpty()
+        || !allSymbolsUseYahooUsCashEquitySessionDaily(dbConnectionName, dataSourceId, symbolsInBatch,
+                                                       strategyAssetBySymbol))
         return to;
     return clampEndDateTimeForUsEquityDaily(to);
 }
@@ -74,13 +82,15 @@ QVector<IBComm::HistoricalBar> HistoricalDataManager::getBars(
     const QString& dataSourceId,
     const QDateTime& from,
     const QDateTime& to,
-    QString* dataRefreshedAt)
+    QString* dataRefreshedAt,
+    const QHash<QString, QVariantMap>& strategyAssetBySymbol)
 {
     const QString fromUtc = toUtcIso(from);
     const QString toUtc   = toUtcIso(to);
 
     const QDateTime effectiveTo =
-        effectiveToForYahooDay1(QStringList{symbol}, dataSourceId, resolution, to);
+        effectiveToForYahooDay1(QStringList{symbol}, dataSourceId, resolution, to, m_dbConnectionName,
+                                strategyAssetBySymbol);
 
     CachedRange cached = queryCachedRange(symbol, resolution, dataSourceId);
 
@@ -104,7 +114,10 @@ QVector<IBComm::HistoricalBar> HistoricalDataManager::getBars(
         // Trailing gap is US equity weekend-only — Yahoo has no daily bars; skip fetch.
         if (needFetchAfter && !needFetchBefore && dataSourceId == QLatin1String("yahoo")
             && resolution == QLatin1String("Day1")
-            && classifyYahooSymbol(symbol) == InstrumentKind::EquityUs
+            && appliesYahooUsCashEquitySessionDaily(
+                   InstrumentMetadataResolver::resolve(m_dbConnectionName, symbol, dataSourceId,
+                                                     strategyAssetBySymbol.value(symbol))
+                       .effectiveAssetKind)
             && isWeekendOnlyYahooEquityGap(cachedMax.addDays(1), effectiveTo)) {
             needFetchAfter = false;
         }
@@ -148,10 +161,12 @@ QMap<QString, QVector<IBComm::HistoricalBar>> HistoricalDataManager::getBarsMult
     const QString& dataSourceId,
     const QDateTime& from,
     const QDateTime& to,
-    QString* dataRefreshedAt)
+    QString* dataRefreshedAt,
+    const QHash<QString, QVariantMap>& strategyAssetBySymbol)
 {
     const QDateTime effectiveTo =
-        effectiveToForYahooDay1(symbols, dataSourceId, resolution, to);
+        effectiveToForYahooDay1(symbols, dataSourceId, resolution, to, m_dbConnectionName,
+                                strategyAssetBySymbol);
 
     // Determine which symbols need fetching and what range is missing
     QStringList symbolsToFetch;
@@ -174,7 +189,10 @@ QMap<QString, QVector<IBComm::HistoricalBar>> HistoricalDataManager::getBarsMult
 
             if (needAfter && !needBefore && dataSourceId == QLatin1String("yahoo")
                 && resolution == QLatin1String("Day1")
-                && classifyYahooSymbol(sym) == InstrumentKind::EquityUs
+                && appliesYahooUsCashEquitySessionDaily(
+                       InstrumentMetadataResolver::resolve(m_dbConnectionName, sym, dataSourceId,
+                                                           strategyAssetBySymbol.value(sym))
+                           .effectiveAssetKind)
                 && isWeekendOnlyYahooEquityGap(cachedMax.addDays(1), effectiveTo)) {
                 needAfter = false;
             }
@@ -273,6 +291,7 @@ QVector<IBComm::HistoricalBar> HistoricalDataManager::fetchAndCache(
     if (dataSourceId == QLatin1String("yahoo")) {
         YahooFinanceDataSource source;
         source.setNetworkManager(m_networkManager);
+        source.setInstrumentMetadataDbConnection(m_dbConnectionName);
 
         QEventLoop loop;
         QObject::connect(&source, &IHistoricalDataSource::loadFinished,

@@ -1,4 +1,7 @@
 #include "Backtest/MarketSessionUtils.h"
+#include "Backtest/InstrumentInference.h"
+#include "Backtest/InstrumentMetadataResolver.h"
+#include <QSqlDatabase>
 #include <QTimeZone>
 
 namespace Backtest {
@@ -23,14 +26,9 @@ void chartEpochBoundsFromRange(const QDateTime& from, const QDateTime& to,
 
 } // namespace
 
-InstrumentKind classifyYahooSymbol(const QString& symbol)
+AssetKind classifyYahooSymbol(const QString& symbol)
 {
-    const QString s = symbol.trimmed();
-    if (s.contains(QLatin1Char('-')))
-        return InstrumentKind::Crypto;
-    if (s.endsWith(QLatin1String("=X")))
-        return InstrumentKind::Forex;
-    return InstrumentKind::EquityUs;
+    return inferAssetKindFromSymbolHeuristic(symbol);
 }
 
 bool isWeekendDateInNy(QDate nyDate)
@@ -53,15 +51,33 @@ QDateTime clampEndDateTimeForUsEquityDaily(const QDateTime& end)
     return clampedNy.toUTC();
 }
 
-bool allSymbolsClassifyAsUsEquity(const QStringList& symbols)
+bool allSymbolsUseYahooUsCashEquitySessionDaily(const QString& dbConnectionName,
+                                                const QString& providerId,
+                                                const QStringList& symbols,
+                                                const QHash<QString, QVariantMap>& strategyAssetBySymbol)
 {
     if (symbols.isEmpty())
         return false;
+    const bool dbOk = !dbConnectionName.isEmpty() && QSqlDatabase::database(dbConnectionName).isOpen();
     for (const QString& sym : symbols) {
-        if (classifyYahooSymbol(sym) != InstrumentKind::EquityUs)
+        AssetKind k;
+        if (dbOk) {
+            const QVariantMap entry = strategyAssetBySymbol.value(sym);
+            const EffectiveInstrumentProfile p =
+                InstrumentMetadataResolver::resolve(dbConnectionName, sym, providerId, entry);
+            k = p.effectiveAssetKind;
+        } else {
+            k = inferAssetKindFromSymbolHeuristic(sym);
+        }
+        if (!appliesYahooUsCashEquitySessionDaily(k))
             return false;
     }
     return true;
+}
+
+bool allSymbolsUseYahooUsCashEquitySessionDaily(const QStringList& symbols)
+{
+    return allSymbolsUseYahooUsCashEquitySessionDaily(QString(), QStringLiteral("yahoo"), symbols, {});
 }
 
 bool isWeekendOnlyChartWindowUtcNy(qint64 period1, qint64 period2)

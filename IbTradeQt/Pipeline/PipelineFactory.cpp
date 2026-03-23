@@ -22,7 +22,20 @@
 #include "IExecutionBlock.h"
 #include "ISignalMergePolicy.h"
 
+#include <QObject>
+
 namespace Pipeline {
+
+namespace {
+void applyPipelineInstanceId(QObject* block, const QJsonObject& blockCfg)
+{
+    if (!block)
+        return;
+    const QString iid = blockCfg.value(QStringLiteral("id")).toString().trimmed();
+    if (!iid.isEmpty())
+        block->setObjectName(iid);
+}
+} // namespace
 
 BlockGraph PipelineFactory::buildGraph(
     const QJsonObject& config,
@@ -37,6 +50,7 @@ BlockGraph PipelineFactory::buildGraph(
         QString blockId = selCfg.value(Key::BlockId).toString();
         ISelectionBlock* sel = createSelectionBlock(blockId);
         if (sel) {
+            applyPipelineInstanceId(sel, selCfg);
             sel->setConfig(selCfg.value(Key::Config).toObject());
             graph.selectionBlocks.append(sel);
         }
@@ -49,6 +63,7 @@ BlockGraph PipelineFactory::buildGraph(
 
         IAlphaBlock* alpha = createAlphaBlock(blockId);
         if (alpha) {
+            applyPipelineInstanceId(alpha, alphaCfg);
             alpha->setConfig(alphaCfg.value(Key::Config).toObject());
             graph.alphaBlocks.append(alpha);
         }
@@ -57,6 +72,7 @@ BlockGraph PipelineFactory::buildGraph(
     QString rebalanceId = config.value(Key::Rebalance).toObject().value(Key::BlockId).toString();
     graph.strategyLevel.rebalance = createRebalanceBlock(rebalanceId);
     if (graph.strategyLevel.rebalance) {
+        applyPipelineInstanceId(graph.strategyLevel.rebalance, config.value(Key::Rebalance).toObject());
         graph.strategyLevel.rebalance->setConfig(
             config.value(Key::Rebalance).toObject().value(Key::Config).toObject());
     }
@@ -67,6 +83,7 @@ BlockGraph PipelineFactory::buildGraph(
         QString riskId = riskCfg.value(Key::BlockId).toString();
         IRiskBlock* risk = createRiskBlock(riskId);
         if (risk) {
+            applyPipelineInstanceId(risk, riskCfg);
             risk->setConfig(riskCfg.value(Key::Config).toObject());
             graph.strategyLevel.risks.append(risk);
         }
@@ -75,6 +92,7 @@ BlockGraph PipelineFactory::buildGraph(
     QString execId = config.value(Key::Execution).toObject().value(Key::BlockId).toString();
     auto* execBlock = createExecutionBlock(execId);
     if (execBlock) {
+        applyPipelineInstanceId(execBlock, config.value(Key::Execution).toObject());
         execBlock->setConfig(
             config.value(Key::Execution).toObject().value(Key::Config).toObject());
         if (executionPort) {
@@ -108,12 +126,13 @@ Supervision::StrategyRuntime* PipelineFactory::createRuntime(
     const QJsonObject& config,
     Ports::IOrderExecutionPort* executionPort,
     Ports::IPositionRepositoryPort* positionRepo,
-    IBComm::MarketDataRouter* router)
+    IBComm::MarketDataRouter* router,
+    IDataSubscriptionPort* subscriptionPort)
 {
     PipelineDefinition def = buildDefinition(config, executionPort);
 
     auto* runtime = new Supervision::StrategyRuntime(
-        name, std::move(def), executionPort, positionRepo);
+        name, std::move(def), executionPort, positionRepo, subscriptionPort);
 
     if (router) {
         runtime->connectToMarketData(router);

@@ -2,6 +2,12 @@
 
 #include <QDebug>
 #include <QThread>
+#include "../Adapters/LiveHistoricalReadAdapter.h"
+#include "../Pipeline/IDataSubscriptionPort.h"
+#include "../Pipeline/PipelineRuntimeContext.h"
+#include "../Pipeline/RouterMarketDataAccessor.h"
+#include <QMetaObject>
+#include <memory>
 
 namespace Supervision {
 
@@ -10,12 +16,14 @@ StrategyRuntime::StrategyRuntime(
     Pipeline::BlockGraph graph,
     Ports::IOrderExecutionPort* executionPort,
     Ports::IPositionRepositoryPort* positionRepo,
+    Pipeline::IDataSubscriptionPort* subscriptionPort,
     QObject* parent)
     : QObject(parent)
     , m_name(name)
     , m_graph(std::move(graph))
     , m_executionPort(executionPort)
     , m_positionRepo(positionRepo)
+    , m_subscriptionPort(subscriptionPort)
 {
     initThread();
 }
@@ -25,6 +33,7 @@ StrategyRuntime::StrategyRuntime(
     Pipeline::PipelineDefinition definition,
     Ports::IOrderExecutionPort* executionPort,
     Ports::IPositionRepositoryPort* positionRepo,
+    Pipeline::IDataSubscriptionPort* subscriptionPort,
     QObject* parent)
     : QObject(parent)
     , m_name(name)
@@ -32,6 +41,7 @@ StrategyRuntime::StrategyRuntime(
     , m_runtimePolicy(definition.runtimePolicy)
     , m_executionPort(executionPort)
     , m_positionRepo(positionRepo)
+    , m_subscriptionPort(subscriptionPort)
 {
     initThread();
 }
@@ -50,6 +60,13 @@ StrategyRuntime::~StrategyRuntime()
 void StrategyRuntime::connectToMarketData(IBComm::MarketDataRouter* router)
 {
     m_runner->connectToMarketData(router);
+    m_routerMarketAccessor = std::make_unique<Pipeline::RouterMarketDataAccessor>(router);
+    QMetaObject::invokeMethod(
+        m_runner,
+        [this]() {
+            m_runner->setMarketDataAccessor(m_routerMarketAccessor.get());
+        },
+        Qt::QueuedConnection);
 }
 
 void StrategyRuntime::start()
@@ -135,6 +152,16 @@ void StrategyRuntime::initThread()
     m_runner = new Pipeline::StrategyPipelineRunner(
         m_graph, m_runtimePolicy, m_executionPort, m_positionRepo);
     m_runner->wireAlphaSignals();
+
+    {
+        Pipeline::PipelineRuntimeContext ctx;
+        if (Pipeline::LiveHistoricalReadAdapter::brokerDataProvider()) {
+            m_liveHistoricalRead = new Pipeline::LiveHistoricalReadAdapter(m_runner);
+            ctx.historical = m_liveHistoricalRead;
+        }
+        ctx.subscription = m_subscriptionPort;
+        m_runner->setRuntimeContext(ctx);
+    }
 
     m_runner->moveToThread(m_thread);
 

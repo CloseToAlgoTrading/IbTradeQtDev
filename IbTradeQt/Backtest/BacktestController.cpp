@@ -9,6 +9,8 @@
 #include <QDateTime>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QHash>
+#include <QVariantMap>
 #include <QMap>
 #include <QVector>
 #include <QLoggingCategory>
@@ -17,10 +19,32 @@
 #include <QtSql/QSqlQuery>
 #include <QtSql/QSqlError>
 #include <cmath>
+#include <memory>
 
 Q_LOGGING_CATEGORY(lcBacktestController, "backtest.controller")
 
 namespace Backtest {
+
+namespace {
+
+QHash<QString, QVariantMap> assetListJsonToHash(const QString& json)
+{
+    QHash<QString, QVariantMap> out;
+    if (json.trimmed().isEmpty())
+        return out;
+    QJsonParseError err;
+    const QJsonDocument d = QJsonDocument::fromJson(json.toUtf8(), &err);
+    if (err.error != QJsonParseError::NoError || !d.isObject())
+        return out;
+    const QJsonObject o = d.object();
+    for (auto it = o.begin(); it != o.end(); ++it) {
+        if (it.value().isObject())
+            out.insert(it.key(), it.value().toObject().toVariantMap());
+    }
+    return out;
+}
+
+} // namespace
 
 BacktestController::BacktestController(const QString& dbFileName,
                                         QNetworkAccessManager* networkManager,
@@ -165,15 +189,16 @@ void BacktestController::start(const BacktestRunConfig& config) {
     const QString dbFileName = QSqlDatabase::database(m_dbConnectionName).databaseName();
 
     // Worker function: runs on the background thread
-    const QString dataSourceId     = config.dataSourceId;
-    const QString resolution       = config.resolution;
+    const QString dataSourceId     = resolvedConfig.dataSourceId;
+    const QString resolution       = resolvedConfig.resolution;
     QNetworkAccessManager* netMgr  = m_networkManager;
     BacktestController* self       = this;
-    QStringList symbols            = config.symbols;
-    QDateTime   startDate          = config.startDate;
-    QDateTime   endDate            = config.endDate;
+    QStringList symbols            = resolvedConfig.symbols;
+    QDateTime   startDate          = resolvedConfig.startDate;
+    QDateTime   endDate            = resolvedConfig.endDate;
 
-    const QString benchmarkSymbol = config.benchmarkSymbol;
+    const QString benchmarkSymbol = resolvedConfig.benchmarkSymbol;
+    const QHash<QString, QVariantMap> strategyAssets = assetListJsonToHash(resolvedConfig.assetListJson);
 
     connect(m_workerThread, &QThread::started, m_session, [=]() mutable {
         // Scope the QSqlDatabase handle so no instance outlives removeDatabase (Qt requirement).
@@ -187,21 +212,25 @@ void BacktestController::start(const BacktestRunConfig& config) {
 
             // Use HistoricalDataManager to fetch and cache strategy bars.
             // Pass the bars directly to BacktestSession to eliminate the double-fetch.
+            // Keep the manager alive for the whole session so `IHistoricalRead` (semantic alphas)
+            // can query the same cache during replay.
+            std::unique_ptr<HistoricalDataManager> histMgr;
             if (dbOk && dataSourceId == QLatin1String("yahoo")) {
-                HistoricalDataManager mgr(workerConnName, netMgr);
+                histMgr = std::make_unique<HistoricalDataManager>(workerConnName, netMgr);
                 QString refreshedAt;
                 QMap<QString, QVector<IBComm::HistoricalBar>> strategyBars =
-                    mgr.getBarsMulti(symbols, resolution, dataSourceId,
-                                     startDate, endDate, &refreshedAt);
+                    histMgr->getBarsMulti(symbols, resolution, dataSourceId,
+                                          startDate, endDate, &refreshedAt, strategyAssets);
 
                 // Inject pre-fetched strategy bars — BacktestSession will skip its own fetch
                 m_session->setPreloadedBars(strategyBars);
+                m_session->setHistoricalDataManager(histMgr.get());
 
                 // Pre-fetch and inject benchmark bars too (avoid second network round-trip)
                 if (!benchmarkSymbol.isEmpty()) {
                     QMap<QString, QVector<IBComm::HistoricalBar>> bmMap =
-                        mgr.getBarsMulti({benchmarkSymbol}, QStringLiteral("Day1"),
-                                         dataSourceId, startDate, endDate, nullptr);
+                        histMgr->getBarsMulti({benchmarkSymbol}, QStringLiteral("Day1"),
+                                              dataSourceId, startDate, endDate, nullptr, strategyAssets);
                     m_session->setPreloadedBenchmarkBars(bmMap.value(benchmarkSymbol));
                 }
 
@@ -229,6 +258,8 @@ void BacktestController::start(const BacktestRunConfig& config) {
                     self->m_dataRefreshedAt = refreshedAt;
                     self->m_lastHistBars    = uiBars;
                 }, Qt::QueuedConnection);
+            } else {
+                m_session->setHistoricalDataManager(nullptr);
             }
             // For CSV/JSONL sources, BacktestSession handles loading itself (no network)
 

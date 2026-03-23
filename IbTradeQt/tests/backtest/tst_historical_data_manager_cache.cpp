@@ -4,8 +4,11 @@
 
 #include "Backtest/HistoricalDataManager.h"
 #include "DB/dbquery.h" // CREATE_TABLE_HISTORICAL_BARS
+#include "Strategies/Generic/mandatoryFieldKeys.h"
 
 #include <QtTest>
+#include <QHash>
+#include <QVariantMap>
 #include <QSqlDatabase>
 #include <QSqlQuery>
 #include <QSqlError>
@@ -114,6 +117,50 @@ void TestHistoricalDataManagerCache::secondIdenticalGetBars_doesNotIncrementRequ
     QCOMPARE(c2, 0);
     QVERIFY(r1.isEmpty());
     QVERIFY(r2.isEmpty());
+
+    {
+        QSqlDatabase db = QSqlDatabase::database(conn);
+        if (db.isOpen())
+            db.close();
+    }
+    QSqlDatabase::removeDatabase(conn);
+}
+
+void TestHistoricalDataManagerCache::getBars_withStrategyAssetMapUsesResolverPath()
+{
+    const QString conn = QStringLiteral("hist_cache_tst3_") + QUuid::createUuid().toString(QUuid::WithoutBraces);
+
+    QTemporaryFile dbFile;
+    dbFile.setAutoRemove(true);
+    QVERIFY(dbFile.open());
+    dbFile.close();
+
+    {
+        QSqlDatabase db = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), conn);
+        db.setDatabaseName(dbFile.fileName());
+        QVERIFY(db.open());
+        createHistoricalBarsTable(conn);
+        insertSpyDailyRange(conn, QDate(2020, 1, 1), QDate(2020, 1, 10));
+    }
+
+    MockNetworkAccessManager nam;
+    HistoricalDataManager mgr(conn, &nam);
+
+    const QDateTime from = QDateTime(QDate(2020, 1, 1), QTime(0, 0), QTimeZone::utc());
+    const QDateTime to   = QDateTime(QDate(2020, 1, 10), QTime(23, 59, 59), QTimeZone::utc());
+
+    QHash<QString, QVariantMap> strat;
+    QVariantMap                 spyEntry;
+    spyEntry[AssetFields::Position::ClassificationOverride] = QStringLiteral("Forex");
+    strat.insert(QStringLiteral("SPY"), spyEntry);
+
+    QString refreshed;
+    const auto bars = mgr.getBars(QStringLiteral("SPY"), QStringLiteral("Day1"),
+                                  QStringLiteral("yahoo"), from, to, &refreshed, strat);
+
+    QCOMPARE(nam.requestCount(), 0);
+    QVERIFY(refreshed.isEmpty());
+    QCOMPARE(bars.size(), 10);
 
     {
         QSqlDatabase db = QSqlDatabase::database(conn);

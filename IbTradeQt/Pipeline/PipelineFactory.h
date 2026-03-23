@@ -20,6 +20,7 @@ class MarketDataRouter;
 
 namespace Pipeline {
 
+class IDataSubscriptionPort;
 class ISelectionBlock;
 class IAlphaBlock;
 class IRebalanceBlock;
@@ -42,7 +43,8 @@ public:
         const QJsonObject& config,
         Ports::IOrderExecutionPort* executionPort,
         Ports::IPositionRepositoryPort* positionRepo,
-        IBComm::MarketDataRouter* router = nullptr);
+        IBComm::MarketDataRouter* router = nullptr,
+        IDataSubscriptionPort* subscriptionPort = nullptr);
 
 private:
     static ISelectionBlock* createSelectionBlock(const QString& blockId);

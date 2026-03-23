@@ -2,6 +2,7 @@
 #define PIPELINE_METATYPES_H
 
 #include "Contracts.h"
+#include "SemanticTypes.h"
 #include <QMetaType>
 
 namespace Pipeline {
@@ -19,6 +20,7 @@ inline void registerPipelineMetaTypes()
     qRegisterMetaType<Pipeline::Signal>("Pipeline::Signal");
     qRegisterMetaType<Pipeline::TargetPosition>("Pipeline::TargetPosition");
     qRegisterMetaType<Pipeline::ExecutionIntent>("Pipeline::ExecutionIntent");
+    qRegisterMetaType<DataListPtr>("DataListPtr");
 }
 
 } // namespace Pipeline

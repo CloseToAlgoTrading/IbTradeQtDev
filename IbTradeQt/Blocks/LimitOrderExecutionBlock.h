@@ -1,6 +1,7 @@
 #ifndef BLOCKS_LIMITORDEREXECUTIONBLOCK_H
 #define BLOCKS_LIMITORDEREXECUTIONBLOCK_H
 
+#include <QDateTime>
 #include <QJsonObject>
 #include "../Pipeline/IExecutionBlock.h"
 #include "../Ports/IOrderExecutionPort.h"
@@ -23,6 +24,12 @@ public:
 
 public slots:
     void execute(const QVector<Pipeline::ExecutionIntent>& intents) override;
+
+    void executeSemantic(
+        const Pipeline::ModelDataList& in,
+        const QMap<QString, double>& currentPositions,
+        const QString& correlationId,
+        const QDateTime& eventTime) override;
 
 private:
     Ports::IOrderExecutionPort* m_executionPort = nullptr;

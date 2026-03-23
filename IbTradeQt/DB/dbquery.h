@@ -291,6 +291,26 @@ static const char* const CREATE_TABLE_HISTORICAL_BARS =
     "volume       REAL, "
     "PRIMARY KEY (symbol, resolution, dataSourceId, timestamp))";
 
+// App-wide instrument metadata registry (provider truth). Generic name; created with backtest tables today.
+static const char* const TABLE_INSTRUMENT_METADATA = "InstrumentMetadata";
+static const char* const CREATE_TABLE_INSTRUMENT_METADATA =
+    "CREATE TABLE IF NOT EXISTS InstrumentMetadata ("
+    "providerSymbol TEXT NOT NULL, "
+    "providerId     TEXT NOT NULL, "
+    "assetKind      TEXT NOT NULL, "
+    "sourceRawType  TEXT, "
+    "currency       TEXT, "
+    "exchange       TEXT, "
+    "displayName    TEXT, "
+    "tradingScheduleId TEXT, "
+    "rawJson        TEXT, "
+    "updatedAt      TEXT NOT NULL, "
+    "PRIMARY KEY (providerSymbol, providerId))";
+
+// Idempotent migration for existing DBs created before tradingScheduleId
+static const char* const ALTER_INSTRUMENT_METADATA_ADD_TRADING_SCHEDULE_ID =
+    "ALTER TABLE InstrumentMetadata ADD COLUMN tradingScheduleId TEXT";
+
 // ---------------------------------------------------------------------------
 // Backtest query functions
 // ---------------------------------------------------------------------------
@@ -418,6 +438,41 @@ inline QSqlQuery query_upsertHistoricalBar(const DbHistoricalBar& b, const QStri
     q.bindValue(":low",          b.low);
     q.bindValue(":close",        b.close);
     q.bindValue(":volume",       b.volume);
+    return q;
+}
+
+inline QSqlQuery query_upsertInstrumentMetadata(const DbInstrumentMetadata& m, const QString& conn)
+{
+    QSqlQuery q(QSqlDatabase::database(conn));
+    q.prepare(
+        "INSERT OR REPLACE INTO InstrumentMetadata "
+        "(providerSymbol, providerId, assetKind, sourceRawType, currency, exchange, displayName, "
+        "tradingScheduleId, rawJson, updatedAt) "
+        "VALUES (:psym,:pid,:akind,:sraw,:ccy,:exch,:dname,:tsch,:rjson,:upd)");
+    q.bindValue(":psym",  m.providerSymbol);
+    q.bindValue(":pid",   m.providerId);
+    q.bindValue(":akind", m.assetKind);
+    q.bindValue(":sraw",  m.sourceRawType);
+    q.bindValue(":ccy",   m.currency);
+    q.bindValue(":exch",  m.exchange);
+    q.bindValue(":dname", m.displayName);
+    q.bindValue(":tsch",  m.tradingScheduleId);
+    q.bindValue(":rjson", m.rawJson);
+    q.bindValue(":upd",   m.updatedAt);
+    return q;
+}
+
+inline QSqlQuery query_selectInstrumentMetadata(const QString& providerSymbol,
+                                                  const QString& providerId,
+                                                  const QString& conn)
+{
+    QSqlQuery q(QSqlDatabase::database(conn));
+    q.prepare(
+        "SELECT providerSymbol, providerId, assetKind, sourceRawType, currency, exchange, displayName, "
+        "tradingScheduleId, rawJson, updatedAt "
+        "FROM InstrumentMetadata WHERE providerSymbol = :psym AND providerId = :pid");
+    q.bindValue(":psym", providerSymbol);
+    q.bindValue(":pid",  providerId);
     return q;
 }
 

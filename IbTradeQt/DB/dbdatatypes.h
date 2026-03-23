@@ -174,6 +174,20 @@ struct DbHistoricalBar {
     double  volume  = 0.0;
 };
 
+/// Provider-scoped instrument metadata (mutable snapshot; latest upsert wins).
+struct DbInstrumentMetadata {
+    QString providerSymbol;
+    QString providerId;       // "yahoo" | "ib" | "csv" | …
+    QString assetKind;        // Backtest::AssetKind string
+    QString sourceRawType;
+    QString currency;
+    QString exchange;
+    QString displayName;
+    QString tradingScheduleId; ///< optional v1 placeholder for future session/schedule id
+    QString rawJson;          // optional debug/trace; bounded in writers
+    QString updatedAt;        // UTC ISO 8601
+};
+
 // Lightweight summary row returned by slotFetchRunsForStrategy
 struct DbBacktestRunSummary {
     QString runId;

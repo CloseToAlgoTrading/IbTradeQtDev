@@ -27,6 +27,11 @@ public:
         const QVector<Pipeline::TargetPosition>& allTargets,
         const QMap<QString, double>& currentPositions) override;
 
+    Pipeline::ModelDataList processSemantic(
+        const Pipeline::ModelDataList& in,
+        const QMap<QString, double>& currentPositions,
+        const QString& correlationId) override;
+
 private:
     double m_maxPositionSize = 1000.0;
     double m_maxTotalExposure = 10000.0;

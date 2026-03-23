@@ -777,4 +777,18 @@ IbTradeQt/
 
 ---
 
+## Legacy-aligned semantic pipeline (ModelDataList)
+
+- **Inter-stage payload:** `Pipeline::ModelDataList` (`DataListPtr` / `UnifiedModelData`) is the canonical semantic handoff; OHLCV is **not** carried on that chain. Conversions to `Pipeline::Signal` for rebalance are centralized in `Pipeline/SemanticModelDataMapper.{h,cpp}` (single source of truth).
+- **`semanticPipeline`:** When the strategy pipeline JSON sets `"semanticPipeline": true` (top-level key, same object as `alphas` / `rebalance` / `execution`), `StrategyPipelineRunner::runPipeline` builds a model-data list from selection, runs each alpha’s `processSemantic()` (sync or async — see below), then **`Pipeline::mergeModelDataWithTickSignals`** (`SemanticPipelineChain.cpp`) merges tick-accumulated `Signal`s into that `ModelDataList` (last row wins per symbol when combining). Config `combineTickAndSemanticSignals` (default `true`) controls that merge.
+- **`semanticModelRebalance`:** When `true` (default if omitted), after the merge above the runner keeps **`ModelDataList`** through rebalance/risk/execution: `IRebalanceBlock::processSemantic`, `IRiskBlock::processSemantic`, then `IExecutionBlock::executeSemantic` (defaults delegate to existing `rebalance` / `evaluate` / `execute` via the mapper). When `false`, the merged model is converted once to `Pipeline::Signal` via `SemanticMapping::signalsFromModelData`, then the legacy **`rebalance(Signal…)` → `applyRiskBlock` → intents** path runs (same as a non-semantic pipeline after alpha output).
+- **Runtime ports:** `Pipeline::PipelineRuntimeContext` injects `IMarketDataAccessor`, `IHistoricalRead`, and the runner reuses execution/position ports. Backtest wires `BacktestMarketDataAccessor` over `MarketPriceStore`. When `BacktestController` prefetches Yahoo bars, it keeps a worker-thread `HistoricalDataManager` alive for the whole session and passes it to `BacktestSession::setHistoricalDataManager`; the session builds `BacktestHistoricalReadAdapter` so native blocks use the same cache via `IHistoricalRead::getBars`. Live subscription union uses `Pipeline::MarketDataCoordinator` inside `CPipelineStrategyAdapter::syncLiveMarketDataSubscriptionsTo` (Option C — no ad hoc `reqMktData` in native blocks).
+- **Correlation:** Each `runPipeline` pass generates a UUID `correlationId` passed through `processSemantic`, `Signal`, `TargetPosition`, and `ExecutionIntent` for tracing.
+- **Async alphas:** If `IAlphaBlock::semanticCompletionIsAsync()` is `true`, the runner waits for `semanticReady(ModelDataList, correlationId)` instead of using the synchronous return value of `processSemantic` for that block (e.g. `AlphaModelAdapter` when the legacy model finishes in `dataProcessed`). Otherwise `processSemantic` completes on the bar-close thread. Tick/bar `signalGenerated` still applies for non-semantic or parallel paths; use `combineTickAndSemanticSignals: false` if tick and semantic paths must not double-count.
+- **Signals:** `Pipeline::Signal::suggestedQuantity` maps to `UnifiedModelData::amount`; `SimpleRebalanceBlock` uses it when `> 0`.
+
+**Live historical check (optional):** Set `IBTRADING_SEMANTIC_LIVE_TESTS=1` when running `ibtrading_tests` so `TestSemanticPipelineLiveHistorical` is registered; it downloads real Yahoo daily bars and runs a short-window backtest with `semanticPipeline` + `semanticModelRebalance` (see `tests/BACKTEST_TESTING.md`).
+
+---
+
 *See [ARCHITECTURE.md](ARCHITECTURE.md) for the full system architecture and [BACKTESTER_DESIGN.md](BACKTESTER_DESIGN.md) for the backtester design.*

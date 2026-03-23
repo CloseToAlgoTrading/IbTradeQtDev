@@ -68,6 +68,8 @@ inline void registerPortfolioFields(IMandatoryFields& m)
     m.registerMandatoryAssetField(AssetFields::Position::PnL, 0.0);
     m.registerMandatoryAssetField(AssetFields::Position::AvgPrice, 0.0);
     m.registerMandatoryAssetField(AssetFields::Position::Quantity, 0.0);
+    m.registerMandatoryAssetField(AssetFields::Position::ClassificationOverride, "");
+    m.registerMandatoryAssetField(AssetFields::Position::SessionPolicy, "");
 }
 
 inline void registerStrategyFields(IMandatoryFields& m)
@@ -97,6 +99,8 @@ inline void registerStrategyFields(IMandatoryFields& m)
     m.registerMandatoryAssetField(AssetFields::Position::PnL, 0.0);
     m.registerMandatoryAssetField(AssetFields::Position::AvgPrice, 0.0);
     m.registerMandatoryAssetField(AssetFields::Position::Quantity, 0.0);
+    m.registerMandatoryAssetField(AssetFields::Position::ClassificationOverride, "");
+    m.registerMandatoryAssetField(AssetFields::Position::SessionPolicy, "");
 }
 
 } // namespace MandatoryFieldRegistration

@@ -7,6 +7,7 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QFile>
+#include <QUuid>
 
 #include "Pipeline/PipelineFactory.h"
 #include "Testing/MockMarketDataRouter.h"
@@ -14,6 +15,12 @@
 #include "Adapters/MockPositionRepository.h"
 #include "Supervision/Supervisor.h"
 #include "Strategies/Generic/ModelType.h"
+#include "Strategies/Generic/cpipelinestrategyadapter.h"
+#include "Backtest/MarketPriceStore.h"
+#include "Backtest/SimulatedLedger.h"
+#include "Common/IClock.h"
+#include <QCoreApplication>
+#include <memory>
 
 class TestPipelineStrategyAdapter : public QObject
 {
@@ -288,6 +295,42 @@ private slots:
     void modelType_strategyPipelineExists()
     {
         QCOMPARE(static_cast<int>(ModelType::STRATEGY_PIPELINE), 13);
+    }
+
+    /// CPipelineStrategyAdapter as IDataSubscriptionPort: begin → setDesired → end
+    /// runs deferred merge + refresh (pure backtest: no IB; exercises store + refresh path).
+    void cpipelinestrategyadapter_subscriptionEpoch_deferredMergeAfterEnd()
+    {
+        QJsonObject pipelineConfig;
+        pipelineConfig[QStringLiteral("alphas")] = QJsonArray();
+        pipelineConfig[QStringLiteral("risks")] = QJsonArray();
+
+        CPipelineStrategyAdapter adapter;
+        adapter.setId(QUuid::createUuid());
+        adapter.setName(QStringLiteral("SubEpochTest"));
+        adapter.setPipelineConfig(pipelineConfig);
+
+        Backtest::MarketPriceStore priceStore;
+        auto clock = std::make_unique<SimulatedClock>();
+        auto ledger = std::make_unique<Backtest::SimulatedLedger>(100'000.0, &priceStore);
+        MockExecutionAdapter execPort;
+
+        CPipelineStrategyAdapter::BacktestContext ctx;
+        ctx.execPort = &execPort;
+        ctx.clock = clock.get();
+        ctx.ledger = ledger.get();
+        adapter.injectBacktestContext(ctx);
+
+        QVERIFY(adapter.start());
+        Pipeline::StrategyPipelineRunner* runner = adapter.backtestPipelineRunner();
+        QVERIFY(runner != nullptr);
+
+        adapter.beginPipelineEvaluation();
+        adapter.setDesiredSymbols(QStringLiteral("demoOwner"), {QStringLiteral("AAPL")});
+        adapter.endPipelineEvaluation();
+        QCoreApplication::processEvents();
+
+        QVERIFY(adapter.backtestPipelineRunner() == runner);
     }
 };
 

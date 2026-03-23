@@ -17,6 +17,10 @@
 #include "IExecutionBlock.h"
 #include "ISignalMergePolicy.h"
 #include "Scope.h"
+#include "SemanticModelDataMapper.h"
+#include "SemanticPipelineChain.h"
+#include "PipelineRuntimeContext.h"
+#include "IMarketDataAccessor.h"
 #include "../Ports/IOrderExecutionPort.h"
 #include "../Ports/IPositionRepositoryPort.h"
 #include "../Common/IClock.h"
@@ -142,16 +146,23 @@ public:
     /// IB adapter: implementation in StrategyPipelineRunner.cpp (no IB headers in this file).
     void connectToMarketData(IBComm::MarketDataRouter* router);
 
-    // Wire alpha signal collection and risk proactive signals.
+    // Wire alpha signal collection, async semantic completion, risk proactive signals,
+    // and semantic risk violations → runner riskRejection.
     void wireAlphaSignals() {
         for (auto* alpha : m_graph.alphaBlocks) {
             connect(alpha, &IAlphaBlock::signalGenerated,
                     this, &StrategyPipelineRunner::onAlphaSignal,
                     Qt::DirectConnection);
+            connect(alpha, &IAlphaBlock::semanticReady,
+                    this, &StrategyPipelineRunner::onSemanticAlphaReady,
+                    Qt::QueuedConnection);
         }
         for (auto* risk : allRiskBlocks()) {
             connect(risk, &IRiskBlock::riskSignalGenerated,
                     this, &StrategyPipelineRunner::onRiskProactiveSignal,
+                    Qt::DirectConnection);
+            connect(risk, &IRiskBlock::riskViolation,
+                    this, &StrategyPipelineRunner::riskRejection,
                     Qt::DirectConnection);
         }
     }
@@ -161,6 +172,17 @@ public:
     }
 
     void setClock(IClock* clock) { m_clock = clock; }
+
+    /// Injected ports for all pipeline blocks (realtime/historical/orders/positions). Same types in backtest and live.
+    void setRuntimeContext(const PipelineRuntimeContext& ctx) {
+        m_runtimeContext = ctx;
+        m_runtimeContext.execution = m_executionPort;
+        m_runtimeContext.positions = m_positionRepo;
+        applyRuntimeContextToBlocks();
+    }
+
+    /// Live: inject last-tick accessor (e.g. RouterMarketDataAccessor) after MarketDataRouter is connected.
+    void setMarketDataAccessor(IMarketDataAccessor* accessor);
 
     void setRuntimePolicy(const StrategyRuntimePolicy& policy) {
         m_runtimePolicy = policy;
@@ -228,116 +250,32 @@ public slots:
     }
 
     // Run the full pipeline with evaluation and rebalance gating.
-    void runPipeline() {
-        const QString corrId = QUuid::createUuid().toString(QUuid::WithoutBraces);
-        const QDateTime ts = now();
-
-        m_runtimeState.totalBarsSeen++;
-
-        // --- Evaluation gate ---
-        // Increment first: counts events since last completed evaluation.
-        // N=1 fires every event (1 >= 1). N=3 fires every 3rd event.
-        m_runtimeState.barsSinceEvaluation++;
-        if (!m_runtimePolicy.shouldEvaluateNow(m_runtimeState, ts)) {
-            return;
-        }
-        m_runtimeState.barsSinceEvaluation = 0;
-        m_runtimeState.lastEvaluationTime = ts;
-
-        // 1. Selection
-        QVector<QString> universe = runSelection();
-
-        // 2. Alpha (always runs when evaluation is allowed)
-        QVector<Signal> alphaSignals = mergeSignals(m_collectedSignals, corrId);
-        m_collectedSignals.clear();
-
-        // --- Rebalance gate (same increment-before-check pattern) ---
-        m_runtimeState.barsSinceRebalance++;
-        if (!m_runtimePolicy.shouldRebalanceNow(m_runtimeState, ts)) {
-            if (m_runtimePolicy.accumulateAlphaSignals) {
-                for (const auto& sig : alphaSignals) {
-                    m_runtimeState.pendingSignals.append(
-                        {sig, ts, m_runtimeState.totalBarsSeen});
-                }
-            }
-            emit pipelineCompleted(corrId, 0);
-            return;
-        }
-        m_runtimeState.barsSinceRebalance = 0;
-        m_runtimeState.lastRebalanceTime = ts;
-
-        // Drain accumulated signals (expire stale ones if policy says so)
-        QVector<Signal> allSignals;
-        for (const auto& ps : m_runtimeState.pendingSignals) {
-            if (m_runtimePolicy.signalExpiryBars > 0
-                && (m_runtimeState.totalBarsSeen - ps.createdBarIndex)
-                    > m_runtimePolicy.signalExpiryBars)
-                continue; // expired
-            allSignals.append(ps.signal);
-        }
-        allSignals += alphaSignals;
-        m_runtimeState.pendingSignals.clear();
-
-        // 3. Rebalance -- allocation only, no timing logic
-        QMap<QString, double> currentPos = getCurrentPositions();
-        QVector<TargetPosition> targets = runMultiLevelRebalance(
-            allSignals, universe, currentPos, corrId);
-
-        // 4. Risk -- validate/modify targets
-        QVector<ExecutionIntent> intents = runMultiLevelRisk(targets, currentPos, corrId);
-        m_lastIntents = intents;
-
-        // 5. Execution
-        executeIntents(intents);
-
-        emit pipelineCompleted(corrId, intents.size());
-    }
+    void runPipeline();
 
     // Inject signals externally (used by tests).
-    void runPipelineWithSignals(const QVector<Signal>& inputSignals) {
-        const QString corrId = QUuid::createUuid().toString(QUuid::WithoutBraces);
-
-        QVector<QString> universe = runSelection();
-        QVector<Signal> alphaSignals = mergeSignals(inputSignals, corrId);
-        QMap<QString, double> currentPos = getCurrentPositions();
-        QVector<TargetPosition> targets = runMultiLevelRebalance(alphaSignals, universe, currentPos, corrId);
-        QVector<ExecutionIntent> intents = runMultiLevelRisk(targets, currentPos, corrId);
-        m_lastIntents = intents;
-
-        executeIntents(intents);
-        emit pipelineCompleted(corrId, intents.size());
-    }
+    void runPipelineWithSignals(const QVector<Signal>& inputSignals);
 
     // Dedicated emergency path for proactive risk signals. Bypasses evaluation
     // and rebalance gating. Does not run selection or alpha. Does not use
     // pending/accumulated alpha signals or standard rebalance allocation.
     // buildEmergencyTargets() produces pre-risk candidate targets, then
     // runMultiLevelRisk() validates/adjusts them exactly once.
-    void runEmergencyRiskPipeline(const Pipeline::Signal& riskSignal) {
-        const QString corrId = QUuid::createUuid().toString(QUuid::WithoutBraces);
-        const QDateTime ts = now();
-
-        if (m_runtimePolicy.riskCanCancelPendingOrders && m_executionPort)
-            (void)m_executionPort->cancelAllPending();
-
-        QMap<QString, double> currentPos = getCurrentPositions();
-        QVector<TargetPosition> candidates =
-            buildEmergencyTargets(riskSignal, currentPos, ts, corrId);
-
-        QVector<ExecutionIntent> intents =
-            runMultiLevelRisk(candidates, currentPos, corrId);
-        m_lastIntents = intents;
-
-        executeIntents(intents);
-        emit pipelineCompleted(corrId, intents.size());
-    }
+    void runEmergencyRiskPipeline(const Pipeline::Signal& riskSignal);
 
 signals:
     void pipelineCompleted(const QString& correlationId, int intentCount);
     void riskRejection(const QString& symbol, const QString& reason);
     void executionError(const QString& symbol, const QString& error);
 
+private slots:
+    void onSemanticAlphaReady(const Pipeline::ModelDataList& out, const QString& correlationId);
+
 private:
+    void applyRuntimeContextToBlocks();
+    void beginPipelineSubscriptionEpoch();
+    void endPipelineSubscriptionEpoch();
+    void emitPipelineCompleted(const QString& correlationId, int intentCount);
+
     QVector<IRiskBlock*> allRiskBlocks() const {
         QVector<IRiskBlock*> all;
         all += m_graph.strategyLevel.risks;
@@ -521,6 +459,15 @@ private:
         return positions;
     }
 
+    void advanceSemanticAlphaChain();
+    void finishPipelineAfterSemanticAlpha();
+    void runSemanticModelPipeline(
+        const ModelDataList& mdIn,
+        const QMap<QString, double>& currentPos,
+        const QString& corrId,
+        const QDateTime& ts,
+        const QVector<QString>& universe);
+
     BlockGraph                      m_graph;
     StrategyRuntimePolicy           m_runtimePolicy;
     RuntimeState                    m_runtimeState;
@@ -528,9 +475,17 @@ private:
     Ports::IOrderExecutionPort*     m_executionPort;
     Ports::IPositionRepositoryPort* m_positionRepo;
     IClock*                         m_clock = nullptr;
+    PipelineRuntimeContext          m_runtimeContext;
     QVector<Signal>                 m_collectedSignals;
     QVector<ExecutionIntent>        m_lastIntents;
     QDateTime                       m_lastBarCloseTs;
+
+    QString                         m_semanticCorrId;
+    ModelDataList                   m_semanticChain;
+    int                             m_semanticIdx = 0;
+    IAlphaBlock*                    m_pendingAsyncAlpha = nullptr;
+    QDateTime                       m_pipelineEventTs;
+    QVector<QString>                m_pipelineUniverse;
 };
 
 } // namespace Pipeline

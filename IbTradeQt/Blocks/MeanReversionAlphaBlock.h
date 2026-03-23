@@ -24,10 +24,15 @@ public:
     void initialize() override;
     void shutdown() override;
 
+    Pipeline::ModelDataList processSemantic(const Pipeline::ModelDataList& in,
+                                           const QString& correlationId) override;
+
 public slots:
     void onTick(const Pipeline::MarketTick& tick) override;
 
 private:
+    double zScoreForSymbol(const QString& symbol) const;
+
     int m_period = 20;
     double m_stdDevThreshold = 2.0;
     QMap<QString, QVector<double>> m_priceHistory;

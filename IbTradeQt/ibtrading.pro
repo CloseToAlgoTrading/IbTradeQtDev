@@ -167,10 +167,19 @@ SOURCES += \
     Backtest/SimulatedExecutionAdapter.cpp \
     Backtest/BacktestMetricsCollector.cpp \
     Backtest/BacktestSession.cpp \
+    Backtest/BacktestHistoricalReadAdapter.cpp \
+    Backtest/BacktestMarketDataAccessor.cpp \
     Backtest/BacktestWorkspaceSession.cpp \
     Backtest/BacktestRunPersistence.cpp \
     Backtest/YahooFinanceDataSource.cpp \
     Backtest/MarketSessionUtils.cpp \
+    Backtest/InstrumentClassification.cpp \
+    Backtest/InstrumentInference.cpp \
+    Backtest/InstrumentClassificationMappers.cpp \
+    Backtest/InstrumentNormalization.cpp \
+    Backtest/InstrumentMetadataResolver.cpp \
+    Backtest/AssetUniverseInput.cpp \
+    Backtest/InstrumentMetadataIb.cpp \
     Backtest/HistoricalDataManager.cpp \
     Backtest/BacktestController.cpp \
     BacktestUI/BacktestWorkspaceDock.cpp \
@@ -196,6 +205,17 @@ SOURCES += \
     Pipeline/PipelineTreeUtils.cpp \
     Pipeline/PipelineLog.cpp \
     Pipeline/StrategyPipelineRunner.cpp \
+    Pipeline/IAlphaBlock.cpp \
+    Pipeline/IRebalanceBlock.cpp \
+    Pipeline/IRiskBlock.cpp \
+    Pipeline/IExecutionBlock.cpp \
+    Pipeline/SemanticModelDataMapper.cpp \
+    Pipeline/SemanticPipelineChain.cpp \
+    Adapters/LiveHistoricalReadAdapter.cpp \
+    Pipeline/MarketDataCoordinator.cpp \
+    Pipeline/SubscriptionRequestStore.cpp \
+    Pipeline/NoOpSubscriptionPort.cpp \
+    Pipeline/RouterMarketDataAccessor.cpp \
     Pipeline/PipelineFactory.cpp \
     Pipeline/BlockGraphSerializer.cpp \
     Pipeline/UniverseResolver.cpp \
@@ -240,6 +260,19 @@ HEADERS += \
     Common/IClock.h \
     ThirdParty/expected.hpp \
     Pipeline/Contracts.h \
+    Pipeline/SemanticTypes.h \
+    Pipeline/SemanticModelDataMapper.h \
+    Pipeline/SemanticPipelineChain.h \
+    Adapters/LiveHistoricalReadAdapter.h \
+    Pipeline/PipelineRuntimeContext.h \
+    Pipeline/IDataSubscriptionPort.h \
+    Pipeline/SubscriptionRequestStore.h \
+    Pipeline/NoOpSubscriptionPort.h \
+    Pipeline/RouterMarketDataAccessor.h \
+    Pipeline/BlockSubscriptionUtils.h \
+    Pipeline/IHistoricalRead.h \
+    Pipeline/IMarketDataAccessor.h \
+    Pipeline/MarketDataCoordinator.h \
     Pipeline/Scope.h \
     Pipeline/IAlphaBlock.h \
     Pipeline/ISelectionBlock.h \
@@ -356,9 +389,18 @@ HEADERS += \
     Backtest/CsvHistoricalDataSource.h \
     Backtest/YahooFinanceDataSource.h \
     Backtest/MarketSessionUtils.h \
+    Backtest/InstrumentClassification.h \
+    Backtest/InstrumentInference.h \
+    Backtest/InstrumentClassificationMappers.h \
+    Backtest/InstrumentNormalization.h \
+    Backtest/InstrumentMetadataResolver.h \
+    Backtest/AssetUniverseInput.h \
+    Backtest/InstrumentMetadataIb.h \
     Backtest/BenchmarkComparison.h \
     Backtest/BacktestReportWriter.h \
     Backtest/BacktestSession.h \
+    Backtest/BacktestHistoricalReadAdapter.h \
+    Backtest/BacktestMarketDataAccessor.h \
     Backtest/BacktestWorkspaceSession.h \
     Backtest/BacktestRunPersistence.h \
     Backtest/BacktestDataTypes.h \

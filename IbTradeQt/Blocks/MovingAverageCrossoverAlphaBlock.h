@@ -28,6 +28,9 @@ public:
 
     void onHistoricalBars(const QVector<Pipeline::OHLCVBar>& bars);
 
+    Pipeline::ModelDataList processSemantic(const Pipeline::ModelDataList& in,
+                                           const QString& correlationId) override;
+
 public slots:
     void onTick(const Pipeline::MarketTick& tick) override;
 

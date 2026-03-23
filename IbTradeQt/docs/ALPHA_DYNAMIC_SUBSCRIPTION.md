@@ -157,19 +157,36 @@ flowchart LR
 Today’s LEGO pipeline is built so that:
 
 - **Market data enters only via** `StrategyPipelineRunner::ingestTick` / `ingestOhlcvBar` (and optional tick-by-tick).
-- **Blocks** do not subscribe themselves; the **app** wires **one feed** (router or replayer) to the runner.
+- **Blocks** do not call `reqMktData` themselves; the **app** wires **one feed** (router or replayer) to the runner.
+- **Blocks may request** a streaming symbol set via **`Pipeline::IDataSubscriptionPort`** on `PipelineRuntimeContext::subscription`. The strategy **`CPipelineStrategyAdapter`** implements that port, merges contributions in **`SubscriptionRequestStore`** with `UniverseResolver` / `assetList()` inside **`computeTradeableSymbolSet()`**, then applies diffs through **`refreshMarketUniverseAndSubscriptions()`** (queued when a block updates its request).
 
 **Dynamic subscription** is therefore an **orchestration** concern:
 
-- **Who** computes the active symbol set (often: alpha logic + position/risk policy).
-- **Who** calls the broker to **change** subscriptions (presenter / adapter / supervisor).
-- **When** to refresh (on bar close, on universe change, on timer).
+- **Who** computes the active symbol set (universe config + optional block requests + later: positions / overlays).
+- **Who** calls the broker to **change** subscriptions (still **`CPipelineStrategyAdapter::syncLiveMarketDataSubscriptionsTo`** only).
+- **When** to refresh: after **`setDesiredSymbols` / `clearOwner`** (adapter schedules refresh on its thread).
 
 That keeps the **pipeline** deterministic and testable while **live** behavior stays efficient.
 
 ---
 
-## 9. Summary
+## 9. Option C in this codebase (coordinator + central ingress)
+
+These pieces implement the **hybrid** described in `docs/PIPELINE_ARCHITECTURE.md` (central feed + subscription union + read-through accessors):
+
+| Piece | Role |
+|-------|------|
+| **`Pipeline::IDataSubscriptionPort`** (`Pipeline/IDataSubscriptionPort.h`) | Blocks call **`setDesiredSymbols(ownerId, symbols)`** / **`clearOwner`**; wire subscribe stays out of blocks. |
+| **`Pipeline::SubscriptionRequestStore`** | Thread-safe owner → symbols map; merged into **`computeTradeableSymbolSet()`**. |
+| **`Pipeline::MarketDataCoordinator`** (`Pipeline/MarketDataCoordinator.{h,cpp}`) | Computes **subscribe / unsubscribe** diffs for the union of symbols strategies need. |
+| **`CPipelineStrategyAdapter::syncLiveMarketDataSubscriptionsTo`** | Applies that union to the live market-data path (no per-block `reqMktData`). |
+| **`StrategyPipelineRunner::ingestTick` / `ingestOhlcvBar`** | Sole ingress from `MarketDataRouter` or `MarketDataReplayer` to pipeline blocks. |
+| **`Pipeline::mergeModelDataWithTickSignals`** (`Pipeline/SemanticPipelineChain.{h,cpp}`) | Single merge of semantic `ModelDataList` with tick-accumulated `Signal`s before conversion to `Signal` for rebalance (one mapping choke point). |
+| **`IMarketDataAccessor` / `IHistoricalRead`** | Blocks read prices or history through **injected** ports; backtest uses `BacktestMarketDataAccessor` / `BacktestHistoricalReadAdapter`, live uses the same interfaces with `LiveHistoricalReadAdapter` + broker (`LiveHistoricalReadAdapter::setBrokerDataProvider`). |
+
+---
+
+## 10. Summary
 
 | Question | Short answer |
 |----------|----------------|
@@ -179,8 +196,62 @@ That keeps the **pipeline** deterministic and testable while **live** behavior s
 
 ---
 
-## 10. See also
+## 11. See also
 
 - `docs/PIPELINE_ARCHITECTURE.md` — pipeline layers and broker boundary.
 - `Pipeline/UniverseResolver.h` — how selection config resolves static symbol lists vs external universe.
-- `Strategies/Generic/cpipelinestrategyadapter.h` — `syncLiveMarketDataSubscriptionsTo` / `computeTradeableSymbolSet` for live wiring patterns.
+- `Strategies/Generic/cpipelinestrategyadapter.h` — `IDataSubscriptionPort` implementation, `syncLiveMarketDataSubscriptionsTo` / `computeTradeableSymbolSet` for live wiring patterns.
+
+---
+
+## 12. What is implemented in this repo (as of the subscription port work)
+
+### 12.1 Wire-level kinds (`IDataSubscriptionPort`)
+
+`Pipeline::IDataSubscriptionPort` (`Pipeline/IDataSubscriptionPort.h`) supports a **bitmask** of `SubscriptionKind` per owner contribution:
+
+| Kind | Meaning | Live path |
+|------|-----------|-----------|
+| **TopOfBook** | Level-1 / last quote style stream | `reqMktData`-style subscription via `MarketDataCoordinator` + `CPipelineStrategyAdapter::syncLiveMarketDataSubscriptionsTo` |
+| **RealtimeBars** | Streaming OHLC bars | Routed through the RT-bars coordinator in the same sync |
+| **TickByTick** | Tick-by-tick trades | Routed through the TBT coordinator (`reqTickByTickData`-style config) |
+
+`setDesiredSymbols` defaults to **TopOfBook** only. Use `setDesiredSymbolsWithKinds(ownerId, symbols, kindMask)` when a block needs multiple APIs for the same symbol (OR bits together).
+
+`SubscriptionRequestStore::mergeSymbolKindMasks(baseSymbols)` OR-combines masks per symbol; base universe symbols get **TopOfBook** by default so the tradeable set always has a sensible minimum.
+
+### 12.2 One evaluation epoch per pipeline run
+
+`StrategyPipelineRunner` calls **`beginPipelineEvaluation()`** on the injected port **after** evaluation gating passes and **before** selection runs, and **`endPipelineEvaluation()`** when the run finishes (via `emitPipelineCompleted`, including early exits).
+
+On **`CPipelineStrategyAdapter`**, that maps to:
+
+- **Begin:** `SubscriptionRequestStore::clearAll()` + defer broker refresh (`m_deferSubscriptionRefresh = true`) so blocks refill owner rows during the same run without stale cross-run data.
+- **End:** clear defer + `refreshMarketUniverseAndSubscriptions()` (merges block requests with `computeBaseSymbolList()`, updates supervisor universe / backtest runner universe, and in **Live** mode applies the three coordinator channels to IB).
+
+### 12.3 Base symbol list (tradeable superset)
+
+`CPipelineStrategyAdapter::computeBaseSymbolList()` unions:
+
+- Resolved **selection / asset list** (via `UniverseResolver` / `assetList()`),
+- **Open positions** for the strategy (when live position data is available),
+- **Backtest profile default benchmark** and optional **`subscriptionOverlaySymbols`** in pipeline JSON (extra indices/hedges/overlays).
+
+`computeTradeableSymbolSet()` returns `mergeUnion(computeBaseSymbolList())` against `SubscriptionRequestStore`.
+
+### 12.4 Runtime wiring
+
+| Mode | `PipelineRuntimeContext::subscription` | `marketData` (last tick) |
+|------|----------------------------------------|---------------------------|
+| **Live** (`StrategyRuntime`) | `CPipelineStrategyAdapter` (same object implements the port) | `RouterMarketDataAccessor` after `connectToMarketData` (delegates to `MarketDataRouter::lastPrice` / `hasLastTick`) |
+| **Backtest session** (`BacktestSession`) | `NoOpSubscriptionPort` (no broker effect; blocks may still call the port for tests) | `BacktestMarketDataAccessor` |
+
+### 12.5 Stable owner IDs from pipeline JSON
+
+`PipelineFactory` sets `QObject::objectName` from each block entry’s **`"id"`** field when present. `Pipeline::subscriptionOwnerId` (`Pipeline/BlockSubscriptionUtils.h`) prefers `objectName()` so owner keys look like `alpha:<pipeline-instance-id>` instead of only `alpha:<type>:<pointer>`.
+
+### 12.6 Tests
+
+- **Store / bitmask:** `tests/phase1/tst_subscription_request_store.h` (`mergeSymbolKindMasks`, recording port contract).
+- **Runner + port:** `tests/phase3/tst_pipeline_runner.h` — `subscriptionEpoch_recordingPort_seesBeginSelectionThenEnd` uses `RunnerRecordingSubscriptionPort` with a real `StrategyPipelineRunner` + `StaticListSelectionBlock` (verifies **begin → block `setDesired` → end** ordering).
+- **Adapter epoch (pure backtest):** `tests/integration/tst_pipeline_strategy_adapter.h` — `CPipelineStrategyAdapter` **begin / setDesired / end** on a started pure-backtest adapter (no crash; `QCoreApplication::processEvents` after end).

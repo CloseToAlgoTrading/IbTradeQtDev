@@ -1,5 +1,7 @@
 #include "MarketOrderExecutionBlock.h"
 
+#include "../Pipeline/SemanticModelDataMapper.h"
+#include <QDateTime>
 #include <QJsonObject>
 #include <cmath>
 
@@ -49,6 +51,18 @@ void MarketOrderExecutionBlock::execute(const QVector<Pipeline::ExecutionIntent>
     }
 }
 
+void MarketOrderExecutionBlock::executeSemantic(
+    const Pipeline::ModelDataList& in,
+    const QMap<QString, double>& currentPositions,
+    const QString& correlationId,
+    const QDateTime& eventTime)
+{
+    const QVector<Pipeline::ExecutionIntent> intents =
+        Pipeline::SemanticMapping::executionIntentsFromModelData(
+            in, currentPositions, correlationId, eventTime);
+    execute(intents);
+}
+
 SimpleRebalanceBlock::SimpleRebalanceBlock(QObject* parent)
     : IRebalanceBlock(parent)
 {}
@@ -79,14 +93,69 @@ QVector<Pipeline::TargetPosition> SimpleRebalanceBlock::rebalance(
         Pipeline::TargetPosition tp;
         tp.symbol = sig.symbol;
         tp.currentQuantity = currentPositions.value(sig.symbol, 0.0);
-        tp.targetQuantity = (sig.direction == Pipeline::Signal::Buy)
-            ? m_defaultQuantity : -m_defaultQuantity;
+        if (sig.suggestedQuantity > 0.0) {
+            tp.targetQuantity = (sig.direction == Pipeline::Signal::Buy)
+                ? sig.suggestedQuantity : -sig.suggestedQuantity;
+        } else {
+            tp.targetQuantity = (sig.direction == Pipeline::Signal::Buy)
+                ? m_defaultQuantity : -m_defaultQuantity;
+        }
         tp.reason = sig.alphaBlockId;
         tp.correlationId = sig.correlationId;
         tp.timestamp = sig.timestamp;
         targets.append(tp);
     }
     return targets;
+}
+
+QVector<Pipeline::TargetPosition> SimpleRebalanceBlock::targetsFromModelRows(
+    const Pipeline::ModelDataList& in,
+    const QMap<QString, double>& currentPositions,
+    const QString& correlationId) const
+{
+    QVector<Pipeline::TargetPosition> targets;
+    if (!in)
+        return targets;
+
+    const QDateTime ts = QDateTime::currentDateTimeUtc();
+
+    for (const auto& row : *in) {
+        if (row.direction == DIRECTION_UNDEFINED && row.amount == 0.0 && row.probability == 0.0)
+            continue;
+
+        Pipeline::Signal::Direction dir = Pipeline::Signal::Hold;
+        switch (row.direction) {
+            case DIRECTION_UP: dir = Pipeline::Signal::Buy; break;
+            case DIRECTION_DOWN: dir = Pipeline::Signal::Sell; break;
+            default: dir = Pipeline::Signal::Hold; break;
+        }
+        if (dir == Pipeline::Signal::Hold)
+            continue;
+
+        Pipeline::TargetPosition tp;
+        tp.symbol = row.symbol;
+        tp.currentQuantity = currentPositions.value(row.symbol, 0.0);
+        if (row.amount > 0.0) {
+            tp.targetQuantity = (dir == Pipeline::Signal::Buy) ? row.amount : -row.amount;
+        } else {
+            tp.targetQuantity = (dir == Pipeline::Signal::Buy) ? m_defaultQuantity : -m_defaultQuantity;
+        }
+        tp.reason = id();
+        tp.correlationId = correlationId;
+        tp.timestamp = ts;
+        targets.append(tp);
+    }
+    return targets;
+}
+
+Pipeline::ModelDataList SimpleRebalanceBlock::processSemantic(
+    const Pipeline::ModelDataList& in,
+    const QMap<QString, double>& currentPositions,
+    const QString& correlationId)
+{
+    const QVector<Pipeline::TargetPosition> targets =
+        targetsFromModelRows(in, currentPositions, correlationId);
+    return Pipeline::SemanticMapping::modelDataFromTargetPositions(targets);
 }
 
 PassAllSelectionBlock::PassAllSelectionBlock(QObject* parent)

@@ -412,6 +412,12 @@ QList<OpenPosition> CBaseModel::getOpenPositions() const
     return this->m_OpenPositionList;
 }
 
+QString CBaseModel::databaseConnectionName() const
+{
+    DBHandler* h = m_dbManager.getDbHandler();
+    return h ? h->connectionName() : QString();
+}
+
 void CBaseModel::processData(DataListPtr data)
 {
     emit dataProcessed(data);

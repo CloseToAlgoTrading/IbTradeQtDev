@@ -26,7 +26,7 @@ UniverseResolutionResult UniverseResolver::resolve(const QJsonObject& pipelineCo
         if (blockId == QStringLiteral("static-list-selection") || blockId == QStringLiteral("static-list")) {
             QJsonArray symbolsArr = blockConfig.value(QStringLiteral("symbols")).toArray();
             for (const auto& s : symbolsArr) {
-                const QString sym = s.toString();
+                const QString sym = s.toString().trimmed().toUpper();
                 if (!sym.isEmpty() && !allStaticSymbols.contains(sym))
                     allStaticSymbols.append(sym);
             }

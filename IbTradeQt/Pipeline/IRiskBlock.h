@@ -7,8 +7,11 @@
 #include <optional>
 #include "Contracts.h"
 #include "Scope.h"
+#include "SemanticTypes.h"
 
 namespace Pipeline {
+
+struct PipelineRuntimeContext;
 
 struct RiskDecision {
     enum class Action { Approve, Reject, Modify };
@@ -34,6 +37,9 @@ public:
     virtual QJsonObject config() const = 0;
     virtual void setConfig(const QJsonObject& config) = 0;
 
+    virtual void setRuntimeContext(const PipelineRuntimeContext* ctx) { m_runtimeContext = ctx; }
+    const PipelineRuntimeContext* runtimeContext() const { return m_runtimeContext; }
+
     // Called on every market tick so risk blocks can monitor live prices
     // and emit proactive signals (e.g. stop-loss, trailing stop).
     // Default implementation is a no-op — override only when needed.
@@ -47,6 +53,12 @@ public:
         const QMap<QString, double>& currentPositions
     ) = 0;
 
+    /// Default: model → targets → `evaluate` per row → `modelDataFromTargetPositions`.
+    virtual ModelDataList processSemantic(
+        const ModelDataList& in,
+        const QMap<QString, double>& currentPositions,
+        const QString& correlationId);
+
 signals:
     // Emitted when a risk block proactively generates an exit signal
     // (e.g. stop-loss triggered). The pipeline runner subscribes to this
@@ -54,6 +66,9 @@ signals:
     void riskSignalGenerated(const Pipeline::Signal& signal);
 
     void riskViolation(const QString& symbol, const QString& reason);
+
+protected:
+    const PipelineRuntimeContext* m_runtimeContext = nullptr;
 };
 
 } // namespace Pipeline

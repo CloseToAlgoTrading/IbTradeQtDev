@@ -162,9 +162,11 @@ QStringList StrategyWorkspacePresenter::buildAssetSymbols() const
 
     auto extractSymbols = [&](const QJsonObject& entry) {
         QJsonObject blockCfg = entry.value("config").toObject();
-        for (const auto& s : blockCfg.value("symbols").toArray())
-            if (!allSymbols.contains(s.toString()))
-                allSymbols.append(s.toString());
+        for (const auto& s : blockCfg.value("symbols").toArray()) {
+            const QString sym = s.toString().trimmed().toUpper();
+            if (!sym.isEmpty() && !allSymbols.contains(sym))
+                allSymbols.append(sym);
+        }
     };
 
     QJsonValue selVal = cfg.value("selection");

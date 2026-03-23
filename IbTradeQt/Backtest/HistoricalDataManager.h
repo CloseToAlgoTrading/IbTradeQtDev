@@ -26,10 +26,12 @@
 //   HistoricalDataManager mgr(dbConnectionName, networkManager);
 //   auto bars = mgr.getBars("AMD", "Day1", "yahoo", from, to, &refreshedAt);
 
+#include <QHash>
 #include <QObject>
 #include <QVector>
 #include <QDateTime>
 #include <QSqlDatabase>
+#include <QVariantMap>
 #include <QEventLoop>
 #include "IBComm/HistoricalDataRouter.h"
 #include "Backtest/IHistoricalDataSource.h"
@@ -55,12 +57,14 @@ public:
     // dataRefreshedAt is set to the UTC time when any remote fetch was performed,
     // or empty if the entire range was served from cache.
     // Returns bars ordered by timestamp ascending, deduplicated, normalised to UTC.
+    /// \a strategyAssetBySymbol optional per-symbol assetList entries (classification override, session policy).
     QVector<IBComm::HistoricalBar> getBars(const QString& symbol,
                                             const QString& resolution,
                                             const QString& dataSourceId,
                                             const QDateTime& from,
                                             const QDateTime& to,
-                                            QString* dataRefreshedAt = nullptr);
+                                            QString* dataRefreshedAt = nullptr,
+                                            const QHash<QString, QVariantMap>& strategyAssetBySymbol = {});
 
     // Batch variant: fetches bars for multiple symbols with the same resolution/source.
     // Returns a map from symbol -> bars.
@@ -70,7 +74,8 @@ public:
         const QString& dataSourceId,
         const QDateTime& from,
         const QDateTime& to,
-        QString* dataRefreshedAt = nullptr);
+        QString* dataRefreshedAt = nullptr,
+        const QHash<QString, QVariantMap>& strategyAssetBySymbol = {});
 
 private:
     struct CachedRange {

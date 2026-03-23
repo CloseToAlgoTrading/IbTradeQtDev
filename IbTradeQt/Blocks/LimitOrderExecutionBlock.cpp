@@ -1,5 +1,7 @@
 #include "LimitOrderExecutionBlock.h"
 
+#include "../Pipeline/SemanticModelDataMapper.h"
+#include <QDateTime>
 #include <QJsonObject>
 #include <cmath>
 
@@ -53,6 +55,18 @@ void LimitOrderExecutionBlock::execute(const QVector<Pipeline::ExecutionIntent>&
             emit orderPlaced(intent.symbol, QStringLiteral("dry-run-limit"));
         }
     }
+}
+
+void LimitOrderExecutionBlock::executeSemantic(
+    const Pipeline::ModelDataList& in,
+    const QMap<QString, double>& currentPositions,
+    const QString& correlationId,
+    const QDateTime& eventTime)
+{
+    const QVector<Pipeline::ExecutionIntent> intents =
+        Pipeline::SemanticMapping::executionIntentsFromModelData(
+            in, currentPositions, correlationId, eventTime);
+    execute(intents);
 }
 
 } // namespace Blocks

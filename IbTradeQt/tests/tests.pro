@@ -68,6 +68,7 @@ SOURCES += \
     main.cpp \
     db/tst_dbhandler_disconnect.cpp \
     backtest/tst_market_session_utils.cpp \
+    backtest/tst_instrument_metadata_resolver.cpp \
     backtest/tst_historical_data_manager_cache.cpp \
     backtest/tst_workspace_session.cpp \
     backtest/tst_backtest_run_persistence.cpp \
@@ -124,10 +125,19 @@ SOURCES += \
     ../Backtest/SimulatedExecutionAdapter.cpp \
     ../Backtest/BacktestMetricsCollector.cpp \
     ../Backtest/BacktestSession.cpp \
+    ../Backtest/BacktestMarketDataAccessor.cpp \
+    ../Backtest/BacktestHistoricalReadAdapter.cpp \
     ../Backtest/BacktestWorkspaceSession.cpp \
     ../Backtest/BacktestRunPersistence.cpp \
     ../Backtest/YahooFinanceDataSource.cpp \
     ../Backtest/MarketSessionUtils.cpp \
+    ../Backtest/InstrumentClassification.cpp \
+    ../Backtest/InstrumentInference.cpp \
+    ../Backtest/InstrumentClassificationMappers.cpp \
+    ../Backtest/InstrumentNormalization.cpp \
+    ../Backtest/InstrumentMetadataResolver.cpp \
+    ../Backtest/AssetUniverseInput.cpp \
+    ../Backtest/InstrumentMetadataIb.cpp \
     ../Backtest/HistoricalDataManager.cpp \
     ../Backtest/BacktestController.cpp \
     ../SharedUI/StrategyTreeDelegate.cpp \
@@ -149,6 +159,17 @@ SOURCES += \
     ../Pipeline/PipelineTreeUtils.cpp \
     ../Pipeline/PipelineLog.cpp \
     ../Pipeline/StrategyPipelineRunner.cpp \
+    ../Pipeline/IAlphaBlock.cpp \
+    ../Pipeline/IRebalanceBlock.cpp \
+    ../Pipeline/IRiskBlock.cpp \
+    ../Pipeline/IExecutionBlock.cpp \
+    ../Pipeline/SemanticModelDataMapper.cpp \
+    ../Pipeline/SemanticPipelineChain.cpp \
+    ../Adapters/LiveHistoricalReadAdapter.cpp \
+    ../Pipeline/MarketDataCoordinator.cpp \
+    ../Pipeline/SubscriptionRequestStore.cpp \
+    ../Pipeline/NoOpSubscriptionPort.cpp \
+    ../Pipeline/RouterMarketDataAccessor.cpp \
     ../Pipeline/PipelineFactory.cpp \
     ../Pipeline/BlockGraphSerializer.cpp \
     ../Pipeline/UniverseResolver.cpp \
@@ -170,7 +191,14 @@ SOURCES += \
     ../MainSystem/WorkspaceWidgets/RuntimePolicyEditor.cpp
 
 HEADERS += \
+    ../Pipeline/SemanticPipelineChain.h \
+    ../Adapters/LiveHistoricalReadAdapter.h \
     ../Pipeline/Contracts.h \
+    ../Pipeline/IDataSubscriptionPort.h \
+    ../Pipeline/SubscriptionRequestStore.h \
+    ../Pipeline/NoOpSubscriptionPort.h \
+    ../Pipeline/RouterMarketDataAccessor.h \
+    ../Pipeline/BlockSubscriptionUtils.h \
     ../Pipeline/Scope.h \
     ../Pipeline/IAlphaBlock.h \
     ../Pipeline/ISelectionBlock.h \
@@ -217,11 +245,13 @@ HEADERS += \
     phase1/tst_block_interfaces.h \
     phase1/tst_expected.h \
     phase1/tst_scope.h \
+    phase1/tst_subscription_request_store.h \
     phase2/tst_replay.h \
     phase2/tst_adapters.h \
     phase2/tst_integration.h \
     phase3/tst_block_registry.h \
     phase3/tst_pipeline_runner.h \
+    phase3/tst_semantic_mapping.h \
     phase4/tst_supervision.h \
     phase5/tst_observability.h \
     phase6/tst_benchmark.h \
@@ -268,15 +298,26 @@ HEADERS += \
     ../Backtest/BenchmarkComparison.h \
     ../Backtest/BacktestReportWriter.h \
     ../Backtest/BacktestSession.h \
+    ../Backtest/BacktestMarketDataAccessor.h \
+    ../Backtest/BacktestHistoricalReadAdapter.h \
     ../Backtest/BacktestController.h \
     ../Backtest/MarketSessionUtils.h \
+    ../Backtest/InstrumentClassification.h \
+    ../Backtest/InstrumentInference.h \
+    ../Backtest/InstrumentClassificationMappers.h \
+    ../Backtest/InstrumentNormalization.h \
+    ../Backtest/InstrumentMetadataResolver.h \
+    ../Backtest/AssetUniverseInput.h \
+    ../Backtest/InstrumentMetadataIb.h \
     ../Backtest/HistoricalDataManager.h \
     backtest/tst_backtest.h \
     backtest/tst_yahoo_backtest.h \
     backtest/tst_market_session_utils.h \
+    backtest/tst_instrument_metadata_resolver.h \
     backtest/tst_historical_data_manager_cache.h \
     backtest/tst_backtest_extended.h \
     backtest/tst_live_backtest.h \
+    backtest/tst_semantic_live_historical.h \
     backtest/tst_backtest_engine_coverage.h \
     backtest/tst_workspace_session.h \
     backtest/tst_backtest_run_persistence.h \
@@ -291,6 +332,7 @@ HEADERS += \
     backend/tst_strategy_definition.h \
     backend/tst_strategy_catalog.h \
     integration/tst_adapter_pure_backtest.h \
+    integration/tst_semantic_e2e.h \
     parity/tst_pipeline_parity.h \
     ../Backend/ISystemBackend.h \
     ../Backend/SystemBackendImpl.h \

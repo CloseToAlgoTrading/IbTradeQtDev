@@ -10,6 +10,9 @@
 #include "Backtest/BacktestResult.h"
 #include "Backtest/IHistoricalDataSource.h"
 #include "Backtest/MarketPriceStore.h"
+#include "Backtest/BacktestMarketDataAccessor.h"
+#include "Backtest/BacktestHistoricalReadAdapter.h"
+#include "Pipeline/NoOpSubscriptionPort.h"
 #include "Backtest/SimulatedExecutionAdapter.h"
 #include "Backtest/SimulatedLedger.h"
 #include "Backtest/BacktestMetricsCollector.h"
@@ -22,6 +25,8 @@
 class QNetworkAccessManager;
 
 namespace Backtest {
+
+class HistoricalDataManager;
 
 // Orchestrator for a single strategy-level backtest session.
 // Owns all backtest-specific objects and drives the replay loop.
@@ -65,6 +70,11 @@ public:
         m_yahooNetworkManager = nam;
     }
 
+    /// Optional: same worker-thread `HistoricalDataManager` used for cache-backed `IHistoricalRead`
+    /// (semantic alphas). Set before `run()` — typically non-null when `BacktestController` prefetches
+    /// Yahoo bars; cleared automatically when the manager is destroyed after `run()`.
+    void setHistoricalDataManager(HistoricalDataManager* mgr) { m_historicalDataManager = mgr; }
+
     // Preload-then-replay: all historical data is loaded into MarketDataReplayer
     // before the replay loop starts. Blocks until finished or cancelled.
     void run();
@@ -87,6 +97,10 @@ private:
     std::unique_ptr<IHistoricalDataSource>          m_dataSource;
     std::unique_ptr<MarketDataReplayer>             m_replayer;
     std::unique_ptr<MarketPriceStore>               m_priceStore;
+    std::unique_ptr<BacktestMarketDataAccessor>     m_marketDataAccessor;
+    std::unique_ptr<BacktestHistoricalReadAdapter>  m_historicalReadAdapter;
+    std::unique_ptr<Pipeline::NoOpSubscriptionPort> m_noOpSubscriptionPort;
+    HistoricalDataManager*                          m_historicalDataManager = nullptr;
     std::unique_ptr<SimulatedClock>                 m_clock;
     std::unique_ptr<SimulatedExecutionAdapter>      m_execAdapter;
     std::unique_ptr<SimulatedLedger>                m_ledger;

@@ -56,6 +56,9 @@ public:
     // (e.g. BacktestSession loads strategy data then benchmark data).
     void disconnectFinishedHandler();
 
+    /// When set, chart JSON meta is upserted into InstrumentMetadata (providerId yahoo).
+    void setInstrumentMetadataDbConnection(const QString& dbConnectionName);
+
 private slots:
     void onReplyFinished(QNetworkReply* reply);
 
@@ -72,6 +75,7 @@ private:
     QString                 m_lastError;
     int                     m_pendingCount = 0;
     bool                    m_failed       = false;
+    QString                 m_instrumentMetadataDbConnection;
 };
 
 } // namespace Backtest

@@ -1,6 +1,7 @@
 #ifndef BLOCKS_MARKETORDEREXECUTIONBLOCK_H
 #define BLOCKS_MARKETORDEREXECUTIONBLOCK_H
 
+#include <QDateTime>
 #include <QJsonObject>
 #include "../Pipeline/IExecutionBlock.h"
 #include "../Pipeline/IRebalanceBlock.h"
@@ -26,6 +27,12 @@ public:
 public slots:
     void execute(const QVector<Pipeline::ExecutionIntent>& intents) override;
 
+    void executeSemantic(
+        const Pipeline::ModelDataList& in,
+        const QMap<QString, double>& currentPositions,
+        const QString& correlationId,
+        const QDateTime& eventTime) override;
+
 private:
     Ports::IOrderExecutionPort* m_executionPort = nullptr;
     double m_minQuantity = 1.0;
@@ -47,7 +54,17 @@ public:
         const QVector<Pipeline::Signal>& inputSignals,
         const QMap<QString, double>& currentPositions) override;
 
+    Pipeline::ModelDataList processSemantic(
+        const Pipeline::ModelDataList& in,
+        const QMap<QString, double>& currentPositions,
+        const QString& correlationId) override;
+
 private:
+    QVector<Pipeline::TargetPosition> targetsFromModelRows(
+        const Pipeline::ModelDataList& in,
+        const QMap<QString, double>& currentPositions,
+        const QString& correlationId) const;
+
     double m_defaultQuantity = 100.0;
 };
 

@@ -11,6 +11,7 @@ private slots:
     void clampEnd_movesNyWeekendToLastWeekday();
     void weekendOnlyChartWindow_singleSundayUtc();
     void allEquity_requiresNoCryptoOrForex();
+    void yahooUsDailySession_usesProviderMetadataWhenDbOpen();
 };
 
 #endif

@@ -5,6 +5,8 @@
 #include "Pipeline/PipelineFactory.h"
 #include "Pipeline/Contracts.h"
 #include "Pipeline/StrategyPipelineRunner.h"
+#include "Pipeline/PipelineRuntimeContext.h"
+#include "Backtest/BacktestMarketDataAccessor.h"
 #include "Pipeline/UniverseResolver.h"
 #include "Strategies/Generic/cpipelinestrategyadapter.h"
 #include <algorithm>
@@ -167,6 +169,21 @@ void BacktestSession::buildObjectGraph()
             return;
         }
         m_pipelineRunner->setUniverse(universe);
+    }
+
+    m_marketDataAccessor = std::make_unique<BacktestMarketDataAccessor>(m_priceStore.get());
+    m_historicalReadAdapter.reset();
+    if (m_historicalDataManager)
+        m_historicalReadAdapter =
+            std::make_unique<BacktestHistoricalReadAdapter>(m_historicalDataManager);
+    m_noOpSubscriptionPort = std::make_unique<Pipeline::NoOpSubscriptionPort>();
+    {
+        Pipeline::PipelineRuntimeContext ctx;
+        ctx.marketData = m_marketDataAccessor.get();
+        if (m_historicalReadAdapter)
+            ctx.historical = m_historicalReadAdapter.get();
+        ctx.subscription = m_noOpSubscriptionPort.get();
+        m_pipelineRunner->setRuntimeContext(ctx);
     }
 
     // --- Wire signals in priority order (all Qt::DirectConnection, same thread) ---

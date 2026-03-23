@@ -87,6 +87,10 @@ namespace AssetFields {
         constexpr auto PnL      = "PnL";
         constexpr auto AvgPrice = "AvgPrice";
         constexpr auto Quantity = "Quantity";
+        /// Strategy-scoped coarse AssetKind override (string, e.g. "Etf"); empty = auto from resolver
+        constexpr auto ClassificationOverride = "classificationOverride";
+        /// Optional session/calendar policy id or label for strategy logic (not AssetKind)
+        constexpr auto SessionPolicy          = "sessionPolicy";
     }
 
     // Account broker positions (richer schema)

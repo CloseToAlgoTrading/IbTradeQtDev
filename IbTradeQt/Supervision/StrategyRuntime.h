@@ -6,11 +6,18 @@
 #include <QElapsedTimer>
 #include <QDateTime>
 #include <atomic>
+#include <memory>
 #include "../Pipeline/StrategyPipelineRunner.h"
 #include "../Pipeline/PipelineDefinition.h"
 #include "../IBComm/MarketDataRouter.h"
 #include "../Ports/IOrderExecutionPort.h"
 #include "../Ports/IPositionRepositoryPort.h"
+
+namespace Pipeline {
+class LiveHistoricalReadAdapter;
+class IDataSubscriptionPort;
+class RouterMarketDataAccessor;
+}
 
 namespace Supervision {
 
@@ -23,6 +30,7 @@ public:
         Pipeline::BlockGraph graph,
         Ports::IOrderExecutionPort* executionPort,
         Ports::IPositionRepositoryPort* positionRepo,
+        Pipeline::IDataSubscriptionPort* subscriptionPort = nullptr,
         QObject* parent = nullptr);
 
     explicit StrategyRuntime(
@@ -30,6 +38,7 @@ public:
         Pipeline::PipelineDefinition definition,
         Ports::IOrderExecutionPort* executionPort,
         Ports::IPositionRepositoryPort* positionRepo,
+        Pipeline::IDataSubscriptionPort* subscriptionPort = nullptr,
         QObject* parent = nullptr);
 
     ~StrategyRuntime() override;
@@ -80,6 +89,10 @@ private:
     Ports::IPositionRepositoryPort* m_positionRepo;
 
     Pipeline::StrategyPipelineRunner* m_runner = nullptr;
+    /// Child of `m_runner` — live `IHistoricalRead` when broker is configured.
+    Pipeline::LiveHistoricalReadAdapter* m_liveHistoricalRead = nullptr;
+    Pipeline::IDataSubscriptionPort* m_subscriptionPort = nullptr;
+    std::unique_ptr<Pipeline::RouterMarketDataAccessor> m_routerMarketAccessor;
     QThread* m_thread = nullptr;
 
     std::atomic<bool> m_running{false};

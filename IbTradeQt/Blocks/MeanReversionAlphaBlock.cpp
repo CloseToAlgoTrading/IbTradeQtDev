@@ -1,8 +1,13 @@
 #include "MeanReversionAlphaBlock.h"
 
+#include "../Pipeline/BlockSubscriptionUtils.h"
+#include "../Pipeline/IDataSubscriptionPort.h"
+#include "../Pipeline/PipelineRuntimeContext.h"
+#include "UnifiedModelData.h"
 #include <QJsonObject>
 #include <QUuid>
 #include <cmath>
+#include <limits>
 
 namespace Blocks {
 
@@ -35,6 +40,32 @@ void MeanReversionAlphaBlock::setConfig(const QJsonObject& config)
 void MeanReversionAlphaBlock::initialize() { m_priceHistory.clear(); }
 void MeanReversionAlphaBlock::shutdown() { m_priceHistory.clear(); }
 
+double MeanReversionAlphaBlock::zScoreForSymbol(const QString& symbol) const
+{
+    const auto it = m_priceHistory.constFind(symbol);
+    if (it == m_priceHistory.constEnd() || it->size() < m_period)
+        return std::numeric_limits<double>::quiet_NaN();
+
+    const QVector<double>& history = *it;
+
+    double mean = 0.0;
+    for (double p : history)
+        mean += p;
+    mean /= history.size();
+
+    double variance = 0.0;
+    for (double p : history)
+        variance += (p - mean) * (p - mean);
+    variance /= history.size();
+    const double stdDev = std::sqrt(variance);
+
+    if (stdDev < 1e-10)
+        return std::numeric_limits<double>::quiet_NaN();
+
+    const double currentPrice = history.last();
+    return (currentPrice - mean) / stdDev;
+}
+
 void MeanReversionAlphaBlock::onTick(const Pipeline::MarketTick& tick)
 {
     auto& history = m_priceHistory[tick.symbol];
@@ -43,33 +74,54 @@ void MeanReversionAlphaBlock::onTick(const Pipeline::MarketTick& tick)
         history.removeFirst();
     }
 
-    if (history.size() < m_period) return;
+    const double zScore = zScoreForSymbol(tick.symbol);
+    if (std::isnan(zScore) || std::abs(zScore) <= m_stdDevThreshold)
+        return;
 
-    double mean = 0.0;
-    for (double p : history) mean += p;
-    mean /= history.size();
+    Pipeline::Signal signal;
+    signal.symbol = tick.symbol;
+    signal.direction = (zScore > 0) ? Pipeline::Signal::Sell : Pipeline::Signal::Buy;
+    signal.confidence = std::min(std::abs(zScore) / (m_stdDevThreshold * 2.0), 1.0);
+    signal.correlationId = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    signal.timestamp = tick.timestamp;
+    signal.alphaBlockId = id();
+    emit signalGenerated(signal);
+}
 
-    double variance = 0.0;
-    for (double p : history) variance += (p - mean) * (p - mean);
-    variance /= history.size();
-    double stdDev = std::sqrt(variance);
+Pipeline::ModelDataList MeanReversionAlphaBlock::processSemantic(
+    const Pipeline::ModelDataList& in,
+    const QString& correlationId)
+{
+    Q_UNUSED(correlationId);
+    if (!in || in->isEmpty())
+        return in;
 
-    if (stdDev < 1e-10) return;
+    Pipeline::ModelDataList out = createDataList();
+    for (const auto& row : *in) {
+        const double zScore = zScoreForSymbol(row.symbol);
+        if (std::isnan(zScore) || std::abs(zScore) <= m_stdDevThreshold)
+            continue;
 
-    double currentPrice = history.last();
-    double zScore = (currentPrice - mean) / stdDev;
-
-    if (std::abs(zScore) > m_stdDevThreshold) {
-        Pipeline::Signal signal;
-        signal.symbol = tick.symbol;
-        signal.direction = (zScore > 0)
-            ? Pipeline::Signal::Sell : Pipeline::Signal::Buy;
-        signal.confidence = std::min(std::abs(zScore) / (m_stdDevThreshold * 2.0), 1.0);
-        signal.correlationId = QUuid::createUuid().toString(QUuid::WithoutBraces);
-        signal.timestamp = tick.timestamp;
-        signal.alphaBlockId = id();
-        emit signalGenerated(signal);
+        out->append(UnifiedModelData(
+            row.symbol,
+            zScore > 0 ? DIRECTION_DOWN : DIRECTION_UP,
+            std::min(std::abs(zScore) / (m_stdDevThreshold * 2.0), 1.0),
+            0.0,
+            0.0));
     }
+    if (runtimeContext() && runtimeContext()->subscription) {
+        const QString oid = Pipeline::subscriptionOwnerId(this, QStringLiteral("alpha:"), id());
+        if (out->isEmpty()) {
+            runtimeContext()->subscription->clearOwner(oid);
+        } else {
+            QVector<QString> syms;
+            syms.reserve(out->size());
+            for (const auto& row : *out)
+                syms.append(row.symbol);
+            runtimeContext()->subscription->setDesiredSymbols(oid, syms);
+        }
+    }
+    return out;
 }
 
 } // namespace Blocks

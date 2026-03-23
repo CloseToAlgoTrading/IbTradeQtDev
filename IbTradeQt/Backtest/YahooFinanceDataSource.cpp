@@ -1,7 +1,17 @@
 #include "YahooFinanceDataSource.h"
+#include "Backtest/InstrumentClassification.h"
+#include "Backtest/InstrumentClassificationMappers.h"
+#include "Backtest/InstrumentInference.h"
+#include "Backtest/InstrumentMetadataResolver.h"
+#include "Backtest/InstrumentNormalization.h"
 #include "Backtest/MarketSessionUtils.h"
+#include "DB/dbdatatypes.h"
+#include "DB/dbquery.h"
+#include <QDateTime>
+#include <QJsonDocument> // meta JSON for InstrumentMetadata.rawJson
+#include <QSqlError>
+#include <QSqlQuery>
 #include <QNetworkRequest>
-#include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QUrl>
@@ -16,6 +26,40 @@ Q_LOGGING_CATEGORY(lcYahoo, "backtest.yahoo")
 namespace Backtest {
 
 namespace {
+
+void upsertYahooInstrumentMetadata(const QString& dbConn, const QString& symbol, const QJsonObject& r0)
+{
+    if (dbConn.isEmpty())
+        return;
+
+    const QJsonObject meta = r0.value(QStringLiteral("meta")).toObject();
+    const QString     it   = meta.value(QStringLiteral("instrumentType")).toString();
+    const QString     qt   = meta.value(QStringLiteral("quoteType")).toString();
+    AssetKind         ak   = assetKindFromYahooInstrumentType(it, qt);
+    if (ak == AssetKind::Unknown)
+        ak = inferAssetKindFromSymbolHeuristic(symbol);
+
+    DbInstrumentMetadata row;
+    row.providerSymbol = normalizeProviderSymbol(QStringLiteral("yahoo"), symbol);
+    row.providerId     = QStringLiteral("yahoo");
+    row.assetKind      = assetKindToString(ak);
+    row.sourceRawType  = it;
+    row.currency       = meta.value(QStringLiteral("currency")).toString();
+    row.exchange       = meta.value(QStringLiteral("exchangeName")).toString();
+    row.displayName         = meta.value(QStringLiteral("shortName")).toString();
+    row.tradingScheduleId   = meta.value(QStringLiteral("exchangeTimezoneName")).toString();
+    row.updatedAt      = QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
+    QJsonDocument jd(meta);
+    QString       rj = QString::fromUtf8(jd.toJson(QJsonDocument::Compact));
+    if (rj.size() > 4096)
+        rj.resize(4096);
+    row.rawJson = rj;
+
+    QSqlQuery q = query_upsertInstrumentMetadata(row, dbConn);
+    if (!q.exec())
+        qCWarning(lcYahoo) << "YahooFinanceDataSource: InstrumentMetadata upsert failed"
+                           << q.lastError().text();
+}
 
 // Yahoo chart interval=1d: period1 = inclusive start (UTC midnight of start date),
 // period2 = exclusive end (UTC midnight of day after end date).
@@ -111,6 +155,11 @@ void YahooFinanceDataSource::disconnectFinishedHandler()
         return;
     QObject::disconnect(m_nam, &QNetworkAccessManager::finished,
                         this, &YahooFinanceDataSource::onReplyFinished);
+}
+
+void YahooFinanceDataSource::setInstrumentMetadataDbConnection(const QString& dbConnectionName)
+{
+    m_instrumentMetadataDbConnection = dbConnectionName;
 }
 
 void YahooFinanceDataSource::requestBars(const QStringList& symbols,
@@ -257,8 +306,12 @@ void YahooFinanceDataSource::parseChartReply(QNetworkReply* reply)
         const qint64  p1  = uq.queryItemValue(QStringLiteral("period1")).toLongLong();
         const qint64  p2  = uq.queryItemValue(QStringLiteral("period2")).toLongLong();
 
-        if (classifyYahooSymbol(symbol) == InstrumentKind::EquityUs
-            && isWeekendOnlyChartWindowUtcNy(p1, p2)) {
+        upsertYahooInstrumentMetadata(m_instrumentMetadataDbConnection, symbol, r0);
+
+        const AssetKind kForSession =
+            InstrumentMetadataResolver::resolve(m_instrumentMetadataDbConnection, symbol, QStringLiteral("yahoo"), {})
+                .effectiveAssetKind;
+        if (appliesYahooUsCashEquitySessionDaily(kForSession) && isWeekendOnlyChartWindowUtcNy(p1, p2)) {
             qCDebug(lcYahoo) << "YahooFinanceDataSource: no daily bars (weekend window, US equity) for"
                              << symbol << "url=" << url.toString();
         } else {
@@ -300,6 +353,8 @@ void YahooFinanceDataSource::parseChartReply(QNetworkReply* reply)
         emit barLoaded(bar);
         ++emitted;
     }
+
+    upsertYahooInstrumentMetadata(m_instrumentMetadataDbConnection, symbol, r0);
 
     qCDebug(lcYahoo) << "YahooFinanceDataSource: parsed" << emitted << "bars for" << symbol;
 }

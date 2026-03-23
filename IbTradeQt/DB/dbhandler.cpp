@@ -49,6 +49,8 @@ void DBHandler::initializeBacktestTables() {
     exec(CREATE_TABLE_BACKTEST_TRADES);
     exec(CREATE_TABLE_BACKTEST_EQUITY_CURVE);
     exec(CREATE_TABLE_HISTORICAL_BARS);
+    exec(CREATE_TABLE_INSTRUMENT_METADATA);
+    execSilent(ALTER_INSTRUMENT_METADATA_ADD_TRADING_SCHEDULE_ID);
     exec(CREATE_TABLE_BACKTEST_RUN_PROFILES);
 
     // Extend BacktestRuns with new scope/definition columns (idempotent)

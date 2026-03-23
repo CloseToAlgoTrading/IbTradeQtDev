@@ -1,18 +1,26 @@
 #include "tst_market_session_utils.h"
 
+#include "Backtest/InstrumentClassification.h"
 #include "Backtest/MarketSessionUtils.h"
+#include "DB/dbquery.h"
+#include "DB/dbdatatypes.h"
 
 #include <QDate>
+#include <QDateTime>
+#include <QSqlDatabase>
+#include <QSqlQuery>
+#include <QTemporaryFile>
 #include <QTime>
 #include <QTimeZone>
+#include <QUuid>
 
 using namespace Backtest;
 
 void TestMarketSessionUtils::classifyYahooSymbol_marksForexCryptoAndEquity()
 {
-    QCOMPARE(classifyYahooSymbol(QStringLiteral("EURUSD=X")), InstrumentKind::Forex);
-    QCOMPARE(classifyYahooSymbol(QStringLiteral("BTC-USD")), InstrumentKind::Crypto);
-    QCOMPARE(classifyYahooSymbol(QStringLiteral("SPY")), InstrumentKind::EquityUs);
+    QCOMPARE(classifyYahooSymbol(QStringLiteral("EURUSD=X")), AssetKind::Forex);
+    QCOMPARE(classifyYahooSymbol(QStringLiteral("BTC-USD")), AssetKind::Crypto);
+    QCOMPARE(classifyYahooSymbol(QStringLiteral("SPY")), AssetKind::Equity);
 }
 
 void TestMarketSessionUtils::clampEnd_movesNyWeekendToLastWeekday()
@@ -35,7 +43,44 @@ void TestMarketSessionUtils::weekendOnlyChartWindow_singleSundayUtc()
 
 void TestMarketSessionUtils::allEquity_requiresNoCryptoOrForex()
 {
-    QVERIFY(allSymbolsClassifyAsUsEquity({QStringLiteral("SPY"), QStringLiteral("AMD")}));
-    QVERIFY(!allSymbolsClassifyAsUsEquity({QStringLiteral("SPY"), QStringLiteral("BTC-USD")}));
-    QVERIFY(!allSymbolsClassifyAsUsEquity({QStringLiteral("SPY"), QStringLiteral("EURUSD=X")}));
+    QVERIFY(allSymbolsUseYahooUsCashEquitySessionDaily({QStringLiteral("SPY"), QStringLiteral("AMD")}));
+    QVERIFY(!allSymbolsUseYahooUsCashEquitySessionDaily({QStringLiteral("SPY"), QStringLiteral("BTC-USD")}));
+    QVERIFY(!allSymbolsUseYahooUsCashEquitySessionDaily({QStringLiteral("SPY"), QStringLiteral("EURUSD=X")}));
+}
+
+void TestMarketSessionUtils::yahooUsDailySession_usesProviderMetadataWhenDbOpen()
+{
+    const QString conn =
+        QStringLiteral("mkt_sess_md_") + QUuid::createUuid().toString(QUuid::WithoutBraces);
+
+    QTemporaryFile dbFile;
+    dbFile.setAutoRemove(true);
+    QVERIFY(dbFile.open());
+    dbFile.close();
+
+    {
+        QSqlDatabase db = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), conn);
+        db.setDatabaseName(dbFile.fileName());
+        QVERIFY(db.open());
+        QSqlQuery q(db);
+        QVERIFY(q.exec(QLatin1String(CREATE_TABLE_INSTRUMENT_METADATA)));
+        DbInstrumentMetadata row;
+        row.providerSymbol = QStringLiteral("SPY");
+        row.providerId     = QStringLiteral("yahoo");
+        row.assetKind        = QStringLiteral("Forex");
+        row.updatedAt        = QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
+        QVERIFY(query_upsertInstrumentMetadata(row, conn).exec());
+    }
+
+    QVERIFY(!allSymbolsUseYahooUsCashEquitySessionDaily(conn, QStringLiteral("yahoo"),
+                                                         {QStringLiteral("SPY")}, {}));
+
+    {
+        QSqlDatabase db = QSqlDatabase::database(conn);
+        if (db.isOpen())
+            db.close();
+    }
+    QSqlDatabase::removeDatabase(conn);
+
+    QVERIFY(allSymbolsUseYahooUsCashEquitySessionDaily({QStringLiteral("SPY")}));
 }

@@ -1,5 +1,8 @@
 #include "StaticListSelectionBlock.h"
 
+#include "../Pipeline/BlockSubscriptionUtils.h"
+#include "../Pipeline/IDataSubscriptionPort.h"
+#include "../Pipeline/PipelineRuntimeContext.h"
 #include <QJsonArray>
 #include <QJsonObject>
 
@@ -29,8 +32,11 @@ QJsonObject StaticListSelectionBlock::config() const
 void StaticListSelectionBlock::setConfig(const QJsonObject& config)
 {
     m_symbols.clear();
-    for (const auto& s : config.value(QStringLiteral("symbols")).toArray())
-        m_symbols.append(s.toString());
+    for (const auto& s : config.value(QStringLiteral("symbols")).toArray()) {
+        const QString sym = s.toString().trimmed().toUpper();
+        if (!sym.isEmpty())
+            m_symbols.append(sym);
+    }
 }
 
 void StaticListSelectionBlock::initialize() {}
@@ -38,13 +44,29 @@ void StaticListSelectionBlock::shutdown() {}
 
 QVector<QString> StaticListSelectionBlock::select(const QVector<QString>& universe)
 {
-    if (m_symbols.isEmpty()) return universe;
-    if (universe.isEmpty()) return m_symbols;
     QVector<QString> result;
-    for (const auto& s : universe) {
-        if (m_symbols.contains(s)) result.append(s);
+    if (m_symbols.isEmpty()) {
+        result = universe;
+    } else if (universe.isEmpty()) {
+        result = m_symbols;
+    } else {
+        for (const auto& s : universe) {
+            const QString u = s.trimmed().toUpper();
+            if (m_symbols.contains(u))
+                result.append(s);
+        }
+        if (result.isEmpty())
+            result = m_symbols;
     }
-    return result.isEmpty() ? m_symbols : result;
+
+    if (runtimeContext() && runtimeContext()->subscription) {
+        const QString oid = Pipeline::subscriptionOwnerId(this, QStringLiteral("selection:"), id());
+        if (result.isEmpty())
+            runtimeContext()->subscription->clearOwner(oid);
+        else
+            runtimeContext()->subscription->setDesiredSymbols(oid, result);
+    }
+    return result;
 }
 
 } // namespace Blocks

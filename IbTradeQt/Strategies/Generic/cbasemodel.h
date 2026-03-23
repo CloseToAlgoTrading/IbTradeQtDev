@@ -194,6 +194,8 @@ public:
     virtual void setAvailableFunds(const qreal funds);
     virtual QList<OpenPosition> getOpenPositions() const;
 
+    /// SQLite connection name for this model's DB, or empty if no handler / not connected.
+    QString databaseConnectionName() const;
 
     /* temp here */
     virtual void requestInitData();

@@ -1,22 +1,18 @@
 #ifndef BACKTEST_MARKETSESSIONUTILS_H
 #define BACKTEST_MARKETSESSIONUTILS_H
 
+#include "Backtest/InstrumentClassification.h"
 #include <QDate>
 #include <QDateTime>
+#include <QHash>
 #include <QString>
 #include <QStringList>
+#include <QVariantMap>
 
 namespace Backtest {
 
-/// Yahoo Finance symbol classification (heuristic). International listings may
-/// be misclassified as EquityUs until explicit overrides exist.
-enum class InstrumentKind {
-    EquityUs,
-    Forex,
-    Crypto,
-};
-
-InstrumentKind classifyYahooSymbol(const QString& symbol);
+/// @deprecated Prefer inferAssetKindFromSymbolHeuristic — kept for call-site clarity.
+AssetKind classifyYahooSymbol(const QString& symbol);
 
 /// True if \a nyDate is Saturday or Sunday in America/New_York.
 bool isWeekendDateInNy(QDate nyDate);
@@ -25,8 +21,16 @@ bool isWeekendDateInNy(QDate nyDate);
 /// time-of-day in NY. Used to clamp user end dates that fall on US equity weekends.
 QDateTime clampEndDateTimeForUsEquityDaily(const QDateTime& end);
 
-/// True if every symbol is US equity (no forex/crypto) — safe for global equity clamp.
-bool allSymbolsClassifyAsUsEquity(const QStringList& symbols);
+/// True if every symbol uses Yahoo US cash equity daily session rules (weekend clamp, gap skip).
+/// When \a dbConnectionName is non-empty and the DB is open, uses \ref InstrumentMetadataResolver
+/// (provider truth + strategy overrides). Otherwise falls back to symbol heuristics only.
+bool allSymbolsUseYahooUsCashEquitySessionDaily(const QString& dbConnectionName,
+                                                const QString& providerId,
+                                                const QStringList& symbols,
+                                                const QHash<QString, QVariantMap>& strategyAssetBySymbol = {});
+
+/// Convenience: no DB / heuristic-only resolution (tests and offline call sites).
+bool allSymbolsUseYahooUsCashEquitySessionDaily(const QStringList& symbols);
 
 /// True if [period1, period2) (Yahoo chart UTC epoch bounds, period2 exclusive)
 /// contains only UTC days whose noon-instant maps to Sat/Sun in NY.

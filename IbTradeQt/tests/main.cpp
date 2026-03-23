@@ -8,11 +8,13 @@
 #include "phase1/tst_block_interfaces.h"
 #include "phase1/tst_expected.h"
 #include "phase1/tst_scope.h"
+#include "phase1/tst_subscription_request_store.h"
 #include "phase2/tst_replay.h"
 #include "phase2/tst_adapters.h"
 #include "phase2/tst_integration.h"
 #include "phase3/tst_block_registry.h"
 #include "phase3/tst_pipeline_runner.h"
+#include "phase3/tst_semantic_mapping.h"
 #include "phase4/tst_supervision.h"
 #include "phase5/tst_observability.h"
 #include "phase6/tst_benchmark.h"
@@ -26,9 +28,11 @@
 #include "backtest/tst_backtest.h"
 #include "backtest/tst_yahoo_backtest.h"
 #include "backtest/tst_market_session_utils.h"
+#include "backtest/tst_instrument_metadata_resolver.h"
 #include "backtest/tst_historical_data_manager_cache.h"
 #include "backtest/tst_backtest_extended.h"
 #include "backtest/tst_live_backtest.h"
+#include "backtest/tst_semantic_live_historical.h"
 #include "backtest/tst_backtest_engine_coverage.h"
 #include "db/tst_dbhandler_disconnect.h"
 #include "backtest/tst_workspace_session.h"
@@ -43,6 +47,7 @@
 #include "backend/tst_strategy_definition.h"
 #include "backend/tst_strategy_catalog.h"
 #include "integration/tst_adapter_pure_backtest.h"
+#include "integration/tst_semantic_e2e.h"
 #include "parity/tst_pipeline_parity.h"
 #include "ui/tst_runtime_policy_editor.h"
 
@@ -59,6 +64,7 @@ int main(int argc, char *argv[])
     { TestBlockInterfaces tc;  status |= QTest::qExec(&tc, argc, argv); }
     { TestExpected tc;         status |= QTest::qExec(&tc, argc, argv); }
     { TestScope tc;            status |= QTest::qExec(&tc, argc, argv); }
+    { TestSubscriptionRequestStore tc; status |= QTest::qExec(&tc, argc, argv); }
 
     // Phase 2
     { TestReplay tc;           status |= QTest::qExec(&tc, argc, argv); }
@@ -68,6 +74,7 @@ int main(int argc, char *argv[])
     // Phase 3
     { TestBlockRegistry tc;    status |= QTest::qExec(&tc, argc, argv); }
     { TestPipelineRunner tc;   status |= QTest::qExec(&tc, argc, argv); }
+    { TestSemanticMapping tc;  status |= QTest::qExec(&tc, argc, argv); }
 
     // Phase 4
     { TestSupervision tc;      status |= QTest::qExec(&tc, argc, argv); }
@@ -113,6 +120,7 @@ int main(int argc, char *argv[])
     // Backtester — Yahoo Finance data source + benchmark comparison
     { TestHistoricalDataManagerCache tc;      status |= QTest::qExec(&tc, argc, argv); }
     { TestMarketSessionUtils tc;              status |= QTest::qExec(&tc, argc, argv); }
+    { TestInstrumentMetadataResolver tc;      status |= QTest::qExec(&tc, argc, argv); }
     { TestYahooFinanceDataSource tc;         status |= QTest::qExec(&tc, argc, argv); }
     { TestBenchmarkComparison tc;            status |= QTest::qExec(&tc, argc, argv); }
     { TestMACrossoverBacktest tc;            status |= QTest::qExec(&tc, argc, argv); }
@@ -132,6 +140,11 @@ int main(int argc, char *argv[])
     // Live Yahoo backtests — require internet, write HTML+TXT reports (IBTRADING_LIVE_TESTS=1)
     if (qEnvironmentVariable("IBTRADING_LIVE_TESTS") == "1") {
         { TestLiveBacktest tc; status |= QTest::qExec(&tc, argc, argv); }
+    }
+
+    // Yahoo + semanticPipeline / semanticModelRebalance smoke (IBTRADING_SEMANTIC_LIVE_TESTS=1)
+    if (qEnvironmentVariable("IBTRADING_SEMANTIC_LIVE_TESTS") == "1") {
+        { TestSemanticPipelineLiveHistorical tc; status |= QTest::qExec(&tc, argc, argv); }
     }
 
     { TestStorageConfig tc;                  status |= QTest::qExec(&tc, argc, argv); }
@@ -160,6 +173,9 @@ int main(int argc, char *argv[])
 
     // Phase 10 — Adapter pure-backtest mode + config parity
     { TestAdapterPureBacktest tc;            status |= QTest::qExec(&tc, argc, argv); }
+
+    // Semantic pipeline — ModelDataList rebalance/risk/execution + async alpha (mock ports)
+    { TestSemanticE2E tc;                    status |= QTest::qExec(&tc, argc, argv); }
 
     // Pipeline Parity — live/backtest semantic parity verification
     { TestPipelineParity tc;                 status |= QTest::qExec(&tc, argc, argv); }

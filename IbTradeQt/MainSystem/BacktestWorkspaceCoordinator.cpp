@@ -97,8 +97,31 @@ void BacktestWorkspaceCoordinator::wireSignals()
             this, [this](const Backtest::BacktestRunConfig& config) {
         ensureController();
         if (!m_controller) return;
+        Backtest::BacktestRunConfig runCfg = config;
+        if (m_activeKey && m_sessions.contains(*m_activeKey)) {
+            const Session& s = m_sessions[*m_activeKey];
+            QJsonObject      al;
+            if (s.key.kind == SessionKind::LiveNode && m_backend && !s.key.nodeId.isEmpty()) {
+                al = m_backend->nodeInfo(s.key.nodeId).value(QStringLiteral("assetList")).toObject();
+            } else if (s.key.kind == SessionKind::CatalogVersion) {
+                al = s.workingPipeline.value(QStringLiteral("assetList")).toObject();
+            }
+            // Merge: strategy/catalog assetList first, then Run Configuration panel overrides
+            // (same symbol key) so ad-hoc SYMBOL:Type in the dock wins for that run.
+            QJsonObject merged = al;
+            if (!runCfg.assetListJson.isEmpty()) {
+                const QJsonObject panel =
+                    QJsonDocument::fromJson(runCfg.assetListJson.toUtf8()).object();
+                for (auto it = panel.begin(); it != panel.end(); ++it)
+                    merged[it.key()] = it.value();
+            }
+            if (!merged.isEmpty()) {
+                runCfg.assetListJson =
+                    QString::fromUtf8(QJsonDocument(merged).toJson(QJsonDocument::Compact));
+            }
+        }
         m_dock->setRunning(true);
-        m_controller->start(config);
+        m_controller->start(runCfg);
     });
 
     connect(m_dock, &BacktestUI::BacktestWorkspaceDock::loadRunRequested,

@@ -4,6 +4,8 @@
 #include <QObject>
 #include <QJsonObject>
 #include "Contracts.h"
+#include "PipelineRuntimeContext.h"
+#include "SemanticTypes.h"
 #include "../Common/IClock.h"
 
 namespace Pipeline {
@@ -29,6 +31,16 @@ public:
     // to QDateTime::currentDateTime()). Backtest path passes SimulatedClock*.
     virtual void setClock(IClock* clock) { m_clock = clock; }
 
+    /// Injected ports (realtime, historical, orders, positions) — same for backtest/live.
+    virtual void setRuntimeContext(const PipelineRuntimeContext* ctx) { m_runtimeContext = ctx; }
+    const PipelineRuntimeContext* runtimeContext() const { return m_runtimeContext; }
+
+    /// Legacy-aligned semantic evaluation: consume prior stage output, return updated list.
+    virtual ModelDataList processSemantic(const ModelDataList& in, const QString& correlationId);
+
+    /// When true, `processSemantic` may complete asynchronously; the runner waits for `semanticReady`.
+    virtual bool semanticCompletionIsAsync() const { return false; }
+
 public slots:
     virtual void onTick(const Pipeline::MarketTick& tick) = 0;
 
@@ -42,10 +54,12 @@ public slots:
 
 signals:
     void signalGenerated(const Pipeline::Signal& signal);
+    void semanticReady(const Pipeline::ModelDataList& out, const QString& correlationId);
     void errorOccurred(const QString& message);
 
 protected:
     IClock* m_clock = nullptr;
+    const PipelineRuntimeContext* m_runtimeContext = nullptr;
 };
 
 } // namespace Pipeline

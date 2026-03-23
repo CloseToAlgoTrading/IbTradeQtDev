@@ -1,6 +1,10 @@
 #include "MaxPositionRiskBlock.h"
 
+#include "../Pipeline/BlockSubscriptionUtils.h"
+#include "../Pipeline/IDataSubscriptionPort.h"
+#include "../Pipeline/PipelineRuntimeContext.h"
 #include <QJsonObject>
+#include <QSet>
 #include <cmath>
 
 namespace Blocks {
@@ -36,6 +40,23 @@ Pipeline::RiskDecision MaxPositionRiskBlock::evaluate(
     const QVector<Pipeline::TargetPosition>& allTargets,
     const QMap<QString, double>& /*currentPositions*/)
 {
+    if (runtimeContext() && runtimeContext()->subscription) {
+        const QString oid = Pipeline::subscriptionOwnerId(this, QStringLiteral("risk:"), id());
+        QSet<QString> seen;
+        QVector<QString> syms;
+        for (const auto& t : allTargets) {
+            const QString u = t.symbol.trimmed().toUpper();
+            if (u.isEmpty() || seen.contains(u))
+                continue;
+            seen.insert(u);
+            syms.append(u);
+        }
+        if (syms.isEmpty())
+            runtimeContext()->subscription->clearOwner(oid);
+        else
+            runtimeContext()->subscription->setDesiredSymbols(oid, syms);
+    }
+
     if (std::abs(target.targetQuantity) > m_maxPositionSize) {
         double clampedDelta = (target.targetQuantity > 0)
             ? m_maxPositionSize - target.currentQuantity
@@ -67,6 +88,14 @@ Pipeline::RiskDecision MaxPositionRiskBlock::evaluate(
     }
 
     return {Pipeline::RiskDecision::Action::Approve, QStringLiteral("Within limits"), {}, id()};
+}
+
+Pipeline::ModelDataList MaxPositionRiskBlock::processSemantic(
+    const Pipeline::ModelDataList& in,
+    const QMap<QString, double>& currentPositions,
+    const QString& correlationId)
+{
+    return IRiskBlock::processSemantic(in, currentPositions, correlationId);
 }
 
 } // namespace Blocks

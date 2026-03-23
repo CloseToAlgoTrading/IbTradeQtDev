@@ -1,10 +1,16 @@
 #include "cpipelinestrategyadapter.h"
 
 #include <QtGlobal>
+#include <algorithm>
+#include "Common/Expected.h"
+#include "GlobalDef.h"
 #include "Pipeline/PipelineFactory.h"
+#include "Pipeline/PipelineRuntimeContext.h"
 #include "Pipeline/PipelineConstants.h"
 #include "Pipeline/StrategyPipelineRunner.h"
 #include "Pipeline/UniverseResolver.h"
+#include "Pipeline/IDataSubscriptionPort.h"
+#include "Ports/IPositionRepositoryPort.h"
 #include "Supervision/Supervisor.h"
 #include "Supervision/StrategyRuntime.h"
 #include "IBComm/MarketDataRouter.h"
@@ -118,7 +124,14 @@ void CPipelineStrategyAdapter::refreshMarketUniverseAndSubscriptions()
     Supervision::Supervisor* sup =
         m_useInjectedContext ? m_injectedContext.supervisor : s_globalSupervisor;
     applyUniverseSymbolsToRuntime(sup, symbols);
-    syncLiveMarketDataSubscriptionsTo(symbols);
+    if (m_backtestRunner) {
+        QStringList qsl;
+        for (const QString& s : symbols)
+            qsl << s;
+        QMetaObject::invokeMethod(m_backtestRunner.get(), "setUniverseFromList", Qt::QueuedConnection,
+                                  Q_ARG(QStringList, qsl));
+    }
+    syncLiveMarketDataSubscriptionsTo();
 }
 
 Pipeline::StrategyPipelineRunner* CPipelineStrategyAdapter::backtestPipelineRunner() const
@@ -151,6 +164,12 @@ bool CPipelineStrategyAdapter::start()
                 alpha->setClock(m_injectedContext.clock);
 
             {
+                Pipeline::PipelineRuntimeContext rtx;
+                rtx.subscription = this;
+                m_backtestRunner->setRuntimeContext(rtx);
+            }
+
+            {
                 auto resolved = Pipeline::UniverseResolver::resolve(m_pipelineConfig);
                 if (resolved.mode == Pipeline::UniverseResolutionResult::Mode::ExplicitStaticSymbols)
                     m_backtestRunner->setUniverse(resolved.symbols);
@@ -178,7 +197,7 @@ bool CPipelineStrategyAdapter::start()
             runtimeName,
             [this, runtimeName, execPort, posRepo, router]() {
                 return Pipeline::PipelineFactory::createRuntime(
-                    runtimeName, m_pipelineConfig, execPort, posRepo, router);
+                    runtimeName, m_pipelineConfig, execPort, posRepo, router, this);
             },
             Supervision::RestartPolicy::Never);
 
@@ -211,7 +230,8 @@ bool CPipelineStrategyAdapter::start()
                 m_pipelineConfig,
                 execPort,
                 posRepo,
-                s_globalRouter);
+                s_globalRouter,
+                this);
             return runtime;
         }, Supervision::RestartPolicy::OnFailure);
 
@@ -222,7 +242,7 @@ bool CPipelineStrategyAdapter::start()
             const QVector<QString> symbols = computeTradeableSymbolSet();
             applyUniverseSymbolsToRuntime(s_globalSupervisor, symbols);
             warnIfLiveMissingUniverse(symbols);
-            syncLiveMarketDataSubscriptionsTo(symbols);
+            syncLiveMarketDataSubscriptionsTo();
         }
     }
 
@@ -302,22 +322,65 @@ Contract CPipelineStrategyAdapter::makeUsStockContract(const QString& symbol)
     return c;
 }
 
-QVector<QString> CPipelineStrategyAdapter::computeTradeableSymbolSet() const
+QVector<QString> CPipelineStrategyAdapter::computeBaseSymbolList() const
 {
+    QVector<QString> base;
+    QSet<QString> seen;
+    auto append = [&](const QString& s) {
+        const QString u = s.trimmed().toUpper();
+        if (u.isEmpty() || seen.contains(u))
+            return;
+        seen.insert(u);
+        base.append(u);
+    };
+
     const auto resolved = Pipeline::UniverseResolver::resolve(m_pipelineConfig);
     if (resolved.mode == Pipeline::UniverseResolutionResult::Mode::ExplicitStaticSymbols
         && !resolved.symbols.isEmpty()) {
-        return resolved.symbols;
+        for (const QString& s : resolved.symbols)
+            append(s);
+    } else {
+        const QVariantMap assets = assetList();
+        for (auto it = assets.constBegin(); it != assets.constEnd(); ++it) {
+            const QString k = it.key();
+            if (!k.isEmpty())
+                append(k);
+        }
     }
-    QVector<QString> out;
-    const QVariantMap assets = assetList();
-    out.reserve(assets.size());
-    for (auto it = assets.constBegin(); it != assets.constEnd(); ++it) {
-        const QString k = it.key();
-        if (!k.isEmpty())
-            out.append(k);
+
+    Ports::IPositionRepositoryPort* posRepo = nullptr;
+    if (m_useInjectedContext && m_injectedContext.posRepo)
+        posRepo = m_injectedContext.posRepo;
+    else if (s_globalPositionRepo)
+        posRepo = s_globalPositionRepo;
+    else if (s_globalPersistentPositionRepo)
+        posRepo = s_globalPersistentPositionRepo;
+
+    if (posRepo) {
+        const int sid = m_pipelineConfig.value(QStringLiteral("strategyId")).toInt(0);
+        const auto positions = posRepo->getAllPositions(sid);
+        if (positions.has_value()) {
+            for (const auto& row : *positions)
+                append(row.symbol);
+        }
     }
-    return out;
+
+    const QString bench = backtestProfile().defaultBenchmark.trimmed().toUpper();
+    if (!bench.isEmpty())
+        append(bench);
+
+    for (const auto& v : m_pipelineConfig.value(QStringLiteral("subscriptionOverlaySymbols")).toArray()) {
+        const QString s = v.toString().trimmed().toUpper();
+        if (!s.isEmpty())
+            append(s);
+    }
+
+    return base;
+}
+
+QVector<QString> CPipelineStrategyAdapter::computeTradeableSymbolSet() const
+{
+    return m_subscriptionStore.mergeUnion(computeBaseSymbolList());
 }
 
 void CPipelineStrategyAdapter::warnIfLiveMissingUniverse(const QVector<QString>& symbols) const
@@ -346,7 +409,7 @@ void CPipelineStrategyAdapter::applyUniverseSymbolsToRuntime(Supervision::Superv
                               Q_ARG(QStringList, qsl));
 }
 
-void CPipelineStrategyAdapter::syncLiveMarketDataSubscriptionsTo(const QVector<QString>& desired)
+void CPipelineStrategyAdapter::syncLiveMarketDataSubscriptionsTo()
 {
     if (m_execMode != ExecutionMode::Live)
         return;
@@ -354,25 +417,79 @@ void CPipelineStrategyAdapter::syncLiveMarketDataSubscriptionsTo(const QVector<Q
         qWarning() << "CPipelineStrategyAdapter: Live mode but no broker — skipping market data subscription";
         return;
     }
-    const QSet<QString> want = QSet<QString>(desired.begin(), desired.end());
-    const QSet<QString> have = QSet<QString>(m_liveSubscribedSymbols.begin(),
-                                             m_liveSubscribedSymbols.end());
 
-    for (const QString& s : have - want)
+    const QVector<QString> base = computeBaseSymbolList();
+    const QHash<QString, quint32> kinds = m_subscriptionStore.mergeSymbolKindMasks(base);
+
+    QVector<QString> wantTop;
+    QVector<QString> wantBars;
+    QVector<QString> wantTbt;
+    wantTop.reserve(kinds.size());
+    for (auto it = kinds.constBegin(); it != kinds.constEnd(); ++it) {
+        const QString& sym = it.key();
+        const quint32 k = it.value();
+        if (k & Pipeline::subscriptionKindMask(Pipeline::SubscriptionKind::TopOfBook))
+            wantTop.append(sym);
+        if (k & Pipeline::subscriptionKindMask(Pipeline::SubscriptionKind::RealtimeBars))
+            wantBars.append(sym);
+        if (k & Pipeline::subscriptionKindMask(Pipeline::SubscriptionKind::TickByTick))
+            wantTbt.append(sym);
+    }
+    std::sort(wantTop.begin(), wantTop.end());
+    std::sort(wantBars.begin(), wantBars.end());
+    std::sort(wantTbt.begin(), wantTbt.end());
+
+    m_coordTop.setDesiredSymbols(wantTop);
+    m_coordBars.setDesiredSymbols(wantBars);
+    m_coordTbt.setDesiredSymbols(wantTbt);
+
+    QStringList toSub;
+    QStringList toCancel;
+    m_coordTop.diffAgainstCurrent(m_liveSubscribedTop, &toSub, &toCancel);
+    for (const QString& s : toCancel)
         cancelRealTimeData(s);
-    for (const QString& s : want - have) {
+    for (const QString& s : toSub) {
         reqReadlTimeDataConfigData_t cfg{0, makeUsStockContract(s), QStringLiteral(""), false, false};
         if (!reqestRealTimeData(cfg))
             qWarning() << "CPipelineStrategyAdapter: reqestRealTimeData failed for" << s;
     }
-    m_liveSubscribedSymbols = QVector<QString>(want.begin(), want.end());
+    m_liveSubscribedTop = wantTop;
+
+    m_coordBars.diffAgainstCurrent(m_liveSubscribedRtBars, &toSub, &toCancel);
+    for (const QString& s : toCancel)
+        cancelRealTimeBars(s);
+    for (const QString& s : toSub) {
+        if (!requestRealTimeBars(s))
+            qWarning() << "CPipelineStrategyAdapter: requestRealTimeBars failed for" << s;
+    }
+    m_liveSubscribedRtBars = wantBars;
+
+    m_coordTbt.diffAgainstCurrent(m_liveSubscribedTickByTick, &toSub, &toCancel);
+    for (const QString& s : toCancel)
+        cancelTickByTickData(s);
+    for (const QString& s : toSub) {
+        reqTickByTickDataConfigData_t cfg{};
+        cfg.contract = makeUsStockContract(s);
+        cfg.tickType = QStringLiteral("AllLast");
+        cfg.numberOfTicks = 0;
+        cfg.ignoreSize = false;
+        if (!requestTickByTickData(cfg))
+            qWarning() << "CPipelineStrategyAdapter: requestTickByTickData failed for" << s;
+    }
+    m_liveSubscribedTickByTick = wantTbt;
 }
 
 void CPipelineStrategyAdapter::unsubscribeLiveMarketData()
 {
-    for (const QString& sym : m_liveSubscribedSymbols)
+    for (const QString& sym : m_liveSubscribedTop)
         cancelRealTimeData(sym);
-    m_liveSubscribedSymbols.clear();
+    for (const QString& sym : m_liveSubscribedRtBars)
+        cancelRealTimeBars(sym);
+    for (const QString& sym : m_liveSubscribedTickByTick)
+        cancelTickByTickData(sym);
+    m_liveSubscribedTop.clear();
+    m_liveSubscribedRtBars.clear();
+    m_liveSubscribedTickByTick.clear();
 }
 
 void CPipelineStrategyAdapter::stopPipeline()
@@ -390,6 +507,54 @@ void CPipelineStrategyAdapter::stopPipeline()
     }
     m_pipelineRunning = false;
     m_runtimeName.clear();
+    m_subscriptionStore.clearAll();
+}
+
+void CPipelineStrategyAdapter::setDesiredSymbols(const QString& ownerId, const QVector<QString>& symbols)
+{
+    m_subscriptionStore.setDesiredSymbols(ownerId, symbols);
+    if (!m_deferSubscriptionRefresh)
+        QMetaObject::invokeMethod(this, "onSubscriptionRequestsChanged", Qt::QueuedConnection);
+}
+
+void CPipelineStrategyAdapter::setDesiredSymbolsWithKinds(const QString& ownerId,
+                                                          const QVector<QString>& symbols,
+                                                          quint32 kindMask)
+{
+    m_subscriptionStore.setDesiredSymbolsWithKinds(ownerId, symbols, kindMask);
+    if (!m_deferSubscriptionRefresh)
+        QMetaObject::invokeMethod(this, "onSubscriptionRequestsChanged", Qt::QueuedConnection);
+}
+
+void CPipelineStrategyAdapter::clearOwner(const QString& ownerId)
+{
+    m_subscriptionStore.clearOwner(ownerId);
+    if (!m_deferSubscriptionRefresh)
+        QMetaObject::invokeMethod(this, "onSubscriptionRequestsChanged", Qt::QueuedConnection);
+}
+
+void CPipelineStrategyAdapter::clearAll()
+{
+    m_subscriptionStore.clearAll();
+    if (!m_deferSubscriptionRefresh)
+        QMetaObject::invokeMethod(this, "onSubscriptionRequestsChanged", Qt::QueuedConnection);
+}
+
+void CPipelineStrategyAdapter::beginPipelineEvaluation()
+{
+    m_subscriptionStore.clearAll();
+    m_deferSubscriptionRefresh = true;
+}
+
+void CPipelineStrategyAdapter::endPipelineEvaluation()
+{
+    m_deferSubscriptionRefresh = false;
+    refreshMarketUniverseAndSubscriptions();
+}
+
+void CPipelineStrategyAdapter::onSubscriptionRequestsChanged()
+{
+    refreshMarketUniverseAndSubscriptions();
 }
 
 void CPipelineStrategyAdapter::updateParametersFromConfig()

@@ -112,6 +112,9 @@ struct BacktestRunConfig {
     // "yahoo" | "csv" | "jsonl"
     QString     dataSourceId    = QStringLiteral("yahoo");
 
+    // Optional: compact JSON object { "SYM": { "classificationOverride": "...", ... } } for resolver.
+    QString     assetListJson;
+
     // Optional: path/URL for csv or jsonl sources; empty for yahoo
     QString     dataPath;
 
@@ -139,6 +142,7 @@ struct BacktestRunConfig {
         obj["fillTiming"]          = fillTiming;
         obj["slippageBps"]         = slippageBps;
         obj["dataSourceId"]        = dataSourceId;
+        obj["assetListJson"]       = assetListJson;
         obj["dataPath"]            = dataPath;
         return obj;
     }
@@ -166,6 +170,7 @@ struct BacktestRunConfig {
         c.fillTiming          = obj.value("fillTiming").toString("SignalOnClose_FillNextBarOpen");
         c.slippageBps         = obj.value("slippageBps").toDouble(1.0);
         c.dataSourceId        = obj.value("dataSourceId").toString("yahoo");
+        c.assetListJson       = obj.value("assetListJson").toString();
         c.dataPath            = obj.value("dataPath").toString();
         return c;
     }

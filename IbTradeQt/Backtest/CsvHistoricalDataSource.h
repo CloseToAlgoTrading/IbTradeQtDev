@@ -9,6 +9,8 @@
 namespace Backtest {
 
 // Synchronous historical data source backed by a CSV file.
+// Instrument classification: v1 does not populate InstrumentMetadata from CSV alone — treat as
+// Unknown in the resolver unless a separate manifest/column is added later.
 // Expected format (header required):
 //   symbol,timestamp,open,high,low,close,volume
 //   AAPL,2025-01-02T09:30:00,185.00,186.50,184.80,186.20,1200000

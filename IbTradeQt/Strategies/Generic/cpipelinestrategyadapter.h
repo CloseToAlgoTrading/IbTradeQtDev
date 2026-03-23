@@ -7,6 +7,9 @@
 #include "Adapters/MockExecutionAdapter.h"
 #include "Adapters/MockPositionRepository.h"
 #include "Backtest/BacktestDataTypes.h"
+#include "Pipeline/MarketDataCoordinator.h"
+#include "Pipeline/IDataSubscriptionPort.h"
+#include "Pipeline/SubscriptionRequestStore.h"
 #include "Backtest/SimulatedLedger.h"
 #include "Common/IClock.h"
 #include "GlobalDef.h"
@@ -33,7 +36,7 @@ class Supervisor;
 class StrategyRuntime;
 }
 
-class CPipelineStrategyAdapter : public CBaseModel
+class CPipelineStrategyAdapter : public CBaseModel, public Pipeline::IDataSubscriptionPort
 {
     Q_OBJECT
 
@@ -81,6 +84,15 @@ public:
 
     void refreshMarketUniverseAndSubscriptions();
 
+    // Pipeline::IDataSubscriptionPort — blocks request merged live symbol set (no direct broker calls).
+    void setDesiredSymbols(const QString& ownerId, const QVector<QString>& symbols) override;
+    void setDesiredSymbolsWithKinds(const QString& ownerId, const QVector<QString>& symbols,
+                                    quint32 kindMask) override;
+    void clearOwner(const QString& ownerId) override;
+    void clearAll() override;
+    void beginPipelineEvaluation() override;
+    void endPipelineEvaluation() override;
+
     Pipeline::StrategyPipelineRunner* backtestPipelineRunner() const;
 
     bool start() override;
@@ -98,16 +110,21 @@ private:
     static Contract makeUsStockContract(const QString& symbol);
 
     QVector<QString> computeTradeableSymbolSet() const;
+    QVector<QString> computeBaseSymbolList() const;
     void warnIfLiveMissingUniverse(const QVector<QString>& symbols) const;
     void applyUniverseSymbolsToRuntime(Supervision::Supervisor* supervisor,
                                        const QVector<QString>& symbols);
-    void syncLiveMarketDataSubscriptionsTo(const QVector<QString>& desired);
+    void syncLiveMarketDataSubscriptionsTo();
     void unsubscribeLiveMarketData();
     void stopPipeline();
     void updateParametersFromConfig();
     void updateConfigFromParameters();
     void updateInfoFromRuntime();
 
+private slots:
+    void onSubscriptionRequestsChanged();
+
+private:
     QJsonObject m_pipelineConfig;
     bool m_pipelineRunning = false;
     QString m_runtimeName;
@@ -123,7 +140,14 @@ private:
     MockExecutionAdapter m_mockExecution;
     MockPositionRepository m_mockPositionRepo;
 
-    QVector<QString> m_liveSubscribedSymbols;
+    QVector<QString> m_liveSubscribedTop;
+    QVector<QString> m_liveSubscribedRtBars;
+    QVector<QString> m_liveSubscribedTickByTick;
+    Pipeline::MarketDataCoordinator m_coordTop;
+    Pipeline::MarketDataCoordinator m_coordBars;
+    Pipeline::MarketDataCoordinator m_coordTbt;
+    Pipeline::SubscriptionRequestStore m_subscriptionStore;
+    bool m_deferSubscriptionRefresh = false;
 
     static IBComm::MarketDataRouter* s_globalRouter;
     static Supervision::Supervisor* s_globalSupervisor;

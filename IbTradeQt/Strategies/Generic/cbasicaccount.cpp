@@ -2,6 +2,9 @@
 #include "modelConstants.h"
 #include "mandatoryFieldRegistration.h"
 #include "mandatoryFieldKeys.h"
+#include "Backtest/InstrumentMetadataIb.h"
+#include "DB/dbhandler.h"
+#include <QSqlDatabase>
 
 CBasicAccount::CBasicAccount(QObject *parent) : CBaseModel(parent)
 {
@@ -64,6 +67,10 @@ void CBasicAccount::slotRecvAccountSummary(const CAccountSummary &obj)
 void CBasicAccount::slotEndRecvPosition()
 {
     m_assetList.clear();
+    DBHandler* dbh = m_dbManager.getDbHandler();
+    const QString dbConn = dbh ? dbh->connectionName() : QString();
+    const bool    dbOk   = !dbConn.isEmpty() && QSqlDatabase::database(dbConn).isOpen();
+
     for (auto iter = m_positionMap.constBegin(); iter != m_positionMap.constEnd(); ++iter)
     {
         if(iter.value().getPos() != 0.0)
@@ -75,6 +82,13 @@ void CBasicAccount::slotEndRecvPosition()
                 {AssetFields::BrokerPosition::Currency,     iter.value().getContract().currency.c_str()},
                 {AssetFields::BrokerPosition::Exchange,     iter.value().getContract().exchange.c_str()}
             });
+            if (dbOk) {
+                Backtest::upsertInstrumentMetadataFromIbSecType(
+                    dbConn,
+                    iter.key(),
+                    QString::fromStdString(iter.value().getContract().secType),
+                    QString::fromStdString(iter.value().getContract().exchange));
+            }
         }
     }
 }

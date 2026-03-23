@@ -20,9 +20,23 @@ cd tests/release && IBTRADING_EXTENDED_BACKTEST=1 ./ibtrading_tests
 
 Set `IBTRADING_EXTENDED_BACKTEST=1` in a nightly job or run locally before release.
 
+## Live Yahoo — semantic pipeline (`semanticPipeline` + `semanticModelRebalance`)
+
+Optional **short** run that uses **real** Yahoo historical data and a pipeline JSON with top-level `"semanticPipeline": true` and `"semanticModelRebalance": true` (full `ModelDataList` path through default `processSemantic` / `executeSemantic`). Same report directory as other live backtests. Execution is **simulated** (`BacktestSession` / ledger), not orders sent to **IB paper/live**; wiring a TWS paper account would be a separate manual or future automated check.
+
+Requires network; not enabled in default CI.
+
+```bash
+cd tests/release && IBTRADING_SEMANTIC_LIVE_TESTS=1 ./ibtrading_tests
+```
+
+`TestSemanticPipelineLiveHistorical` is only executed when `IBTRADING_SEMANTIC_LIVE_TESTS=1` (see `main.cpp`). It exercises the same `BacktestSession` stack as `TestLiveBacktest` but with `semanticPipeline` and `semanticModelRebalance` in the strategy JSON (see `tests/backtest/tst_semantic_live_historical.h`).
+
+---
+
 ## Live Yahoo (real `query1.finance.yahoo.com`)
 
-This is the **only** automated path that uses **real** Yahoo JSON (not mocks). Use it before release to validate parsing + network + full session on production-like data.
+This is the **primary** automated path that uses **real** Yahoo JSON (not mocks) for the **long** MA-crossover backtests (see also the shorter semantic-pipeline live smoke above). Use it before release to validate parsing + network + full session on production-like data.
 
 Requires network; can be flaky if Yahoo throttles or is down.
 

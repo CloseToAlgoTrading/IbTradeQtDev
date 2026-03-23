@@ -122,6 +122,8 @@ public:
         emit ohlcvBar(bar);
     }
 
+    bool hasLastTick(const QString& symbol) const { return m_lastPriceCache.contains(symbol); }
+
     Pipeline::MarketTick lastPrice(const QString& symbol) const {
         return m_lastPriceCache.value(symbol);
     }

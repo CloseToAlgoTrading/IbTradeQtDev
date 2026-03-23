@@ -3,7 +3,9 @@
 #include "Backtest/BacktestWorkspaceSession.h"
 #include "Pipeline/UniverseResolver.h"
 #include "RuntimePolicyEditor.h"
+#include "Backtest/AssetUniverseInput.h"
 #include <QJsonDocument>
+#include <QJsonObject>
 #include <QLineEdit>
 #include <QDateEdit>
 #include <QDoubleSpinBox>
@@ -29,7 +31,8 @@ BacktestRunConfigPanel::BacktestRunConfigPanel(QWidget* parent)
 void BacktestRunConfigPanel::buildForm() {
     // --- Fields ---
     m_symbolsEdit = new QLineEdit(QStringLiteral("AMD,NVDA"));
-    m_symbolsEdit->setPlaceholderText(QStringLiteral("Comma-separated, e.g. AMD,NVDA"));
+    m_symbolsEdit->setPlaceholderText(AssetUniverseInput::lineEditPlaceholder());
+    m_symbolsEdit->setToolTip(AssetUniverseInput::lineEditToolTip());
 
     m_startDateEdit = new QDateEdit(QDate::currentDate().addYears(-5));
     m_startDateEdit->setCalendarPopup(true);
@@ -306,9 +309,14 @@ Backtest::BacktestRunConfig BacktestRunConfigPanel::currentConfig() const {
     c.catalogStrategyId   = m_strategyDefId;
     c.catalogVersionId    = m_catalogVersionId;
 
-    const QString symsText = m_symbolsEdit->text().trimmed();
-    for (const QString& s : symsText.split(',', Qt::SkipEmptyParts))
-        c.symbols.append(s.trimmed().toUpper());
+    const auto parsed = AssetUniverseInput::parseLine(m_symbolsEdit->text());
+    c.symbols           = parsed.symbolOrder;
+    const QJsonObject assetListObj =
+        AssetUniverseInput::classificationOverridesToJsonObject(parsed.classificationOverrideBySymbol);
+    if (!assetListObj.isEmpty()) {
+        c.assetListJson =
+            QString::fromUtf8(QJsonDocument(assetListObj).toJson(QJsonDocument::Compact));
+    }
 
     c.startDate      = QDateTime(m_startDateEdit->date(), QTime(0, 0), Qt::UTC);
     c.endDate        = QDateTime(m_endDateEdit->date(),   QTime(23, 59, 59), Qt::UTC);
