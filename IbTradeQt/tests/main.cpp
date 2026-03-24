@@ -40,6 +40,7 @@
 #include "backtest/tst_backtest_run_persistence.h"
 #include "backtest/tst_backtest_statistics.h"
 #include "backtest/tst_backtest_report_golden.h"
+#include "backtest/tst_backtest_summary_formatter.h"
 #include "backend/tst_storage_config.h"
 #include "backend/tst_persistence_factory.h"
 #include "backend/tst_model_tree_repository.h"
@@ -49,6 +50,7 @@
 #include "backend/tst_cli_proof.h"
 #include "backend/tst_strategy_definition.h"
 #include "backend/tst_strategy_catalog.h"
+#include "pipeline/tst_pipeline_config_mutations.h"
 #include "integration/tst_adapter_pure_backtest.h"
 #include "integration/tst_semantic_e2e.h"
 #include "parity/tst_pipeline_parity.h"
@@ -158,6 +160,7 @@ int main(int argc, char *argv[])
     IBTRADING_RUN_TEST(TestBacktestRunPersistence, tc);
     IBTRADING_RUN_TEST(TestBacktestStatistics, tc);
     IBTRADING_RUN_TEST(TestBacktestReportGolden, tc);
+    IBTRADING_RUN_TEST(TestBacktestSummaryFormatter, tc);
 
     // Extended LEGO backtests (CSV + default pipeline JSON). Run: IBTRADING_EXTENDED_BACKTEST=1 ./tests
     if (qEnvironmentVariable("IBTRADING_EXTENDED_BACKTEST") == "1") {
@@ -192,6 +195,8 @@ int main(int argc, char *argv[])
 
     // Strategy Catalog (v3: families + versions)
     IBTRADING_RUN_TEST(TestStrategyCatalog, tc);
+
+    IBTRADING_RUN_TEST(TestPipelineConfigMutations, tc);
 
     // Phase 10 — Adapter pure-backtest mode + config parity
     IBTRADING_RUN_TEST(TestAdapterPureBacktest, tc);

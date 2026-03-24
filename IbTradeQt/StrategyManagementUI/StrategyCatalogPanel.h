@@ -27,6 +27,8 @@ public:
                   const QMap<QString, int>& versionCounts,
                   const QMap<QString, QJsonObject>& latestConfigs);
 
+    void selectStrategyById(const QString& strategyId);
+
 signals:
     void strategySelected(const QString& strategyId);
     void blockSelected(const QString& strategyId,

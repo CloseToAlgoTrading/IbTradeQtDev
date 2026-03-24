@@ -62,6 +62,9 @@ public:
     Backtest::Workspace::RunFieldsSnapshot runFieldsSnapshot() const;
     void applyRunFieldsSnapshot(const Backtest::Workspace::RunFieldsSnapshot& s);
 
+    /// Restore Run Configuration fields from a persisted run (e.g. history row).
+    void applyRunConfigFields(const Backtest::BacktestRunConfig& c);
+
     void setProgrammaticUpdate(bool on) { m_programmaticUpdate = on; }
 
     // Progress / status (called by BacktestWorkspaceDock)

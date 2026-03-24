@@ -38,6 +38,11 @@ public:
 
     QJsonObject workingConfig() const { return m_workingConfig; }
     bool isConfigDirty() const { return m_configDirty; }
+    QString currentStrategyId() const { return m_currentStrategyId; }
+
+    void loadVersionAtRow(int row);
+    void resetWorkingToSelectedVersion();
+    void setWorkingPipelineConfig(const QJsonObject& pipelineConfig);
 
 signals:
     void metadataChanged(const QString& strategyId,
@@ -61,8 +66,11 @@ signals:
                               const QString& category,
                               int blockIndex);
 
+    void versionRowChangeRequested(int newRow, int previousRow);
+
 private slots:
-    void onVersionSelected(int row, int column);
+    void onVersionCurrentCellChanged(int currentRow, int currentColumn,
+                                     int previousRow, int previousColumn);
     void onSaveMetadata();
     void onNewVersion();
     void onPublish();
@@ -111,6 +119,7 @@ private:
     QJsonArray      m_currentVersions;
     QJsonObject     m_workingConfig;
     bool            m_configDirty = false;
+    bool            m_suppressVersionNav = false;
 
     StrategyDetailPresenter* m_detailPresenter = nullptr;
 };

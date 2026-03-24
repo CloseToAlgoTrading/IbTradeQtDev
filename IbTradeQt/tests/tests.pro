@@ -75,6 +75,7 @@ SOURCES += \
     backtest/tst_backtest_run_persistence.cpp \
     backtest/tst_backtest_statistics.cpp \
     backtest/tst_backtest_report_golden.cpp \
+    backtest/tst_backtest_summary_formatter.cpp \
     ../Brokers/IB/src/Decimal.cpp \
     ../CObjects/caccountsummary.cpp \
     ../CObjects/cposition.cpp \
@@ -136,6 +137,8 @@ SOURCES += \
     ../Backtest/BacktestReportModelBuilder.cpp \
     ../Backtest/BacktestHtmlTemplateRenderer.cpp \
     ../Backtest/BacktestMetricsMapper.cpp \
+    ../Backtest/EquityCurvePnl.cpp \
+    ../Backtest/BacktestSummaryFormatter.cpp \
     ../Backtest/Reporting/MomentumSemanticHtmlWriter.cpp \
     ../Backtest/BacktestSession.cpp \
     ../Backtest/BacktestMarketDataAccessor.cpp \
@@ -170,6 +173,7 @@ SOURCES += \
     ../StrategyManagementUI/StrategyDetailPanel.cpp \
     ../StrategyManagementUI/StrategyManagementPanel.cpp \
     ../Pipeline/PipelineTreeUtils.cpp \
+    ../Pipeline/PipelineConfigMutations.cpp \
     ../Pipeline/PipelineLog.cpp \
     ../Pipeline/StrategyPipelineRunner.cpp \
     ../Pipeline/IAlphaBlock.cpp \
@@ -343,6 +347,7 @@ HEADERS += \
     backtest/tst_backtest_run_persistence.h \
     backtest/tst_backtest_statistics.h \
     backtest/tst_backtest_report_golden.h \
+    backtest/tst_backtest_summary_formatter.h \
     db/tst_dbhandler_disconnect.h \
     backend/tst_storage_config.h \
     backend/tst_persistence_factory.h \
@@ -353,6 +358,7 @@ HEADERS += \
     backend/tst_cli_proof.h \
     backend/tst_strategy_definition.h \
     backend/tst_strategy_catalog.h \
+    pipeline/tst_pipeline_config_mutations.h \
     integration/tst_adapter_pure_backtest.h \
     integration/tst_semantic_e2e.h \
     parity/tst_pipeline_parity.h \
@@ -422,6 +428,7 @@ HEADERS += \
     ../StrategyManagementUI/StrategyDetailPanel.h \
     ../StrategyManagementUI/StrategyManagementPanel.h \
     ../Pipeline/PipelineTreeUtils.h \
+    ../Pipeline/PipelineConfigMutations.h \
     ../Pipeline/PipelineLog.h \
     ../MainSystem/WorkspaceWidgets/BlockInspectorPanel.h \
     ../MainSystem/WorkspaceWidgets/RuntimePolicyEditor.h \

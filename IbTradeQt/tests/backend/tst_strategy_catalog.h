@@ -357,11 +357,11 @@ private slots:
         QCOMPARE(fetched["description"].toString(), "A description");
         QCOMPARE(fetched["lifecycleState"].toString(), "draft");
 
-        // Plan: createStrategyCatalogEntry creates strategy + v1
+        // createStrategyCatalogEntry creates strategy + v0
         QJsonArray versions = m_backend->listStrategyVersions(stratId);
         QCOMPARE(versions.size(), 1);
         QJsonObject v1 = versions[0].toObject();
-        QCOMPARE(v1["versionNumber"].toInt(), 1);
+        QCOMPARE(v1["versionNumber"].toInt(), 0);
         QVERIFY(v1["configJson"].toString().contains("alphas"));
     }
 
@@ -369,7 +369,7 @@ private slots:
         setupBackend();
         QString stratId = m_backend->createStrategyCatalogEntry(
             "VerStrat", static_cast<int>(ModelType::STRATEGY_PIPELINE));
-        // v1 auto-created by createStrategyCatalogEntry
+        // v0 auto-created by createStrategyCatalogEntry
 
         QJsonObject cfg;
         cfg["alphas"] = QJsonArray();
@@ -377,7 +377,7 @@ private slots:
         QVERIFY(!v2Id.isEmpty());
 
         QJsonObject v2Info = m_backend->strategyVersionInfo(v2Id);
-        QCOMPARE(v2Info["versionNumber"].toInt(), 2);
+        QCOMPARE(v2Info["versionNumber"].toInt(), 1);
         QCOMPARE(v2Info["notes"].toString(), "Second version");
         QCOMPARE(v2Info["isPublished"].toBool(), false);
 
@@ -386,7 +386,7 @@ private slots:
         QVERIFY(!v3Id.isEmpty());
 
         QJsonObject v3Info = m_backend->strategyVersionInfo(v3Id);
-        QCOMPARE(v3Info["versionNumber"].toInt(), 3);
+        QCOMPARE(v3Info["versionNumber"].toInt(), 2);
         QCOMPARE(v3Info["createdFromVersionId"].toString(), v2Id);
     }
 
@@ -421,8 +421,8 @@ private slots:
 
         QJsonArray versions = m_backend->listStrategyVersions(stratId);
         QCOMPARE(versions.size(), 4);
-        QCOMPARE(versions[0].toObject()["versionNumber"].toInt(), 1);
-        QCOMPARE(versions[3].toObject()["versionNumber"].toInt(), 4);
+        QCOMPARE(versions[0].toObject()["versionNumber"].toInt(), 0);
+        QCOMPARE(versions[3].toObject()["versionNumber"].toInt(), 3);
     }
 
     void testCreateStrategyFromLiveTreeAutoBindsVersion() {
@@ -436,7 +436,7 @@ private slots:
         QVERIFY(!binding.isEmpty());
         QVERIFY(!binding.value("strategyId").toString().isEmpty());
         QVERIFY(!binding.value("versionId").toString().isEmpty());
-        QCOMPARE(binding.value("versionNumber").toInt(), 1);
+        QCOMPARE(binding.value("versionNumber").toInt(), 0);
     }
 
     void testDetectDivergence_identical() {
@@ -524,7 +524,7 @@ private slots:
 
         QJsonObject newBinding = m_backend->bindingForNode(stratId);
         QCOMPARE(newBinding.value("versionId").toString(), v2Id);
-        QCOMPARE(newBinding.value("versionNumber").toInt(), 2);
+        QCOMPARE(newBinding.value("versionNumber").toInt(), 1);
     }
 
     void testOrphanRepairUsesNewSchema() {
@@ -713,7 +713,7 @@ private slots:
         QJsonObject fetched = m_backend->strategyDefinition(defId);
         QVERIFY(!fetched.isEmpty());
         QCOMPARE(fetched["strategyDefId"].toString(), defId);
-        QCOMPARE(fetched["version"].toInt(), 1);
+        QCOMPARE(fetched["version"].toInt(), 0);
 
         // Legacy listStrategyDefinitions should include it
         QJsonArray list = m_backend->listStrategyDefinitions();
@@ -816,7 +816,7 @@ private slots:
         QJsonObject binding = m_backend->bindingForNode(nodeId);
         QCOMPARE(binding["strategyId"].toString(), stratId);
         QCOMPARE(binding["versionId"].toString(), v1Id);
-        QCOMPARE(binding["versionNumber"].toInt(), 1);
+        QCOMPARE(binding["versionNumber"].toInt(), 0);
 
         // Create v2 and rebind
         QJsonObject config2;
@@ -827,12 +827,12 @@ private slots:
 
         QJsonObject binding2 = m_backend->bindingForNode(nodeId);
         QCOMPARE(binding2["versionId"].toString(), v2Id);
-        QCOMPARE(binding2["versionNumber"].toInt(), 2);
+        QCOMPARE(binding2["versionNumber"].toInt(), 1);
 
         // strategyDefinitionForNode also returns the new versionId
         QJsonObject defForNode = m_backend->strategyDefinitionForNode(nodeId);
         QCOMPARE(defForNode["versionId"].toString(), v2Id);
-        QCOMPARE(defForNode["version"].toInt(), 2);
+        QCOMPARE(defForNode["version"].toInt(), 1);
     }
 
     void testBacktestVersionResolution() {
@@ -853,7 +853,7 @@ private slots:
         // Verify version info can be retrieved and config matches
         QJsonObject v1Info = m_backend->strategyVersionInfo(v1Id);
         QVERIFY(!v1Info.isEmpty());
-        QCOMPARE(v1Info["versionNumber"].toInt(), 1);
+        QCOMPARE(v1Info["versionNumber"].toInt(), 0);
 
         QString v1ConfigJson = v1Info["configJson"].toString();
         QJsonDocument v1Doc = QJsonDocument::fromJson(v1ConfigJson.toUtf8());
@@ -924,7 +924,7 @@ private slots:
         QVERIFY(m_backend->bindLiveNodeToVersion(nodeId, stratId, v2Id));
         QJsonObject binding = m_backend->bindingForNode(nodeId);
         QCOMPARE(binding["versionId"].toString(), v2Id);
-        QCOMPARE(binding["versionNumber"].toInt(), 2);
+        QCOMPARE(binding["versionNumber"].toInt(), 1);
     }
 
     void testPublishSemanticsForVersionSelection() {

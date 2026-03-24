@@ -1,5 +1,8 @@
 #include "Backtest/Reporting/MomentumSemanticHtmlWriter.h"
 
+#include "Backtest/BacktestSummaryFormatter.h"
+#include "Pipeline/StrategyRuntimePolicy.h"
+
 #include <QFile>
 #include <QTextStream>
 #include <QDate>
@@ -300,17 +303,6 @@ void writeSvgStrategyVsBenchmark(QTextStream& html, const QString& title,
     html << "</svg>\n";
 }
 
-QString dataQualityLabel(Backtest::DataQuality q)
-{
-    using DQ = Backtest::DataQuality;
-    switch (q) {
-    case DQ::RealTicks:       return QStringLiteral("RealTicks");
-    case DQ::SynthesizedOHLC: return QStringLiteral("SynthesizedOHLC");
-    case DQ::DailyBars:       return QStringLiteral("DailyBars");
-    }
-    return QStringLiteral("?");
-}
-
 QDateTime firstLongBuyTime(const QVector<Backtest::FilledOrder>& trades)
 {
     for (const auto& t : trades) {
@@ -403,74 +395,25 @@ void writeReport(const Backtest::BacktestResult& result,
             "<b>end-of-bar mark-to-market equity</b> (ledger snapshots at bar close), not from intraday OHLC lows.</div>\n";
 
     html << "<h2 id=\"summary-stats\">Summary statistics</h2>\n<table class=\"kv\">\n";
-    const QString naCell = QStringLiteral("\u2014"); // em dash — not applicable vs other column
 
-    auto statRow = [&](const char* k, const QString& v) {
-        html << "<tr><td>" << k << "</td><td>" << htmlEsc(v) << "</td></tr>\n";
-    };
-    auto statRow3 = [&](const char* k, const QString& strategyVal, const QString& benchmarkVal) {
-        html << "<tr><td>" << k << "</td><td>" << htmlEsc(strategyVal) << "</td><td>" << htmlEsc(benchmarkVal)
-             << "</td></tr>\n";
-    };
+    const Pipeline::StrategyRuntimePolicy summaryPolicy =
+        Backtest::BacktestSummaryFormatter::policyForSemanticReport(rebalanceEveryNBars);
+    const QVector<Backtest::BacktestSummaryRow> sumRows =
+        Backtest::BacktestSummaryFormatter::buildRows(result, summaryPolicy);
 
-    const QString isoStart = result.startDate.toUTC().toString(Qt::ISODate);
-    const QString isoEnd   = result.endDate.toUTC().toString(Qt::ISODate);
-    const QString rebText =
-        QStringLiteral("every %1 bar closes (~%1 trading days per day in this feed)").arg(rebalanceEveryNBars);
-
-    if (!result.benchmark.symbol.isEmpty()) {
-        html << "<tr><th>Metric</th><th>Strategy</th><th>Benchmark (buy-and-hold "
-             << htmlEsc(result.benchmark.symbol) << ")</th></tr>\n";
-
-        QString benchFinalCap;
-        if (!result.benchmark.equityCurve.isEmpty())
-            benchFinalCap = QString::number(result.benchmark.equityCurve.last().portfolioValue, 'f', 2);
-        else
-            benchFinalCap = QString::number(result.initialCapital * (1.0 + result.benchmark.totalReturn), 'f', 2);
-
-        statRow3("Start", isoStart, isoStart);
-        statRow3("End", isoEnd, isoEnd);
-        statRow3("Evaluation", QStringLiteral("every bar close (EveryBarClose)"), naCell);
-        statRow3("Rebalance / trade", rebText, naCell);
-        statRow3("Data quality", dataQualityLabel(result.dataQuality), naCell);
-        statRow3("Initial capital", QString::number(result.initialCapital, 'f', 2),
-                 QString::number(result.initialCapital, 'f', 2));
-        statRow3("Final capital", QString::number(result.finalCapital, 'f', 2), benchFinalCap);
-        statRow3("Start price (underlying)", naCell, QString::number(result.benchmark.startPrice, 'f', 4));
-        statRow3("End price (underlying)", naCell, QString::number(result.benchmark.endPrice, 'f', 4));
-        statRow3("Total return", QString::number(result.totalReturn * 100.0, 'f', 2) + QStringLiteral(" %"),
-                 QString::number(result.benchmark.totalReturn * 100.0, 'f', 2) + QStringLiteral(" %"));
-        statRow3("Annualized return", QString::number(result.annualizedReturn * 100.0, 'f', 2) + QStringLiteral(" %"),
-                 QString::number(result.benchmark.annualizedReturn * 100.0, 'f', 2) + QStringLiteral(" %"));
-        statRow3("Sharpe ratio", QString::number(result.sharpeRatio, 'f', 4),
-                 QString::number(result.benchmark.sharpeRatio, 'f', 4));
-        statRow3("Max drawdown",
-                 QString::number(result.maxDrawdown * 100.0, 'f', 2)
-                     + QStringLiteral(" % (from end-of-bar MTM equity; not OHLC intraday low)"),
-                 QString::number(result.benchmark.maxDrawdown * 100.0, 'f', 2) + QStringLiteral(" %"));
-        statRow3("Win rate", QString::number(result.winRate * 100.0, 'f', 2) + QStringLiteral(" %"), naCell);
-        statRow3("Total trades (fills)", QString::number(result.totalTrades), naCell);
-        statRow3("Equity snapshots", QString::number(result.equityCurve.size()),
-                 QString::number(result.benchmark.equityCurve.size()));
-        statRow3("Alpha vs benchmark (ann.)",
-                 QString::number(result.alphaVsBenchmark * 100.0, 'f', 2) + QStringLiteral(" %"), naCell);
+    if (Backtest::BacktestSummaryFormatter::hasBenchmarkComparisonData(result)) {
+        html << "<tr><th>Metric</th><th>Strategy</th><th>"
+             << htmlEsc(Backtest::BacktestSummaryFormatter::benchmarkColumnHeader(result))
+             << "</th></tr>\n";
+        for (const Backtest::BacktestSummaryRow& row : sumRows) {
+            html << "<tr><td>" << htmlEsc(row.metric) << "</td><td>" << htmlEsc(row.strategyValue) << "</td><td>"
+                 << htmlEsc(row.benchmarkValue) << "</td></tr>\n";
+        }
     } else {
-        statRow("Start", isoStart);
-        statRow("End", isoEnd);
-        statRow("Evaluation", QStringLiteral("every bar close (EveryBarClose)"));
-        statRow("Rebalance / trade", rebText);
-        statRow("Data quality", dataQualityLabel(result.dataQuality));
-        statRow("Initial capital", QString::number(result.initialCapital, 'f', 2));
-        statRow("Final capital", QString::number(result.finalCapital, 'f', 2));
-        statRow("Total return", QString::number(result.totalReturn * 100.0, 'f', 2) + QStringLiteral(" %"));
-        statRow("Annualized return", QString::number(result.annualizedReturn * 100.0, 'f', 2) + QStringLiteral(" %"));
-        statRow("Sharpe ratio", QString::number(result.sharpeRatio, 'f', 4));
-        statRow("Max drawdown",
-                QString::number(result.maxDrawdown * 100.0, 'f', 2)
-                    + QStringLiteral(" % (from end-of-bar MTM equity; not OHLC intraday low)"));
-        statRow("Win rate", QString::number(result.winRate * 100.0, 'f', 2) + QStringLiteral(" %"));
-        statRow("Total trades (fills)", QString::number(result.totalTrades));
-        statRow("Equity snapshots", QString::number(result.equityCurve.size()));
+        for (const Backtest::BacktestSummaryRow& row : sumRows) {
+            html << "<tr><td>" << htmlEsc(row.metric) << "</td><td>" << htmlEsc(row.strategyValue)
+                 << "</td></tr>\n";
+        }
     }
     html << "</table>\n";
 
@@ -506,6 +449,9 @@ void writeReport(const Backtest::BacktestResult& result,
     }
 
     html << "<h3>Risk limits (this test)</h3>\n<table class=\"kv\">\n";
+    auto statRow = [&](const char* k, const QString& v) {
+        html << "<tr><td>" << k << "</td><td>" << htmlEsc(v) << "</td></tr>\n";
+    };
     statRow("Max position size (per name)",
             QString::number(maxPositionSharesRisk, 'f', 0)
                 + QStringLiteral(" shares (max-position-risk block)"));

@@ -30,6 +30,30 @@ Ports::IOrderExecutionPort* CPipelineStrategyAdapter::s_globalExecutionPort = nu
 Ports::IPositionRepositoryPort* CPipelineStrategyAdapter::s_globalPositionRepo = nullptr;
 Ports::IPositionRepositoryPort* CPipelineStrategyAdapter::s_globalPersistentPositionRepo = nullptr;
 
+namespace {
+
+/// Momentum alpha (and similar) only emit signals via processSemantic; onTick is empty.
+/// Catalog JSON often omits these flags — without them the backtest stays in tick mode and
+/// equity is flat while the benchmark still moves.
+void applySemanticPipelineDefaults(QJsonObject& cfg)
+{
+    if (cfg.value(QStringLiteral("semanticPipeline")).toBool(false))
+        return;
+
+    const QJsonArray alphas = cfg.value(QStringLiteral("alphas")).toArray();
+    for (const QJsonValue& v : alphas) {
+        const QString blockId = v.toObject().value(Pipeline::Key::BlockId).toString();
+        if (blockId == QStringLiteral("momentum-alpha")) {
+            cfg.insert(QStringLiteral("semanticPipeline"), true);
+            if (!cfg.contains(QStringLiteral("semanticModelRebalance")))
+                cfg.insert(QStringLiteral("semanticModelRebalance"), true);
+            return;
+        }
+    }
+}
+
+} // namespace
+
 CPipelineStrategyAdapter::CPipelineStrategyAdapter(QObject* parent)
     : CBaseModel(parent)
 {
@@ -91,6 +115,7 @@ void CPipelineStrategyAdapter::setExecutionMode(ExecutionMode mode) { m_execMode
 void CPipelineStrategyAdapter::setPipelineConfig(const QJsonObject& config)
 {
     m_pipelineConfig = config;
+    applySemanticPipelineDefaults(m_pipelineConfig);
     updateParametersFromConfig();
 }
 

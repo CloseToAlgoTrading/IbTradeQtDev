@@ -14,6 +14,8 @@ private slots:
     void getBars_withStrategyAssetMapUsesResolverPath();
     /// Empty cache + MockNetworkAccessManager: exercises fetchAndCache Yahoo batching (no real HTTP).
     void getBarsMulti_uncachedSymbols_mockYahooUsesBatchedFetch();
+    /// Partial cache with trailing gap: Yahoo GET must use period1 at the first missing day, not a degenerate end-only window.
+    void getBarsMulti_trailingGap_yahooPeriodSpansMissingTail();
 };
 
 #endif

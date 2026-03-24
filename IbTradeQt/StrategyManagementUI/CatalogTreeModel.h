@@ -51,6 +51,8 @@ public:
     int blockArrayIndex(const QModelIndex& index) const;
     QString strategyIdFor(const QModelIndex& index) const;
 
+    QModelIndex findStrategyIndex(const QString& strategyId) const;
+
 private:
     struct CatalogEntry {
         QString     strategyId;

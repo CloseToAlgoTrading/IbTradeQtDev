@@ -144,11 +144,11 @@ void SystemBackendImpl::createCatalogEntryAndBinding(const QString& nodeUuid,
         return;
     }
 
-    // 2. Create v1 version (published by default)
+    // 2. Create v0 version (published by default)
     DbStrategyVersion ver;
     ver.versionId     = versionId;
     ver.strategyId    = stratId;
-    ver.versionNumber = 1;
+    ver.versionNumber = 0;
     ver.configJson    = QString::fromUtf8(
         QJsonDocument(canonicalConfig).toJson(QJsonDocument::Compact));
     ver.isPublished   = true;
@@ -167,7 +167,7 @@ void SystemBackendImpl::createCatalogEntryAndBinding(const QString& nodeUuid,
     def.name           = name;
     def.strategyKind   = strategyKind;
     def.configJson     = ver.configJson;
-    def.version        = 1;
+    def.version        = 0;
     def.lifecycleState = QStringLiteral("active");
     def.isArchived     = false;
     def.createdAt      = now;
@@ -936,20 +936,20 @@ QString SystemBackendImpl::createStrategyCatalogEntry(const QString& name, int k
     if (!m_repo->createStrategyCatalog(strat))
         return {};
 
-    // Auto-create v1 with the initial config (empty {} if none provided)
-    DbStrategyVersion v1;
-    v1.versionId     = QUuid::createUuid().toString(QUuid::WithoutBraces);
-    v1.strategyId    = stratId;
-    v1.versionNumber = 1;
-    v1.configJson    = QString::fromUtf8(
+    // Auto-create v0 with the initial config (empty {} if none provided)
+    DbStrategyVersion v0;
+    v0.versionId     = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    v0.strategyId    = stratId;
+    v0.versionNumber = 0;
+    v0.configJson    = QString::fromUtf8(
         QJsonDocument(initialConfig).toJson(QJsonDocument::Compact));
-    v1.notes         = QStringLiteral("Initial version");
-    v1.isPublished   = false;
-    v1.createdAt     = now;
-    m_repo->createStrategyVersion(v1);
+    v0.notes         = QStringLiteral("Initial version");
+    v0.isPublished   = false;
+    v0.createdAt     = now;
+    m_repo->createStrategyVersion(v0);
 
     emit strategyCatalogChanged(stratId);
-    emit strategyVersionCreated(stratId, v1.versionId);
+    emit strategyVersionCreated(stratId, v0.versionId);
     return stratId;
 }
 
@@ -1241,11 +1241,11 @@ QString SystemBackendImpl::createLiveNodeForExistingCatalog(
 QString SystemBackendImpl::createStrategyDefinition(const QString& name, int kind,
                                                      const QJsonObject& fullConfig)
 {
-    // createStrategyCatalogEntry auto-creates v1 with the provided config
+    // createStrategyCatalogEntry auto-creates v0 with the provided config
     QString stratId = createStrategyCatalogEntry(name, kind, fullConfig);
     if (stratId.isEmpty()) return {};
 
-    // Publish the auto-created v1
+    // Publish the auto-created v0
     auto versions = m_repo->listStrategyVersions(stratId);
     if (!versions.isEmpty())
         publishVersion(versions.first().versionId);

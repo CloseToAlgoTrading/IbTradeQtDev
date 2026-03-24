@@ -23,6 +23,11 @@ DbBacktestMetrics toDbBacktestMetrics(const QString& runId,
     m.finalCapital     = result.finalCapital;
     m.benchmarkReturn  = result.benchmark.totalReturn;
     m.benchmarkSharpe  = result.benchmark.sharpeRatio;
+    m.benchmarkSymbol  = result.benchmark.symbol;
+    m.benchmarkAnnualizedReturn = result.benchmark.annualizedReturn;
+    m.benchmarkMaxDrawdown      = result.benchmark.maxDrawdown;
+    m.benchmarkStartPrice       = result.benchmark.startPrice;
+    m.benchmarkEndPrice         = result.benchmark.endPrice;
     m.alpha            = result.alphaVsBenchmark;
     m.sortinoRatio           = stats.sortinoRatio;
     m.calmarRatio            = stats.calmarRatio;

@@ -97,6 +97,7 @@ private:
 
     BacktestWorkspaceCoordinator*     m_backtestCoord  = nullptr;
     StrategyManagementCoordinator*    m_stratMgmtCoord = nullptr;
+    int                                 m_lastMainTabIndex = 0;
 };
 
 #endif // CPRESENTER_H

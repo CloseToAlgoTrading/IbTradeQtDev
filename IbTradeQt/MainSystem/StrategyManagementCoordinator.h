@@ -4,14 +4,15 @@
 #include <QObject>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <memory>
 #include "cgenericmodelApi.h"
 
 class ISystemBackend;
 class CIBTradeSystemView;
+class StrategyManagementUnsavedDraftFlow;
 
 namespace StrategyMgmt {
 class StrategyManagementPanel;
-class StrategyCatalogPanel;
 class StrategyDetailPanel;
 }
 
@@ -20,6 +21,7 @@ class StrategyManagementCoordinator : public QObject
     Q_OBJECT
 public:
     explicit StrategyManagementCoordinator(QObject* parent = nullptr);
+    ~StrategyManagementCoordinator() override;
 
     void setView(CIBTradeSystemView* view);
     void setBackend(ISystemBackend* backend);
@@ -29,6 +31,8 @@ public:
     void refreshCatalog();
 
     StrategyMgmt::StrategyManagementPanel* panel() const { return m_panel; }
+
+    bool tryResolveUnsavedStrategyDraft(const QString& message);
 
 signals:
     void openInBacktest(const QString& strategyId, const QString& versionId);
@@ -48,11 +52,13 @@ private slots:
     void onBacktestVersion(const QString& strategyId, const QString& versionId);
 
     void confirmAndDeleteStrategy(const QString& strategyId);
+    void onStrategyVersionRowChangeRequested(int newRow, int previousRow);
 
 private:
     CIBTradeSystemView*                  m_view    = nullptr;
     ISystemBackend*                      m_backend = nullptr;
     StrategyMgmt::StrategyManagementPanel* m_panel = nullptr;
+    std::unique_ptr<StrategyManagementUnsavedDraftFlow> m_unsavedDraftFlow;
 };
 
 #endif // STRATEGYMANAGEMENTCOORDINATOR_H

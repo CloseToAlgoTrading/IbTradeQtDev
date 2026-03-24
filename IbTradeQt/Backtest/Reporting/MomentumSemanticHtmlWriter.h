@@ -51,7 +51,6 @@ void writeSvgStrategyVsBenchmark(QTextStream& html, const QString& title,
                                  const QVector<Backtest::LedgerSnapshot>& strategy,
                                  const QVector<Backtest::LedgerSnapshot>& benchmark,
                                  const QString& benchLabel, double initialCapital, bool pnlMode);
-QString dataQualityLabel(Backtest::DataQuality q);
 QDateTime firstLongBuyTime(const QVector<Backtest::FilledOrder>& trades);
 QVector<IBComm::HistoricalBar> barsForSchedule(const QMap<QString, QVector<IBComm::HistoricalBar>>& strategyBars,
                                                const QStringList& syms);

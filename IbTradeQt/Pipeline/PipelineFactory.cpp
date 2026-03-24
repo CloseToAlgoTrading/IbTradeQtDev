@@ -29,6 +29,17 @@
 namespace Pipeline {
 
 namespace {
+
+QJsonArray selectionArrayFromConfig(const QJsonObject& config)
+{
+    const QJsonValue sel = config.value(Key::Selection);
+    if (sel.isArray())
+        return sel.toArray();
+    if (sel.isObject())
+        return QJsonArray{sel.toObject()};
+    return {};
+}
+
 void applyPipelineInstanceId(QObject* block, const QJsonObject& blockCfg)
 {
     if (!block)
@@ -46,7 +57,7 @@ BlockGraph PipelineFactory::buildGraph(
     BlockGraph graph;
     graph.config = config;
 
-    QJsonArray selectionConfigs = config.value(Key::Selection).toArray();
+    const QJsonArray selectionConfigs = selectionArrayFromConfig(config);
     for (const auto& selVal : selectionConfigs) {
         QJsonObject selCfg = selVal.toObject();
         QString blockId = selCfg.value(Key::BlockId).toString();

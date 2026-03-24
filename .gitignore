@@ -17,4 +17,5 @@ IbTradeQt/tests/debug/
 IbTradeQt/tests/release/
 IbTradeQt/tests/Makefile
 IbTradeQt/tests/.qmake.stash
+IbTradeQt/build-tests/
 

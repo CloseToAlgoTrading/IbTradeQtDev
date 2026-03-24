@@ -4,17 +4,18 @@
 // EquityChartWidget — equity curve chart for the Backtest Workspace.
 //
 // Displays two QLineSeries on a single QChart:
-//   - Strategy equity curve (portfolio value over time)
-//   - Benchmark buy-and-hold curve (same initial capital, normalised)
+//   - Strategy cumulative P&L (portfolio value − initial capital)
+//   - Benchmark buy-and-hold cumulative P&L (same initial capital, normalised)
 //
-// Uses QDateTimeAxis on X and QValueAxis on Y (portfolio value in $).
+// Uses QDateTimeAxis on X and QValueAxis on Y (P&L in $).
 // Hover tooltip shows date and value for the nearest series point.
 
-#include <QWidget>
 #include <QVector>
+#include <QWidget>
 #include "Backtest/LedgerSnapshot.h"
 
-// Qt Charts forward declarations
+class QEvent;
+class QObject;
 class QChart;
 class QChartView;
 class QLineSeries;
@@ -36,24 +37,36 @@ public:
     void setBenchmarkCurve(const QVector<Backtest::LedgerSnapshot>& curve,
                            const QString& benchmarkSymbol = QString());
 
-    // Convenience: set both at once.
+    /// Cumulative P&L curves; benchmark hidden when \a benchmarkCurve is empty.
     void setData(const QVector<Backtest::LedgerSnapshot>& strategyCurve,
                  const QVector<Backtest::LedgerSnapshot>& benchmarkCurve,
-                 const QString& benchmarkSymbol = QString());
+                 const QString& benchmarkSymbol,
+                 double initialCapital);
 
     // Clear all series.
     void clear();
 
+protected:
+    bool eventFilter(QObject* watched, QEvent* event) override;
+
 private:
     void setupChart();
     void updateAxes();
+    void updateCrosshairFromScenePos(const QPointF& scenePos);
 
-    QChart*        m_chart          = nullptr;
-    QChartView*    m_chartView      = nullptr;
-    QLineSeries*   m_strategySeries = nullptr;
-    QLineSeries*   m_benchmarkSeries = nullptr;
-    QDateTimeAxis* m_axisX          = nullptr;
-    QValueAxis*    m_axisY          = nullptr;
+    static double interpolateYAtX(const QVector<QPointF>& sortedPoints, double x);
+
+    QChart*        m_chart            = nullptr;
+    QChartView*    m_chartView        = nullptr;
+    QLineSeries*   m_strategySeries   = nullptr;
+    QLineSeries*   m_benchmarkSeries  = nullptr;
+    QLineSeries*   m_crosshairSeries  = nullptr;
+    QDateTimeAxis* m_axisX            = nullptr;
+    QValueAxis*    m_axisY            = nullptr;
+    /// PnL points (x = ms since epoch) for tooltip / crosshair interpolation.
+    QVector<QPointF> m_strategyPnlPoints;
+    QVector<QPointF> m_benchmarkPnlPoints;
+    QString          m_benchmarkLabelForTooltip;
 };
 
 } // namespace BacktestUI

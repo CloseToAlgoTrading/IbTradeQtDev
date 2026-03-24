@@ -2,10 +2,11 @@
 
 **Status:**
 - ✅ **Implemented:** Backend integration — backtester retrieves pipeline config via `ISystemBackend::pipelineConfig(strategyId)`.
-- ✅ **Implemented:** `BacktestController` and `BacktestUI::BacktestWorkspaceDock` exist and are wired into the presenter.
-- 🔲 **Planned:** Full `BacktestSession` orchestrator, historical data sources, `SimulatedLedger`, metrics.
+- ✅ **Implemented:** `BacktestController`, `BacktestWorkspaceCoordinator`, `BacktestWorkspaceDock`, `BacktestRunConfigPanel`, equity chart + summary UI — wired through presenters.
+- ✅ **Implemented:** `BacktestSession` orchestrator, `YahooFinanceDataSource`, `CsvHistoricalDataSource`, `JsonlHistoricalDataSource`, `SimulatedLedger`, `SimulatedExecutionAdapter`, `BacktestMetricsCollector`, `MarketDataReplayer` bar/tick path.
+- ✅ **Implemented:** Yahoo path uses **`HistoricalDataManager`** (SQLite `HistoricalBars`) for fetch/cache; worker thread prefetches before replay; `BacktestHistoricalReadAdapter` exposes the same cache to `IHistoricalRead::getBars` during replay.
 
-The document below describes the full intended design. Sections marked **[IMPLEMENTED]** reflect actual code; all others are forward-looking.
+The document below describes the full intended design. Sections marked **[IMPLEMENTED]** reflect actual code; roadmap items below remain for future work (e.g. portfolio-level backtest, Postgres bar source).
 
 ---
 
@@ -192,15 +193,7 @@ The codebase already provides most of the building blocks for a full backtester:
 | `BacktestController` | `BacktestUI/` | **[IMPLEMENTED]** Basic controller wired into presenter |
 | `BacktestWorkspaceDock` | `BacktestUI/BacktestWorkspaceDock.h` | **[IMPLEMENTED]** UI dock for backtest configuration |
 
-**What is still missing (for full v1 backtesting):**
-- `IClock` interface and `SimulatedClock`
-- `BacktestSession` orchestrator
-- `SimulatedLedger` (cash + positions + P&L owner)
-- `SimulatedExecutionAdapter` with realistic fill models
-- `MarketPriceStore` (single price truth)
-- `BacktestMetricsCollector`
-- `IHistoricalDataSource` implementations (PostgreSQL, CSV, IB, JSONL)
-- Per-instance dependency injection in `CPipelineStrategyAdapter`
+**Remaining gaps vs this early checklist (most core items now exist):** Postgres as a first-class historical **source** for backtests (optional), portfolio-level backtest, `IBrokerAPI` historical source. `IClock` / `SimulatedClock`, `BacktestSession`, ledger, execution adapter, metrics, CSV/JSONL/Yahoo sources, and pipeline backtest DI are **implemented** — see §11.1 and the codebase.
 
 ---
 
@@ -513,6 +506,22 @@ Two parallel backtest sessions each own their own `SimulatedClock` instance — 
 All sources produce `IBComm::HistoricalBar`. `MarketDataReplayer` receives bars via `addBar()` and synthesises tick events from them (open → high → low → close → barClose).
 
 > **OHLC synthesis limitation:** This technique is widely used but has significant accuracy limits. Stop orders, limit orders, and path-sensitive execution logic will produce **unreliable results** with synthesised ticks. Results should be labelled as `DataQuality::SynthesizedOHLC`.
+
+### 11.1 Yahoo + SQLite cache — `HistoricalDataManager` [IMPLEMENTED]
+
+**App flow (`BacktestController` + `dataSourceId = yahoo`):**
+
+1. On a **worker thread**, open the app **BacktestStore** SQLite (same file the UI uses for runs).
+2. **`HistoricalDataManager::getBarsMulti(strategy symbols, …)`** runs first. For each symbol it checks `HistoricalBars` for `Day1` + `yahoo`; missing **prefix** / **suffix** / full range triggers a Yahoo **GET** per symbol (one HTTP request per ticker per fetch wave). `getBarsMulti` unions per-symbol gap segments into **one** `[fetchFrom, fetchTo]` window so trailing-only or prefix-only gaps do not collapse to a degenerate range.
+3. A **second** `getBarsMulti({benchmarkSymbol}, …)` may run for the benchmark (e.g. SPY) if configured — same cache rules.
+4. Returned bars are passed to **`BacktestSession::setPreloadedBars`** / **`setPreloadedBenchmarkBars`**. The session **does not** call `loadHistoricalData()` for strategy when preload is non-empty; replay feeds the replayer from memory.
+5. **`setHistoricalDataManager`** keeps the manager alive so **`BacktestHistoricalReadAdapter`** → `getBars()` reads the **same** SQLite cache (and may trigger a **small** Yahoo fetch only for a remaining gap, e.g. one calendar day at the tail).
+
+**Logging:** `YahooFinanceDataSource: GET` lines appear during **prefetch** (`getBarsMulti`), **before** `BacktestSession: using … preloaded bars`. That order is expected: prefetch may hit the network; “preloaded” means the session replay uses the buffers returned from the manager, not that zero HTTP occurred this run.
+
+**Tests:** Many tests use **`QTemporaryFile`** for an isolated DB — each run starts with an **empty** cache, so Yahoo GETs repeat. To see cache-only behaviour, reuse a **fixed** SQLite path and run twice with the same date range.
+
+**See also:** `tests/BACKTEST_TESTING.md` (Yahoo prefetch and cache behaviour).
 
 ---
 

@@ -143,6 +143,12 @@ struct DbBacktestMetrics {
     double  finalCapital     = 0.0;
     double  benchmarkReturn  = 0.0;
     double  benchmarkSharpe  = 0.0;
+    /// Ticker used for benchmark comparison (mirrors run config / result).
+    QString benchmarkSymbol;
+    double  benchmarkAnnualizedReturn = 0.0;
+    double  benchmarkMaxDrawdown      = 0.0;
+    double  benchmarkStartPrice       = 0.0;
+    double  benchmarkEndPrice         = 0.0;
     double  alpha            = 0.0;
     double  sortinoRatio           = 0.0;
     double  calmarRatio            = 0.0;

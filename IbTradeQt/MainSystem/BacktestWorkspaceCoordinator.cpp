@@ -6,6 +6,9 @@
 #include "BacktestUI/BacktestStrategySelector.h"
 #include "BacktestUI/BacktestRunConfigPanel.h"
 #include "Backtest/BacktestController.h"
+#include "Backtest/BacktestDataTypes.h"
+#include "Backtest/DataQuality.h"
+#include <cmath>
 #include "cbasicroot.h"
 #include "Strategies/Generic/ModelType.h"
 #include "Strategies/Generic/cgenericmodelApi.h"
@@ -21,6 +24,28 @@ using Backtest::Workspace::SessionKind;
 using Backtest::Workspace::recomputeSessionDirty;
 
 namespace {
+
+double maxDrawdownFromEquityCurve(const QVector<Backtest::LedgerSnapshot>& curve)
+{
+    double peak = -1.0;
+    double maxDd = 0.0;
+    for (const auto& s : curve) {
+        const double v = s.portfolioValue;
+        if (peak < 0.0)
+            peak = v;
+        peak = qMax(peak, v);
+        if (peak > 1e-12)
+            maxDd = qMax(maxDd, (peak - v) / peak);
+    }
+    return maxDd;
+}
+
+double annualizedReturnFromTotalReturn(double totalReturn, double years)
+{
+    if (years <= 1e-9 || totalReturn <= -1.0 + 1e-12)
+        return 0.0;
+    return std::pow(1.0 + totalReturn, 1.0 / years) - 1.0;
+}
 
 QString findMatchingVersionNumber(ISystemBackend* backend,
                                   const QString& catalogStrategyId,
@@ -41,6 +66,23 @@ QString findMatchingVersionNumber(ISystemBackend* backend,
         }
     }
     return {};
+}
+
+/// Older persistence wrote benchmarkValue 0 when strategy and benchmark series lengths differed.
+/// PnL then plots as ~ -initialCapital. Forward-fill from last valid level after load.
+void repairBenchmarkEquityMisstoredZeros(QVector<Backtest::LedgerSnapshot>& bm)
+{
+    if (bm.isEmpty())
+        return;
+    double lastValid = -1.0;
+    for (int k = 0; k < bm.size(); ++k) {
+        const double v = bm[k].portfolioValue;
+        if (v > 1e-6) {
+            lastValid = v;
+        } else if (lastValid > 0.0) {
+            bm[k].portfolioValue = lastValid;
+        }
+    }
 }
 
 } // namespace
@@ -626,6 +668,7 @@ void BacktestWorkspaceCoordinator::onLoadRun(const QString& runId)
             loaded.record.strategyId          = q.value(QStringLiteral("strategyId")).toString();
             loaded.record.strategyDisplayName = q.value(QStringLiteral("strategyDisplayName")).toString();
             loaded.record.portfolioPath       = q.value(QStringLiteral("portfolioPath")).toString();
+            loaded.record.configJson          = q.value(QStringLiteral("configJson")).toString();
             loaded.record.symbols             = q.value(QStringLiteral("symbols")).toString();
             loaded.record.startDate           = q.value(QStringLiteral("startDate")).toString();
             loaded.record.endDate             = q.value(QStringLiteral("endDate")).toString();
@@ -645,6 +688,18 @@ void BacktestWorkspaceCoordinator::onLoadRun(const QString& runId)
             loaded.result.initialCapital   = q.value(QStringLiteral("initialCapital")).toDouble();
             loaded.result.finalCapital     = q.value(QStringLiteral("finalCapital")).toDouble();
             loaded.result.alphaVsBenchmark = q.value(QStringLiteral("alpha")).toDouble();
+            loaded.result.benchmark.totalReturn = q.value(QStringLiteral("benchmarkReturn")).toDouble();
+            loaded.result.benchmark.sharpeRatio = q.value(QStringLiteral("benchmarkSharpe")).toDouble();
+            loaded.result.benchmark.symbol =
+                q.value(QStringLiteral("benchmarkSymbol")).toString();
+            loaded.result.benchmark.annualizedReturn =
+                q.value(QStringLiteral("benchmarkAnnualizedReturn")).toDouble();
+            loaded.result.benchmark.maxDrawdown =
+                q.value(QStringLiteral("benchmarkMaxDrawdown")).toDouble();
+            loaded.result.benchmark.startPrice =
+                q.value(QStringLiteral("benchmarkStartPrice")).toDouble();
+            loaded.result.benchmark.endPrice =
+                q.value(QStringLiteral("benchmarkEndPrice")).toDouble();
         }
     }
 
@@ -665,6 +720,8 @@ void BacktestWorkspaceCoordinator::onLoadRun(const QString& runId)
         }
     }
 
+    repairBenchmarkEquityMisstoredZeros(loaded.result.benchmark.equityCurve);
+
     {
         auto q = query_fetchBacktestTrades(runId, conn);
         if (q.exec()) {
@@ -683,6 +740,33 @@ void BacktestWorkspaceCoordinator::onLoadRun(const QString& runId)
         }
     }
 
+    loaded.result.startDate =
+        QDateTime::fromString(loaded.record.startDate, Qt::ISODate);
+    loaded.result.endDate = QDateTime::fromString(loaded.record.endDate, Qt::ISODate);
+    loaded.result.dataQuality = Backtest::DataQuality::DailyBars;
+
+    if (!loaded.record.configJson.isEmpty()) {
+        const Backtest::BacktestRunConfig rc = Backtest::BacktestRunConfig::fromJson(
+            QJsonDocument::fromJson(loaded.record.configJson.toUtf8()).object());
+        if (loaded.result.benchmark.symbol.isEmpty())
+            loaded.result.benchmark.symbol = rc.benchmarkSymbol;
+    }
+
+    const double years =
+        loaded.result.startDate.secsTo(loaded.result.endDate) / (365.25 * 24.0 * 3600.0);
+    // Legacy rows: benchmark annualized / max DD may be missing from metrics — derive when needed.
+    if (loaded.result.benchmark.annualizedReturn == 0.0
+        && std::fabs(loaded.result.benchmark.totalReturn) > 1e-15) {
+        loaded.result.benchmark.annualizedReturn =
+            annualizedReturnFromTotalReturn(loaded.result.benchmark.totalReturn, years);
+    }
+    if (!loaded.result.benchmark.equityCurve.isEmpty()) {
+        const double ddFromCurve = maxDrawdownFromEquityCurve(loaded.result.benchmark.equityCurve);
+        if (loaded.result.benchmark.maxDrawdown <= 0.0 && ddFromCurve > 0.0)
+            loaded.result.benchmark.maxDrawdown = ddFromCurve;
+    }
+
+    m_dock->applyLoadedRunConfiguration(loaded);
     m_dock->displayResult(loaded);
 }
 
@@ -726,36 +810,43 @@ void BacktestWorkspaceCoordinator::onBacktestFinished(const Backtest::BacktestLo
         && !run.record.catalogStrategyId.isEmpty()
         && !run.record.catalogVersionId.isEmpty())
     {
-        QJsonObject versionInfo = m_backend->strategyVersionInfo(run.record.catalogVersionId);
-        QString versionConfigJson = versionInfo.value(QStringLiteral("configJson")).toString();
         QJsonObject fullRunConfig = QJsonDocument::fromJson(run.record.configJson.toUtf8()).object();
         QString runPipelineJson = fullRunConfig.value(QStringLiteral("pipelineConfigJson")).toString();
         QJsonDocument runPipelineDoc = QJsonDocument::fromJson(runPipelineJson.toUtf8());
-        QJsonDocument verConfigDoc   = QJsonDocument::fromJson(versionConfigJson.toUtf8());
+        if (!runPipelineDoc.isObject() || runPipelineDoc.object().isEmpty())
+            return;
 
-        if (runPipelineDoc != verConfigDoc
-            && !runPipelineDoc.isEmpty() && !verConfigDoc.isEmpty())
-        {
-            auto answer = QMessageBox::question(
+        const QJsonObject pipelineConfig = runPipelineDoc.object();
+
+        auto answer = QMessageBox::question(
+            m_view,
+            QStringLiteral("Save backtest pipeline?"),
+            QStringLiteral(
+                "The backtest run is stored in the database.\n\n"
+                "Save the run's pipeline configuration as a new catalog version?"),
+            QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+
+        if (answer != QMessageBox::Yes)
+            return;
+
+        const QString matchVer = findMatchingVersionNumber(
+            m_backend, run.record.catalogStrategyId, pipelineConfig);
+        if (!matchVer.isEmpty()) {
+            QMessageBox::information(
                 m_view,
-                QStringLiteral("Save as New Version?"),
-                QStringLiteral(
-                    "The backtest ran with a pipeline configuration that differs from the pinned version.\n\n"
-                    "Would you like to save the run configuration as a new strategy version?"),
-                QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+                QStringLiteral("Save as New Version"),
+                QStringLiteral("This configuration already exists as version %1.").arg(matchVer));
+            return;
+        }
 
-            if (answer == QMessageBox::Yes) {
-                QJsonObject pipelineConfig = runPipelineDoc.object();
-                QString newVerId = m_backend->createStrategyVersion(
-                    run.record.catalogStrategyId, pipelineConfig,
-                    QStringLiteral("Saved from backtest run ") + run.record.runId);
-                if (!newVerId.isEmpty()) {
-                    QMessageBox::information(m_view,
-                        QStringLiteral("Version Created"),
-                        QStringLiteral("New version created successfully."));
-                    emit catalogRefreshNeeded();
-                }
-            }
+        const QString newVerId = m_backend->createStrategyVersion(
+            run.record.catalogStrategyId, pipelineConfig,
+            QStringLiteral("Saved from backtest run ") + run.record.runId);
+        if (!newVerId.isEmpty()) {
+            QMessageBox::information(m_view,
+                QStringLiteral("Version Created"),
+                QStringLiteral("New version created successfully."));
+            emit catalogRefreshNeeded();
         }
     }
 }

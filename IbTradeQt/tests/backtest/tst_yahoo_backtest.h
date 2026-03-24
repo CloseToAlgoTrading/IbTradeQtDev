@@ -98,6 +98,9 @@ public:
 
     int requestCount() const { return m_requestCount; }
 
+    /// Last URL passed to createRequest (for tests asserting Yahoo query params).
+    QString lastRequestUrl() const { return m_lastRequestUrl; }
+
 protected:
     QNetworkReply* createRequest(Operation op,
                                  const QNetworkRequest& req,
@@ -106,6 +109,7 @@ protected:
         if (op != GetOperation) return QNetworkAccessManager::createRequest(op, req, nullptr);
 
         ++m_requestCount;
+        m_lastRequestUrl = req.url().toString(QUrl::FullyEncoded);
 
         // Extract symbol from URL path: /v8/finance/chart/{symbol}
         const QString path   = req.url().path();
@@ -135,6 +139,7 @@ private:
     QMap<QString, QByteArray> m_responses;
     QSet<QString>             m_errorSymbols;
     int                         m_requestCount = 0;
+    QString                     m_lastRequestUrl;
 };
 
 // ---------------------------------------------------------------------------

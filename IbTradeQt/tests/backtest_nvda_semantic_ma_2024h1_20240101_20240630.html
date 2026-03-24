@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Backtest: nvda_semantic_ma_2024h1 | 2024-01-01 → 2024-06-30</title>
+<style>
+  :root {
+    --bg: #0d1117; --surface: #161b22; --border: #30363d;
+    --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font-sans);
+         font-size: 14px; line-height: 1.6; padding: 2rem; }
+  h1 { font-size: 1.6rem; font-weight: 700; color: var(--accent); margin-bottom: 0.25rem; }
+  h2 { font-size: 1rem; font-weight: 600; color: var(--muted); text-transform: uppercase;
+       letter-spacing: 0.08em; margin: 2rem 0 0.75rem; border-bottom: 1px solid var(--border);
+       padding-bottom: 0.4rem; }
+  .meta { color: var(--muted); font-size: 0.85rem; margin-bottom: 2rem; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+          padding: 1rem 1.25rem; }
+  .card-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase;
+                letter-spacing: 0.06em; margin-bottom: 0.3rem; }
+  .card-value { font-size: 1.4rem; font-weight: 700; font-family: var(--font-mono); }
+  .pos { color: var(--green); } .neg { color: var(--red); } .neu { color: var(--text); }
+  .chart-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+                padding: 1.25rem; margin-top: 0.5rem; }
+  canvas { width: 100% !important; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 0.5rem; }
+  th { text-align: left; padding: 0.5rem 0.75rem; color: var(--muted); font-weight: 600;
+       border-bottom: 1px solid var(--border); font-size: 0.75rem; text-transform: uppercase; }
+  td { padding: 0.45rem 0.75rem; border-bottom: 1px solid #21262d; font-family: var(--font-mono); }
+  tr:hover td { background: #1c2128; }
+  .buy { color: var(--green); } .sell { color: var(--red); }
+  .badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px;
+           font-size: 0.75rem; font-weight: 600; }
+  .badge-green { background: #1a3a1a; color: var(--green); }
+  .badge-red   { background: #3a1a1a; color: var(--red); }
+  .badge-blue  { background: #1a2a3a; color: var(--accent); }
+  footer { margin-top: 3rem; color: var(--muted); font-size: 0.8rem; text-align: center; }
+</style>
+</head>
+<body>
+<h1>Backtest: nvda_semantic_ma_2024h1 | 2024-01-01 → 2024-06-30</h1>
+<p class="meta">Data: yahoo &nbsp;|&nbsp; Fill: MidPrice &nbsp;|&nbsp; Timing: SignalOnClose→FillNextOpen &nbsp;|&nbsp; Slippage: 5 bps &nbsp;|&nbsp; Generated: 2026-03-24 09:17:37</p>
+<h2>Strategy Performance</h2>
+<div class="grid">
+  <div class="card">
+    <div class="card-label">Initial Capital</div>
+    <div class="card-value neu">$100000</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Final Capital</div>
+    <div class="card-value pos">$100186</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Total Return</div>
+    <div class="card-value pos">0.19%</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Ann. Return</div>
+    <div class="card-value pos">0.38%</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Sharpe Ratio</div>
+    <div class="card-value pos">1.49</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Max Drawdown</div>
+    <div class="card-value neg">0.00%</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Win Rate</div>
+    <div class="card-value pos">50.00%</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Total Trades</div>
+    <div class="card-value neu">2</div>
+  </div>
+</div>
+<h2>Benchmark: NVDA (buy-and-hold)</h2>
+<div class="grid">
+  <div class="card">
+    <div class="card-label">Start Price</div>
+    <div class="card-value neu">$48.17</div>
+  </div>
+  <div class="card">
+    <div class="card-label">End Price</div>
+    <div class="card-value pos">$123.54</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Total Return</div>
+    <div class="card-value pos">156.48%</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Ann. Return</div>
+    <div class="card-value pos">590.80%</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Sharpe Ratio</div>
+    <div class="card-value pos">3.97</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Max Drawdown</div>
+    <div class="card-value neg">19.79%</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Alpha (Ann.)</div>
+    <div class="card-value neg">-590.43%</div>
+  </div>
+</div>
+<h2>Equity Curve</h2>
+<div class="chart-wrap"><canvas id="eqChart" height="80"></canvas></div>
+<h2>Trade Log (2 fills)</h2>
+<table>
+<thead><tr><th>#</th><th>Date</th><th>Symbol</th><th>Side</th><th>Qty</th><th>Price</th><th>Value</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>2024-05-21</td><td>NVDA</td><td><span class="badge badge-green">BUY</span></td><td>100</td><td>$93.60</td><td>$9360</td></tr>
+<tr><td>2</td><td>2024-05-22</td><td>NVDA</td><td><span class="badge badge-red">SELL</span></td><td>100</td><td>$95.46</td><td>$9546</td></tr>
+</tbody></table>
+
+<script>
+(function() {
+  // Inline Chart.js 4.x UMD — loaded from CDN at render time
+  var s = document.createElement('script');
+  s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js';
+  s.onload = function() { renderChart(); };
+  document.head.appendChild(s);
+
+  function renderChart() {
+    var ctx = document.getElementById('eqChart').getContext('2d');
+    var labels = ['2024-01-02','2024-01-03','2024-01-04','2024-01-05','2024-01-08','2024-01-09','2024-01-10','2024-01-11','2024-01-12','2024-01-16','2024-01-17','2024-01-18','2024-01-19','2024-01-22','2024-01-23','2024-01-24','2024-01-25','2024-01-26','2024-01-29','2024-01-30','2024-01-31','2024-02-01','2024-02-02','2024-02-05','2024-02-06','2024-02-07','2024-02-08','2024-02-09','2024-02-12','2024-02-13','2024-02-14','2024-02-15','2024-02-16','2024-02-20','2024-02-21','2024-02-22','2024-02-23','2024-02-26','2024-02-27','2024-02-28','2024-02-29','2024-03-01','2024-03-04','2024-03-05','2024-03-06','2024-03-07','2024-03-08','2024-03-11','2024-03-12','2024-03-13','2024-03-14','2024-03-15','2024-03-18','2024-03-19','2024-03-20','2024-03-21','2024-03-22','2024-03-25','2024-03-26','2024-03-27','2024-03-28','2024-04-01','2024-04-02','2024-04-03','2024-04-04','2024-04-05','2024-04-08','2024-04-09','2024-04-10','2024-04-11','2024-04-12','2024-04-15','2024-04-16','2024-04-17','2024-04-18','2024-04-19','2024-04-22','2024-04-23','2024-04-24','2024-04-25','2024-04-26','2024-04-29','2024-04-30','2024-05-01','2024-05-02','2024-05-03','2024-05-06','2024-05-07','2024-05-08','2024-05-09','2024-05-10','2024-05-13','2024-05-14','2024-05-15','2024-05-16','2024-05-17','2024-05-20','2024-05-21','2024-05-22','2024-05-23','2024-05-24','2024-05-28','2024-05-29','2024-05-30','2024-05-31','2024-06-03','2024-06-04','2024-06-05','2024-06-06','2024-06-07','2024-06-10','2024-06-11','2024-06-12','2024-06-13','2024-06-14','2024-06-17','2024-06-18','2024-06-20','2024-06-21','2024-06-24','2024-06-25','2024-06-26','2024-06-27','2024-06-28'];
+    var stratData = [100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100000,100179,100186,100186,100186,100186,100186,100186,100186,100186,100186,100186,100186,100186,100186,100186,100186,100186,100186,100186,100186,100186,100186,100186,100186,100186,100186,100186];
+    var bmData = [100000,98756.4,99647.1,101929,108481,110322,112834,113814,113582,117053,116370,118558,123507,123846,124300,127392,127921,126704,129682,130323,127734,130848,137353,143938,141636,145530,144579,149753,149992,149743,153421,150843,150749,144187,140076,163050,163629,164200,163389,161234,164242,170817,176958,178467,184147,192387,181714,178073,190818,188690,182578,182356,183639,185596,187618,189825,195750,197231,192163,187365,187585,187600,185708,184695,178345,182711,180894,177201,180699,188125,183080,178544,181479,174462,175783,158196,165085,171116,165415,171550,182144,182189,179376,172399,178162,184332,191289,187996,187701,184245,186593,187674,189661,196458,195896,191993,196770,198028,197123,215494,221037,236466,238384,229405,227605,238748,241731,254194,251200,250972,252844,251017,259924,269079,273792,271923,281473,271508,262768,245204,261771,262415,257412,256477];
+
+    var datasets = [{
+      label: 'Strategy',
+      data: stratData,
+      borderColor: '#58a6ff',
+      backgroundColor: 'rgba(88,166,255,0.08)',
+      borderWidth: 2,
+      pointRadius: 0,
+      fill: true,
+      tension: 0.1
+    }];
+
+    datasets.push({
+      label: 'NVDA (B&H)',
+      data: bmData,
+      borderColor: '#d29922',
+      backgroundColor: 'rgba(210,153,34,0.05)',
+      borderWidth: 1.5,
+      pointRadius: 0,
+      fill: false,
+      tension: 0.1
+    });
+
+    new Chart(ctx, {
+      type: 'line',
+      data: { labels: labels, datasets: datasets },
+      options: {
+        responsive: true,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { labels: { color: '#e6edf3' } },
+          tooltip: {
+            backgroundColor: '#161b22',
+            borderColor: '#30363d',
+            borderWidth: 1,
+            titleColor: '#8b949e',
+            bodyColor: '#e6edf3',
+            callbacks: {
+              label: function(ctx) {
+                return ctx.dataset.label + ': $' + ctx.parsed.y.toLocaleString('en-US', {maximumFractionDigits:0});
+              }
+            }
+          }
+        },
+        scales: {
+          x: { ticks: { color: '#8b949e', maxTicksLimit: 12 }, grid: { color: '#21262d' } },
+          y: {
+            ticks: {
+              color: '#8b949e',
+              callback: function(v) { return '$' + v.toLocaleString('en-US', {maximumFractionDigits:0}); }
+            },
+            grid: { color: '#21262d' }
+          }
+        }
+      }
+    });
+  }
+})();
+</script>
+<footer>IbTradeQt Backtester &mdash; 2026-03-24 09:17:37</footer>
+</body>
+</html>

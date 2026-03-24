@@ -20,6 +20,7 @@ namespace BacktestUI {
 class BacktestRunConfigPanel;
 class BacktestRunHistoryPanel;
 class EquityChartWidget;
+class BacktestSummaryStatisticsPanel;
 class BacktestCandlestickWidget;
 class TradeLogWidget;
 
@@ -33,6 +34,10 @@ public:
                                bool clearResultPanels);
 
     void displayResult(const Backtest::BacktestLoadedRun& run);
+
+    /// Restore Run Configuration tab from a persisted run (historical row).
+    void applyLoadedRunConfiguration(const Backtest::BacktestLoadedRun& run);
+
     void setRunHistory(const QList<DbBacktestRunSummary>& runs);
 
     void setProgress(int percent);
@@ -85,7 +90,9 @@ private:
     int                      m_inspectorTabIdx = -1;
 
     BacktestRunHistoryPanel* m_historyPanel    = nullptr;
+    QWidget*                 m_equityTab       = nullptr;
     EquityChartWidget*       m_equityChart     = nullptr;
+    BacktestSummaryStatisticsPanel* m_summaryStatisticsPanel = nullptr;
     BacktestCandlestickWidget* m_candleChart   = nullptr;
     TradeLogWidget*          m_tradeLog        = nullptr;
 

@@ -3,7 +3,11 @@
 #include "BacktestUI/BacktestRunConfigPanel.h"
 #include "BacktestUI/BacktestRunHistoryPanel.h"
 #include "BacktestUI/EquityChartWidget.h"
+#include "BacktestUI/BacktestSummaryStatisticsPanel.h"
 #include "BacktestUI/BacktestCandlestickWidget.h"
+#include "Backtest/BacktestDataTypes.h"
+#include "Backtest/BacktestSummaryFormatter.h"
+#include "Pipeline/StrategyRuntimePolicy.h"
 #include "BacktestUI/TradeLogWidget.h"
 #include "BlockInspectorPanel.h"
 #include "ThemePalette.h"
@@ -17,8 +21,52 @@
 #include <QSizePolicy>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <cmath>
 
 namespace BacktestUI {
+
+namespace {
+
+QString resolveBenchmarkSymbolForDisplay(const Backtest::BacktestLoadedRun& run,
+                                         const QJsonObject& workingPipeline,
+                                         const QString& panelBenchmarkSymbol)
+{
+    QString sym = run.result.benchmark.symbol.trimmed().toUpper();
+    if (!sym.isEmpty())
+        return sym;
+    if (!run.record.configJson.isEmpty()) {
+        const QJsonObject o = QJsonDocument::fromJson(run.record.configJson.toUtf8()).object();
+        sym = Backtest::BacktestRunConfig::fromJson(o).benchmarkSymbol.trimmed().toUpper();
+    }
+    if (sym.isEmpty()) {
+        sym = panelBenchmarkSymbol.trimmed().toUpper();
+    }
+    if (sym.isEmpty()) {
+        QJsonObject pipelineForProfile = workingPipeline;
+        if (!run.record.configJson.isEmpty()) {
+            const QJsonObject runCfg =
+                QJsonDocument::fromJson(run.record.configJson.toUtf8()).object();
+            const QString pcj = runCfg.value(QStringLiteral("pipelineConfigJson")).toString();
+            if (!pcj.isEmpty()) {
+                const QJsonDocument d = QJsonDocument::fromJson(pcj.toUtf8());
+                if (d.isObject())
+                    pipelineForProfile = d.object();
+            }
+        }
+        sym = Backtest::BacktestProfile::fromJson(
+                  pipelineForProfile.value(QStringLiteral("backtestProfile")).toObject())
+                  .defaultBenchmark.trimmed()
+                  .toUpper();
+    }
+    // Persisted runs may have benchmark metrics / equity but a blank symbol (legacy rows).
+    if (sym.isEmpty()
+        && Backtest::BacktestSummaryFormatter::hasBenchmarkComparisonData(run.result)) {
+        sym = QStringLiteral("SPY");
+    }
+    return sym;
+}
+
+} // namespace
 
 BacktestWorkspaceDock::BacktestWorkspaceDock(QWidget* parent)
     : QDockWidget(QStringLiteral("Backtest Workspace"), parent)
@@ -86,12 +134,21 @@ void BacktestWorkspaceDock::buildDock() {
             this, &BacktestWorkspaceDock::userRunFieldsEdited);
 
     m_historyPanel = new BacktestRunHistoryPanel();
-    m_equityChart  = new EquityChartWidget();
+    m_equityTab    = new QWidget();
+    {
+        auto* equityLayout = new QVBoxLayout(m_equityTab);
+        equityLayout->setContentsMargins(0, 0, 0, 0);
+        equityLayout->setSpacing(4);
+        m_equityChart = new EquityChartWidget();
+        m_summaryStatisticsPanel = new BacktestSummaryStatisticsPanel();
+        equityLayout->addWidget(m_equityChart, 1);
+        equityLayout->addWidget(m_summaryStatisticsPanel, 0);
+    }
     m_candleChart  = new BacktestCandlestickWidget();
     m_tradeLog     = new TradeLogWidget();
 
     m_tabWidget->addTab(m_historyPanel, QStringLiteral("Run History"));
-    m_tabWidget->addTab(m_equityChart,  QStringLiteral("Equity Curve"));
+    m_tabWidget->addTab(m_equityTab,      QStringLiteral("Equity Curve"));
     m_tabWidget->addTab(m_candleChart,  QStringLiteral("Candlestick"));
     m_tabWidget->addTab(m_tradeLog,     QStringLiteral("Trade Log"));
 
@@ -138,6 +195,8 @@ void BacktestWorkspaceDock::applyWorkspaceSession(const Backtest::Workspace::Ses
 
     if (clearResultPanels) {
         m_equityChart->clear();
+        if (m_summaryStatisticsPanel)
+            m_summaryStatisticsPanel->clear();
         m_candleChart->clear();
         m_tradeLog->clear();
         m_historyPanel->clear();
@@ -205,12 +264,42 @@ void BacktestWorkspaceDock::updateStrategyHeader() {
 }
 
 void BacktestWorkspaceDock::displayResult(const Backtest::BacktestLoadedRun& run) {
-    const auto& result = run.result;
+    Backtest::BacktestResult result = run.result;
+    const QString panelBench =
+        m_configPanel ? m_configPanel->currentConfig().benchmarkSymbol : QString();
+    const QString benchSym =
+        resolveBenchmarkSymbolForDisplay(run, m_pipelineConfig, panelBench);
+    if (result.benchmark.symbol.isEmpty() && !benchSym.isEmpty())
+        result.benchmark.symbol = benchSym;
 
     m_equityChart->setData(
         result.equityCurve,
         result.benchmark.equityCurve,
-        result.benchmark.symbol);
+        result.benchmark.symbol,
+        result.initialCapital);
+
+    {
+        QJsonObject pipelineForSummary = m_pipelineConfig;
+        if (!run.record.configJson.isEmpty()) {
+            const QJsonObject runCfg =
+                QJsonDocument::fromJson(run.record.configJson.toUtf8()).object();
+            const QString pcj = runCfg.value(QStringLiteral("pipelineConfigJson")).toString();
+            if (!pcj.isEmpty()) {
+                const QJsonDocument d = QJsonDocument::fromJson(pcj.toUtf8());
+                if (d.isObject())
+                    pipelineForSummary = d.object();
+            }
+        }
+        const Pipeline::StrategyRuntimePolicy policy =
+            Pipeline::StrategyRuntimePolicy::fromJson(
+                pipelineForSummary.value(QStringLiteral("runtimePolicy")).toObject());
+        const QVector<Backtest::BacktestSummaryRow> rows =
+            Backtest::BacktestSummaryFormatter::buildRows(result, policy);
+        const bool threeCol = Backtest::BacktestSummaryFormatter::hasBenchmarkComparisonData(result);
+        m_summaryStatisticsPanel->setSummaryRows(
+            rows, threeCol,
+            Backtest::BacktestSummaryFormatter::benchmarkColumnHeader(result));
+    }
 
     {
         QList<DbBacktestTrade> dbFills;
@@ -229,6 +318,15 @@ void BacktestWorkspaceDock::displayResult(const Backtest::BacktestLoadedRun& run
 
     m_tradeLog->setFills(result.tradeLog);
     m_tabWidget->setCurrentIndex(2);
+}
+
+void BacktestWorkspaceDock::applyLoadedRunConfiguration(const Backtest::BacktestLoadedRun& run)
+{
+    if (!m_configPanel || run.record.configJson.isEmpty())
+        return;
+    const QJsonObject o = QJsonDocument::fromJson(run.record.configJson.toUtf8()).object();
+    const Backtest::BacktestRunConfig rc = Backtest::BacktestRunConfig::fromJson(o);
+    m_configPanel->applyRunConfigFields(rc);
 }
 
 void BacktestWorkspaceDock::setRunHistory(const QList<DbBacktestRunSummary>& runs) {

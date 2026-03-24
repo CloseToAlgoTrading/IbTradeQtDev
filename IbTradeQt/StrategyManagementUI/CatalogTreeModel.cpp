@@ -275,4 +275,18 @@ QString CatalogTreeModel::strategyIdFor(const QModelIndex& index) const
     return {};
 }
 
+QModelIndex CatalogTreeModel::findStrategyIndex(const QString& strategyId) const
+{
+    if (strategyId.isEmpty())
+        return {};
+    const QModelIndex rootParent;
+    const int n = rowCount(rootParent);
+    for (int r = 0; r < n; ++r) {
+        QModelIndex idx = index(r, 0, rootParent);
+        if (idx.data(StrategyIdRole).toString() == strategyId)
+            return idx;
+    }
+    return {};
+}
+
 } // namespace StrategyMgmt

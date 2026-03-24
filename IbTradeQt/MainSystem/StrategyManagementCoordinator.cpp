@@ -1,20 +1,26 @@
 #include "StrategyManagementCoordinator.h"
+#include "StrategyManagementUnsavedDraftFlow.h"
 #include "ISystemBackend.h"
 #include "ibtradesystemview.h"
 #include "StrategyManagementUI/StrategyManagementPanel.h"
+#include "StrategyManagementUI/StrategyCatalogPanel.h"
 #include "StrategyManagementUI/StrategyDetailPanel.h"
 #include "CPortfolioConfigModel.h"
-#include "Pipeline/PipelineConstants.h"
+#include "Pipeline/PipelineConfigMutations.h"
 #include "cbasicroot.h"
 #include <QInputDialog>
 #include <QMessageBox>
 #include <QJsonDocument>
+#include <QSignalBlocker>
+#include <QTableWidget>
 #include <QUuid>
 
 StrategyManagementCoordinator::StrategyManagementCoordinator(QObject* parent)
     : QObject(parent)
 {
 }
+
+StrategyManagementCoordinator::~StrategyManagementCoordinator() = default;
 
 void StrategyManagementCoordinator::setView(CIBTradeSystemView* view) { m_view = view; }
 void StrategyManagementCoordinator::setBackend(ISystemBackend* backend) { m_backend = backend; }
@@ -27,8 +33,26 @@ void StrategyManagementCoordinator::wireSignals()
 {
     if (!m_panel) return;
 
+    m_unsavedDraftFlow = std::make_unique<StrategyManagementUnsavedDraftFlow>(
+        m_backend, m_view, m_panel);
+
     connect(m_panel, &StrategyMgmt::StrategyManagementPanel::strategySelected,
-            this, &StrategyManagementCoordinator::onStrategySelected);
+            this, [this](const QString& strategyId) {
+        if (!m_panel || !m_backend || !m_unsavedDraftFlow)
+            return;
+        auto* detail = m_panel->detailPanel();
+        if (detail && detail->isConfigDirty()
+            && !detail->currentStrategyId().isEmpty()
+            && detail->currentStrategyId() != strategyId) {
+            if (!m_unsavedDraftFlow->tryResolveIfDirty(
+                    QStringLiteral(
+                        "Save or discard changes to the current strategy before selecting another?"))) {
+                m_panel->catalogPanel()->selectStrategyById(detail->currentStrategyId());
+                return;
+            }
+        }
+        onStrategySelected(strategyId);
+    });
 
     connect(m_panel, &StrategyMgmt::StrategyManagementPanel::newStrategyRequested,
             this, [this]() { onCreateStrategy(QString(), QJsonObject()); });
@@ -67,73 +91,55 @@ void StrategyManagementCoordinator::wireSignals()
     connect(m_panel, &StrategyMgmt::StrategyManagementPanel::addBlockRequested,
             this, [this](const QString& strategyId, const QString& category,
                          const QString& blockId, const QJsonObject& defaultConfig) {
-        if (!m_backend) return;
+        if (!m_backend || !m_panel || !m_unsavedDraftFlow)
+            return;
 
-        QJsonArray versions = m_backend->listStrategyVersions(strategyId);
-        QJsonObject latestConfig;
-        if (!versions.isEmpty()) {
-            QString cfgStr = versions.last().toObject().value("configJson").toString();
-            latestConfig = QJsonDocument::fromJson(cfgStr.toUtf8()).object();
+        auto* detail = m_panel->detailPanel();
+        if (detail->currentStrategyId() != strategyId) {
+            if (!m_unsavedDraftFlow->tryResolveIfDirty(
+                    QStringLiteral(
+                        "Save or discard changes before editing another strategy?"))) {
+                m_panel->catalogPanel()->selectStrategyById(detail->currentStrategyId());
+                return;
+            }
+            onStrategySelected(strategyId);
+            detail = m_panel->detailPanel();
         }
 
-        bool isArray = Pipeline::categoryIsArray(category);
-        QLatin1StringView key = Pipeline::categoryKey(category);
-        if (key.isEmpty()) return;
-
-        QJsonObject block;
-        block[Pipeline::Key::BlockId] = blockId;
-        block[Pipeline::Key::Config]  = defaultConfig;
-
-        if (isArray) {
-            QJsonArray arr = latestConfig.value(key).toArray();
-            arr.append(block);
-            latestConfig[key] = arr;
-        } else {
-            latestConfig[key] = block;
-        }
-
-        m_backend->createStrategyVersion(strategyId, latestConfig,
-            QStringLiteral("Added %1 block: %2").arg(category, blockId));
-
+        QJsonObject cfg = detail->workingConfig();
+        if (!Pipeline::addBlockToPipeline(cfg, category, blockId, defaultConfig))
+            return;
+        detail->setWorkingPipelineConfig(cfg);
         refreshCatalog();
-        QJsonObject entry = m_backend->strategyCatalogEntry(strategyId);
-        QJsonArray newVersions = m_backend->listStrategyVersions(strategyId);
-        m_panel->showStrategyDetail(entry, newVersions);
     });
 
     connect(m_panel, &StrategyMgmt::StrategyManagementPanel::removeBlockRequested,
             this, [this](const QString& strategyId, const QString& category,
                          int blockIndex) {
-        if (!m_backend) return;
+        if (!m_backend || !m_panel || !m_unsavedDraftFlow)
+            return;
 
-        QJsonArray versions = m_backend->listStrategyVersions(strategyId);
-        QJsonObject latestConfig;
-        if (!versions.isEmpty()) {
-            QString cfgStr = versions.last().toObject().value("configJson").toString();
-            latestConfig = QJsonDocument::fromJson(cfgStr.toUtf8()).object();
+        auto* detail = m_panel->detailPanel();
+        if (detail->currentStrategyId() != strategyId) {
+            if (!m_unsavedDraftFlow->tryResolveIfDirty(
+                    QStringLiteral(
+                        "Save or discard changes before editing another strategy?"))) {
+                m_panel->catalogPanel()->selectStrategyById(detail->currentStrategyId());
+                return;
+            }
+            onStrategySelected(strategyId);
+            detail = m_panel->detailPanel();
         }
 
-        bool isArray = Pipeline::categoryIsArray(category);
-        QLatin1StringView key = Pipeline::categoryKey(category);
-        if (key.isEmpty()) return;
-
-        if (isArray) {
-            QJsonArray arr = latestConfig.value(key).toArray();
-            if (blockIndex >= 0 && blockIndex < arr.size())
-                arr.removeAt(blockIndex);
-            latestConfig[key] = arr;
-        } else {
-            latestConfig.remove(key);
-        }
-
-        m_backend->createStrategyVersion(strategyId, latestConfig,
-            QStringLiteral("Removed %1 block").arg(category));
-
+        QJsonObject cfg = detail->workingConfig();
+        if (!Pipeline::removeBlockFromPipeline(cfg, category, blockIndex))
+            return;
+        detail->setWorkingPipelineConfig(cfg);
         refreshCatalog();
-        QJsonObject entry = m_backend->strategyCatalogEntry(strategyId);
-        QJsonArray newVersions = m_backend->listStrategyVersions(strategyId);
-        m_panel->showStrategyDetail(entry, newVersions);
     });
+
+    connect(m_panel->detailPanel(), &StrategyMgmt::StrategyDetailPanel::versionRowChangeRequested,
+            this, &StrategyManagementCoordinator::onStrategyVersionRowChangeRequested);
 
     if (m_backend) {
         connect(m_backend, &ISystemBackend::strategyCatalogChanged,
@@ -160,6 +166,10 @@ void StrategyManagementCoordinator::refreshCatalog()
             latestConfigs[sid] = QJsonDocument::fromJson(cfgStr.toUtf8()).object();
         }
     }
+
+    auto* detail = m_panel->detailPanel();
+    if (detail && detail->isConfigDirty() && !detail->currentStrategyId().isEmpty())
+        latestConfigs[detail->currentStrategyId()] = detail->workingConfig();
 
     m_panel->populateCatalog(entries, versionCounts, latestConfigs);
 }
@@ -266,15 +276,11 @@ void StrategyManagementCoordinator::onSaveVersion(const QString& strategyId,
                                                     const QJsonObject& config,
                                                     const QString& /*notes*/)
 {
-    if (!m_backend || !m_view || !m_panel) return;
-    QString notes = QInputDialog::getText(m_view,
-        QStringLiteral("New Version"),
-        QStringLiteral("Notes for this version:"));
-    m_backend->createStrategyVersion(strategyId, config, notes);
-    refreshCatalog();
-    QJsonObject entry = m_backend->strategyCatalogEntry(strategyId);
-    QJsonArray versions = m_backend->listStrategyVersions(strategyId);
-    m_panel->showStrategyDetail(entry, versions);
+    Q_UNUSED(strategyId);
+    Q_UNUSED(config);
+    if (!m_unsavedDraftFlow)
+        return;
+    m_unsavedDraftFlow->saveWorkingAsNewVersion();
 }
 
 void StrategyManagementCoordinator::onDeleteVersion(const QString& /*strategyId*/,
@@ -330,4 +336,34 @@ void StrategyManagementCoordinator::onBacktestVersion(const QString& strategyId,
                                                        const QString& versionId)
 {
     emit openInBacktest(strategyId, versionId);
+}
+
+bool StrategyManagementCoordinator::tryResolveUnsavedStrategyDraft(const QString& message)
+{
+    if (!m_unsavedDraftFlow)
+        return true;
+    return m_unsavedDraftFlow->tryResolveIfDirty(message);
+}
+
+void StrategyManagementCoordinator::onStrategyVersionRowChangeRequested(int newRow, int previousRow)
+{
+    if (!m_panel || !m_unsavedDraftFlow)
+        return;
+    auto* detail = m_panel->detailPanel();
+    if (!detail || !detail->versionTable())
+        return;
+
+    {
+        QSignalBlocker b(detail->versionTable());
+        detail->versionTable()->selectRow(previousRow);
+    }
+    if (!m_unsavedDraftFlow->tryResolveIfDirty(
+            QStringLiteral("Save or discard changes before switching version?"))) {
+        return;
+    }
+    {
+        QSignalBlocker b(detail->versionTable());
+        detail->versionTable()->selectRow(newRow);
+    }
+    detail->loadVersionAtRow(newRow);
 }

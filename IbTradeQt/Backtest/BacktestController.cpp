@@ -4,9 +4,11 @@
 #include "Backtest/BacktestRunPersistence.h"
 #include "Backtest/HistoricalDataManager.h"
 #include "Backtest/BacktestConstants.h"
+#include "Backtest/LedgerSnapshot.h"
 #include "Pipeline/UniverseResolver.h"
 #include "DB/dbquery.h"
 #include "DB/dbdatatypes.h"
+#include <algorithm>
 #include <QUuid>
 #include <QDateTime>
 #include <QJsonDocument>
@@ -44,6 +46,31 @@ QHash<QString, QVariantMap> assetListJsonToHash(const QString& json)
             out.insert(it.key(), it.value().toObject().toVariantMap());
     }
     return out;
+}
+
+/// Strategy and benchmark equity series can differ in length (e.g. many strategy bars vs daily
+/// benchmark). Map each strategy timestamp to the benchmark portfolio value as-of that time
+/// (last benchmark point at or before \a t). Never use index alignment or zeros as placeholders.
+double benchmarkPortfolioValueAtTimestamp(const QVector<LedgerSnapshot>& bm,
+                                          const QDateTime& t)
+{
+    if (bm.isEmpty())
+        return 0.0;
+    if (t <= bm.first().timestamp)
+        return bm.first().portfolioValue;
+    if (t >= bm.last().timestamp)
+        return bm.last().portfolioValue;
+
+    auto it = std::lower_bound(
+        bm.begin(), bm.end(), t,
+        [](const LedgerSnapshot& s, const QDateTime& tt) { return s.timestamp < tt; });
+    if (it == bm.end())
+        return bm.last().portfolioValue;
+    if (it->timestamp == t)
+        return it->portfolioValue;
+    if (it == bm.begin())
+        return it->portfolioValue;
+    return (it - 1)->portfolioValue;
 }
 
 } // namespace
@@ -102,44 +129,11 @@ void BacktestController::start(const BacktestRunConfig& config) {
         return;
     }
 
-    m_currentConfig = config;
     m_currentRunId  = QUuid::createUuid().toString(QUuid::WithoutBraces);
     m_dataRefreshedAt.clear();
 
     const QString persistedStrategyId =
         Persistence::resolvedStrategyIdForPersistence(config, m_currentRunId);
-
-    // Persist initial run record with status "Created"
-    DbBacktestRun runRecord;
-    runRecord.runId               = m_currentRunId;
-    runRecord.strategyId          = persistedStrategyId;
-    runRecord.strategyDisplayName = config.strategyDisplayName;
-    runRecord.portfolioPath       = config.portfolioPath;
-    runRecord.configJson          = QString::fromUtf8(
-        QJsonDocument(config.toJson()).toJson(QJsonDocument::Compact));
-    runRecord.symbols             = config.symbolsJoined();
-    runRecord.startDate           = config.startDate.toUTC().toString(Qt::ISODate);
-    runRecord.endDate             = config.endDate.toUTC().toString(Qt::ISODate);
-    runRecord.status              = QString(Backtest::Status::Created);
-    runRecord.engineVersion       = engineVersion();
-    runRecord.dataSourceId        = config.dataSourceId;
-    runRecord.createdAt           = QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
-    // Canonical scope fields — caller is responsible for populating these before calling start().
-    // Do NOT set scopeRefId = config.strategyId implicitly (they serve different semantics).
-    runRecord.strategyDefId       = config.strategyDefId;
-    runRecord.scopeType           = config.scopeType.isEmpty()
-                                      ? QString(Backtest::Scope::Strategy)
-                                      : config.scopeType;
-    runRecord.scopeRefId          = config.scopeRefId;
-    runRecord.strategyVersion     = config.strategyVersion > 0 ? config.strategyVersion : 1;
-    runRecord.catalogStrategyId   = config.catalogStrategyId;
-    runRecord.catalogVersionId    = config.catalogVersionId;
-    persistRunRecord(runRecord);
-
-    // Transition to Running
-    updateRunStatus(QString(Backtest::Status::Running), QString(), 0, QString());
-    emit statusChanged(QString(Backtest::Status::Running));
-    m_elapsed.start();
 
     // Inline pipeline JSON — parse from stored string
     QJsonObject pipelineJson;
@@ -160,6 +154,41 @@ void BacktestController::start(const BacktestRunConfig& config) {
                      << resolvedConfig.symbols;
         }
     }
+
+    // Authoritative run config for persistence and onSessionFinished (includes resolved symbols).
+    m_currentConfig = resolvedConfig;
+
+    // Persist run record with resolved symbols + full configJson (matches actual execution).
+    DbBacktestRun runRecord;
+    runRecord.runId               = m_currentRunId;
+    runRecord.strategyId          = persistedStrategyId;
+    runRecord.strategyDisplayName = m_currentConfig.strategyDisplayName;
+    runRecord.portfolioPath       = m_currentConfig.portfolioPath;
+    runRecord.configJson          = QString::fromUtf8(
+        QJsonDocument(m_currentConfig.toJson()).toJson(QJsonDocument::Compact));
+    runRecord.symbols             = m_currentConfig.symbolsJoined();
+    runRecord.startDate           = m_currentConfig.startDate.toUTC().toString(Qt::ISODate);
+    runRecord.endDate             = m_currentConfig.endDate.toUTC().toString(Qt::ISODate);
+    runRecord.status              = QString(Backtest::Status::Created);
+    runRecord.engineVersion       = engineVersion();
+    runRecord.dataSourceId        = m_currentConfig.dataSourceId;
+    runRecord.createdAt           = QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
+    // Canonical scope fields — caller is responsible for populating these before calling start().
+    // Do NOT set scopeRefId = config.strategyId implicitly (they serve different semantics).
+    runRecord.strategyDefId       = m_currentConfig.strategyDefId;
+    runRecord.scopeType           = m_currentConfig.scopeType.isEmpty()
+                                      ? QString(Backtest::Scope::Strategy)
+                                      : m_currentConfig.scopeType;
+    runRecord.scopeRefId          = m_currentConfig.scopeRefId;
+    runRecord.strategyVersion     = m_currentConfig.strategyVersion > 0 ? m_currentConfig.strategyVersion : 1;
+    runRecord.catalogStrategyId   = m_currentConfig.catalogStrategyId;
+    runRecord.catalogVersionId    = m_currentConfig.catalogVersionId;
+    persistRunRecord(runRecord);
+
+    // Transition to Running
+    updateRunStatus(QString(Backtest::Status::Running), QString(), 0, QString());
+    emit statusChanged(QString(Backtest::Status::Running));
+    m_elapsed.start();
 
     // Build BacktestConfig from the (possibly enriched) run config
     BacktestConfig btConfig = buildBacktestConfig(resolvedConfig);
@@ -419,7 +448,7 @@ void BacktestController::persistResult(const BacktestResult& result,
             p.runId          = m_currentRunId;
             p.timestamp      = curve[i].timestamp.toUTC().toString(Qt::ISODate);
             p.value          = curve[i].portfolioValue;
-            p.benchmarkValue = (i < bmCurve.size()) ? bmCurve[i].portfolioValue : 0.0;
+            p.benchmarkValue = benchmarkPortfolioValueAtTimestamp(bmCurve, curve[i].timestamp);
             auto q = query_insertEquityPoint(p, m_dbConnectionName);
             if (!q.exec())
                 qCWarning(lcBacktestController) << "BacktestController: insertEquity failed:" << q.lastError().text();

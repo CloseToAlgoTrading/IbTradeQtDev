@@ -253,6 +253,11 @@ static const char* const CREATE_TABLE_BACKTEST_METRICS =
     "finalCapital      REAL, "
     "benchmarkReturn   REAL, "
     "benchmarkSharpe   REAL, "
+    "benchmarkSymbol   TEXT, "
+    "benchmarkAnnualizedReturn REAL, "
+    "benchmarkMaxDrawdown      REAL, "
+    "benchmarkStartPrice       REAL, "
+    "benchmarkEndPrice         REAL, "
     "alpha             REAL, "
     "sortinoRatio      REAL, "
     "calmarRatio       REAL, "
@@ -277,6 +282,16 @@ static const char* const ALTER_BACKTEST_METRICS_ADD_METRIC_DEFS_VERSION =
     "ALTER TABLE BacktestMetrics ADD COLUMN metricDefinitionsVersion INTEGER";
 static const char* const ALTER_BACKTEST_METRICS_ADD_STATISTICS_JSON =
     "ALTER TABLE BacktestMetrics ADD COLUMN statisticsJson TEXT";
+static const char* const ALTER_BACKTEST_METRICS_ADD_BENCHMARK_SYMBOL =
+    "ALTER TABLE BacktestMetrics ADD COLUMN benchmarkSymbol TEXT";
+static const char* const ALTER_BACKTEST_METRICS_ADD_BENCHMARK_ANNUALIZED =
+    "ALTER TABLE BacktestMetrics ADD COLUMN benchmarkAnnualizedReturn REAL";
+static const char* const ALTER_BACKTEST_METRICS_ADD_BENCHMARK_MAX_DD =
+    "ALTER TABLE BacktestMetrics ADD COLUMN benchmarkMaxDrawdown REAL";
+static const char* const ALTER_BACKTEST_METRICS_ADD_BENCHMARK_START_PRICE =
+    "ALTER TABLE BacktestMetrics ADD COLUMN benchmarkStartPrice REAL";
+static const char* const ALTER_BACKTEST_METRICS_ADD_BENCHMARK_END_PRICE =
+    "ALTER TABLE BacktestMetrics ADD COLUMN benchmarkEndPrice REAL";
 
 static const char* const TABLE_BACKTEST_TRADES = "BacktestTrades";
 static const char* const CREATE_TABLE_BACKTEST_TRADES =
@@ -404,11 +419,15 @@ inline QSqlQuery query_insertBacktestMetrics(const DbBacktestMetrics& m, const Q
     q.prepare(
         "INSERT OR REPLACE INTO BacktestMetrics "
         "(runId, totalReturn, annualizedReturn, sharpeRatio, maxDrawdown, winRate, "
-        " totalTrades, initialCapital, finalCapital, benchmarkReturn, benchmarkSharpe, alpha, "
+        " totalTrades, initialCapital, finalCapital, benchmarkReturn, benchmarkSharpe, "
+        " benchmarkSymbol, benchmarkAnnualizedReturn, benchmarkMaxDrawdown, benchmarkStartPrice, benchmarkEndPrice, "
+        " alpha, "
         " sortinoRatio, calmarRatio, profitFactor, averageExposurePct, turnoverAnnualized, "
         " metricDefinitionsVersion, statisticsJson) "
         "VALUES (:runId,:totalReturn,:annualizedReturn,:sharpeRatio,:maxDrawdown,:winRate,"
-        ":totalTrades,:initialCapital,:finalCapital,:benchmarkReturn,:benchmarkSharpe,:alpha,"
+        ":totalTrades,:initialCapital,:finalCapital,:benchmarkReturn,:benchmarkSharpe,"
+        ":benchmarkSymbol,:benchmarkAnnualizedReturn,:benchmarkMaxDrawdown,:benchmarkStartPrice,:benchmarkEndPrice,"
+        ":alpha,"
         ":sortinoRatio,:calmarRatio,:profitFactor,:averageExposurePct,:turnoverAnnualized,"
         ":metricDefinitionsVersion,:statisticsJson)");
     q.bindValue(":runId",            m.runId);
@@ -422,6 +441,11 @@ inline QSqlQuery query_insertBacktestMetrics(const DbBacktestMetrics& m, const Q
     q.bindValue(":finalCapital",     m.finalCapital);
     q.bindValue(":benchmarkReturn",  m.benchmarkReturn);
     q.bindValue(":benchmarkSharpe",  m.benchmarkSharpe);
+    q.bindValue(":benchmarkSymbol",  m.benchmarkSymbol);
+    q.bindValue(":benchmarkAnnualizedReturn", m.benchmarkAnnualizedReturn);
+    q.bindValue(":benchmarkMaxDrawdown",      m.benchmarkMaxDrawdown);
+    q.bindValue(":benchmarkStartPrice",       m.benchmarkStartPrice);
+    q.bindValue(":benchmarkEndPrice",         m.benchmarkEndPrice);
     q.bindValue(":alpha",            m.alpha);
     q.bindValue(":sortinoRatio",           m.sortinoRatio);
     q.bindValue(":calmarRatio",            m.calmarRatio);

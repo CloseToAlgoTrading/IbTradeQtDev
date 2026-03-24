@@ -194,6 +194,41 @@ Backtest::Workspace::RunFieldsSnapshot BacktestRunConfigPanel::runFieldsSnapshot
     return r;
 }
 
+void BacktestRunConfigPanel::applyRunConfigFields(const Backtest::BacktestRunConfig& c)
+{
+    m_programmaticUpdate = true;
+    QSignalBlocker b1(m_symbolsEdit);
+    QSignalBlocker b2(m_startDateEdit);
+    QSignalBlocker b3(m_endDateEdit);
+    QSignalBlocker b4(m_capitalSpin);
+    QSignalBlocker b5(m_benchmarkEdit);
+    QSignalBlocker b6(m_resolutionCombo);
+    QSignalBlocker b7(m_fillModelCombo);
+    QSignalBlocker b8(m_fillTimingCombo);
+    QSignalBlocker b9(m_slippageSpin);
+    QSignalBlocker b10(m_dataSourceCombo);
+
+    m_symbolsEdit->setText(c.symbols.join(QLatin1Char(',')));
+    m_startDateEdit->setDate(c.startDate.toUTC().date());
+    m_endDateEdit->setDate(c.endDate.toUTC().date());
+    m_capitalSpin->setValue(c.initialCapital);
+    m_benchmarkEdit->setText(c.benchmarkSymbol);
+    const int resIdx = m_resolutionCombo->findText(c.resolution);
+    if (resIdx >= 0)
+        m_resolutionCombo->setCurrentIndex(resIdx);
+    const int fmIdx = m_fillModelCombo->findText(c.fillModel);
+    if (fmIdx >= 0)
+        m_fillModelCombo->setCurrentIndex(fmIdx);
+    const int ftIdx = m_fillTimingCombo->findText(c.fillTiming);
+    if (ftIdx >= 0)
+        m_fillTimingCombo->setCurrentIndex(ftIdx);
+    m_slippageSpin->setValue(c.slippageBps);
+    const int dsIdx = m_dataSourceCombo->findText(c.dataSourceId);
+    if (dsIdx >= 0)
+        m_dataSourceCombo->setCurrentIndex(dsIdx);
+    m_programmaticUpdate = false;
+}
+
 void BacktestRunConfigPanel::applyRunFieldsSnapshot(const Backtest::Workspace::RunFieldsSnapshot& s)
 {
     QSignalBlocker b1(m_symbolsEdit);

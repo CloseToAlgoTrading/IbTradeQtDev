@@ -4,11 +4,25 @@
 
 namespace Pipeline {
 
+namespace {
+
+QJsonArray selectionConfigsFromPipeline(const QJsonObject& pipelineConfig)
+{
+    const QJsonValue sel = pipelineConfig.value(QStringLiteral("selection"));
+    if (sel.isArray())
+        return sel.toArray();
+    if (sel.isObject())
+        return QJsonArray{sel.toObject()};
+    return {};
+}
+
+} // namespace
+
 UniverseResolutionResult UniverseResolver::resolve(const QJsonObject& pipelineConfig)
 {
     UniverseResolutionResult result;
 
-    QJsonArray selectionConfigs = pipelineConfig.value(QStringLiteral("selection")).toArray();
+    const QJsonArray selectionConfigs = selectionConfigsFromPipeline(pipelineConfig);
 
     if (selectionConfigs.isEmpty()) {
         result.mode = UniverseResolutionResult::Mode::RequiresExternalUniverse;

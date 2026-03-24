@@ -14,6 +14,7 @@
 #include <QHeaderView>
 #include <QMenu>
 #include <QSortFilterProxyModel>
+#include <QTreeView>
 
 namespace StrategyMgmt {
 
@@ -88,6 +89,20 @@ void StrategyCatalogPanel::populate(const QJsonArray& catalogEntries,
     const int n = m_model->columnCount();
     for (int c = 0; c < n - 1; ++c)
         tv->resizeColumnToContents(c);
+}
+
+void StrategyCatalogPanel::selectStrategyById(const QString& strategyId)
+{
+    if (strategyId.isEmpty() || !m_model)
+        return;
+    const QModelIndex src = m_model->findStrategyIndex(strategyId);
+    if (!src.isValid())
+        return;
+    auto* proxy = qobject_cast<QSortFilterProxyModel*>(m_treePanel->treeView()->model());
+    const QModelIndex prox = proxy ? proxy->mapFromSource(src) : src;
+    QTreeView* tv = m_treePanel->treeView();
+    tv->setCurrentIndex(prox);
+    tv->scrollTo(prox);
 }
 
 void StrategyCatalogPanel::onItemClicked(const QModelIndex& proxyIndex)

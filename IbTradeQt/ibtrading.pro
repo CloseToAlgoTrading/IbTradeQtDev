@@ -134,6 +134,7 @@ SOURCES += \
     MainSystem/QtUnsavedChangesPrompt.cpp \
     MainSystem/BacktestWorkspaceCoordinator.cpp \
     MainSystem/StrategyManagementCoordinator.cpp \
+    MainSystem/StrategyManagementUnsavedDraftFlow.cpp \
     ReqManager/globalreqmanager.cpp \
     ReqManager/ReqManager.cpp \
     Brokers/IB/src/ContractCondition.cpp \
@@ -191,12 +192,15 @@ SOURCES += \
     Backtest/BacktestReportModelBuilder.cpp \
     Backtest/BacktestHtmlTemplateRenderer.cpp \
     Backtest/BacktestMetricsMapper.cpp \
+    Backtest/EquityCurvePnl.cpp \
+    Backtest/BacktestSummaryFormatter.cpp \
     Backtest/Reporting/MomentumSemanticHtmlWriter.cpp \
     BacktestUI/BacktestWorkspaceDock.cpp \
     BacktestUI/BacktestStrategySelector.cpp \
     BacktestUI/BacktestRunConfigPanel.cpp \
     BacktestUI/BacktestRunHistoryPanel.cpp \
     BacktestUI/EquityChartWidget.cpp \
+    BacktestUI/BacktestSummaryStatisticsPanel.cpp \
     BacktestUI/BacktestCandlestickWidget.cpp \
     BacktestUI/TradeLogWidget.cpp \
     MainSystem/GlobalStatusBar.cpp \
@@ -213,6 +217,7 @@ SOURCES += \
     MainSystem/WorkspaceWidgets/BlockInspectorPanel.cpp \
     MainSystem/WorkspaceWidgets/RuntimePolicyEditor.cpp \
     Pipeline/PipelineTreeUtils.cpp \
+    Pipeline/PipelineConfigMutations.cpp \
     Pipeline/PipelineLog.cpp \
     Pipeline/StrategyPipelineRunner.cpp \
     Pipeline/IAlphaBlock.cpp \
@@ -315,6 +320,7 @@ HEADERS += \
     Replay/MarketDataRecorder.h \
     Replay/MarketDataReplayer.h \
     Pipeline/PipelineTreeUtils.h \
+    Pipeline/PipelineConfigMutations.h \
     Pipeline/BlockRegistry.h \
     Pipeline/StrategyPipelineRunner.h \
     Pipeline/BlockGraphSerializer.h \
@@ -431,12 +437,15 @@ HEADERS += \
     Backtest/BacktestReportModelBuilder.h \
     Backtest/BacktestHtmlTemplateRenderer.h \
     Backtest/BacktestMetricsMapper.h \
+    Backtest/EquityCurvePnl.h \
+    Backtest/BacktestSummaryFormatter.h \
     Backtest/Reporting/MomentumSemanticHtmlWriter.h \
     BacktestUI/BacktestWorkspaceDock.h \
     BacktestUI/BacktestStrategySelector.h \
     BacktestUI/BacktestRunConfigPanel.h \
     BacktestUI/BacktestRunHistoryPanel.h \
     BacktestUI/EquityChartWidget.h \
+    BacktestUI/BacktestSummaryStatisticsPanel.h \
     BacktestUI/BacktestCandlestickWidget.h \
     BacktestUI/TradeLogWidget.h \
     MainSystem/GlobalStatusBar.h \
@@ -528,6 +537,7 @@ HEADERS += \
     MainSystem/IUnsavedChangesPrompt.h \
     MainSystem/BacktestWorkspaceCoordinator.h \
     MainSystem/StrategyManagementCoordinator.h \
+    MainSystem/StrategyManagementUnsavedDraftFlow.h \
     ReqManager/globalreqmanager.h \
     ReqManager/ReqManager.h \
     Brokers/IB/Shared/standardincludes.h \

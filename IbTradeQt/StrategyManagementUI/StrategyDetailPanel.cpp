@@ -158,8 +158,8 @@ void StrategyDetailPanel::buildUi()
     mainLayout->addLayout(actionBar);
 
     // --- Connections ---
-    connect(m_versionTable, &QTableWidget::cellClicked,
-            this, &StrategyDetailPanel::onVersionSelected);
+    connect(m_versionTable, &QTableWidget::currentCellChanged,
+            this, &StrategyDetailPanel::onVersionCurrentCellChanged);
     connect(m_saveMetaBtn, &QPushButton::clicked,
             this, &StrategyDetailPanel::onSaveMetadata);
     connect(m_newVersionBtn, &QPushButton::clicked,
@@ -175,7 +175,7 @@ void StrategyDetailPanel::buildUi()
     connect(m_diffToggle, &QCheckBox::toggled,
             this, [this](bool) {
         int row = m_versionTable->currentRow();
-        if (row >= 0) onVersionSelected(row, 0);
+        if (row >= 0) loadVersionAtRow(row);
     });
 
     clear();
@@ -230,8 +230,10 @@ void StrategyDetailPanel::showStrategy(const QJsonObject& catalogEntry,
         m_configDirty = false;
         m_newVersionBtn->setText(QStringLiteral("Save as New Version"));
 
+        m_suppressVersionNav = true;
         m_versionTable->selectRow(versions.size() - 1);
-        onVersionSelected(versions.size() - 1, 0);
+        loadVersionAtRow(versions.size() - 1);
+        m_suppressVersionNav = false;
     } else {
         m_workingConfig = QJsonObject();
         m_configDirty = false;
@@ -270,7 +272,25 @@ void StrategyDetailPanel::hideBlockDetails()
     m_inspector->clear();
 }
 
-void StrategyDetailPanel::onVersionSelected(int row, int)
+void StrategyDetailPanel::onVersionCurrentCellChanged(int currentRow, int /*currentColumn*/,
+                                                      int previousRow, int /*previousColumn*/)
+{
+    if (m_suppressVersionNav)
+        return;
+    if (currentRow < 0 || currentRow == previousRow)
+        return;
+    if (!m_configDirty) {
+        loadVersionAtRow(currentRow);
+        return;
+    }
+    if (previousRow < 0) {
+        loadVersionAtRow(currentRow);
+        return;
+    }
+    emit versionRowChangeRequested(currentRow, previousRow);
+}
+
+void StrategyDetailPanel::loadVersionAtRow(int row)
 {
     if (row < 0 || row >= m_currentVersions.size()) {
         m_configViewer->clear();
@@ -317,6 +337,22 @@ void StrategyDetailPanel::onVersionSelected(int row, int)
     } else {
         m_configViewer->setPlainText(currentText);
     }
+}
+
+void StrategyDetailPanel::resetWorkingToSelectedVersion()
+{
+    const int row = m_versionTable->currentRow();
+    if (row < 0 || row >= m_currentVersions.size())
+        return;
+    loadVersionAtRow(row);
+}
+
+void StrategyDetailPanel::setWorkingPipelineConfig(const QJsonObject& pipelineConfig)
+{
+    m_workingConfig = pipelineConfig;
+    m_policyEditor->loadFromJson(m_workingConfig);
+    hideBlockDetails();
+    markDirty();
 }
 
 void StrategyDetailPanel::markDirty()

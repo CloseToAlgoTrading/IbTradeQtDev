@@ -53,6 +53,11 @@ void DBHandler::initializeBacktestTables() {
     execSilent(ALTER_BACKTEST_METRICS_ADD_TURNOVER_ANNUALIZED);
     execSilent(ALTER_BACKTEST_METRICS_ADD_METRIC_DEFS_VERSION);
     execSilent(ALTER_BACKTEST_METRICS_ADD_STATISTICS_JSON);
+    execSilent(ALTER_BACKTEST_METRICS_ADD_BENCHMARK_SYMBOL);
+    execSilent(ALTER_BACKTEST_METRICS_ADD_BENCHMARK_ANNUALIZED);
+    execSilent(ALTER_BACKTEST_METRICS_ADD_BENCHMARK_MAX_DD);
+    execSilent(ALTER_BACKTEST_METRICS_ADD_BENCHMARK_START_PRICE);
+    execSilent(ALTER_BACKTEST_METRICS_ADD_BENCHMARK_END_PRICE);
     exec(CREATE_TABLE_BACKTEST_TRADES);
     exec(CREATE_TABLE_BACKTEST_EQUITY_CURVE);
     exec(CREATE_TABLE_HISTORICAL_BARS);
@@ -447,6 +452,15 @@ void DBHandler::slotFetchLoadedRun(const QString& runId) {
             metrics.finalCapital     = q.value("finalCapital").toDouble();
             metrics.benchmarkReturn  = q.value("benchmarkReturn").toDouble();
             metrics.benchmarkSharpe  = q.value("benchmarkSharpe").toDouble();
+            metrics.benchmarkSymbol  = q.value(QStringLiteral("benchmarkSymbol")).toString();
+            metrics.benchmarkAnnualizedReturn =
+                q.value(QStringLiteral("benchmarkAnnualizedReturn")).toDouble();
+            metrics.benchmarkMaxDrawdown =
+                q.value(QStringLiteral("benchmarkMaxDrawdown")).toDouble();
+            metrics.benchmarkStartPrice =
+                q.value(QStringLiteral("benchmarkStartPrice")).toDouble();
+            metrics.benchmarkEndPrice =
+                q.value(QStringLiteral("benchmarkEndPrice")).toDouble();
             metrics.alpha            = q.value("alpha").toDouble();
             metrics.sortinoRatio           = q.value(QStringLiteral("sortinoRatio")).toDouble();
             metrics.calmarRatio            = q.value(QStringLiteral("calmarRatio")).toDouble();

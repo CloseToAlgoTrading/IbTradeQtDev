@@ -53,3 +53,12 @@ QT_LOGGING_RULES="backtest.*=true" ./ibtrading_tests
 ## Yahoo multi-symbol ordering
 
 `YahooFinanceDataSource` loads one symbol per HTTP response. `BacktestSession` buffers Yahoo bars and **sorts by timestamp** before feeding `MarketDataReplayer`, matching time-ordered CSV loads.
+
+## HistoricalDataManager (SQLite) and prefetch
+
+- **Table:** `HistoricalBars` stores daily bars keyed by `(symbol, resolution, dataSourceId, timestamp)`.
+- **`getBarsMulti`:** Reads cached ranges, then **fills gaps** with Yahoo via `YahooFinanceDataSource`. For multiple symbols, missing segments are **unioned** into one `[fetchFrom, fetchTo]` per fetch wave (see `Backtest/HistoricalDataManager.cpp` — same segment rules as `getBars` for prefix / suffix / full range).
+- **App backtest order:** `BacktestController` typically calls `getBarsMulti` for **strategy symbols** first, then **benchmark** (e.g. SPY) in a second call — so logs may show two prefetch waves.
+- **Preload vs HTTP:** `BacktestSession` logs `using … preloaded bars` **after** prefetch. **`YahooFinanceDataSource: GET` lines appear during prefetch**, not because preload is ignored. If the cache already covers `[start, end]` for all symbols, `getBarsMulti` does **not** open new HTTP requests.
+- **Second run / tests:** A **new temporary DB** per test (e.g. `QTemporaryFile`) has an **empty** cache every time — expect Yahoo GETs on every run. A **persistent** BacktestStore DB reuses rows and reduces network traffic when the range is unchanged.
+- **Narrow `period1`/`period2` (one day):** Normal when only **one** calendar day is missing at the end (or start) of the cached range — incremental gap fill, not a full-history bug.

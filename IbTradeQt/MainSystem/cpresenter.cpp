@@ -38,6 +38,8 @@
 #include "SettingsTreeDelegate.h"
 #include <QJsonDocument>
 #include <QAbstractItemView>
+#include <QSignalBlocker>
+#include <QTabWidget>
 #include <QTreeView>
 
 
@@ -298,12 +300,25 @@ void CPresenter::MapSignals()
         }, Qt::QueuedConnection);
     }
 
-    // ── Tab switch → refresh ─────────────────────────────────────────────
+    // ── Tab switch → refresh (and unsaved strategy draft when leaving Strategy Management) ─
     if (auto* tabs = this->pIbtsView->mainTabWidget()) {
+        m_lastMainTabIndex = tabs->currentIndex();
         connect(tabs, &QTabWidget::currentChanged, this, [this](int index) {
+            constexpr int kStrategyMgmtTab = 2;
+            const int prev = m_lastMainTabIndex;
+            if (prev == kStrategyMgmtTab && index != kStrategyMgmtTab && m_stratMgmtCoord) {
+                if (!m_stratMgmtCoord->tryResolveUnsavedStrategyDraft(
+                        QStringLiteral(
+                            "Save or discard strategy changes before leaving Strategy Management?"))) {
+                    QSignalBlocker b(pIbtsView->mainTabWidget());
+                    pIbtsView->mainTabWidget()->setCurrentIndex(kStrategyMgmtTab);
+                    return;
+                }
+            }
+            m_lastMainTabIndex = index;
             if (index == 1)
                 m_backtestCoord->refreshStrategies();
-            else if (index == 2)
+            else if (index == kStrategyMgmtTab)
                 m_stratMgmtCoord->refreshCatalog();
         });
     }

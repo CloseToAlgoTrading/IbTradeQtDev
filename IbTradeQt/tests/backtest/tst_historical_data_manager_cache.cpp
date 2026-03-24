@@ -15,6 +15,8 @@
 #include <QTemporaryFile>
 #include <QUuid>
 #include <QTimeZone>
+#include <QUrl>
+#include <QUrlQuery>
 
 using namespace Backtest;
 
@@ -132,6 +134,69 @@ void TestHistoricalDataManagerCache::secondIdenticalGetBars_doesNotIncrementRequ
     QCOMPARE(c2, 0);
     QVERIFY(r1.isEmpty());
     QVERIFY(r2.isEmpty());
+
+    {
+        QSqlDatabase db = QSqlDatabase::database(conn);
+        if (db.isOpen())
+            db.close();
+    }
+    QSqlDatabase::removeDatabase(conn);
+}
+
+void TestHistoricalDataManagerCache::getBarsMulti_trailingGap_yahooPeriodSpansMissingTail()
+{
+    const QString conn =
+        QStringLiteral("hist_cache_trail_") + QUuid::createUuid().toString(QUuid::WithoutBraces);
+
+    QTemporaryFile dbFile;
+    dbFile.setAutoRemove(true);
+    QVERIFY(dbFile.open());
+    dbFile.close();
+
+    {
+        QSqlDatabase db = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), conn);
+        db.setDatabaseName(dbFile.fileName());
+        QVERIFY(db.open());
+        createHistoricalBarsTable(conn);
+        insertSpyDailyRange(conn, QDate(2020, 1, 1), QDate(2020, 1, 10));
+    }
+
+    MockNetworkAccessManager nam;
+    // Mock timestamps must fall inside the requested backtest window (2020); twoDayMockYahooChartJson uses 2024.
+    const qint64 jan15_2020_close =
+        QDateTime(QDate(2020, 1, 15), QTime(21, 0), QTimeZone::utc()).toSecsSinceEpoch();
+    const QVector<std::tuple<qint64, double, double, double, double, double>> rows = {
+        {jan15_2020_close, 100.0, 101.0, 99.0, 100.5, 1e6},
+        {jan15_2020_close + 86400, 100.5, 102.0, 100.0, 101.25, 1.1e6},
+    };
+    nam.addSymbolResponse(QStringLiteral("SPY"), buildYahooJson(QStringLiteral("SPY"), rows));
+
+    HistoricalDataManager mgr(conn, &nam);
+
+    const QDateTime from = QDateTime(QDate(2020, 1, 1), QTime(0, 0), QTimeZone::utc());
+    const QDateTime to   = QDateTime(QDate(2020, 1, 31), QTime(23, 59, 59), QTimeZone::utc());
+
+    QString refreshed;
+    const auto map = mgr.getBarsMulti({QStringLiteral("SPY")}, QStringLiteral("Day1"),
+                                      QStringLiteral("yahoo"), from, to, &refreshed);
+
+    QCOMPARE(nam.requestCount(), 1);
+    QVERIFY(!refreshed.isEmpty());
+
+    const QUrl    url(nam.lastRequestUrl());
+    QUrlQuery     q(url);
+    const qint64  p1 = q.queryItemValue(QStringLiteral("period1")).toLongLong();
+    const qint64  p2 = q.queryItemValue(QStringLiteral("period2")).toLongLong();
+
+    const qint64 jan31UtcMidnight =
+        QDateTime(QDate(2020, 1, 31), QTime(0, 0), QTimeZone::utc()).toSecsSinceEpoch();
+
+    QVERIFY2(p1 < jan31UtcMidnight,
+             "Yahoo period1 must start before the last day of the range (regression: degenerate "
+             "multi-symbol trailing window used only the end date).");
+    QVERIFY2(p2 > p1 + 86400 * 3, "Yahoo chart window must cover more than a single day for this gap.");
+
+    QVERIFY(!map.value(QStringLiteral("SPY")).isEmpty());
 
     {
         QSqlDatabase db = QSqlDatabase::database(conn);

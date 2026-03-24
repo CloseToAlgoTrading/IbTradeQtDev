@@ -177,18 +177,31 @@ QMap<QString, QVector<IBComm::HistoricalBar>> HistoricalDataManager::getBarsMult
         effectiveToForYahooDay1(symbols, dataSourceId, resolution, to, m_dbConnectionName,
                                 strategyAssetBySymbol);
 
-    // Determine which symbols need fetching and what range is missing
+    // Union of per-symbol fetch segments — must mirror getBars() so trailing-only /
+    // prefix-only gaps do not collapse to a degenerate window (fetchFrom == effectiveTo
+    // or fetchTo == from), which would ask Yahoo for a single calendar day.
     QStringList symbolsToFetch;
-    QDateTime   fetchFrom = effectiveTo; // will be min'd down
-    QDateTime   fetchTo   = from;      // will be max'd up
+    bool        haveFetchWindow = false;
+    QDateTime   fetchFrom;
+    QDateTime   fetchTo;
+
+    auto expandFetchWindow = [&](const QDateTime& segFrom, const QDateTime& segTo) {
+        if (!haveFetchWindow) {
+            fetchFrom       = segFrom;
+            fetchTo         = segTo;
+            haveFetchWindow = true;
+        } else {
+            fetchFrom = qMin(fetchFrom, segFrom);
+            fetchTo   = qMax(fetchTo, segTo);
+        }
+    };
 
     for (const QString& sym : symbols) {
         CachedRange cached = queryCachedRange(sym, resolution, dataSourceId);
 
         if (!cached.hasData) {
             symbolsToFetch.append(sym);
-            fetchFrom = qMin(fetchFrom, from);
-            fetchTo   = qMax(fetchTo, effectiveTo);
+            expandFetchWindow(from, effectiveTo);
         } else {
             QDateTime cachedMin = fromUtcIso(cached.minTs);
             QDateTime cachedMax = fromUtcIso(cached.maxTs);
@@ -209,17 +222,22 @@ QMap<QString, QVector<IBComm::HistoricalBar>> HistoricalDataManager::getBarsMult
                 needAfter = false;
             }
 
-            if (needBefore || needAfter) {
-                symbolsToFetch.append(sym);
-                // Expand fetch window to cover all gaps across all symbols
-                if (needBefore) fetchFrom = qMin(fetchFrom, from);
-                if (needAfter)  fetchTo   = qMax(fetchTo, effectiveTo);
+            if (!needBefore && !needAfter)
+                continue;
+
+            symbolsToFetch.append(sym);
+            if (needBefore && needAfter) {
+                expandFetchWindow(from, effectiveTo);
+            } else if (needBefore) {
+                expandFetchWindow(from, cachedMin.addDays(-1));
+            } else if (needAfter) {
+                expandFetchWindow(cachedMax.addDays(1), effectiveTo);
             }
         }
     }
 
     bool didFetch = false;
-    if (!symbolsToFetch.isEmpty()) {
+    if (!symbolsToFetch.isEmpty() && haveFetchWindow) {
         QVector<IBComm::HistoricalBar> fetched =
             fetchAndCache(symbolsToFetch, resolution, dataSourceId, fetchFrom, fetchTo);
         didFetch = !fetched.isEmpty();
