@@ -11,6 +11,7 @@
 #include <QTimer>
 #include <QHash>
 #include <QLoggingCategory>
+#include <QThread>
 #include <QVariantMap>
 
 Q_LOGGING_CATEGORY(lcHistData, "backtest.historical")
@@ -240,6 +241,51 @@ QMap<QString, QVector<IBComm::HistoricalBar>> HistoricalDataManager::getBarsMult
     return result;
 }
 
+QMap<QString, QVector<IBComm::HistoricalBar>> HistoricalDataManager::getBarsMultiWithRetry(
+    const QStringList& symbols,
+    const QString& resolution,
+    const QString& dataSourceId,
+    const QDateTime& from,
+    const QDateTime& to,
+    const PrefetchRetryOptions& retry,
+    QString* dataRefreshedAt,
+    const QHash<QString, QVariantMap>& strategyAssetBySymbol)
+{
+    QString refreshed;
+    QMap<QString, QVector<IBComm::HistoricalBar>> barsBySym =
+        getBarsMulti(symbols, resolution, dataSourceId, from, to, &refreshed, strategyAssetBySymbol);
+
+    auto symbolsBelowThreshold = [&](const QStringList& syms) {
+        QStringList out;
+        for (const QString& sym : syms) {
+            if (retry.minBarsPerSymbol > 0 && barsBySym.value(sym).size() < retry.minBarsPerSymbol)
+                out.append(sym);
+        }
+        return out;
+    };
+
+    for (int r = 0; r < retry.maxRetries; ++r) {
+        const QStringList missing = symbolsBelowThreshold(symbols);
+        if (missing.isEmpty())
+            break;
+        const int backoff = (r == 0) ? retry.firstBackoffMs : retry.laterBackoffMs;
+        QThread::msleep(static_cast<unsigned long>(backoff));
+        QString                                       r2;
+        QMap<QString, QVector<IBComm::HistoricalBar>> extra =
+            getBarsMulti(missing, resolution, dataSourceId, from, to, &r2, strategyAssetBySymbol);
+        for (auto it = extra.begin(); it != extra.end(); ++it) {
+            if (!it.value().isEmpty())
+                barsBySym[it.key()] = it.value();
+        }
+        if (!r2.isEmpty())
+            refreshed = r2;
+    }
+
+    if (dataRefreshedAt)
+        *dataRefreshedAt = refreshed;
+    return barsBySym;
+}
+
 // ---------------------------------------------------------------------------
 // Private implementation
 // ---------------------------------------------------------------------------
@@ -300,40 +346,80 @@ QVector<IBComm::HistoricalBar> HistoricalDataManager::fetchAndCache(
     QVector<IBComm::HistoricalBar> fetchedBars;
 
     if (dataSourceId == QLatin1String("yahoo")) {
-        YahooFinanceDataSource source;
-        source.setNetworkManager(m_networkManager);
-        source.setInstrumentMetadataDbConnection(m_dbConnectionName);
+        const int batchSize = m_config.yahooFetchBatchSize;
+        const int timeoutMs = m_config.yahooFetchTimeoutMs;
 
-        QEventLoop loop;
-        QObject::connect(&source, &IHistoricalDataSource::loadFinished,
-                         &loop, &QEventLoop::quit);
-        QObject::connect(&source, &IHistoricalDataSource::loadFailed,
-                         &loop, &QEventLoop::quit);
-        QObject::connect(&source, &IHistoricalDataSource::barLoaded,
-                         [&fetchedBars](const IBComm::HistoricalBar& bar) {
-            fetchedBars.append(bar);
-        });
-
-        // 60-second timeout guard
-        QTimer timeout;
-        timeout.setSingleShot(true);
-        timeout.setInterval(60000);
-        QObject::connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
-        timeout.start();
-
-        BarResolution res = BarResolution::Day1;
-        source.requestBars(symbols, from, to, res);
-        loop.exec();
+        if (symbols.size() > batchSize) {
+            qCInfo(lcHistData) << "HistoricalDataManager: fetching" << symbols.size()
+                               << "symbols in batches of" << batchSize << "(timeout:" << timeoutMs << "ms each)";
+            
+            for (int i = 0; i < symbols.size(); i += batchSize) {
+                const int remaining = symbols.size() - i;
+                const int currentBatchSize = qMin(batchSize, remaining);
+                QStringList batch = symbols.mid(i, currentBatchSize);
+                
+                qCInfo(lcHistData) << "  Batch" << (i/batchSize + 1) << "of"
+                                   << ((symbols.size() + batchSize - 1) / batchSize)
+                                   << ":" << batch.size() << "symbols";
+                
+                QVector<IBComm::HistoricalBar> batchBars =
+                    fetchBatchFromYahoo(batch, from, to, resolution, timeoutMs);
+                
+                fetchedBars.append(batchBars);
+                
+                if (!batchBars.isEmpty()) {
+                    insertIntoCache(batchBars, resolution, dataSourceId);
+                }
+            }
+        } else {
+            fetchedBars = fetchBatchFromYahoo(symbols, from, to, resolution, timeoutMs);
+            
+            if (!fetchedBars.isEmpty()) {
+                insertIntoCache(fetchedBars, resolution, dataSourceId);
+            }
+        }
     } else {
         qCWarning(lcHistData) << "HistoricalDataManager: unsupported dataSourceId for fetch:" << dataSourceId;
         return fetchedBars;
     }
 
-    if (!fetchedBars.isEmpty()) {
-        insertIntoCache(fetchedBars, resolution, dataSourceId);
-    }
-
     return fetchedBars;
+}
+
+QVector<IBComm::HistoricalBar> HistoricalDataManager::fetchBatchFromYahoo(
+    const QStringList& symbols,
+    const QDateTime& from,
+    const QDateTime& to,
+    const QString& resolution,
+    int timeoutMs) const
+{
+    QVector<IBComm::HistoricalBar> batchBars;
+
+    YahooFinanceDataSource source;
+    source.setNetworkManager(m_networkManager);
+    source.setInstrumentMetadataDbConnection(m_dbConnectionName);
+
+    QEventLoop loop;
+    QObject::connect(&source, &IHistoricalDataSource::loadFinished,
+                     &loop, &QEventLoop::quit);
+    QObject::connect(&source, &IHistoricalDataSource::loadFailed,
+                     &loop, &QEventLoop::quit);
+    QObject::connect(&source, &IHistoricalDataSource::barLoaded,
+                     [&batchBars](const IBComm::HistoricalBar& bar) {
+        batchBars.append(bar);
+    });
+
+    QTimer timeout;
+    timeout.setSingleShot(true);
+    timeout.setInterval(timeoutMs);
+    QObject::connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
+    timeout.start();
+
+    BarResolution res = BarResolution::Day1;
+    source.requestBars(symbols, from, to, res);
+    loop.exec();
+
+    return batchBars;
 }
 
 void HistoricalDataManager::insertIntoCache(const QVector<IBComm::HistoricalBar>& bars,

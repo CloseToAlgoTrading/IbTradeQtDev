@@ -25,6 +25,21 @@ static void createHistoricalBarsTable(const QString& connName)
     QVERIFY(q.exec(QLatin1String(CREATE_TABLE_HISTORICAL_BARS)));
 }
 
+namespace {
+
+QByteArray twoDayMockYahooChartJson(const QString& symbol)
+{
+    const qint64 base =
+        QDateTime(QDate(2024, 1, 2), QTime(21, 0), QTimeZone::utc()).toSecsSinceEpoch();
+    QVector<std::tuple<qint64, double, double, double, double, double>> rows = {
+        {base, 100.0, 101.0, 99.0, 100.5, 1e6},
+        {base + 86400, 100.5, 102.0, 100.0, 101.25, 1.1e6},
+    };
+    return buildYahooJson(symbol, rows);
+}
+
+} // namespace
+
 /// Insert one daily bar per calendar day at 21:00 UTC (Yahoo-style US equity close).
 static void insertSpyDailyRange(const QString& connName, QDate first, QDate last)
 {
@@ -161,6 +176,67 @@ void TestHistoricalDataManagerCache::getBars_withStrategyAssetMapUsesResolverPat
     QCOMPARE(nam.requestCount(), 0);
     QVERIFY(refreshed.isEmpty());
     QCOMPARE(bars.size(), 10);
+
+    {
+        QSqlDatabase db = QSqlDatabase::database(conn);
+        if (db.isOpen())
+            db.close();
+    }
+    QSqlDatabase::removeDatabase(conn);
+}
+
+void TestHistoricalDataManagerCache::getBarsMulti_uncachedSymbols_mockYahooUsesBatchedFetch()
+{
+    const QString conn =
+        QStringLiteral("hist_cache_batch_") + QUuid::createUuid().toString(QUuid::WithoutBraces);
+
+    QTemporaryFile dbFile;
+    dbFile.setAutoRemove(true);
+    QVERIFY(dbFile.open());
+    dbFile.close();
+
+    {
+        QSqlDatabase db = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), conn);
+        db.setDatabaseName(dbFile.fileName());
+        QVERIFY(db.open());
+        createHistoricalBarsTable(conn);
+    }
+
+    MockNetworkAccessManager nam;
+    QStringList symbols;
+    constexpr int kSymbolCount = 7;
+    for (int i = 0; i < kSymbolCount; ++i) {
+        const QString s = QStringLiteral("TST%1").arg(i);
+        symbols.append(s);
+        nam.addSymbolResponse(s, twoDayMockYahooChartJson(s));
+    }
+
+    HistoricalDataManager mgr(conn, &nam);
+    HistoricalDataManager::Config cfg;
+    cfg.yahooFetchBatchSize = 3;
+    cfg.yahooFetchTimeoutMs = 30000;
+    mgr.setConfig(cfg);
+
+    // Window must match mock bars (two daily closes) so after the first fetch the cache fully
+    // covers [from, effectiveTo] and a second getBarsMulti does not refetch (Yahoo Day1 gap logic).
+    const QDateTime from = QDateTime(QDate(2024, 1, 2), QTime(0, 0), QTimeZone::utc());
+    const QDateTime to   = QDateTime(QDate(2024, 1, 3), QTime(23, 59, 59), QTimeZone::utc());
+
+    QString refreshed;
+    const auto map = mgr.getBarsMulti(symbols, QStringLiteral("Day1"), QStringLiteral("yahoo"), from, to, &refreshed);
+
+    QCOMPARE(nam.requestCount(), kSymbolCount);
+    QVERIFY(!refreshed.isEmpty());
+    QCOMPARE(map.size(), kSymbolCount);
+    for (const QString& s : symbols) {
+        QVERIFY2(map.value(s).size() >= 2, qPrintable(s));
+    }
+
+    QString r2;
+    const auto map2 = mgr.getBarsMulti(symbols, QStringLiteral("Day1"), QStringLiteral("yahoo"), from, to, &r2);
+    QCOMPARE(nam.requestCount(), kSymbolCount);
+    QVERIFY(r2.isEmpty());
+    QCOMPARE(map2.size(), kSymbolCount);
 
     {
         QSqlDatabase db = QSqlDatabase::database(conn);

@@ -16,6 +16,7 @@
 #include "Blocks/MeanReversionAlphaBlock.h"
 #include "Blocks/MaxPositionRiskBlock.h"
 #include "Blocks/MarketOrderExecutionBlock.h"
+#include "Blocks/SimpleRebalanceBlock.h"
 #include "Supervision/StrategyRuntime.h"
 #include "Supervision/Supervisor.h"
 #include "Supervision/BoundedQueue.h"

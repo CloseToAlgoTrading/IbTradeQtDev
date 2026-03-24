@@ -10,6 +10,7 @@
 #include "Blocks/MomentumAlphaBlock.h"
 #include "Blocks/MaxPositionRiskBlock.h"
 #include "Blocks/MarketOrderExecutionBlock.h"
+#include "Blocks/SimpleRebalanceBlock.h"
 #include "Adapters/MockExecutionAdapter.h"
 #include "Adapters/MockPositionRepository.h"
 #include "Testing/MockMarketDataRouter.h"

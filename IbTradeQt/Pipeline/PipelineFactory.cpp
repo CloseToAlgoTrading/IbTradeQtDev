@@ -10,6 +10,8 @@
 #include "../Blocks/MovingAverageCrossoverAlphaBlock.h"
 #include "../Blocks/MaxPositionRiskBlock.h"
 #include "../Blocks/MarketOrderExecutionBlock.h"
+#include "../Blocks/SimpleRebalanceBlock.h"
+#include "../Blocks/PassAllSelectionBlock.h"
 #include "../Blocks/LimitOrderExecutionBlock.h"
 #include "../Blocks/StaticListSelectionBlock.h"
 #include "../Ports/IOrderExecutionPort.h"

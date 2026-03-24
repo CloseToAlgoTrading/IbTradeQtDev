@@ -9,6 +9,9 @@ moc_*.cpp
 qrc_*.cpp
 ibtrading_tests
 
-# Generated E2E HTML report (open locally after running TestMomentumStrategyE2E)
+# Generated backtest HTML/TXT reports (see tests/outputs/)
+outputs/*.html
+outputs/*.txt
+# Legacy paths (if written next to tests/)
 momentum_e2e_report.html
 momentum_3stock_validation.html

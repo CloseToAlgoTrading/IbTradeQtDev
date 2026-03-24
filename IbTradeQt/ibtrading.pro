@@ -182,6 +182,16 @@ SOURCES += \
     Backtest/InstrumentMetadataIb.cpp \
     Backtest/HistoricalDataManager.cpp \
     Backtest/BacktestController.cpp \
+    Backtest/BacktestStatistics.cpp \
+    Backtest/BacktestStatisticsCalculator.cpp \
+    Backtest/HistoricalBarUtils.cpp \
+    Backtest/BacktestFillValidation.cpp \
+    Backtest/SemanticMomentumPipeline.cpp \
+    Backtest/BacktestReportModel.cpp \
+    Backtest/BacktestReportModelBuilder.cpp \
+    Backtest/BacktestHtmlTemplateRenderer.cpp \
+    Backtest/BacktestMetricsMapper.cpp \
+    Backtest/Reporting/MomentumSemanticHtmlWriter.cpp \
     BacktestUI/BacktestWorkspaceDock.cpp \
     BacktestUI/BacktestStrategySelector.cpp \
     BacktestUI/BacktestRunConfigPanel.cpp \
@@ -229,6 +239,8 @@ SOURCES += \
     Blocks/StaticListSelectionBlock.cpp \
     Blocks/LimitOrderExecutionBlock.cpp \
     Blocks/MarketOrderExecutionBlock.cpp \
+    Blocks/SimpleRebalanceBlock.cpp \
+    Blocks/PassAllSelectionBlock.cpp \
     Supervision/StrategyRuntime.cpp \
     Supervision/Supervisor.cpp \
     Plugin/PluginLoader.cpp \
@@ -309,6 +321,8 @@ HEADERS += \
     Blocks/MomentumAlphaBlock.h \
     Blocks/MaxPositionRiskBlock.h \
     Blocks/MarketOrderExecutionBlock.h \
+    Blocks/SimpleRebalanceBlock.h \
+    Blocks/PassAllSelectionBlock.h \
     Blocks/MeanReversionAlphaBlock.h \
     Blocks/StaticListSelectionBlock.h \
     Blocks/LimitOrderExecutionBlock.h \
@@ -406,6 +420,18 @@ HEADERS += \
     Backtest/BacktestDataTypes.h \
     Backtest/HistoricalDataManager.h \
     Backtest/BacktestController.h \
+    Backtest/BacktestStatistics.h \
+    Backtest/BacktestStatisticsCalculator.h \
+    Backtest/HistoricalBarUtils.h \
+    Backtest/BacktestFillValidation.h \
+    Backtest/SemanticMomentumPipeline.h \
+    Backtest/MomentumE2eUniverse.h \
+    Backtest/BacktestReportContext.h \
+    Backtest/BacktestReportModel.h \
+    Backtest/BacktestReportModelBuilder.h \
+    Backtest/BacktestHtmlTemplateRenderer.h \
+    Backtest/BacktestMetricsMapper.h \
+    Backtest/Reporting/MomentumSemanticHtmlWriter.h \
     BacktestUI/BacktestWorkspaceDock.h \
     BacktestUI/BacktestStrategySelector.h \
     BacktestUI/BacktestRunConfigPanel.h \

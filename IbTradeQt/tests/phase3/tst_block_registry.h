@@ -9,7 +9,6 @@
 #include "Pipeline/ISelectionBlock.h"
 #include "Blocks/MomentumAlphaBlock.h"
 #include "Blocks/MaxPositionRiskBlock.h"
-#include "Blocks/MarketOrderExecutionBlock.h"
 
 class TestBlockRegistry : public QObject
 {

@@ -20,7 +20,9 @@ QString MomentumAlphaBlock::name() const { return QStringLiteral("Momentum Alpha
 
 QString MomentumAlphaBlock::description() const
 {
-    return QStringLiteral("Generates Buy/Sell signals based on price momentum over a configurable window");
+    return QStringLiteral(
+        "Ranks the selection universe by momentum vs a threshold, then scores the top N symbols for "
+        "downstream sizing (period, threshold, topN)");
 }
 
 QJsonObject MomentumAlphaBlock::config() const

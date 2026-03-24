@@ -180,6 +180,16 @@ SOURCES       = Brokers/IB/addon/AccountSummaryTags.cpp \
 		Backtest/InstrumentMetadataIb.cpp \
 		Backtest/HistoricalDataManager.cpp \
 		Backtest/BacktestController.cpp \
+		Backtest/BacktestStatistics.cpp \
+		Backtest/BacktestStatisticsCalculator.cpp \
+		Backtest/HistoricalBarUtils.cpp \
+		Backtest/BacktestFillValidation.cpp \
+		Backtest/SemanticMomentumPipeline.cpp \
+		Backtest/BacktestReportModel.cpp \
+		Backtest/BacktestReportModelBuilder.cpp \
+		Backtest/BacktestHtmlTemplateRenderer.cpp \
+		Backtest/BacktestMetricsMapper.cpp \
+		Backtest/Reporting/MomentumSemanticHtmlWriter.cpp \
 		BacktestUI/BacktestWorkspaceDock.cpp \
 		BacktestUI/BacktestStrategySelector.cpp \
 		BacktestUI/BacktestRunConfigPanel.cpp \
@@ -212,6 +222,8 @@ SOURCES       = Brokers/IB/addon/AccountSummaryTags.cpp \
 		Adapters/LiveHistoricalReadAdapter.cpp \
 		Pipeline/MarketDataCoordinator.cpp \
 		Pipeline/SubscriptionRequestStore.cpp \
+		Pipeline/NoOpSubscriptionPort.cpp \
+		Pipeline/RouterMarketDataAccessor.cpp \
 		Pipeline/PipelineFactory.cpp \
 		Pipeline/BlockGraphSerializer.cpp \
 		Pipeline/UniverseResolver.cpp \
@@ -225,6 +237,8 @@ SOURCES       = Brokers/IB/addon/AccountSummaryTags.cpp \
 		Blocks/StaticListSelectionBlock.cpp \
 		Blocks/LimitOrderExecutionBlock.cpp \
 		Blocks/MarketOrderExecutionBlock.cpp \
+		Blocks/SimpleRebalanceBlock.cpp \
+		Blocks/PassAllSelectionBlock.cpp \
 		Supervision/StrategyRuntime.cpp \
 		Supervision/Supervisor.cpp \
 		Plugin/PluginLoader.cpp \
@@ -276,6 +290,8 @@ SOURCES       = Brokers/IB/addon/AccountSummaryTags.cpp \
 		release/moc/moc_MomentumAlphaBlock.cpp \
 		release/moc/moc_MaxPositionRiskBlock.cpp \
 		release/moc/moc_MarketOrderExecutionBlock.cpp \
+		release/moc/moc_SimpleRebalanceBlock.cpp \
+		release/moc/moc_PassAllSelectionBlock.cpp \
 		release/moc/moc_MeanReversionAlphaBlock.cpp \
 		release/moc/moc_StaticListSelectionBlock.cpp \
 		release/moc/moc_LimitOrderExecutionBlock.cpp \
@@ -498,6 +514,16 @@ OBJECTS       = release/obj/AccountSummaryTags.o \
 		release/obj/InstrumentMetadataIb.o \
 		release/obj/HistoricalDataManager.o \
 		release/obj/BacktestController.o \
+		release/obj/BacktestStatistics.o \
+		release/obj/BacktestStatisticsCalculator.o \
+		release/obj/HistoricalBarUtils.o \
+		release/obj/BacktestFillValidation.o \
+		release/obj/SemanticMomentumPipeline.o \
+		release/obj/BacktestReportModel.o \
+		release/obj/BacktestReportModelBuilder.o \
+		release/obj/BacktestHtmlTemplateRenderer.o \
+		release/obj/BacktestMetricsMapper.o \
+		release/obj/MomentumSemanticHtmlWriter.o \
 		release/obj/BacktestWorkspaceDock.o \
 		release/obj/BacktestStrategySelector.o \
 		release/obj/BacktestRunConfigPanel.o \
@@ -530,6 +556,8 @@ OBJECTS       = release/obj/AccountSummaryTags.o \
 		release/obj/LiveHistoricalReadAdapter.o \
 		release/obj/MarketDataCoordinator.o \
 		release/obj/SubscriptionRequestStore.o \
+		release/obj/NoOpSubscriptionPort.o \
+		release/obj/RouterMarketDataAccessor.o \
 		release/obj/PipelineFactory.o \
 		release/obj/BlockGraphSerializer.o \
 		release/obj/UniverseResolver.o \
@@ -543,6 +571,8 @@ OBJECTS       = release/obj/AccountSummaryTags.o \
 		release/obj/StaticListSelectionBlock.o \
 		release/obj/LimitOrderExecutionBlock.o \
 		release/obj/MarketOrderExecutionBlock.o \
+		release/obj/SimpleRebalanceBlock.o \
+		release/obj/PassAllSelectionBlock.o \
 		release/obj/StrategyRuntime.o \
 		release/obj/Supervisor.o \
 		release/obj/PluginLoader.o \
@@ -595,6 +625,8 @@ OBJECTS       = release/obj/AccountSummaryTags.o \
 		release/obj/moc_MomentumAlphaBlock.o \
 		release/obj/moc_MaxPositionRiskBlock.o \
 		release/obj/moc_MarketOrderExecutionBlock.o \
+		release/obj/moc_SimpleRebalanceBlock.o \
+		release/obj/moc_PassAllSelectionBlock.o \
 		release/obj/moc_MeanReversionAlphaBlock.o \
 		release/obj/moc_StaticListSelectionBlock.o \
 		release/obj/moc_LimitOrderExecutionBlock.o \
@@ -1063,6 +1095,9 @@ DIST          = doc/mainClass.wsd \
 		Pipeline/PipelineRuntimeContext.h \
 		Pipeline/IDataSubscriptionPort.h \
 		Pipeline/SubscriptionRequestStore.h \
+		Pipeline/NoOpSubscriptionPort.h \
+		Pipeline/RouterMarketDataAccessor.h \
+		Pipeline/BlockSubscriptionUtils.h \
 		Pipeline/IHistoricalRead.h \
 		Pipeline/IMarketDataAccessor.h \
 		Pipeline/MarketDataCoordinator.h \
@@ -1102,6 +1137,8 @@ DIST          = doc/mainClass.wsd \
 		Blocks/MomentumAlphaBlock.h \
 		Blocks/MaxPositionRiskBlock.h \
 		Blocks/MarketOrderExecutionBlock.h \
+		Blocks/SimpleRebalanceBlock.h \
+		Blocks/PassAllSelectionBlock.h \
 		Blocks/MeanReversionAlphaBlock.h \
 		Blocks/StaticListSelectionBlock.h \
 		Blocks/LimitOrderExecutionBlock.h \
@@ -1199,6 +1236,18 @@ DIST          = doc/mainClass.wsd \
 		Backtest/BacktestDataTypes.h \
 		Backtest/HistoricalDataManager.h \
 		Backtest/BacktestController.h \
+		Backtest/BacktestStatistics.h \
+		Backtest/BacktestStatisticsCalculator.h \
+		Backtest/HistoricalBarUtils.h \
+		Backtest/BacktestFillValidation.h \
+		Backtest/SemanticMomentumPipeline.h \
+		Backtest/MomentumE2eUniverse.h \
+		Backtest/BacktestReportContext.h \
+		Backtest/BacktestReportModel.h \
+		Backtest/BacktestReportModelBuilder.h \
+		Backtest/BacktestHtmlTemplateRenderer.h \
+		Backtest/BacktestMetricsMapper.h \
+		Backtest/Reporting/MomentumSemanticHtmlWriter.h \
 		BacktestUI/BacktestWorkspaceDock.h \
 		BacktestUI/BacktestStrategySelector.h \
 		BacktestUI/BacktestRunConfigPanel.h \
@@ -1484,6 +1533,16 @@ DIST          = doc/mainClass.wsd \
 		Backtest/InstrumentMetadataIb.cpp \
 		Backtest/HistoricalDataManager.cpp \
 		Backtest/BacktestController.cpp \
+		Backtest/BacktestStatistics.cpp \
+		Backtest/BacktestStatisticsCalculator.cpp \
+		Backtest/HistoricalBarUtils.cpp \
+		Backtest/BacktestFillValidation.cpp \
+		Backtest/SemanticMomentumPipeline.cpp \
+		Backtest/BacktestReportModel.cpp \
+		Backtest/BacktestReportModelBuilder.cpp \
+		Backtest/BacktestHtmlTemplateRenderer.cpp \
+		Backtest/BacktestMetricsMapper.cpp \
+		Backtest/Reporting/MomentumSemanticHtmlWriter.cpp \
 		BacktestUI/BacktestWorkspaceDock.cpp \
 		BacktestUI/BacktestStrategySelector.cpp \
 		BacktestUI/BacktestRunConfigPanel.cpp \
@@ -1516,6 +1575,8 @@ DIST          = doc/mainClass.wsd \
 		Adapters/LiveHistoricalReadAdapter.cpp \
 		Pipeline/MarketDataCoordinator.cpp \
 		Pipeline/SubscriptionRequestStore.cpp \
+		Pipeline/NoOpSubscriptionPort.cpp \
+		Pipeline/RouterMarketDataAccessor.cpp \
 		Pipeline/PipelineFactory.cpp \
 		Pipeline/BlockGraphSerializer.cpp \
 		Pipeline/UniverseResolver.cpp \
@@ -1529,6 +1590,8 @@ DIST          = doc/mainClass.wsd \
 		Blocks/StaticListSelectionBlock.cpp \
 		Blocks/LimitOrderExecutionBlock.cpp \
 		Blocks/MarketOrderExecutionBlock.cpp \
+		Blocks/SimpleRebalanceBlock.cpp \
+		Blocks/PassAllSelectionBlock.cpp \
 		Supervision/StrategyRuntime.cpp \
 		Supervision/Supervisor.cpp \
 		Plugin/PluginLoader.cpp \
@@ -2330,8 +2393,8 @@ distdir: FORCE
 	$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
 	$(COPY_FILE) --parents ibtradesystem.qrc $(DISTDIR)/
 	$(COPY_FILE) --parents ../../../../Qt/6.9.2/gcc_64/mkspecs/features/data/dummy.cpp $(DISTDIR)/
-	$(COPY_FILE) --parents Common/Expected.h Common/IClock.h ThirdParty/expected.hpp Pipeline/Contracts.h Pipeline/SemanticTypes.h Pipeline/SemanticModelDataMapper.h Pipeline/SemanticPipelineChain.h Adapters/LiveHistoricalReadAdapter.h Pipeline/PipelineRuntimeContext.h Pipeline/IDataSubscriptionPort.h Pipeline/SubscriptionRequestStore.h Pipeline/IHistoricalRead.h Pipeline/IMarketDataAccessor.h Pipeline/MarketDataCoordinator.h Pipeline/Scope.h Pipeline/IAlphaBlock.h Pipeline/ISelectionBlock.h Pipeline/IRebalanceBlock.h Pipeline/IRiskBlock.h Pipeline/IExecutionBlock.h Pipeline/ISignalMergePolicy.h Pipeline/SignalMergePolicies.h Pipeline/PipelineExecutionHost.h Pipeline/StrategyRuntimePolicy.h Pipeline/UniverseResolver.h IBComm/MarketDataRouter.h Ports/IOrderExecutionPort.h Ports/IPositionRepositoryPort.h Adapters/IBOrderExecutionAdapter.h Adapters/SqlitePositionRepository.h Adapters/MockExecutionAdapter.h Adapters/MockPositionRepository.h Adapters/IBPositionRepositoryAdapter.h IBComm/PositionRouter.h IBComm/HistoricalDataRouter.h IBComm/OrderRouter.h IBComm/AccountRouter.h IBComm/TimeRouter.h IBComm/MarketDepthRouter.h Testing/MockMarketDataRouter.h Testing/IntegrationTestHarness.h Replay/MarketDataRecorder.h Replay/MarketDataReplayer.h Pipeline/PipelineTreeUtils.h Pipeline/BlockRegistry.h Pipeline/StrategyPipelineRunner.h Pipeline/BlockGraphSerializer.h Blocks/MomentumAlphaBlock.h Blocks/MaxPositionRiskBlock.h Blocks/MarketOrderExecutionBlock.h Blocks/MeanReversionAlphaBlock.h Blocks/StaticListSelectionBlock.h Blocks/LimitOrderExecutionBlock.h Blocks/MovingAverageCrossoverAlphaBlock.h Pipeline/PipelineFactory.h Plugin/BlockPlugin.h Plugin/PluginLoader.h Adapters/AlphaModelAdapter.h Adapters/RiskModelAdapter.h Adapters/ExecutionModelAdapter.h Supervision/BoundedQueue.h Supervision/StrategyRuntime.h Supervision/Supervisor.h Logging/StructuredLogger.h Metrics/MetricsCollector.h Brokers/IB/Shared/Utils.h Brokers/IB/addon/AccountSummaryTags.h Brokers/IB/addon/AvailableAlgoParams.h Brokers/IB/addon/ContractSamples.h Brokers/IB/addon/FAMethodSamples.h Brokers/IB/addon/OrderSamples.h Brokers/IB/addon/ScannerSubscriptionSamples.h CObjects/caccountsummary.h CObjects/ccommissionreport.h CObjects/cdeltaobject.h CObjects/cexecutionreport.h Common/cprocessingbase_v2.h DB/dbdatatypes.h DB/dbhandler.h DB/dbmanager.h DB/dbquery.h MainSystem/CPortfolioConfigModel.h MainSystem/PipelineItemDelegate.h MainSystem/PipelineDiagramWidget.h MainSystem/PortfolioModelDefines.h MainSystem/TreeItemDataTypesDef.h MainSystem/capplicationcontroller.h MainSystem/UiLayoutStore.h MainSystem/UiLayoutDefaults.h MainSystem/ThemePalette.h MainSystem/ciconhandler.h MainSystem/cmainmodel.h MainSystem/csettinsmodeldata.h MainSystem/SettingsTreeDelegate.h MainSystem/ctreeviewcustommodel.h MainSystem/ctreeviewdatamodel.h MainSystem/ibtradesystemview.h Strategies/Generic/ModelType.h Strategies/Generic/IMandatoryFields.h Strategies/Generic/mandatoryFieldKeys.h Strategies/Generic/mandatoryFieldRegistration.h Strategies/Generic/UnifiedModelData.h Strategies/Generic/cbasemodel.h Strategies/Generic/cbaserebalancemodel.h Strategies/Generic/cbasicaccount.h Strategies/Generic/cbasicalphamodel.h Strategies/Generic/cbasicexecutionmodel.h Strategies/Generic/cbasicportfolio.h Strategies/Generic/cbasicriskmodel.h Strategies/Generic/cbasicroot.h Strategies/Generic/cbasicselectionmodel.h Strategies/Generic/cbasicstrategy_V2.h Strategies/Generic/cgenericmodelApi.h Strategies/Generic/csma.h Strategies/Generic/cstrategyfactory.h Strategies/Generic/cpipelinestrategyadapter.h Backtest/BacktestConfig.h Backtest/BacktestResult.h Backtest/DataQuality.h Backtest/FilledOrder.h Backtest/LedgerSnapshot.h Backtest/MarketPriceStore.h Backtest/SimulatedLedger.h Backtest/SimulatedExecutionAdapter.h Backtest/BacktestMetricsCollector.h Backtest/IHistoricalDataSource.h Backtest/JsonlHistoricalDataSource.h Backtest/CsvHistoricalDataSource.h Backtest/YahooFinanceDataSource.h Backtest/MarketSessionUtils.h Backtest/InstrumentClassification.h Backtest/InstrumentInference.h Backtest/InstrumentClassificationMappers.h Backtest/InstrumentNormalization.h Backtest/InstrumentMetadataResolver.h Backtest/AssetUniverseInput.h Backtest/InstrumentMetadataIb.h Backtest/BenchmarkComparison.h Backtest/BacktestReportWriter.h Backtest/BacktestSession.h Backtest/BacktestHistoricalReadAdapter.h Backtest/BacktestMarketDataAccessor.h Backtest/BacktestWorkspaceSession.h Backtest/BacktestRunPersistence.h Backtest/BacktestDataTypes.h Backtest/HistoricalDataManager.h Backtest/BacktestController.h BacktestUI/BacktestWorkspaceDock.h BacktestUI/BacktestStrategySelector.h BacktestUI/BacktestRunConfigPanel.h BacktestUI/BacktestRunHistoryPanel.h BacktestUI/EquityChartWidget.h BacktestUI/BacktestCandlestickWidget.h BacktestUI/TradeLogWidget.h MainSystem/GlobalStatusBar.h MainSystem/EventLogPanel.h MainSystem/ContextWorkspace.h MainSystem/SystemTreeModel.h MainSystem/SystemTreeDelegate.h MainSystem/WorkspaceWidgets/LayoutConstants.h MainSystem/WorkspaceWidgets/WorkspaceBase.h MainSystem/WorkspaceWidgets/WorkspaceHeader.h MainSystem/WorkspaceWidgets/MetricsStrip.h MainSystem/WorkspaceWidgets/StrategyWorkspace.h MainSystem/WorkspaceWidgets/AccountWorkspace.h MainSystem/WorkspaceWidgets/PortfolioWorkspace.h MainSystem/WorkspaceWidgets/BlockInspectorPanel.h MainSystem/WorkspaceWidgets/RuntimePolicyEditor.h MainSystem/AlertService.h Backend/ModelNodeRecord.h Backend/IModelTreeRepository.h Backend/ModelTreeRepository.h Backend/ModelTreeRepositoryPostgres.h Backend/PersistenceFactory.h Backend/ModelTreeMapper.h Backend/ISystemBackend.h Backend/SystemBackendImpl.h SharedUI/StrategyTreeDelegate.h SharedUI/AbstractPipelineTreeModel.h SharedUI/StrategyTreePanel.h SharedUI/ViewModels.h SharedUI/IWorkspaceView.h SharedUI/WorkspacePresenterBase.h SharedUI/StrategyWorkspacePresenter.h SharedUI/BacktestPresenter.h SharedUI/PipelineDiagramModel.h SharedUI/BlockInspectorPresenter.h SharedUI/StrategyDetailPresenter.h BacktestUI/BacktestTreeModel.h StrategyManagementUI/StrategyCatalogModel.h StrategyManagementUI/CatalogTreeModel.h StrategyManagementUI/StrategyCatalogPanel.h StrategyManagementUI/StrategyDetailPanel.h StrategyManagementUI/StrategyManagementPanel.h Strategies/Generic/modelConstants.h Strategies/StateMachine/cmodelstate.h Strategies/StateMachine/cmodelstateimpl.h Strategies/StateMachine/ModelStateUtils.h baseimpl.h AboutDialog/aboutdialog.h AboutDialog/AboutDlgPresener.h AlphaModelGetTime/AlphaModGetTime.h CObjects/CHistoricalData.h CObjects/cmktdepth.h CObjects/cmktdepthl2.h CObjects/copenorder.h CObjects/coptiontickcomputation.h CObjects/corderstatus.h CObjects/cposition.h CObjects/crealtimebar.h CObjects/ctickgeneric.h CObjects/ctickprice.h CObjects/cticksize.h CObjects/ctickstring.h Common/GlobalDef.h Common/StorageConfig.h Common/NHelper.h Common/Singleton.h CustomWidgets/ccandlestickqchart.h CustomWidgets/clineqchart.h DB/DBConnector.h DBStore/DBStoreGUI.h DBStore/DBStorePresenter.h DBStore/DBStoreProcessing.h GeneratedIncludes/ui_aboutdialog.h GeneratedIncludes/ui_autodeltaaligform.h GeneratedIncludes/ui_dbstroreform.h GeneratedIncludes/ui_ibtradesystem.h GeneratedIncludes/ui_pairtrading.h IBComm/cbrokerdataprovider.h IBComm/ProcessingRouterSink.h IBComm/IBComClientImpl.h IBComm/IBrokerAPI.h IBComm/IBworker.h Logger/MyLogger.h Logging/UiLogCategories.h Pipeline/PipelineLog.h Brokers/BrokerConnectionFactory.h Brokers/PaperBrokerStub.h MainSystem/cpresenter.h MainSystem/IUnsavedChangesPrompt.h MainSystem/BacktestWorkspaceCoordinator.h MainSystem/StrategyManagementCoordinator.h ReqManager/globalreqmanager.h ReqManager/ReqManager.h Brokers/IB/Shared/standardincludes.h Brokers/IB/Shared/bar.h Brokers/IB/Shared/CommissionReport.h Brokers/IB/Shared/CommonDefs.h Brokers/IB/Shared/Contract.h Brokers/IB/Shared/ContractCondition.h Brokers/IB/Shared/DefaultEWrapper.h Brokers/IB/Shared/DepthMktDataDescription.h Brokers/IB/Shared/EClient.h Brokers/IB/Shared/EClientMsgSink.h Brokers/IB/Shared/EClientSocket.h Brokers/IB/Shared/EDecoder.h Brokers/IB/Shared/EMessage.h Brokers/IB/Shared/EMutex.h Brokers/IB/Shared/EPosixClientSocketPlatform.h Brokers/IB/Shared/EReader.h Brokers/IB/Shared/EReaderOSSignal.h Brokers/IB/Shared/EReaderSignal.h Brokers/IB/Shared/ESocket.h Brokers/IB/Shared/ETransport.h Brokers/IB/Shared/EWrapper.h Brokers/IB/Shared/EWrapper_prototypes.h Brokers/IB/Shared/Execution.h Brokers/IB/Shared/executioncondition.h Brokers/IB/Shared/FamilyCode.h Brokers/IB/Shared/HistogramEntry.h Brokers/IB/Shared/HistoricalTick.h Brokers/IB/Shared/HistoricalTickBidAsk.h Brokers/IB/Shared/HistoricalTickLast.h Brokers/IB/Shared/IExternalizable.h Brokers/IB/Shared/MarginCondition.h Brokers/IB/Shared/NewsProvider.h Brokers/IB/Shared/OperatorCondition.h Brokers/IB/Shared/Order.h Brokers/IB/Shared/OrderCondition.h Brokers/IB/Shared/OrderState.h Brokers/IB/Shared/PercentChangeCondition.h Brokers/IB/Shared/PriceCondition.h Brokers/IB/Shared/PriceIncrement.h Brokers/IB/Shared/ScannerSubscription.h Brokers/IB/Shared/SoftDollarTier.h Brokers/IB/Shared/TagValue.h Brokers/IB/Shared/TickAttrib.h Brokers/IB/Shared/TickAttribBidAsk.h Brokers/IB/Shared/TickAttribLast.h Brokers/IB/Shared/TimeCondition.h Brokers/IB/Shared/TwsSocketClientErrors.h Brokers/IB/Shared/VolumeCondition.h Brokers/IB/Shared/Decimal.h Brokers/IB/Shared/EClientException.h Brokers/IB/Shared/EOrderDecoder.h Brokers/IB/Shared/HistoricalSession.h Brokers/IB/Shared/platformspecific.h Brokers/IB/Shared/resource.h Brokers/IB/Shared/WshEventData.h Common/globalsettings.h CObjects/ctickbytickalllast.h CObjects/chistoricalticks.h DBStore/dbstoremodel.h MainSystem/treeitem.h $(DISTDIR)/
-	$(COPY_FILE) --parents Brokers/IB/addon/AccountSummaryTags.cpp Brokers/IB/addon/AvailableAlgoParams.cpp Brokers/IB/addon/ContractSamples.cpp Brokers/IB/addon/OrderSamples.cpp Brokers/IB/addon/ScannerSubscriptionSamples.cpp Brokers/IB/src/Decimal.cpp Brokers/IB/src/Utils.cpp CObjects/caccountsummary.cpp CObjects/ccommissionreport.cpp CObjects/cdeltaobject.cpp CObjects/cexecutionreport.cpp Common/cprocessingbase_v2.cpp Brokers/BrokerConnectionFactory.cpp Brokers/PaperBrokerStub.cpp Common/StorageConfig.cpp DB/dbhandler.cpp DB/dbmanager.cpp MainSystem/capplicationcontroller.cpp MainSystem/UiLayoutStore.cpp MainSystem/UiLayoutDefaults.cpp MainSystem/UiLayoutDefaultsTables.cpp MainSystem/UiLayoutDefaultsCatalog.cpp MainSystem/ciconhandler.cpp MainSystem/cmainmodel.cpp MainSystem/csettinsmodeldata.cpp MainSystem/SettingsTreeDelegate.cpp MainSystem/ctreeviewcustommodel.cpp MainSystem/ibtradesystemview.cpp MainSystem/portfolioconfigmodel.cpp MainSystem/PipelineDiagramWidget.cpp Strategies/Generic/UnifiedModelData.cpp Strategies/Generic/cbasemodel.cpp Strategies/Generic/cbaserebalancemodel.cpp Strategies/Generic/cbasicaccount.cpp Strategies/Generic/cbasicalphamodel.cpp Strategies/Generic/cbasicexecutionmodel.cpp Strategies/Generic/cbasicportfolio.cpp Strategies/Generic/cbasicriskmodel.cpp Strategies/Generic/cbasicroot.cpp Strategies/Generic/cbasicselectionmodel.cpp Strategies/Generic/cbasicstrategy_V2.cpp Strategies/Generic/cgenericmodelApi.cpp Strategies/Generic/csma.cpp Strategies/Generic/cstrategyfactory.cpp Strategies/Generic/cpipelinestrategyadapter.cpp Strategies/PairTrader/PairTraderLogging.cpp Strategies/AutoDeltAlignment/src/AutoDeltaLogging.cpp main.cpp AboutDialog/aboutdialog.cpp AboutDialog/AboutDlgPresener.cpp AlphaModelGetTime/AlphaModGetTime.cpp CObjects/CHistoricalData.cpp CObjects/cmktdepth.cpp CObjects/cmktdepthl2.cpp CObjects/copenorder.cpp CObjects/coptiontickcomputation.cpp CObjects/corderstatus.cpp CObjects/cposition.cpp CObjects/crealtimebar.cpp CObjects/ctickgeneric.cpp CObjects/ctickprice.cpp CObjects/cticksize.cpp CObjects/ctickstring.cpp Common/NHelper.cpp CustomWidgets/ccandlestickqchart.cpp CustomWidgets/clineqchart.cpp DB/DBConnector.cpp DBStore/DBStoreGUI.cpp DBStore/DBStoreLogging.cpp DBStore/DBStorePresenter.cpp DBStore/DBStoreProcessing.cpp IBComm/cbrokerdataprovider.cpp IBComm/ProcessingRouterSink.cpp IBComm/IBComClientIpml.cpp IBComm/IBworker.cpp Logger/MyLogger.cpp Logging/UiLogCategories.cpp MainSystem/cpresenter.cpp MainSystem/QtUnsavedChangesPrompt.cpp MainSystem/BacktestWorkspaceCoordinator.cpp MainSystem/StrategyManagementCoordinator.cpp ReqManager/globalreqmanager.cpp ReqManager/ReqManager.cpp Brokers/IB/src/ContractCondition.cpp Brokers/IB/src/DefaultEWrapper.cpp Brokers/IB/src/EClient.cpp Brokers/IB/src/EClientSocket.cpp Brokers/IB/src/EDecoder.cpp Brokers/IB/src/EMessage.cpp Brokers/IB/src/EMutex.cpp Brokers/IB/src/EReader.cpp Brokers/IB/src/EReaderOSSignal.cpp Brokers/IB/src/ESocket.cpp Brokers/IB/src/executioncondition.cpp Brokers/IB/src/MarginCondition.cpp Brokers/IB/src/OperatorCondition.cpp Brokers/IB/src/OrderCondition.cpp Brokers/IB/src/PercentChangeCondition.cpp Brokers/IB/src/PriceCondition.cpp Brokers/IB/src/SoftDollarTier.cpp Brokers/IB/src/TimeCondition.cpp Brokers/IB/src/VolumeCondition.cpp Brokers/IB/src/EOrderDecoder.cpp baseimpl.cpp Common/globalsettings.cpp CObjects/ctickbytickalllast.cpp CObjects/chistoricalticks.cpp DBStore/dbstoremodel.cpp MainSystem/treeitem.cpp Backtest/SimulatedLedger.cpp Backtest/SimulatedExecutionAdapter.cpp Backtest/BacktestMetricsCollector.cpp Backtest/BacktestSession.cpp Backtest/BacktestHistoricalReadAdapter.cpp Backtest/BacktestMarketDataAccessor.cpp Backtest/BacktestWorkspaceSession.cpp Backtest/BacktestRunPersistence.cpp Backtest/YahooFinanceDataSource.cpp Backtest/MarketSessionUtils.cpp Backtest/InstrumentClassification.cpp Backtest/InstrumentInference.cpp Backtest/InstrumentClassificationMappers.cpp Backtest/InstrumentNormalization.cpp Backtest/InstrumentMetadataResolver.cpp Backtest/AssetUniverseInput.cpp Backtest/InstrumentMetadataIb.cpp Backtest/HistoricalDataManager.cpp Backtest/BacktestController.cpp BacktestUI/BacktestWorkspaceDock.cpp BacktestUI/BacktestStrategySelector.cpp BacktestUI/BacktestRunConfigPanel.cpp BacktestUI/BacktestRunHistoryPanel.cpp BacktestUI/EquityChartWidget.cpp BacktestUI/BacktestCandlestickWidget.cpp BacktestUI/TradeLogWidget.cpp MainSystem/GlobalStatusBar.cpp MainSystem/EventLogPanel.cpp MainSystem/ContextWorkspace.cpp MainSystem/SystemTreeModel.cpp MainSystem/SystemTreeDelegate.cpp MainSystem/WorkspaceWidgets/WorkspaceBase.cpp MainSystem/WorkspaceWidgets/WorkspaceHeader.cpp MainSystem/WorkspaceWidgets/MetricsStrip.cpp MainSystem/WorkspaceWidgets/StrategyWorkspace.cpp MainSystem/WorkspaceWidgets/AccountWorkspace.cpp MainSystem/WorkspaceWidgets/PortfolioWorkspace.cpp MainSystem/WorkspaceWidgets/BlockInspectorPanel.cpp MainSystem/WorkspaceWidgets/RuntimePolicyEditor.cpp Pipeline/PipelineTreeUtils.cpp Pipeline/PipelineLog.cpp Pipeline/StrategyPipelineRunner.cpp Pipeline/IAlphaBlock.cpp Pipeline/IRebalanceBlock.cpp Pipeline/IRiskBlock.cpp Pipeline/IExecutionBlock.cpp Pipeline/SemanticModelDataMapper.cpp Pipeline/SemanticPipelineChain.cpp Adapters/LiveHistoricalReadAdapter.cpp Pipeline/MarketDataCoordinator.cpp Pipeline/SubscriptionRequestStore.cpp Pipeline/PipelineFactory.cpp Pipeline/BlockGraphSerializer.cpp Pipeline/UniverseResolver.cpp Pipeline/StrategyRuntimePolicy.cpp Pipeline/SignalMergePolicies.cpp Pipeline/PipelineExecutionHost.cpp Blocks/MomentumAlphaBlock.cpp Blocks/MeanReversionAlphaBlock.cpp Blocks/MovingAverageCrossoverAlphaBlock.cpp Blocks/MaxPositionRiskBlock.cpp Blocks/StaticListSelectionBlock.cpp Blocks/LimitOrderExecutionBlock.cpp Blocks/MarketOrderExecutionBlock.cpp Supervision/StrategyRuntime.cpp Supervision/Supervisor.cpp Plugin/PluginLoader.cpp MainSystem/AlertService.cpp Backend/ModelTreeRepository.cpp Backend/ModelTreeRepositoryPostgres.cpp Backend/PersistenceFactory.cpp Backend/ModelTreeMapper.cpp Backend/SystemBackendImpl.cpp SharedUI/StrategyTreeDelegate.cpp SharedUI/AbstractPipelineTreeModel.cpp SharedUI/StrategyTreePanel.cpp SharedUI/WorkspacePresenterBase.cpp SharedUI/StrategyWorkspacePresenter.cpp SharedUI/BacktestPresenter.cpp SharedUI/PipelineDiagramModel.cpp SharedUI/BlockInspectorPresenter.cpp SharedUI/StrategyDetailPresenter.cpp BacktestUI/BacktestTreeModel.cpp StrategyManagementUI/StrategyCatalogModel.cpp StrategyManagementUI/CatalogTreeModel.cpp StrategyManagementUI/StrategyCatalogPanel.cpp StrategyManagementUI/StrategyDetailPanel.cpp StrategyManagementUI/StrategyManagementPanel.cpp $(DISTDIR)/
+	$(COPY_FILE) --parents Common/Expected.h Common/IClock.h ThirdParty/expected.hpp Pipeline/Contracts.h Pipeline/SemanticTypes.h Pipeline/SemanticModelDataMapper.h Pipeline/SemanticPipelineChain.h Adapters/LiveHistoricalReadAdapter.h Pipeline/PipelineRuntimeContext.h Pipeline/IDataSubscriptionPort.h Pipeline/SubscriptionRequestStore.h Pipeline/NoOpSubscriptionPort.h Pipeline/RouterMarketDataAccessor.h Pipeline/BlockSubscriptionUtils.h Pipeline/IHistoricalRead.h Pipeline/IMarketDataAccessor.h Pipeline/MarketDataCoordinator.h Pipeline/Scope.h Pipeline/IAlphaBlock.h Pipeline/ISelectionBlock.h Pipeline/IRebalanceBlock.h Pipeline/IRiskBlock.h Pipeline/IExecutionBlock.h Pipeline/ISignalMergePolicy.h Pipeline/SignalMergePolicies.h Pipeline/PipelineExecutionHost.h Pipeline/StrategyRuntimePolicy.h Pipeline/UniverseResolver.h IBComm/MarketDataRouter.h Ports/IOrderExecutionPort.h Ports/IPositionRepositoryPort.h Adapters/IBOrderExecutionAdapter.h Adapters/SqlitePositionRepository.h Adapters/MockExecutionAdapter.h Adapters/MockPositionRepository.h Adapters/IBPositionRepositoryAdapter.h IBComm/PositionRouter.h IBComm/HistoricalDataRouter.h IBComm/OrderRouter.h IBComm/AccountRouter.h IBComm/TimeRouter.h IBComm/MarketDepthRouter.h Testing/MockMarketDataRouter.h Testing/IntegrationTestHarness.h Replay/MarketDataRecorder.h Replay/MarketDataReplayer.h Pipeline/PipelineTreeUtils.h Pipeline/BlockRegistry.h Pipeline/StrategyPipelineRunner.h Pipeline/BlockGraphSerializer.h Blocks/MomentumAlphaBlock.h Blocks/MaxPositionRiskBlock.h Blocks/MarketOrderExecutionBlock.h Blocks/SimpleRebalanceBlock.h Blocks/PassAllSelectionBlock.h Blocks/MeanReversionAlphaBlock.h Blocks/StaticListSelectionBlock.h Blocks/LimitOrderExecutionBlock.h Blocks/MovingAverageCrossoverAlphaBlock.h Pipeline/PipelineFactory.h Plugin/BlockPlugin.h Plugin/PluginLoader.h Adapters/AlphaModelAdapter.h Adapters/RiskModelAdapter.h Adapters/ExecutionModelAdapter.h Supervision/BoundedQueue.h Supervision/StrategyRuntime.h Supervision/Supervisor.h Logging/StructuredLogger.h Metrics/MetricsCollector.h Brokers/IB/Shared/Utils.h Brokers/IB/addon/AccountSummaryTags.h Brokers/IB/addon/AvailableAlgoParams.h Brokers/IB/addon/ContractSamples.h Brokers/IB/addon/FAMethodSamples.h Brokers/IB/addon/OrderSamples.h Brokers/IB/addon/ScannerSubscriptionSamples.h CObjects/caccountsummary.h CObjects/ccommissionreport.h CObjects/cdeltaobject.h CObjects/cexecutionreport.h Common/cprocessingbase_v2.h DB/dbdatatypes.h DB/dbhandler.h DB/dbmanager.h DB/dbquery.h MainSystem/CPortfolioConfigModel.h MainSystem/PipelineItemDelegate.h MainSystem/PipelineDiagramWidget.h MainSystem/PortfolioModelDefines.h MainSystem/TreeItemDataTypesDef.h MainSystem/capplicationcontroller.h MainSystem/UiLayoutStore.h MainSystem/UiLayoutDefaults.h MainSystem/ThemePalette.h MainSystem/ciconhandler.h MainSystem/cmainmodel.h MainSystem/csettinsmodeldata.h MainSystem/SettingsTreeDelegate.h MainSystem/ctreeviewcustommodel.h MainSystem/ctreeviewdatamodel.h MainSystem/ibtradesystemview.h Strategies/Generic/ModelType.h Strategies/Generic/IMandatoryFields.h Strategies/Generic/mandatoryFieldKeys.h Strategies/Generic/mandatoryFieldRegistration.h Strategies/Generic/UnifiedModelData.h Strategies/Generic/cbasemodel.h Strategies/Generic/cbaserebalancemodel.h Strategies/Generic/cbasicaccount.h Strategies/Generic/cbasicalphamodel.h Strategies/Generic/cbasicexecutionmodel.h Strategies/Generic/cbasicportfolio.h Strategies/Generic/cbasicriskmodel.h Strategies/Generic/cbasicroot.h Strategies/Generic/cbasicselectionmodel.h Strategies/Generic/cbasicstrategy_V2.h Strategies/Generic/cgenericmodelApi.h Strategies/Generic/csma.h Strategies/Generic/cstrategyfactory.h Strategies/Generic/cpipelinestrategyadapter.h Backtest/BacktestConfig.h Backtest/BacktestResult.h Backtest/DataQuality.h Backtest/FilledOrder.h Backtest/LedgerSnapshot.h Backtest/MarketPriceStore.h Backtest/SimulatedLedger.h Backtest/SimulatedExecutionAdapter.h Backtest/BacktestMetricsCollector.h Backtest/IHistoricalDataSource.h Backtest/JsonlHistoricalDataSource.h Backtest/CsvHistoricalDataSource.h Backtest/YahooFinanceDataSource.h Backtest/MarketSessionUtils.h Backtest/InstrumentClassification.h Backtest/InstrumentInference.h Backtest/InstrumentClassificationMappers.h Backtest/InstrumentNormalization.h Backtest/InstrumentMetadataResolver.h Backtest/AssetUniverseInput.h Backtest/InstrumentMetadataIb.h Backtest/BenchmarkComparison.h Backtest/BacktestReportWriter.h Backtest/BacktestSession.h Backtest/BacktestHistoricalReadAdapter.h Backtest/BacktestMarketDataAccessor.h Backtest/BacktestWorkspaceSession.h Backtest/BacktestRunPersistence.h Backtest/BacktestDataTypes.h Backtest/HistoricalDataManager.h Backtest/BacktestController.h Backtest/BacktestStatistics.h Backtest/BacktestStatisticsCalculator.h Backtest/HistoricalBarUtils.h Backtest/BacktestFillValidation.h Backtest/SemanticMomentumPipeline.h Backtest/MomentumE2eUniverse.h Backtest/BacktestReportContext.h Backtest/BacktestReportModel.h Backtest/BacktestReportModelBuilder.h Backtest/BacktestHtmlTemplateRenderer.h Backtest/BacktestMetricsMapper.h Backtest/Reporting/MomentumSemanticHtmlWriter.h BacktestUI/BacktestWorkspaceDock.h BacktestUI/BacktestStrategySelector.h BacktestUI/BacktestRunConfigPanel.h BacktestUI/BacktestRunHistoryPanel.h BacktestUI/EquityChartWidget.h BacktestUI/BacktestCandlestickWidget.h BacktestUI/TradeLogWidget.h MainSystem/GlobalStatusBar.h MainSystem/EventLogPanel.h MainSystem/ContextWorkspace.h MainSystem/SystemTreeModel.h MainSystem/SystemTreeDelegate.h MainSystem/WorkspaceWidgets/LayoutConstants.h MainSystem/WorkspaceWidgets/WorkspaceBase.h MainSystem/WorkspaceWidgets/WorkspaceHeader.h MainSystem/WorkspaceWidgets/MetricsStrip.h MainSystem/WorkspaceWidgets/StrategyWorkspace.h MainSystem/WorkspaceWidgets/AccountWorkspace.h MainSystem/WorkspaceWidgets/PortfolioWorkspace.h MainSystem/WorkspaceWidgets/BlockInspectorPanel.h MainSystem/WorkspaceWidgets/RuntimePolicyEditor.h MainSystem/AlertService.h Backend/ModelNodeRecord.h Backend/IModelTreeRepository.h Backend/ModelTreeRepository.h Backend/ModelTreeRepositoryPostgres.h Backend/PersistenceFactory.h Backend/ModelTreeMapper.h Backend/ISystemBackend.h Backend/SystemBackendImpl.h SharedUI/StrategyTreeDelegate.h SharedUI/AbstractPipelineTreeModel.h SharedUI/StrategyTreePanel.h SharedUI/ViewModels.h SharedUI/IWorkspaceView.h SharedUI/WorkspacePresenterBase.h SharedUI/StrategyWorkspacePresenter.h SharedUI/BacktestPresenter.h SharedUI/PipelineDiagramModel.h SharedUI/BlockInspectorPresenter.h SharedUI/StrategyDetailPresenter.h BacktestUI/BacktestTreeModel.h StrategyManagementUI/StrategyCatalogModel.h StrategyManagementUI/CatalogTreeModel.h StrategyManagementUI/StrategyCatalogPanel.h StrategyManagementUI/StrategyDetailPanel.h StrategyManagementUI/StrategyManagementPanel.h Strategies/Generic/modelConstants.h Strategies/StateMachine/cmodelstate.h Strategies/StateMachine/cmodelstateimpl.h Strategies/StateMachine/ModelStateUtils.h baseimpl.h AboutDialog/aboutdialog.h AboutDialog/AboutDlgPresener.h AlphaModelGetTime/AlphaModGetTime.h CObjects/CHistoricalData.h CObjects/cmktdepth.h CObjects/cmktdepthl2.h CObjects/copenorder.h CObjects/coptiontickcomputation.h CObjects/corderstatus.h CObjects/cposition.h CObjects/crealtimebar.h CObjects/ctickgeneric.h CObjects/ctickprice.h CObjects/cticksize.h CObjects/ctickstring.h Common/GlobalDef.h Common/StorageConfig.h Common/NHelper.h Common/Singleton.h CustomWidgets/ccandlestickqchart.h CustomWidgets/clineqchart.h DB/DBConnector.h DBStore/DBStoreGUI.h DBStore/DBStorePresenter.h DBStore/DBStoreProcessing.h GeneratedIncludes/ui_aboutdialog.h GeneratedIncludes/ui_autodeltaaligform.h GeneratedIncludes/ui_dbstroreform.h GeneratedIncludes/ui_ibtradesystem.h GeneratedIncludes/ui_pairtrading.h IBComm/cbrokerdataprovider.h IBComm/ProcessingRouterSink.h IBComm/IBComClientImpl.h IBComm/IBrokerAPI.h IBComm/IBworker.h Logger/MyLogger.h Logging/UiLogCategories.h Pipeline/PipelineLog.h Brokers/BrokerConnectionFactory.h Brokers/PaperBrokerStub.h MainSystem/cpresenter.h MainSystem/IUnsavedChangesPrompt.h MainSystem/BacktestWorkspaceCoordinator.h MainSystem/StrategyManagementCoordinator.h ReqManager/globalreqmanager.h ReqManager/ReqManager.h Brokers/IB/Shared/standardincludes.h Brokers/IB/Shared/bar.h Brokers/IB/Shared/CommissionReport.h Brokers/IB/Shared/CommonDefs.h Brokers/IB/Shared/Contract.h Brokers/IB/Shared/ContractCondition.h Brokers/IB/Shared/DefaultEWrapper.h Brokers/IB/Shared/DepthMktDataDescription.h Brokers/IB/Shared/EClient.h Brokers/IB/Shared/EClientMsgSink.h Brokers/IB/Shared/EClientSocket.h Brokers/IB/Shared/EDecoder.h Brokers/IB/Shared/EMessage.h Brokers/IB/Shared/EMutex.h Brokers/IB/Shared/EPosixClientSocketPlatform.h Brokers/IB/Shared/EReader.h Brokers/IB/Shared/EReaderOSSignal.h Brokers/IB/Shared/EReaderSignal.h Brokers/IB/Shared/ESocket.h Brokers/IB/Shared/ETransport.h Brokers/IB/Shared/EWrapper.h Brokers/IB/Shared/EWrapper_prototypes.h Brokers/IB/Shared/Execution.h Brokers/IB/Shared/executioncondition.h Brokers/IB/Shared/FamilyCode.h Brokers/IB/Shared/HistogramEntry.h Brokers/IB/Shared/HistoricalTick.h Brokers/IB/Shared/HistoricalTickBidAsk.h Brokers/IB/Shared/HistoricalTickLast.h Brokers/IB/Shared/IExternalizable.h Brokers/IB/Shared/MarginCondition.h Brokers/IB/Shared/NewsProvider.h Brokers/IB/Shared/OperatorCondition.h Brokers/IB/Shared/Order.h Brokers/IB/Shared/OrderCondition.h Brokers/IB/Shared/OrderState.h Brokers/IB/Shared/PercentChangeCondition.h Brokers/IB/Shared/PriceCondition.h Brokers/IB/Shared/PriceIncrement.h Brokers/IB/Shared/ScannerSubscription.h Brokers/IB/Shared/SoftDollarTier.h Brokers/IB/Shared/TagValue.h Brokers/IB/Shared/TickAttrib.h Brokers/IB/Shared/TickAttribBidAsk.h Brokers/IB/Shared/TickAttribLast.h Brokers/IB/Shared/TimeCondition.h Brokers/IB/Shared/TwsSocketClientErrors.h Brokers/IB/Shared/VolumeCondition.h Brokers/IB/Shared/Decimal.h Brokers/IB/Shared/EClientException.h Brokers/IB/Shared/EOrderDecoder.h Brokers/IB/Shared/HistoricalSession.h Brokers/IB/Shared/platformspecific.h Brokers/IB/Shared/resource.h Brokers/IB/Shared/WshEventData.h Common/globalsettings.h CObjects/ctickbytickalllast.h CObjects/chistoricalticks.h DBStore/dbstoremodel.h MainSystem/treeitem.h $(DISTDIR)/
+	$(COPY_FILE) --parents Brokers/IB/addon/AccountSummaryTags.cpp Brokers/IB/addon/AvailableAlgoParams.cpp Brokers/IB/addon/ContractSamples.cpp Brokers/IB/addon/OrderSamples.cpp Brokers/IB/addon/ScannerSubscriptionSamples.cpp Brokers/IB/src/Decimal.cpp Brokers/IB/src/Utils.cpp CObjects/caccountsummary.cpp CObjects/ccommissionreport.cpp CObjects/cdeltaobject.cpp CObjects/cexecutionreport.cpp Common/cprocessingbase_v2.cpp Brokers/BrokerConnectionFactory.cpp Brokers/PaperBrokerStub.cpp Common/StorageConfig.cpp DB/dbhandler.cpp DB/dbmanager.cpp MainSystem/capplicationcontroller.cpp MainSystem/UiLayoutStore.cpp MainSystem/UiLayoutDefaults.cpp MainSystem/UiLayoutDefaultsTables.cpp MainSystem/UiLayoutDefaultsCatalog.cpp MainSystem/ciconhandler.cpp MainSystem/cmainmodel.cpp MainSystem/csettinsmodeldata.cpp MainSystem/SettingsTreeDelegate.cpp MainSystem/ctreeviewcustommodel.cpp MainSystem/ibtradesystemview.cpp MainSystem/portfolioconfigmodel.cpp MainSystem/PipelineDiagramWidget.cpp Strategies/Generic/UnifiedModelData.cpp Strategies/Generic/cbasemodel.cpp Strategies/Generic/cbaserebalancemodel.cpp Strategies/Generic/cbasicaccount.cpp Strategies/Generic/cbasicalphamodel.cpp Strategies/Generic/cbasicexecutionmodel.cpp Strategies/Generic/cbasicportfolio.cpp Strategies/Generic/cbasicriskmodel.cpp Strategies/Generic/cbasicroot.cpp Strategies/Generic/cbasicselectionmodel.cpp Strategies/Generic/cbasicstrategy_V2.cpp Strategies/Generic/cgenericmodelApi.cpp Strategies/Generic/csma.cpp Strategies/Generic/cstrategyfactory.cpp Strategies/Generic/cpipelinestrategyadapter.cpp Strategies/PairTrader/PairTraderLogging.cpp Strategies/AutoDeltAlignment/src/AutoDeltaLogging.cpp main.cpp AboutDialog/aboutdialog.cpp AboutDialog/AboutDlgPresener.cpp AlphaModelGetTime/AlphaModGetTime.cpp CObjects/CHistoricalData.cpp CObjects/cmktdepth.cpp CObjects/cmktdepthl2.cpp CObjects/copenorder.cpp CObjects/coptiontickcomputation.cpp CObjects/corderstatus.cpp CObjects/cposition.cpp CObjects/crealtimebar.cpp CObjects/ctickgeneric.cpp CObjects/ctickprice.cpp CObjects/cticksize.cpp CObjects/ctickstring.cpp Common/NHelper.cpp CustomWidgets/ccandlestickqchart.cpp CustomWidgets/clineqchart.cpp DB/DBConnector.cpp DBStore/DBStoreGUI.cpp DBStore/DBStoreLogging.cpp DBStore/DBStorePresenter.cpp DBStore/DBStoreProcessing.cpp IBComm/cbrokerdataprovider.cpp IBComm/ProcessingRouterSink.cpp IBComm/IBComClientIpml.cpp IBComm/IBworker.cpp Logger/MyLogger.cpp Logging/UiLogCategories.cpp MainSystem/cpresenter.cpp MainSystem/QtUnsavedChangesPrompt.cpp MainSystem/BacktestWorkspaceCoordinator.cpp MainSystem/StrategyManagementCoordinator.cpp ReqManager/globalreqmanager.cpp ReqManager/ReqManager.cpp Brokers/IB/src/ContractCondition.cpp Brokers/IB/src/DefaultEWrapper.cpp Brokers/IB/src/EClient.cpp Brokers/IB/src/EClientSocket.cpp Brokers/IB/src/EDecoder.cpp Brokers/IB/src/EMessage.cpp Brokers/IB/src/EMutex.cpp Brokers/IB/src/EReader.cpp Brokers/IB/src/EReaderOSSignal.cpp Brokers/IB/src/ESocket.cpp Brokers/IB/src/executioncondition.cpp Brokers/IB/src/MarginCondition.cpp Brokers/IB/src/OperatorCondition.cpp Brokers/IB/src/OrderCondition.cpp Brokers/IB/src/PercentChangeCondition.cpp Brokers/IB/src/PriceCondition.cpp Brokers/IB/src/SoftDollarTier.cpp Brokers/IB/src/TimeCondition.cpp Brokers/IB/src/VolumeCondition.cpp Brokers/IB/src/EOrderDecoder.cpp baseimpl.cpp Common/globalsettings.cpp CObjects/ctickbytickalllast.cpp CObjects/chistoricalticks.cpp DBStore/dbstoremodel.cpp MainSystem/treeitem.cpp Backtest/SimulatedLedger.cpp Backtest/SimulatedExecutionAdapter.cpp Backtest/BacktestMetricsCollector.cpp Backtest/BacktestSession.cpp Backtest/BacktestHistoricalReadAdapter.cpp Backtest/BacktestMarketDataAccessor.cpp Backtest/BacktestWorkspaceSession.cpp Backtest/BacktestRunPersistence.cpp Backtest/YahooFinanceDataSource.cpp Backtest/MarketSessionUtils.cpp Backtest/InstrumentClassification.cpp Backtest/InstrumentInference.cpp Backtest/InstrumentClassificationMappers.cpp Backtest/InstrumentNormalization.cpp Backtest/InstrumentMetadataResolver.cpp Backtest/AssetUniverseInput.cpp Backtest/InstrumentMetadataIb.cpp Backtest/HistoricalDataManager.cpp Backtest/BacktestController.cpp Backtest/BacktestStatistics.cpp Backtest/BacktestStatisticsCalculator.cpp Backtest/HistoricalBarUtils.cpp Backtest/BacktestFillValidation.cpp Backtest/SemanticMomentumPipeline.cpp Backtest/BacktestReportModel.cpp Backtest/BacktestReportModelBuilder.cpp Backtest/BacktestHtmlTemplateRenderer.cpp Backtest/BacktestMetricsMapper.cpp Backtest/Reporting/MomentumSemanticHtmlWriter.cpp BacktestUI/BacktestWorkspaceDock.cpp BacktestUI/BacktestStrategySelector.cpp BacktestUI/BacktestRunConfigPanel.cpp BacktestUI/BacktestRunHistoryPanel.cpp BacktestUI/EquityChartWidget.cpp BacktestUI/BacktestCandlestickWidget.cpp BacktestUI/TradeLogWidget.cpp MainSystem/GlobalStatusBar.cpp MainSystem/EventLogPanel.cpp MainSystem/ContextWorkspace.cpp MainSystem/SystemTreeModel.cpp MainSystem/SystemTreeDelegate.cpp MainSystem/WorkspaceWidgets/WorkspaceBase.cpp MainSystem/WorkspaceWidgets/WorkspaceHeader.cpp MainSystem/WorkspaceWidgets/MetricsStrip.cpp MainSystem/WorkspaceWidgets/StrategyWorkspace.cpp MainSystem/WorkspaceWidgets/AccountWorkspace.cpp MainSystem/WorkspaceWidgets/PortfolioWorkspace.cpp MainSystem/WorkspaceWidgets/BlockInspectorPanel.cpp MainSystem/WorkspaceWidgets/RuntimePolicyEditor.cpp Pipeline/PipelineTreeUtils.cpp Pipeline/PipelineLog.cpp Pipeline/StrategyPipelineRunner.cpp Pipeline/IAlphaBlock.cpp Pipeline/IRebalanceBlock.cpp Pipeline/IRiskBlock.cpp Pipeline/IExecutionBlock.cpp Pipeline/SemanticModelDataMapper.cpp Pipeline/SemanticPipelineChain.cpp Adapters/LiveHistoricalReadAdapter.cpp Pipeline/MarketDataCoordinator.cpp Pipeline/SubscriptionRequestStore.cpp Pipeline/NoOpSubscriptionPort.cpp Pipeline/RouterMarketDataAccessor.cpp Pipeline/PipelineFactory.cpp Pipeline/BlockGraphSerializer.cpp Pipeline/UniverseResolver.cpp Pipeline/StrategyRuntimePolicy.cpp Pipeline/SignalMergePolicies.cpp Pipeline/PipelineExecutionHost.cpp Blocks/MomentumAlphaBlock.cpp Blocks/MeanReversionAlphaBlock.cpp Blocks/MovingAverageCrossoverAlphaBlock.cpp Blocks/MaxPositionRiskBlock.cpp Blocks/StaticListSelectionBlock.cpp Blocks/LimitOrderExecutionBlock.cpp Blocks/MarketOrderExecutionBlock.cpp Blocks/SimpleRebalanceBlock.cpp Blocks/PassAllSelectionBlock.cpp Supervision/StrategyRuntime.cpp Supervision/Supervisor.cpp Plugin/PluginLoader.cpp MainSystem/AlertService.cpp Backend/ModelTreeRepository.cpp Backend/ModelTreeRepositoryPostgres.cpp Backend/PersistenceFactory.cpp Backend/ModelTreeMapper.cpp Backend/SystemBackendImpl.cpp SharedUI/StrategyTreeDelegate.cpp SharedUI/AbstractPipelineTreeModel.cpp SharedUI/StrategyTreePanel.cpp SharedUI/WorkspacePresenterBase.cpp SharedUI/StrategyWorkspacePresenter.cpp SharedUI/BacktestPresenter.cpp SharedUI/PipelineDiagramModel.cpp SharedUI/BlockInspectorPresenter.cpp SharedUI/StrategyDetailPresenter.cpp BacktestUI/BacktestTreeModel.cpp StrategyManagementUI/StrategyCatalogModel.cpp StrategyManagementUI/CatalogTreeModel.cpp StrategyManagementUI/StrategyCatalogPanel.cpp StrategyManagementUI/StrategyDetailPanel.cpp StrategyManagementUI/StrategyManagementPanel.cpp $(DISTDIR)/
 	$(COPY_FILE) --parents AboutDialog/aboutdialog.ui MainSystem/ibtradesystemview.ui DBStore/dbstroreform.ui $(DISTDIR)/
 
 
@@ -2390,11 +2453,11 @@ compiler_moc_predefs_clean:
 release/moc/moc_predefs.h: ../../../../Qt/6.9.2/gcc_64/mkspecs/features/data/dummy.cpp
 	g++ -pipe -O2 -std=gnu++1z -Wall -Wextra -fPIC -dM -E -o release/moc/moc_predefs.h ../../../../Qt/6.9.2/gcc_64/mkspecs/features/data/dummy.cpp
 
-compiler_moc_header_make_all: release/moc/moc_Contracts.cpp release/moc/moc_LiveHistoricalReadAdapter.cpp release/moc/moc_IAlphaBlock.cpp release/moc/moc_ISelectionBlock.cpp release/moc/moc_IRebalanceBlock.cpp release/moc/moc_IRiskBlock.cpp release/moc/moc_IExecutionBlock.cpp release/moc/moc_ISignalMergePolicy.cpp release/moc/moc_SignalMergePolicies.cpp release/moc/moc_PipelineExecutionHost.cpp release/moc/moc_MarketDataRouter.cpp release/moc/moc_IBPositionRepositoryAdapter.cpp release/moc/moc_PositionRouter.cpp release/moc/moc_HistoricalDataRouter.cpp release/moc/moc_OrderRouter.cpp release/moc/moc_AccountRouter.cpp release/moc/moc_TimeRouter.cpp release/moc/moc_MarketDepthRouter.cpp release/moc/moc_MockMarketDataRouter.cpp release/moc/moc_IntegrationTestHarness.cpp release/moc/moc_MarketDataRecorder.cpp release/moc/moc_MarketDataReplayer.cpp release/moc/moc_BlockRegistry.cpp release/moc/moc_StrategyPipelineRunner.cpp release/moc/moc_MomentumAlphaBlock.cpp release/moc/moc_MaxPositionRiskBlock.cpp release/moc/moc_MarketOrderExecutionBlock.cpp release/moc/moc_MeanReversionAlphaBlock.cpp release/moc/moc_StaticListSelectionBlock.cpp release/moc/moc_LimitOrderExecutionBlock.cpp release/moc/moc_MovingAverageCrossoverAlphaBlock.cpp release/moc/moc_AlphaModelAdapter.cpp release/moc/moc_RiskModelAdapter.cpp release/moc/moc_ExecutionModelAdapter.cpp release/moc/moc_StrategyRuntime.cpp release/moc/moc_Supervisor.cpp release/moc/moc_cdeltaobject.cpp release/moc/moc_cprocessingbase_v2.cpp release/moc/moc_dbhandler.cpp release/moc/moc_dbmanager.cpp release/moc/moc_CPortfolioConfigModel.cpp release/moc/moc_PipelineItemDelegate.cpp release/moc/moc_PipelineDiagramWidget.cpp release/moc/moc_capplicationcontroller.cpp release/moc/moc_UiLayoutStore.cpp release/moc/moc_cmainmodel.cpp release/moc/moc_csettinsmodeldata.cpp release/moc/moc_ctreeviewcustommodel.cpp release/moc/moc_ctreeviewdatamodel.cpp release/moc/moc_ibtradesystemview.cpp release/moc/moc_cbasemodel.cpp release/moc/moc_cbaserebalancemodel.cpp release/moc/moc_cbasicalphamodel.cpp release/moc/moc_cbasicexecutionmodel.cpp release/moc/moc_cbasicriskmodel.cpp release/moc/moc_cbasicselectionmodel.cpp release/moc/moc_cpipelinestrategyadapter.cpp release/moc/moc_MarketPriceStore.cpp release/moc/moc_SimulatedLedger.cpp release/moc/moc_SimulatedExecutionAdapter.cpp release/moc/moc_BacktestMetricsCollector.cpp release/moc/moc_IHistoricalDataSource.cpp release/moc/moc_JsonlHistoricalDataSource.cpp release/moc/moc_CsvHistoricalDataSource.cpp release/moc/moc_YahooFinanceDataSource.cpp release/moc/moc_BacktestSession.cpp release/moc/moc_HistoricalDataManager.cpp release/moc/moc_BacktestController.cpp release/moc/moc_BacktestWorkspaceDock.cpp release/moc/moc_BacktestStrategySelector.cpp release/moc/moc_BacktestRunConfigPanel.cpp release/moc/moc_BacktestRunHistoryPanel.cpp release/moc/moc_EquityChartWidget.cpp release/moc/moc_BacktestCandlestickWidget.cpp release/moc/moc_TradeLogWidget.cpp release/moc/moc_GlobalStatusBar.cpp release/moc/moc_EventLogPanel.cpp release/moc/moc_ContextWorkspace.cpp release/moc/moc_SystemTreeModel.cpp release/moc/moc_SystemTreeDelegate.cpp release/moc/moc_WorkspaceBase.cpp release/moc/moc_WorkspaceHeader.cpp release/moc/moc_MetricsStrip.cpp release/moc/moc_StrategyWorkspace.cpp release/moc/moc_AccountWorkspace.cpp release/moc/moc_PortfolioWorkspace.cpp release/moc/moc_BlockInspectorPanel.cpp release/moc/moc_RuntimePolicyEditor.cpp release/moc/moc_AlertService.cpp release/moc/moc_ISystemBackend.cpp release/moc/moc_SystemBackendImpl.cpp release/moc/moc_StrategyTreeDelegate.cpp release/moc/moc_AbstractPipelineTreeModel.cpp release/moc/moc_StrategyTreePanel.cpp release/moc/moc_WorkspacePresenterBase.cpp release/moc/moc_StrategyWorkspacePresenter.cpp release/moc/moc_BacktestPresenter.cpp release/moc/moc_PipelineDiagramModel.cpp release/moc/moc_BlockInspectorPresenter.cpp release/moc/moc_StrategyDetailPresenter.cpp release/moc/moc_BacktestTreeModel.cpp release/moc/moc_StrategyCatalogModel.cpp release/moc/moc_CatalogTreeModel.cpp release/moc/moc_StrategyCatalogPanel.cpp release/moc/moc_StrategyDetailPanel.cpp release/moc/moc_StrategyManagementPanel.cpp release/moc/moc_baseimpl.cpp release/moc/moc_aboutdialog.cpp release/moc/moc_AboutDlgPresener.cpp release/moc/moc_AlphaModGetTime.cpp release/moc/moc_ccandlestickqchart.cpp release/moc/moc_clineqchart.cpp release/moc/moc_DBConnector.cpp release/moc/moc_ProcessingRouterSink.cpp release/moc/moc_IBrokerAPI.cpp release/moc/moc_IBworker.cpp release/moc/moc_MyLogger.cpp release/moc/moc_PaperBrokerStub.cpp release/moc/moc_cpresenter.cpp release/moc/moc_BacktestWorkspaceCoordinator.cpp release/moc/moc_StrategyManagementCoordinator.cpp
+compiler_moc_header_make_all: release/moc/moc_Contracts.cpp release/moc/moc_LiveHistoricalReadAdapter.cpp release/moc/moc_IAlphaBlock.cpp release/moc/moc_ISelectionBlock.cpp release/moc/moc_IRebalanceBlock.cpp release/moc/moc_IRiskBlock.cpp release/moc/moc_IExecutionBlock.cpp release/moc/moc_ISignalMergePolicy.cpp release/moc/moc_SignalMergePolicies.cpp release/moc/moc_PipelineExecutionHost.cpp release/moc/moc_MarketDataRouter.cpp release/moc/moc_IBPositionRepositoryAdapter.cpp release/moc/moc_PositionRouter.cpp release/moc/moc_HistoricalDataRouter.cpp release/moc/moc_OrderRouter.cpp release/moc/moc_AccountRouter.cpp release/moc/moc_TimeRouter.cpp release/moc/moc_MarketDepthRouter.cpp release/moc/moc_MockMarketDataRouter.cpp release/moc/moc_IntegrationTestHarness.cpp release/moc/moc_MarketDataRecorder.cpp release/moc/moc_MarketDataReplayer.cpp release/moc/moc_BlockRegistry.cpp release/moc/moc_StrategyPipelineRunner.cpp release/moc/moc_MomentumAlphaBlock.cpp release/moc/moc_MaxPositionRiskBlock.cpp release/moc/moc_MarketOrderExecutionBlock.cpp release/moc/moc_SimpleRebalanceBlock.cpp release/moc/moc_PassAllSelectionBlock.cpp release/moc/moc_MeanReversionAlphaBlock.cpp release/moc/moc_StaticListSelectionBlock.cpp release/moc/moc_LimitOrderExecutionBlock.cpp release/moc/moc_MovingAverageCrossoverAlphaBlock.cpp release/moc/moc_AlphaModelAdapter.cpp release/moc/moc_RiskModelAdapter.cpp release/moc/moc_ExecutionModelAdapter.cpp release/moc/moc_StrategyRuntime.cpp release/moc/moc_Supervisor.cpp release/moc/moc_cdeltaobject.cpp release/moc/moc_cprocessingbase_v2.cpp release/moc/moc_dbhandler.cpp release/moc/moc_dbmanager.cpp release/moc/moc_CPortfolioConfigModel.cpp release/moc/moc_PipelineItemDelegate.cpp release/moc/moc_PipelineDiagramWidget.cpp release/moc/moc_capplicationcontroller.cpp release/moc/moc_UiLayoutStore.cpp release/moc/moc_cmainmodel.cpp release/moc/moc_csettinsmodeldata.cpp release/moc/moc_ctreeviewcustommodel.cpp release/moc/moc_ctreeviewdatamodel.cpp release/moc/moc_ibtradesystemview.cpp release/moc/moc_cbasemodel.cpp release/moc/moc_cbaserebalancemodel.cpp release/moc/moc_cbasicalphamodel.cpp release/moc/moc_cbasicexecutionmodel.cpp release/moc/moc_cbasicriskmodel.cpp release/moc/moc_cbasicselectionmodel.cpp release/moc/moc_cpipelinestrategyadapter.cpp release/moc/moc_MarketPriceStore.cpp release/moc/moc_SimulatedLedger.cpp release/moc/moc_SimulatedExecutionAdapter.cpp release/moc/moc_BacktestMetricsCollector.cpp release/moc/moc_IHistoricalDataSource.cpp release/moc/moc_JsonlHistoricalDataSource.cpp release/moc/moc_CsvHistoricalDataSource.cpp release/moc/moc_YahooFinanceDataSource.cpp release/moc/moc_BacktestSession.cpp release/moc/moc_HistoricalDataManager.cpp release/moc/moc_BacktestController.cpp release/moc/moc_BacktestWorkspaceDock.cpp release/moc/moc_BacktestStrategySelector.cpp release/moc/moc_BacktestRunConfigPanel.cpp release/moc/moc_BacktestRunHistoryPanel.cpp release/moc/moc_EquityChartWidget.cpp release/moc/moc_BacktestCandlestickWidget.cpp release/moc/moc_TradeLogWidget.cpp release/moc/moc_GlobalStatusBar.cpp release/moc/moc_EventLogPanel.cpp release/moc/moc_ContextWorkspace.cpp release/moc/moc_SystemTreeModel.cpp release/moc/moc_SystemTreeDelegate.cpp release/moc/moc_WorkspaceBase.cpp release/moc/moc_WorkspaceHeader.cpp release/moc/moc_MetricsStrip.cpp release/moc/moc_StrategyWorkspace.cpp release/moc/moc_AccountWorkspace.cpp release/moc/moc_PortfolioWorkspace.cpp release/moc/moc_BlockInspectorPanel.cpp release/moc/moc_RuntimePolicyEditor.cpp release/moc/moc_AlertService.cpp release/moc/moc_ISystemBackend.cpp release/moc/moc_SystemBackendImpl.cpp release/moc/moc_StrategyTreeDelegate.cpp release/moc/moc_AbstractPipelineTreeModel.cpp release/moc/moc_StrategyTreePanel.cpp release/moc/moc_WorkspacePresenterBase.cpp release/moc/moc_StrategyWorkspacePresenter.cpp release/moc/moc_BacktestPresenter.cpp release/moc/moc_PipelineDiagramModel.cpp release/moc/moc_BlockInspectorPresenter.cpp release/moc/moc_StrategyDetailPresenter.cpp release/moc/moc_BacktestTreeModel.cpp release/moc/moc_StrategyCatalogModel.cpp release/moc/moc_CatalogTreeModel.cpp release/moc/moc_StrategyCatalogPanel.cpp release/moc/moc_StrategyDetailPanel.cpp release/moc/moc_StrategyManagementPanel.cpp release/moc/moc_baseimpl.cpp release/moc/moc_aboutdialog.cpp release/moc/moc_AboutDlgPresener.cpp release/moc/moc_AlphaModGetTime.cpp release/moc/moc_ccandlestickqchart.cpp release/moc/moc_clineqchart.cpp release/moc/moc_DBConnector.cpp release/moc/moc_ProcessingRouterSink.cpp release/moc/moc_IBrokerAPI.cpp release/moc/moc_IBworker.cpp release/moc/moc_MyLogger.cpp release/moc/moc_PaperBrokerStub.cpp release/moc/moc_cpresenter.cpp release/moc/moc_BacktestWorkspaceCoordinator.cpp release/moc/moc_StrategyManagementCoordinator.cpp
 compiler_moc_header_clean:
-	-$(DEL_FILE) release/moc/moc_Contracts.cpp release/moc/moc_LiveHistoricalReadAdapter.cpp release/moc/moc_IAlphaBlock.cpp release/moc/moc_ISelectionBlock.cpp release/moc/moc_IRebalanceBlock.cpp release/moc/moc_IRiskBlock.cpp release/moc/moc_IExecutionBlock.cpp release/moc/moc_ISignalMergePolicy.cpp release/moc/moc_SignalMergePolicies.cpp release/moc/moc_PipelineExecutionHost.cpp release/moc/moc_MarketDataRouter.cpp release/moc/moc_IBPositionRepositoryAdapter.cpp release/moc/moc_PositionRouter.cpp release/moc/moc_HistoricalDataRouter.cpp release/moc/moc_OrderRouter.cpp release/moc/moc_AccountRouter.cpp release/moc/moc_TimeRouter.cpp release/moc/moc_MarketDepthRouter.cpp release/moc/moc_MockMarketDataRouter.cpp release/moc/moc_IntegrationTestHarness.cpp release/moc/moc_MarketDataRecorder.cpp release/moc/moc_MarketDataReplayer.cpp release/moc/moc_BlockRegistry.cpp release/moc/moc_StrategyPipelineRunner.cpp release/moc/moc_MomentumAlphaBlock.cpp release/moc/moc_MaxPositionRiskBlock.cpp release/moc/moc_MarketOrderExecutionBlock.cpp release/moc/moc_MeanReversionAlphaBlock.cpp release/moc/moc_StaticListSelectionBlock.cpp release/moc/moc_LimitOrderExecutionBlock.cpp release/moc/moc_MovingAverageCrossoverAlphaBlock.cpp release/moc/moc_AlphaModelAdapter.cpp release/moc/moc_RiskModelAdapter.cpp release/moc/moc_ExecutionModelAdapter.cpp release/moc/moc_StrategyRuntime.cpp release/moc/moc_Supervisor.cpp release/moc/moc_cdeltaobject.cpp release/moc/moc_cprocessingbase_v2.cpp release/moc/moc_dbhandler.cpp release/moc/moc_dbmanager.cpp release/moc/moc_CPortfolioConfigModel.cpp release/moc/moc_PipelineItemDelegate.cpp release/moc/moc_PipelineDiagramWidget.cpp release/moc/moc_capplicationcontroller.cpp release/moc/moc_UiLayoutStore.cpp release/moc/moc_cmainmodel.cpp release/moc/moc_csettinsmodeldata.cpp release/moc/moc_ctreeviewcustommodel.cpp release/moc/moc_ctreeviewdatamodel.cpp release/moc/moc_ibtradesystemview.cpp release/moc/moc_cbasemodel.cpp release/moc/moc_cbaserebalancemodel.cpp release/moc/moc_cbasicalphamodel.cpp
-	-$(DEL_FILE) release/moc/moc_cbasicexecutionmodel.cpp release/moc/moc_cbasicriskmodel.cpp release/moc/moc_cbasicselectionmodel.cpp release/moc/moc_cpipelinestrategyadapter.cpp release/moc/moc_MarketPriceStore.cpp release/moc/moc_SimulatedLedger.cpp release/moc/moc_SimulatedExecutionAdapter.cpp release/moc/moc_BacktestMetricsCollector.cpp release/moc/moc_IHistoricalDataSource.cpp release/moc/moc_JsonlHistoricalDataSource.cpp release/moc/moc_CsvHistoricalDataSource.cpp release/moc/moc_YahooFinanceDataSource.cpp release/moc/moc_BacktestSession.cpp release/moc/moc_HistoricalDataManager.cpp release/moc/moc_BacktestController.cpp release/moc/moc_BacktestWorkspaceDock.cpp release/moc/moc_BacktestStrategySelector.cpp release/moc/moc_BacktestRunConfigPanel.cpp release/moc/moc_BacktestRunHistoryPanel.cpp release/moc/moc_EquityChartWidget.cpp release/moc/moc_BacktestCandlestickWidget.cpp release/moc/moc_TradeLogWidget.cpp release/moc/moc_GlobalStatusBar.cpp release/moc/moc_EventLogPanel.cpp release/moc/moc_ContextWorkspace.cpp release/moc/moc_SystemTreeModel.cpp release/moc/moc_SystemTreeDelegate.cpp release/moc/moc_WorkspaceBase.cpp release/moc/moc_WorkspaceHeader.cpp release/moc/moc_MetricsStrip.cpp release/moc/moc_StrategyWorkspace.cpp release/moc/moc_AccountWorkspace.cpp release/moc/moc_PortfolioWorkspace.cpp release/moc/moc_BlockInspectorPanel.cpp release/moc/moc_RuntimePolicyEditor.cpp release/moc/moc_AlertService.cpp release/moc/moc_ISystemBackend.cpp release/moc/moc_SystemBackendImpl.cpp release/moc/moc_StrategyTreeDelegate.cpp release/moc/moc_AbstractPipelineTreeModel.cpp release/moc/moc_StrategyTreePanel.cpp release/moc/moc_WorkspacePresenterBase.cpp release/moc/moc_StrategyWorkspacePresenter.cpp release/moc/moc_BacktestPresenter.cpp release/moc/moc_PipelineDiagramModel.cpp release/moc/moc_BlockInspectorPresenter.cpp release/moc/moc_StrategyDetailPresenter.cpp release/moc/moc_BacktestTreeModel.cpp release/moc/moc_StrategyCatalogModel.cpp release/moc/moc_CatalogTreeModel.cpp
-	-$(DEL_FILE) release/moc/moc_StrategyCatalogPanel.cpp release/moc/moc_StrategyDetailPanel.cpp release/moc/moc_StrategyManagementPanel.cpp release/moc/moc_baseimpl.cpp release/moc/moc_aboutdialog.cpp release/moc/moc_AboutDlgPresener.cpp release/moc/moc_AlphaModGetTime.cpp release/moc/moc_ccandlestickqchart.cpp release/moc/moc_clineqchart.cpp release/moc/moc_DBConnector.cpp release/moc/moc_ProcessingRouterSink.cpp release/moc/moc_IBrokerAPI.cpp release/moc/moc_IBworker.cpp release/moc/moc_MyLogger.cpp release/moc/moc_PaperBrokerStub.cpp release/moc/moc_cpresenter.cpp release/moc/moc_BacktestWorkspaceCoordinator.cpp release/moc/moc_StrategyManagementCoordinator.cpp
+	-$(DEL_FILE) release/moc/moc_Contracts.cpp release/moc/moc_LiveHistoricalReadAdapter.cpp release/moc/moc_IAlphaBlock.cpp release/moc/moc_ISelectionBlock.cpp release/moc/moc_IRebalanceBlock.cpp release/moc/moc_IRiskBlock.cpp release/moc/moc_IExecutionBlock.cpp release/moc/moc_ISignalMergePolicy.cpp release/moc/moc_SignalMergePolicies.cpp release/moc/moc_PipelineExecutionHost.cpp release/moc/moc_MarketDataRouter.cpp release/moc/moc_IBPositionRepositoryAdapter.cpp release/moc/moc_PositionRouter.cpp release/moc/moc_HistoricalDataRouter.cpp release/moc/moc_OrderRouter.cpp release/moc/moc_AccountRouter.cpp release/moc/moc_TimeRouter.cpp release/moc/moc_MarketDepthRouter.cpp release/moc/moc_MockMarketDataRouter.cpp release/moc/moc_IntegrationTestHarness.cpp release/moc/moc_MarketDataRecorder.cpp release/moc/moc_MarketDataReplayer.cpp release/moc/moc_BlockRegistry.cpp release/moc/moc_StrategyPipelineRunner.cpp release/moc/moc_MomentumAlphaBlock.cpp release/moc/moc_MaxPositionRiskBlock.cpp release/moc/moc_MarketOrderExecutionBlock.cpp release/moc/moc_SimpleRebalanceBlock.cpp release/moc/moc_PassAllSelectionBlock.cpp release/moc/moc_MeanReversionAlphaBlock.cpp release/moc/moc_StaticListSelectionBlock.cpp release/moc/moc_LimitOrderExecutionBlock.cpp release/moc/moc_MovingAverageCrossoverAlphaBlock.cpp release/moc/moc_AlphaModelAdapter.cpp release/moc/moc_RiskModelAdapter.cpp release/moc/moc_ExecutionModelAdapter.cpp release/moc/moc_StrategyRuntime.cpp release/moc/moc_Supervisor.cpp release/moc/moc_cdeltaobject.cpp release/moc/moc_cprocessingbase_v2.cpp release/moc/moc_dbhandler.cpp release/moc/moc_dbmanager.cpp release/moc/moc_CPortfolioConfigModel.cpp release/moc/moc_PipelineItemDelegate.cpp release/moc/moc_PipelineDiagramWidget.cpp release/moc/moc_capplicationcontroller.cpp release/moc/moc_UiLayoutStore.cpp release/moc/moc_cmainmodel.cpp release/moc/moc_csettinsmodeldata.cpp release/moc/moc_ctreeviewcustommodel.cpp release/moc/moc_ctreeviewdatamodel.cpp release/moc/moc_ibtradesystemview.cpp release/moc/moc_cbasemodel.cpp
+	-$(DEL_FILE) release/moc/moc_cbaserebalancemodel.cpp release/moc/moc_cbasicalphamodel.cpp release/moc/moc_cbasicexecutionmodel.cpp release/moc/moc_cbasicriskmodel.cpp release/moc/moc_cbasicselectionmodel.cpp release/moc/moc_cpipelinestrategyadapter.cpp release/moc/moc_MarketPriceStore.cpp release/moc/moc_SimulatedLedger.cpp release/moc/moc_SimulatedExecutionAdapter.cpp release/moc/moc_BacktestMetricsCollector.cpp release/moc/moc_IHistoricalDataSource.cpp release/moc/moc_JsonlHistoricalDataSource.cpp release/moc/moc_CsvHistoricalDataSource.cpp release/moc/moc_YahooFinanceDataSource.cpp release/moc/moc_BacktestSession.cpp release/moc/moc_HistoricalDataManager.cpp release/moc/moc_BacktestController.cpp release/moc/moc_BacktestWorkspaceDock.cpp release/moc/moc_BacktestStrategySelector.cpp release/moc/moc_BacktestRunConfigPanel.cpp release/moc/moc_BacktestRunHistoryPanel.cpp release/moc/moc_EquityChartWidget.cpp release/moc/moc_BacktestCandlestickWidget.cpp release/moc/moc_TradeLogWidget.cpp release/moc/moc_GlobalStatusBar.cpp release/moc/moc_EventLogPanel.cpp release/moc/moc_ContextWorkspace.cpp release/moc/moc_SystemTreeModel.cpp release/moc/moc_SystemTreeDelegate.cpp release/moc/moc_WorkspaceBase.cpp release/moc/moc_WorkspaceHeader.cpp release/moc/moc_MetricsStrip.cpp release/moc/moc_StrategyWorkspace.cpp release/moc/moc_AccountWorkspace.cpp release/moc/moc_PortfolioWorkspace.cpp release/moc/moc_BlockInspectorPanel.cpp release/moc/moc_RuntimePolicyEditor.cpp release/moc/moc_AlertService.cpp release/moc/moc_ISystemBackend.cpp release/moc/moc_SystemBackendImpl.cpp release/moc/moc_StrategyTreeDelegate.cpp release/moc/moc_AbstractPipelineTreeModel.cpp release/moc/moc_StrategyTreePanel.cpp release/moc/moc_WorkspacePresenterBase.cpp release/moc/moc_StrategyWorkspacePresenter.cpp release/moc/moc_BacktestPresenter.cpp release/moc/moc_PipelineDiagramModel.cpp release/moc/moc_BlockInspectorPresenter.cpp release/moc/moc_StrategyDetailPresenter.cpp release/moc/moc_BacktestTreeModel.cpp release/moc/moc_StrategyCatalogModel.cpp
+	-$(DEL_FILE) release/moc/moc_CatalogTreeModel.cpp release/moc/moc_StrategyCatalogPanel.cpp release/moc/moc_StrategyDetailPanel.cpp release/moc/moc_StrategyManagementPanel.cpp release/moc/moc_baseimpl.cpp release/moc/moc_aboutdialog.cpp release/moc/moc_AboutDlgPresener.cpp release/moc/moc_AlphaModGetTime.cpp release/moc/moc_ccandlestickqchart.cpp release/moc/moc_clineqchart.cpp release/moc/moc_DBConnector.cpp release/moc/moc_ProcessingRouterSink.cpp release/moc/moc_IBrokerAPI.cpp release/moc/moc_IBworker.cpp release/moc/moc_MyLogger.cpp release/moc/moc_PaperBrokerStub.cpp release/moc/moc_cpresenter.cpp release/moc/moc_BacktestWorkspaceCoordinator.cpp release/moc/moc_StrategyManagementCoordinator.cpp
 release/moc/moc_Contracts.cpp: Pipeline/Contracts.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QObject \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobject.h \
@@ -2826,6 +2889,7 @@ release/moc/moc_IAlphaBlock.cpp: Pipeline/IAlphaBlock.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonarray.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMetaType \
 		Pipeline/PipelineRuntimeContext.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMap \
 		Pipeline/IHistoricalRead.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QVector \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvector.h \
@@ -6065,9 +6129,6 @@ release/moc/moc_MomentumAlphaBlock.cpp: Blocks/MomentumAlphaBlock.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qendian.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsondocument.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonparseerror.h \
-		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMap \
-		../../../../Qt/6.9.2/gcc_64/include/QtCore/QVector \
-		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvector.h \
 		Pipeline/IAlphaBlock.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QObject \
 		Pipeline/Contracts.h \
@@ -6077,7 +6138,10 @@ release/moc/moc_MomentumAlphaBlock.cpp: Blocks/MomentumAlphaBlock.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonarray.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMetaType \
 		Pipeline/PipelineRuntimeContext.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMap \
 		Pipeline/IHistoricalRead.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QVector \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvector.h \
 		Pipeline/IMarketDataAccessor.h \
 		Pipeline/SemanticTypes.h \
 		Strategies/Generic/UnifiedModelData.h \
@@ -6227,6 +6291,7 @@ release/moc/moc_MaxPositionRiskBlock.cpp: Blocks/MaxPositionRiskBlock.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsondocument.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonparseerror.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMap \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QSet \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QVector \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvector.h \
 		Pipeline/IRiskBlock.h \
@@ -6399,14 +6464,317 @@ release/moc/moc_MarketOrderExecutionBlock.cpp: Blocks/MarketOrderExecutionBlock.
 		Strategies/Generic/UnifiedModelData.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QList \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QSharedPointer \
-		Pipeline/IRebalanceBlock.h \
-		Pipeline/ISelectionBlock.h \
 		Ports/IOrderExecutionPort.h \
 		Common/Expected.h \
 		ThirdParty/expected.hpp \
 		release/moc/moc_predefs.h \
 		../../../../Qt/6.9.2/gcc_64/libexec/moc
 	/home/denis/Qt/6.9.2/gcc_64/libexec/moc $(DEFINES) --include /home/denis/work/github/IbTradeQtDev/IbTradeQt/release/moc/moc_predefs.h -I/home/denis/Qt/6.9.2/gcc_64/mkspecs/linux-g++ -I/home/denis/work/github/IbTradeQtDev/IbTradeQt -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Backtest -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Pipeline -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Ports -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/ThirdParty -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Adapters -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Testing -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Replay -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Blocks -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Plugin -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Supervision -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Logging -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Metrics -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Brokers/IB/Shared -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Brokers/IB/addon -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/ReqManager -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/QCustomPlot -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/PairTrader -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/MainSystem -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/MainSystem/WorkspaceWidgets -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Logger -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/IBComm -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/DB -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/CustomWidgets -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Common -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/CObjects -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/AlphaModelGetTime -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/AboutDialog -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Strategies/Generic -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Backend -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/SharedUI -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/StrategyManagementUI -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Strategies/StateMachine -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/GeneratedIncludes -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/DBStore -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Libs -I/usr/include/postgresql -I/home/denis/Qt/6.9.2/gcc_64/include -I/home/denis/Qt/6.9.2/gcc_64/include/QtCharts -I/home/denis/Qt/6.9.2/gcc_64/include/QtOpenGLWidgets -I/home/denis/Qt/6.9.2/gcc_64/include/QtPrintSupport -I/home/denis/Qt/6.9.2/gcc_64/include/QtWidgets -I/home/denis/Qt/6.9.2/gcc_64/include/QtOpenGL -I/home/denis/Qt/6.9.2/gcc_64/include/QtSvg -I/home/denis/Qt/6.9.2/gcc_64/include/QtGui -I/home/denis/Qt/6.9.2/gcc_64/include/QtSql -I/home/denis/Qt/6.9.2/gcc_64/include/QtNetwork -I/home/denis/Qt/6.9.2/gcc_64/include/QtCore -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/gcc/x86_64-linux-gnu/13/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include Blocks/MarketOrderExecutionBlock.h -o release/moc/moc_MarketOrderExecutionBlock.cpp
+
+release/moc/moc_SimpleRebalanceBlock.cpp: Blocks/SimpleRebalanceBlock.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QDateTime \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdatetime.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcalendar.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qglobal.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcoreglobal.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtversionchecks.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtconfiginclude.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qconfig.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcore-config.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtconfigmacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtdeprecationdefinitions.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompilerdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qprocessordetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsystemdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcoreexports.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtdeprecationmarkers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtclasshelpermacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtpreprocessorsupport.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qassert.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtnoop.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtypes.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtversion.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtypeinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainerfwd.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsysinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlogging.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qflags.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompare_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbasicatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qatomic_cxx11.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qgenericatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qyieldcpu.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qconstructormacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdarwinhelpers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qexceptionhandling.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qforeach.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qttypetraits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfunctionpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qglobalstatic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmalloc.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qminmax.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qnumeric.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qoverload.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qswap.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtenvironmentvariables.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtresource.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qttranslation.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qversiontagging.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlocale.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvariant.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompare.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstdlibdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcomparehelpers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20type_traits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmetatype.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearray.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qrefcount.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qnamespace.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtmetamacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydata.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qpair.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydatapointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydataops.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainertools_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qxptype_traits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20functional.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20memory.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q17memory.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearrayalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearrayview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringfwd.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdatastream.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qscopedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiodevicebase.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfloat16.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qhashfunctions.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstring.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qchar.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringliteral.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlatin1stringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qanystringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qutf8stringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringtokenizer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringbuilder.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringconverter.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringconverter_base.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmath.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtformat_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiterable.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmetacontainer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainerinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtaggedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobjectdefs.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobjectdefs_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfunctionaltools_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qscopeguard.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdebug.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtextstream.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontiguouscache.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsharedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qshareddata.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsharedpointer_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiterator.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearraylist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringlist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringmatcher.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmap.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qshareddata_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qset.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qhash.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvarlengtharray.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q23utility.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20utility.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobject.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcoreevent.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbasictimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qabstracteventdispatcher.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qeventloop.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdeadlinetimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qelapsedtimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobject_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbindingstorage.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QJsonObject \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonobject.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonvalue.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcborvalue.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcborcommon.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qregularexpression.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qurl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/quuid.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qendian.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsondocument.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonparseerror.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QSet \
+		Pipeline/IRebalanceBlock.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QObject \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QVector \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvector.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMap \
+		Pipeline/Contracts.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QString \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QJsonArray \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonarray.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMetaType \
+		Pipeline/SemanticTypes.h \
+		Strategies/Generic/UnifiedModelData.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QList \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QSharedPointer \
+		release/moc/moc_predefs.h \
+		../../../../Qt/6.9.2/gcc_64/libexec/moc
+	/home/denis/Qt/6.9.2/gcc_64/libexec/moc $(DEFINES) --include /home/denis/work/github/IbTradeQtDev/IbTradeQt/release/moc/moc_predefs.h -I/home/denis/Qt/6.9.2/gcc_64/mkspecs/linux-g++ -I/home/denis/work/github/IbTradeQtDev/IbTradeQt -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Backtest -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Pipeline -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Ports -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/ThirdParty -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Adapters -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Testing -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Replay -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Blocks -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Plugin -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Supervision -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Logging -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Metrics -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Brokers/IB/Shared -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Brokers/IB/addon -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/ReqManager -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/QCustomPlot -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/PairTrader -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/MainSystem -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/MainSystem/WorkspaceWidgets -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Logger -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/IBComm -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/DB -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/CustomWidgets -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Common -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/CObjects -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/AlphaModelGetTime -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/AboutDialog -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Strategies/Generic -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Backend -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/SharedUI -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/StrategyManagementUI -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Strategies/StateMachine -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/GeneratedIncludes -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/DBStore -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Libs -I/usr/include/postgresql -I/home/denis/Qt/6.9.2/gcc_64/include -I/home/denis/Qt/6.9.2/gcc_64/include/QtCharts -I/home/denis/Qt/6.9.2/gcc_64/include/QtOpenGLWidgets -I/home/denis/Qt/6.9.2/gcc_64/include/QtPrintSupport -I/home/denis/Qt/6.9.2/gcc_64/include/QtWidgets -I/home/denis/Qt/6.9.2/gcc_64/include/QtOpenGL -I/home/denis/Qt/6.9.2/gcc_64/include/QtSvg -I/home/denis/Qt/6.9.2/gcc_64/include/QtGui -I/home/denis/Qt/6.9.2/gcc_64/include/QtSql -I/home/denis/Qt/6.9.2/gcc_64/include/QtNetwork -I/home/denis/Qt/6.9.2/gcc_64/include/QtCore -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/gcc/x86_64-linux-gnu/13/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include Blocks/SimpleRebalanceBlock.h -o release/moc/moc_SimpleRebalanceBlock.cpp
+
+release/moc/moc_PassAllSelectionBlock.cpp: Blocks/PassAllSelectionBlock.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QJsonObject \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonobject.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonvalue.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcborvalue.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearray.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qrefcount.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbasicatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qatomic_cxx11.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qgenericatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompilerdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qprocessordetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsystemdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtconfiginclude.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qconfig.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcore-config.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtconfigmacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtdeprecationdefinitions.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtversionchecks.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtypes.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qassert.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcoreexports.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtdeprecationmarkers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtclasshelpermacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtnoop.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qyieldcpu.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qnamespace.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qglobal.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcoreglobal.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtpreprocessorsupport.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtversion.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtypeinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainerfwd.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsysinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlogging.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qflags.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompare_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qconstructormacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdarwinhelpers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qexceptionhandling.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qforeach.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qttypetraits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfunctionpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qglobalstatic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmalloc.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qminmax.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qnumeric.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qoverload.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qswap.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtenvironmentvariables.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtresource.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qttranslation.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qversiontagging.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompare.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstdlibdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcomparehelpers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20type_traits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtmetamacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydata.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qpair.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydatapointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydataops.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainertools_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qxptype_traits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20functional.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20memory.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q17memory.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearrayalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearrayview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringfwd.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcborcommon.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobjectdefs.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobjectdefs_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfunctionaltools_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmetatype.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdatastream.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qscopedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiodevicebase.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfloat16.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qhashfunctions.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstring.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qchar.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringliteral.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlatin1stringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qanystringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qutf8stringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringtokenizer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringbuilder.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringconverter.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringconverter_base.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmath.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtformat_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiterable.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmetacontainer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainerinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtaggedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qscopeguard.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdatetime.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcalendar.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlocale.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvariant.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdebug.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtextstream.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontiguouscache.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsharedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qshareddata.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsharedpointer_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiterator.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearraylist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringlist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringmatcher.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmap.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qshareddata_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qset.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qhash.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvarlengtharray.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q23utility.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20utility.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobject.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcoreevent.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbasictimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qabstracteventdispatcher.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qeventloop.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdeadlinetimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qelapsedtimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobject_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbindingstorage.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qregularexpression.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qurl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/quuid.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qendian.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsondocument.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonparseerror.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QVector \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvector.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QString \
+		Pipeline/ISelectionBlock.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QObject \
+		release/moc/moc_predefs.h \
+		../../../../Qt/6.9.2/gcc_64/libexec/moc
+	/home/denis/Qt/6.9.2/gcc_64/libexec/moc $(DEFINES) --include /home/denis/work/github/IbTradeQtDev/IbTradeQt/release/moc/moc_predefs.h -I/home/denis/Qt/6.9.2/gcc_64/mkspecs/linux-g++ -I/home/denis/work/github/IbTradeQtDev/IbTradeQt -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Backtest -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Pipeline -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Ports -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/ThirdParty -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Adapters -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Testing -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Replay -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Blocks -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Plugin -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Supervision -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Logging -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Metrics -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Brokers/IB/Shared -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Brokers/IB/addon -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/ReqManager -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/QCustomPlot -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/PairTrader -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/MainSystem -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/MainSystem/WorkspaceWidgets -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Logger -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/IBComm -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/DB -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/CustomWidgets -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Common -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/CObjects -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/AlphaModelGetTime -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/AboutDialog -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Strategies/Generic -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Backend -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/SharedUI -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/StrategyManagementUI -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Strategies/StateMachine -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/GeneratedIncludes -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/DBStore -I/home/denis/work/github/IbTradeQtDev/IbTradeQt/Libs -I/usr/include/postgresql -I/home/denis/Qt/6.9.2/gcc_64/include -I/home/denis/Qt/6.9.2/gcc_64/include/QtCharts -I/home/denis/Qt/6.9.2/gcc_64/include/QtOpenGLWidgets -I/home/denis/Qt/6.9.2/gcc_64/include/QtPrintSupport -I/home/denis/Qt/6.9.2/gcc_64/include/QtWidgets -I/home/denis/Qt/6.9.2/gcc_64/include/QtOpenGL -I/home/denis/Qt/6.9.2/gcc_64/include/QtSvg -I/home/denis/Qt/6.9.2/gcc_64/include/QtGui -I/home/denis/Qt/6.9.2/gcc_64/include/QtSql -I/home/denis/Qt/6.9.2/gcc_64/include/QtNetwork -I/home/denis/Qt/6.9.2/gcc_64/include/QtCore -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/gcc/x86_64-linux-gnu/13/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include Blocks/PassAllSelectionBlock.h -o release/moc/moc_PassAllSelectionBlock.cpp
 
 release/moc/moc_MeanReversionAlphaBlock.cpp: Blocks/MeanReversionAlphaBlock.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QJsonObject \
@@ -7184,6 +7552,7 @@ release/moc/moc_AlphaModelAdapter.cpp: Adapters/AlphaModelAdapter.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonarray.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMetaType \
 		Pipeline/PipelineRuntimeContext.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMap \
 		Pipeline/IHistoricalRead.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QVector \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvector.h \
@@ -7198,7 +7567,6 @@ release/moc/moc_AlphaModelAdapter.cpp: Adapters/AlphaModelAdapter.h \
 		Strategies/Generic/cgenericmodelApi.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QVariantMap \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvariantmap.h \
-		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMap \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QVariant \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QEnableSharedFromThis \
 		Strategies/Generic/ModelType.h \
@@ -9654,6 +10022,7 @@ release/moc/moc_capplicationcontroller.cpp: MainSystem/capplicationcontroller.h 
 		../../../../Qt/6.9.2/gcc_64/include/QtGui/qrgba64.h \
 		Backend/IModelTreeRepository.h \
 		Backend/ModelNodeRecord.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QStringList \
 		Backend/SystemBackendImpl.h \
 		Backend/ISystemBackend.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QJsonArray \
@@ -9816,7 +10185,6 @@ release/moc/moc_capplicationcontroller.cpp: MainSystem/capplicationcontroller.h 
 		Supervision/StrategyRuntime.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QElapsedTimer \
 		Pipeline/StrategyPipelineRunner.h \
-		../../../../Qt/6.9.2/gcc_64/include/QtCore/QStringList \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QVector \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvector.h \
 		Pipeline/StrategyRuntimePolicy.h \
@@ -14160,6 +14528,8 @@ release/moc/moc_BacktestSession.cpp: Backtest/BacktestSession.h \
 		Pipeline/IMarketDataAccessor.h \
 		Backtest/BacktestHistoricalReadAdapter.h \
 		Pipeline/IHistoricalRead.h \
+		Pipeline/NoOpSubscriptionPort.h \
+		Pipeline/IDataSubscriptionPort.h \
 		Backtest/SimulatedExecutionAdapter.h \
 		Ports/IOrderExecutionPort.h \
 		Common/Expected.h \
@@ -14282,7 +14652,6 @@ release/moc/moc_BacktestSession.cpp: Backtest/BacktestSession.h \
 		Backtest/BacktestConstants.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QLatin1StringView \
 		Pipeline/MarketDataCoordinator.h \
-		Pipeline/IDataSubscriptionPort.h \
 		Pipeline/SubscriptionRequestStore.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QHash \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMutex \
@@ -14633,6 +15002,8 @@ release/moc/moc_BacktestController.cpp: Backtest/BacktestController.h \
 		Pipeline/IMarketDataAccessor.h \
 		Backtest/BacktestHistoricalReadAdapter.h \
 		Pipeline/IHistoricalRead.h \
+		Pipeline/NoOpSubscriptionPort.h \
+		Pipeline/IDataSubscriptionPort.h \
 		Backtest/SimulatedExecutionAdapter.h \
 		Ports/IOrderExecutionPort.h \
 		Common/Expected.h \
@@ -14747,7 +15118,6 @@ release/moc/moc_BacktestController.cpp: Backtest/BacktestController.h \
 		Adapters/MockExecutionAdapter.h \
 		Adapters/MockPositionRepository.h \
 		Pipeline/MarketDataCoordinator.h \
-		Pipeline/IDataSubscriptionPort.h \
 		Pipeline/SubscriptionRequestStore.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QHash \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMutex \
@@ -19466,6 +19836,7 @@ release/moc/moc_SystemBackendImpl.cpp: Backend/SystemBackendImpl.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QDateTime \
 		DB/dbdatatypes.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QList \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QStringList \
 		Backend/ModelTreeMapper.h \
 		Strategies/Generic/cgenericmodelApi.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QSharedPointer \
@@ -27114,10 +27485,10 @@ release/obj/dbhandler.o: DB/dbhandler.cpp DB/dbhandler.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QVariant \
 		Common/StorageConfig.h \
 		DB/dbquery.h \
-		../../../../Qt/6.9.2/gcc_64/include/QtSql/QSqlQuery \
-		../../../../Qt/6.9.2/gcc_64/include/QtSql/qsqlquery.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtSql/QSqlError \
 		../../../../Qt/6.9.2/gcc_64/include/QtSql/qsqlerror.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtSql/QSqlQuery \
+		../../../../Qt/6.9.2/gcc_64/include/QtSql/qsqlquery.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QLoggingCategory \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qloggingcategory.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QUuid \
@@ -27498,6 +27869,7 @@ release/obj/capplicationcontroller.o: MainSystem/capplicationcontroller.cpp Main
 		../../../../Qt/6.9.2/gcc_64/include/QtGui/qrgba64.h \
 		Backend/IModelTreeRepository.h \
 		Backend/ModelNodeRecord.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QStringList \
 		Backend/SystemBackendImpl.h \
 		Backend/ISystemBackend.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QJsonArray \
@@ -27660,7 +28032,6 @@ release/obj/capplicationcontroller.o: MainSystem/capplicationcontroller.cpp Main
 		Supervision/StrategyRuntime.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QElapsedTimer \
 		Pipeline/StrategyPipelineRunner.h \
-		../../../../Qt/6.9.2/gcc_64/include/QtCore/QStringList \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QVector \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvector.h \
 		Pipeline/StrategyRuntimePolicy.h \
@@ -27762,6 +28133,7 @@ release/obj/capplicationcontroller.o: MainSystem/capplicationcontroller.cpp Main
 		Blocks/MovingAverageCrossoverAlphaBlock.h \
 		Blocks/MaxPositionRiskBlock.h \
 		Blocks/MarketOrderExecutionBlock.h \
+		Blocks/SimpleRebalanceBlock.h \
 		Blocks/LimitOrderExecutionBlock.h \
 		Blocks/StaticListSelectionBlock.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/obj/capplicationcontroller.o MainSystem/capplicationcontroller.cpp
@@ -27917,6 +28289,7 @@ release/obj/UiLayoutStore.o: MainSystem/UiLayoutStore.cpp MainSystem/UiLayoutSto
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QDateTime \
 		DB/dbdatatypes.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QList \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QStringList \
 		MainSystem/ibtradesystemview.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtWidgets/QMainWindow \
 		../../../../Qt/6.9.2/gcc_64/include/QtWidgets/qmainwindow.h \
@@ -34746,6 +35119,7 @@ release/obj/main.o: main.cpp MainSystem/capplicationcontroller.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtGui/qrgba64.h \
 		Backend/IModelTreeRepository.h \
 		Backend/ModelNodeRecord.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QStringList \
 		Backend/SystemBackendImpl.h \
 		Backend/ISystemBackend.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QJsonArray \
@@ -34908,7 +35282,6 @@ release/obj/main.o: main.cpp MainSystem/capplicationcontroller.h \
 		Supervision/StrategyRuntime.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QElapsedTimer \
 		Pipeline/StrategyPipelineRunner.h \
-		../../../../Qt/6.9.2/gcc_64/include/QtCore/QStringList \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QVector \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvector.h \
 		Pipeline/StrategyRuntimePolicy.h \
@@ -40524,6 +40897,8 @@ release/obj/BacktestWorkspaceCoordinator.o: MainSystem/BacktestWorkspaceCoordina
 		Pipeline/IMarketDataAccessor.h \
 		Backtest/BacktestHistoricalReadAdapter.h \
 		Pipeline/IHistoricalRead.h \
+		Pipeline/NoOpSubscriptionPort.h \
+		Pipeline/IDataSubscriptionPort.h \
 		Backtest/SimulatedExecutionAdapter.h \
 		Ports/IOrderExecutionPort.h \
 		Common/Expected.h \
@@ -40626,12 +41001,13 @@ release/obj/BacktestWorkspaceCoordinator.o: MainSystem/BacktestWorkspaceCoordina
 		Adapters/MockExecutionAdapter.h \
 		Adapters/MockPositionRepository.h \
 		Pipeline/MarketDataCoordinator.h \
-		Pipeline/IDataSubscriptionPort.h \
 		Pipeline/SubscriptionRequestStore.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMutex \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMetaObject \
 		Strategies/Generic/cbasicroot.h \
 		DB/dbquery.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtSql/QSqlError \
+		../../../../Qt/6.9.2/gcc_64/include/QtSql/qsqlerror.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtSql/QSqlQuery \
 		../../../../Qt/6.9.2/gcc_64/include/QtSql/qsqlquery.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtWidgets/QMessageBox \
@@ -43358,6 +43734,7 @@ release/obj/SimulatedExecutionAdapter.o: Backtest/SimulatedExecutionAdapter.cpp 
 		Backtest/FilledOrder.h \
 		Backtest/MarketPriceStore.h \
 		Common/IClock.h \
+		Pipeline/IHistoricalRead.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QLoggingCategory \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qloggingcategory.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/obj/SimulatedExecutionAdapter.o Backtest/SimulatedExecutionAdapter.cpp
@@ -43662,6 +44039,8 @@ release/obj/BacktestSession.o: Backtest/BacktestSession.cpp Backtest/BacktestSes
 		Pipeline/IMarketDataAccessor.h \
 		Backtest/BacktestHistoricalReadAdapter.h \
 		Pipeline/IHistoricalRead.h \
+		Pipeline/NoOpSubscriptionPort.h \
+		Pipeline/IDataSubscriptionPort.h \
 		Backtest/SimulatedExecutionAdapter.h \
 		Ports/IOrderExecutionPort.h \
 		Common/Expected.h \
@@ -43784,7 +44163,6 @@ release/obj/BacktestSession.o: Backtest/BacktestSession.cpp Backtest/BacktestSes
 		Backtest/BacktestConstants.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QLatin1StringView \
 		Pipeline/MarketDataCoordinator.h \
-		Pipeline/IDataSubscriptionPort.h \
 		Pipeline/SubscriptionRequestStore.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QHash \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMutex \
@@ -44649,16 +45027,17 @@ release/obj/YahooFinanceDataSource.o: Backtest/YahooFinanceDataSource.cpp Backte
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QHash \
 		DB/dbdatatypes.h \
 		DB/dbquery.h \
-		../../../../Qt/6.9.2/gcc_64/include/QtSql/QSqlQuery \
-		../../../../Qt/6.9.2/gcc_64/include/QtSql/qsqlquery.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtSql/QSqlDatabase \
+		../../../../Qt/6.9.2/gcc_64/include/QtSql/qsqldatabase.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtSql/qtsqlglobal.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtSql/qtsql-config.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtSql/qtsqlexports.h \
-		../../../../Qt/6.9.2/gcc_64/include/QtSql/qsqldatabase.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmetaobject.h \
-		../../../../Qt/6.9.2/gcc_64/include/QtCore/QJsonDocument \
 		../../../../Qt/6.9.2/gcc_64/include/QtSql/QSqlError \
 		../../../../Qt/6.9.2/gcc_64/include/QtSql/qsqlerror.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtSql/QSqlQuery \
+		../../../../Qt/6.9.2/gcc_64/include/QtSql/qsqlquery.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QJsonDocument \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QUrlQuery \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qurlquery.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QTimeZone \
@@ -45286,15 +45665,17 @@ release/obj/InstrumentMetadataResolver.o: Backtest/InstrumentMetadataResolver.cp
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcalendar.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlocale.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QList \
-		../../../../Qt/6.9.2/gcc_64/include/QtSql/QSqlQuery \
-		../../../../Qt/6.9.2/gcc_64/include/QtSql/qsqlquery.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtSql/QSqlDatabase \
+		../../../../Qt/6.9.2/gcc_64/include/QtSql/qsqldatabase.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtSql/qtsqlglobal.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtSql/qtsql-config.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtSql/qtsqlexports.h \
-		../../../../Qt/6.9.2/gcc_64/include/QtSql/qsqldatabase.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmetaobject.h \
-		Strategies/Generic/mandatoryFieldKeys.h \
-		../../../../Qt/6.9.2/gcc_64/include/QtSql/QSqlDatabase
+		../../../../Qt/6.9.2/gcc_64/include/QtSql/QSqlError \
+		../../../../Qt/6.9.2/gcc_64/include/QtSql/qsqlerror.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtSql/QSqlQuery \
+		../../../../Qt/6.9.2/gcc_64/include/QtSql/qsqlquery.h \
+		Strategies/Generic/mandatoryFieldKeys.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/obj/InstrumentMetadataResolver.o Backtest/InstrumentMetadataResolver.cpp
 
 release/obj/AssetUniverseInput.o: Backtest/AssetUniverseInput.cpp Backtest/AssetUniverseInput.h \
@@ -45580,14 +45961,16 @@ release/obj/InstrumentMetadataIb.o: Backtest/InstrumentMetadataIb.cpp Backtest/I
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbindingstorage.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QList \
 		DB/dbquery.h \
-		../../../../Qt/6.9.2/gcc_64/include/QtSql/QSqlQuery \
-		../../../../Qt/6.9.2/gcc_64/include/QtSql/qsqlquery.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtSql/QSqlDatabase \
+		../../../../Qt/6.9.2/gcc_64/include/QtSql/qsqldatabase.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtSql/qtsqlglobal.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtSql/qtsql-config.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtSql/qtsqlexports.h \
-		../../../../Qt/6.9.2/gcc_64/include/QtSql/qsqldatabase.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmetaobject.h \
-		../../../../Qt/6.9.2/gcc_64/include/QtSql/QSqlDatabase
+		../../../../Qt/6.9.2/gcc_64/include/QtSql/QSqlError \
+		../../../../Qt/6.9.2/gcc_64/include/QtSql/qsqlerror.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtSql/QSqlQuery \
+		../../../../Qt/6.9.2/gcc_64/include/QtSql/qsqlquery.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/obj/InstrumentMetadataIb.o Backtest/InstrumentMetadataIb.cpp
 
 release/obj/HistoricalDataManager.o: Backtest/HistoricalDataManager.cpp Backtest/HistoricalDataManager.h \
@@ -45792,14 +46175,16 @@ release/obj/HistoricalDataManager.o: Backtest/HistoricalDataManager.cpp Backtest
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QIODevice \
 		../../../../Qt/6.9.2/gcc_64/include/QtNetwork/QNetworkRequest \
 		DB/dbquery.h \
-		../../../../Qt/6.9.2/gcc_64/include/QtSql/QSqlQuery \
-		../../../../Qt/6.9.2/gcc_64/include/QtSql/qsqlquery.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtSql/QSqlError \
 		../../../../Qt/6.9.2/gcc_64/include/QtSql/qsqlerror.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtSql/QSqlQuery \
+		../../../../Qt/6.9.2/gcc_64/include/QtSql/qsqlquery.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QTimer \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtimer.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QLoggingCategory \
-		../../../../Qt/6.9.2/gcc_64/include/QtCore/qloggingcategory.h
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qloggingcategory.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QThread \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qthread.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/obj/HistoricalDataManager.o Backtest/HistoricalDataManager.cpp
 
 release/obj/BacktestController.o: Backtest/BacktestController.cpp Backtest/BacktestController.h \
@@ -45973,6 +46358,8 @@ release/obj/BacktestController.o: Backtest/BacktestController.cpp Backtest/Backt
 		Pipeline/IMarketDataAccessor.h \
 		Backtest/BacktestHistoricalReadAdapter.h \
 		Pipeline/IHistoricalRead.h \
+		Pipeline/NoOpSubscriptionPort.h \
+		Pipeline/IDataSubscriptionPort.h \
 		Backtest/SimulatedExecutionAdapter.h \
 		Ports/IOrderExecutionPort.h \
 		Common/Expected.h \
@@ -46087,18 +46474,20 @@ release/obj/BacktestController.o: Backtest/BacktestController.cpp Backtest/Backt
 		Adapters/MockExecutionAdapter.h \
 		Adapters/MockPositionRepository.h \
 		Pipeline/MarketDataCoordinator.h \
-		Pipeline/IDataSubscriptionPort.h \
 		Pipeline/SubscriptionRequestStore.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QHash \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMutex \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmutex.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtsan_impl.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMetaObject \
+		Backtest/BacktestMetricsMapper.h \
 		Backtest/BacktestRunPersistence.h \
 		Backtest/HistoricalDataManager.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QEventLoop \
 		Pipeline/UniverseResolver.h \
 		DB/dbquery.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtSql/QSqlError \
+		../../../../Qt/6.9.2/gcc_64/include/QtSql/qsqlerror.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtSql/QSqlQuery \
 		../../../../Qt/6.9.2/gcc_64/include/QtSql/qsqlquery.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QCoreApplication \
@@ -46112,10 +46501,1466 @@ release/obj/BacktestController.o: Backtest/BacktestController.cpp Backtest/Backt
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qthreadpool.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qrunnable.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qexception.h \
-		../../../../Qt/6.9.2/gcc_64/include/QtCore/qpromise.h \
-		../../../../Qt/6.9.2/gcc_64/include/QtSql/QSqlError \
-		../../../../Qt/6.9.2/gcc_64/include/QtSql/qsqlerror.h
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qpromise.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/obj/BacktestController.o Backtest/BacktestController.cpp
+
+release/obj/BacktestStatistics.o: Backtest/BacktestStatistics.cpp Backtest/BacktestStatistics.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QJsonObject \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonobject.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonvalue.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcborvalue.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearray.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qrefcount.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbasicatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qatomic_cxx11.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qgenericatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompilerdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qprocessordetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsystemdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtconfiginclude.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qconfig.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcore-config.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtconfigmacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtdeprecationdefinitions.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtversionchecks.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtypes.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qassert.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcoreexports.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtdeprecationmarkers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtclasshelpermacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtnoop.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qyieldcpu.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qnamespace.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qglobal.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcoreglobal.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtpreprocessorsupport.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtversion.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtypeinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainerfwd.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsysinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlogging.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qflags.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompare_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qconstructormacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdarwinhelpers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qexceptionhandling.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qforeach.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qttypetraits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfunctionpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qglobalstatic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmalloc.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qminmax.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qnumeric.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qoverload.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qswap.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtenvironmentvariables.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtresource.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qttranslation.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qversiontagging.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompare.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstdlibdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcomparehelpers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20type_traits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtmetamacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydata.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qpair.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydatapointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydataops.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainertools_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qxptype_traits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20functional.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20memory.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q17memory.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearrayalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearrayview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringfwd.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcborcommon.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobjectdefs.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobjectdefs_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfunctionaltools_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmetatype.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdatastream.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qscopedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiodevicebase.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfloat16.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qhashfunctions.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstring.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qchar.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringliteral.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlatin1stringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qanystringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qutf8stringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringtokenizer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringbuilder.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringconverter.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringconverter_base.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmath.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtformat_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiterable.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmetacontainer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainerinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtaggedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qscopeguard.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdatetime.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcalendar.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlocale.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvariant.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdebug.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtextstream.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontiguouscache.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsharedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qshareddata.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsharedpointer_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiterator.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearraylist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringlist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringmatcher.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmap.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qshareddata_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qset.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qhash.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvarlengtharray.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q23utility.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20utility.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobject.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcoreevent.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbasictimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qabstracteventdispatcher.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qeventloop.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdeadlinetimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qelapsedtimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobject_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbindingstorage.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qregularexpression.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qurl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/quuid.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qendian.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsondocument.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonparseerror.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QString
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/obj/BacktestStatistics.o Backtest/BacktestStatistics.cpp
+
+release/obj/BacktestStatisticsCalculator.o: Backtest/BacktestStatisticsCalculator.cpp Backtest/BacktestStatisticsCalculator.h \
+		Backtest/BacktestResult.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QVector \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvector.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydatapointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydataops.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydata.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qpair.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainerfwd.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtconfigmacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtconfiginclude.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qconfig.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcore-config.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtdeprecationdefinitions.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompilerdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qprocessordetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsystemdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtversionchecks.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtypes.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qassert.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcoreexports.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtdeprecationmarkers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtclasshelpermacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtnoop.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qglobal.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcoreglobal.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtpreprocessorsupport.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtversion.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtypeinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsysinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlogging.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qflags.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompare_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbasicatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qatomic_cxx11.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qgenericatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qyieldcpu.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qconstructormacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdarwinhelpers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qexceptionhandling.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qforeach.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qttypetraits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfunctionpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qglobalstatic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmalloc.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qminmax.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qnumeric.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qoverload.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qswap.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtenvironmentvariables.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtresource.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qttranslation.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qversiontagging.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainertools_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qxptype_traits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20type_traits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qnamespace.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompare.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstdlibdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcomparehelpers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtmetamacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20functional.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20memory.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q17memory.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qhashfunctions.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstring.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qchar.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearray.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qrefcount.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearrayalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearrayview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringfwd.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringliteral.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlatin1stringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qanystringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qutf8stringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringtokenizer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringbuilder.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringconverter.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringconverter_base.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiterator.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearraylist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringlist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringmatcher.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QDateTime \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdatetime.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcalendar.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlocale.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvariant.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmetatype.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdatastream.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qscopedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiodevicebase.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfloat16.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmath.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtformat_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiterable.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmetacontainer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainerinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtaggedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobjectdefs.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobjectdefs_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfunctionaltools_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qscopeguard.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdebug.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtextstream.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontiguouscache.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsharedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qshareddata.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsharedpointer_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmap.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qshareddata_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qset.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qhash.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvarlengtharray.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q23utility.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20utility.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobject.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcoreevent.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbasictimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qabstracteventdispatcher.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qeventloop.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdeadlinetimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qelapsedtimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobject_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbindingstorage.h \
+		Backtest/FilledOrder.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QString \
+		Backtest/LedgerSnapshot.h \
+		Backtest/DataQuality.h \
+		Backtest/BacktestStatistics.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QJsonObject \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonobject.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonvalue.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcborvalue.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcborcommon.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qregularexpression.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qurl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/quuid.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qendian.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsondocument.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonparseerror.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QHash \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QtMath
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/obj/BacktestStatisticsCalculator.o Backtest/BacktestStatisticsCalculator.cpp
+
+release/obj/HistoricalBarUtils.o: Backtest/HistoricalBarUtils.cpp Backtest/HistoricalBarUtils.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QDateTime \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdatetime.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcalendar.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qglobal.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcoreglobal.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtversionchecks.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtconfiginclude.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qconfig.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcore-config.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtconfigmacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtdeprecationdefinitions.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompilerdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qprocessordetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsystemdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcoreexports.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtdeprecationmarkers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtclasshelpermacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtpreprocessorsupport.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qassert.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtnoop.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtypes.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtversion.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtypeinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainerfwd.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsysinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlogging.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qflags.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompare_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbasicatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qatomic_cxx11.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qgenericatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qyieldcpu.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qconstructormacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdarwinhelpers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qexceptionhandling.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qforeach.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qttypetraits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfunctionpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qglobalstatic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmalloc.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qminmax.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qnumeric.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qoverload.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qswap.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtenvironmentvariables.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtresource.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qttranslation.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qversiontagging.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlocale.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvariant.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompare.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstdlibdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcomparehelpers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20type_traits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmetatype.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearray.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qrefcount.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qnamespace.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtmetamacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydata.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qpair.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydatapointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydataops.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainertools_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qxptype_traits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20functional.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20memory.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q17memory.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearrayalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearrayview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringfwd.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdatastream.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qscopedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiodevicebase.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfloat16.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qhashfunctions.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstring.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qchar.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringliteral.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlatin1stringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qanystringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qutf8stringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringtokenizer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringbuilder.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringconverter.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringconverter_base.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmath.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtformat_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiterable.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmetacontainer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainerinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtaggedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobjectdefs.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobjectdefs_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfunctionaltools_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qscopeguard.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdebug.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtextstream.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontiguouscache.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsharedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qshareddata.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsharedpointer_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiterator.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearraylist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringlist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringmatcher.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmap.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qshareddata_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qset.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qhash.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvarlengtharray.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q23utility.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20utility.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobject.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcoreevent.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbasictimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qabstracteventdispatcher.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qeventloop.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdeadlinetimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qelapsedtimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobject_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbindingstorage.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QVector \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvector.h \
+		IBComm/HistoricalDataRouter.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QObject \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMap \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMetaType
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/obj/HistoricalBarUtils.o Backtest/HistoricalBarUtils.cpp
+
+release/obj/BacktestFillValidation.o: Backtest/BacktestFillValidation.cpp Backtest/BacktestFillValidation.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QDateTime \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdatetime.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcalendar.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qglobal.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcoreglobal.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtversionchecks.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtconfiginclude.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qconfig.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcore-config.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtconfigmacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtdeprecationdefinitions.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompilerdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qprocessordetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsystemdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcoreexports.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtdeprecationmarkers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtclasshelpermacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtpreprocessorsupport.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qassert.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtnoop.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtypes.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtversion.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtypeinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainerfwd.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsysinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlogging.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qflags.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompare_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbasicatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qatomic_cxx11.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qgenericatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qyieldcpu.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qconstructormacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdarwinhelpers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qexceptionhandling.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qforeach.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qttypetraits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfunctionpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qglobalstatic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmalloc.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qminmax.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qnumeric.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qoverload.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qswap.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtenvironmentvariables.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtresource.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qttranslation.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qversiontagging.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlocale.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvariant.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompare.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstdlibdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcomparehelpers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20type_traits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmetatype.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearray.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qrefcount.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qnamespace.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtmetamacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydata.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qpair.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydatapointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydataops.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainertools_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qxptype_traits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20functional.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20memory.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q17memory.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearrayalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearrayview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringfwd.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdatastream.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qscopedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiodevicebase.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfloat16.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qhashfunctions.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstring.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qchar.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringliteral.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlatin1stringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qanystringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qutf8stringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringtokenizer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringbuilder.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringconverter.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringconverter_base.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmath.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtformat_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiterable.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmetacontainer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainerinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtaggedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobjectdefs.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobjectdefs_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfunctionaltools_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qscopeguard.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdebug.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtextstream.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontiguouscache.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsharedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qshareddata.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsharedpointer_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiterator.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearraylist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringlist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringmatcher.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmap.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qshareddata_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qset.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qhash.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvarlengtharray.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q23utility.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20utility.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobject.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcoreevent.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbasictimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qabstracteventdispatcher.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qeventloop.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdeadlinetimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qelapsedtimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobject_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbindingstorage.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMap \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QString \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QVector \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvector.h \
+		Backtest/BacktestResult.h \
+		Backtest/FilledOrder.h \
+		Backtest/LedgerSnapshot.h \
+		Backtest/DataQuality.h \
+		IBComm/HistoricalDataRouter.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QObject \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMetaType \
+		Backtest/HistoricalBarUtils.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/obj/BacktestFillValidation.o Backtest/BacktestFillValidation.cpp
+
+release/obj/SemanticMomentumPipeline.o: Backtest/SemanticMomentumPipeline.cpp Backtest/SemanticMomentumPipeline.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QJsonObject \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonobject.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonvalue.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcborvalue.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearray.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qrefcount.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbasicatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qatomic_cxx11.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qgenericatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompilerdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qprocessordetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsystemdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtconfiginclude.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qconfig.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcore-config.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtconfigmacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtdeprecationdefinitions.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtversionchecks.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtypes.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qassert.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcoreexports.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtdeprecationmarkers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtclasshelpermacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtnoop.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qyieldcpu.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qnamespace.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qglobal.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcoreglobal.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtpreprocessorsupport.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtversion.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtypeinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainerfwd.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsysinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlogging.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qflags.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompare_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qconstructormacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdarwinhelpers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qexceptionhandling.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qforeach.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qttypetraits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfunctionpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qglobalstatic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmalloc.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qminmax.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qnumeric.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qoverload.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qswap.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtenvironmentvariables.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtresource.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qttranslation.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qversiontagging.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompare.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstdlibdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcomparehelpers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20type_traits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtmetamacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydata.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qpair.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydatapointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydataops.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainertools_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qxptype_traits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20functional.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20memory.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q17memory.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearrayalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearrayview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringfwd.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcborcommon.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobjectdefs.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobjectdefs_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfunctionaltools_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmetatype.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdatastream.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qscopedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiodevicebase.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfloat16.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qhashfunctions.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstring.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qchar.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringliteral.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlatin1stringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qanystringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qutf8stringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringtokenizer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringbuilder.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringconverter.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringconverter_base.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmath.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtformat_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiterable.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmetacontainer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainerinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtaggedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qscopeguard.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdatetime.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcalendar.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlocale.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvariant.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdebug.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtextstream.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontiguouscache.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsharedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qshareddata.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsharedpointer_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiterator.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearraylist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringlist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringmatcher.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmap.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qshareddata_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qset.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qhash.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvarlengtharray.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q23utility.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20utility.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobject.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcoreevent.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbasictimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qabstracteventdispatcher.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qeventloop.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdeadlinetimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qelapsedtimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobject_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbindingstorage.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qregularexpression.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qurl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/quuid.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qendian.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsondocument.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonparseerror.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QStringList \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QJsonArray \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonarray.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/obj/SemanticMomentumPipeline.o Backtest/SemanticMomentumPipeline.cpp
+
+release/obj/BacktestReportModel.o: Backtest/BacktestReportModel.cpp Backtest/BacktestReportModel.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QJsonObject \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonobject.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonvalue.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcborvalue.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearray.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qrefcount.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbasicatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qatomic_cxx11.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qgenericatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompilerdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qprocessordetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsystemdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtconfiginclude.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qconfig.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcore-config.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtconfigmacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtdeprecationdefinitions.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtversionchecks.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtypes.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qassert.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcoreexports.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtdeprecationmarkers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtclasshelpermacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtnoop.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qyieldcpu.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qnamespace.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qglobal.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcoreglobal.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtpreprocessorsupport.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtversion.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtypeinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainerfwd.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsysinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlogging.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qflags.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompare_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qconstructormacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdarwinhelpers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qexceptionhandling.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qforeach.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qttypetraits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfunctionpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qglobalstatic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmalloc.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qminmax.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qnumeric.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qoverload.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qswap.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtenvironmentvariables.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtresource.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qttranslation.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qversiontagging.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompare.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstdlibdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcomparehelpers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20type_traits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtmetamacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydata.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qpair.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydatapointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydataops.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainertools_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qxptype_traits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20functional.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20memory.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q17memory.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearrayalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearrayview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringfwd.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcborcommon.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobjectdefs.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobjectdefs_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfunctionaltools_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmetatype.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdatastream.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qscopedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiodevicebase.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfloat16.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qhashfunctions.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstring.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qchar.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringliteral.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlatin1stringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qanystringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qutf8stringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringtokenizer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringbuilder.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringconverter.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringconverter_base.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmath.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtformat_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiterable.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmetacontainer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainerinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtaggedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qscopeguard.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdatetime.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcalendar.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlocale.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvariant.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdebug.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtextstream.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontiguouscache.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsharedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qshareddata.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsharedpointer_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiterator.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearraylist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringlist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringmatcher.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmap.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qshareddata_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qset.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qhash.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvarlengtharray.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q23utility.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20utility.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobject.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcoreevent.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbasictimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qabstracteventdispatcher.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qeventloop.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdeadlinetimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qelapsedtimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobject_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbindingstorage.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qregularexpression.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qurl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/quuid.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qendian.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsondocument.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonparseerror.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QString
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/obj/BacktestReportModel.o Backtest/BacktestReportModel.cpp
+
+release/obj/BacktestReportModelBuilder.o: Backtest/BacktestReportModelBuilder.cpp Backtest/BacktestReportModelBuilder.h \
+		Backtest/BacktestReportContext.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QDateTime \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdatetime.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcalendar.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qglobal.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcoreglobal.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtversionchecks.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtconfiginclude.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qconfig.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcore-config.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtconfigmacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtdeprecationdefinitions.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompilerdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qprocessordetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsystemdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcoreexports.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtdeprecationmarkers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtclasshelpermacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtpreprocessorsupport.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qassert.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtnoop.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtypes.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtversion.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtypeinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainerfwd.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsysinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlogging.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qflags.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompare_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbasicatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qatomic_cxx11.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qgenericatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qyieldcpu.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qconstructormacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdarwinhelpers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qexceptionhandling.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qforeach.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qttypetraits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfunctionpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qglobalstatic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmalloc.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qminmax.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qnumeric.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qoverload.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qswap.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtenvironmentvariables.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtresource.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qttranslation.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qversiontagging.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlocale.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvariant.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompare.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstdlibdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcomparehelpers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20type_traits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmetatype.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearray.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qrefcount.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qnamespace.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtmetamacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydata.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qpair.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydatapointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydataops.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainertools_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qxptype_traits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20functional.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20memory.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q17memory.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearrayalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearrayview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringfwd.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdatastream.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qscopedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiodevicebase.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfloat16.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qhashfunctions.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstring.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qchar.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringliteral.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlatin1stringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qanystringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qutf8stringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringtokenizer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringbuilder.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringconverter.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringconverter_base.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmath.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtformat_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiterable.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmetacontainer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainerinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtaggedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobjectdefs.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobjectdefs_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfunctionaltools_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qscopeguard.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdebug.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtextstream.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontiguouscache.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsharedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qshareddata.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsharedpointer_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiterator.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearraylist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringlist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringmatcher.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmap.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qshareddata_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qset.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qhash.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvarlengtharray.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q23utility.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20utility.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobject.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcoreevent.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbasictimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qabstracteventdispatcher.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qeventloop.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdeadlinetimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qelapsedtimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobject_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbindingstorage.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMap \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QString \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QVector \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvector.h \
+		IBComm/HistoricalDataRouter.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QObject \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMetaType \
+		Backtest/BacktestReportModel.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QJsonObject \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonobject.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonvalue.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcborvalue.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcborcommon.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qregularexpression.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qurl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/quuid.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qendian.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsondocument.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonparseerror.h \
+		Backtest/BacktestResult.h \
+		Backtest/FilledOrder.h \
+		Backtest/LedgerSnapshot.h \
+		Backtest/DataQuality.h \
+		Backtest/BacktestStatistics.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QCoreApplication \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcoreapplication.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qnativeinterface.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcoreapplication_platform.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfuture.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfutureinterface.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmutex.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtsan_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qresultstore.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfuture_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qthreadpool.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qthread.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qrunnable.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qexception.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qpromise.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/obj/BacktestReportModelBuilder.o Backtest/BacktestReportModelBuilder.cpp
+
+release/obj/BacktestHtmlTemplateRenderer.o: Backtest/BacktestHtmlTemplateRenderer.cpp Backtest/BacktestHtmlTemplateRenderer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QJsonObject \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonobject.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonvalue.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcborvalue.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearray.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qrefcount.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbasicatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qatomic_cxx11.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qgenericatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompilerdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qprocessordetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsystemdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtconfiginclude.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qconfig.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcore-config.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtconfigmacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtdeprecationdefinitions.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtversionchecks.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtypes.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qassert.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcoreexports.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtdeprecationmarkers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtclasshelpermacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtnoop.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qyieldcpu.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qnamespace.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qglobal.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcoreglobal.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtpreprocessorsupport.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtversion.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtypeinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainerfwd.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsysinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlogging.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qflags.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompare_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qconstructormacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdarwinhelpers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qexceptionhandling.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qforeach.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qttypetraits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfunctionpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qglobalstatic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmalloc.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qminmax.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qnumeric.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qoverload.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qswap.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtenvironmentvariables.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtresource.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qttranslation.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qversiontagging.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompare.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstdlibdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcomparehelpers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20type_traits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtmetamacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydata.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qpair.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydatapointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydataops.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainertools_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qxptype_traits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20functional.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20memory.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q17memory.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearrayalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearrayview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringfwd.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcborcommon.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobjectdefs.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobjectdefs_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfunctionaltools_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmetatype.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdatastream.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qscopedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiodevicebase.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfloat16.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qhashfunctions.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstring.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qchar.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringliteral.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlatin1stringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qanystringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qutf8stringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringtokenizer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringbuilder.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringconverter.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringconverter_base.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmath.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtformat_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiterable.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmetacontainer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainerinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtaggedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qscopeguard.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdatetime.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcalendar.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlocale.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvariant.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdebug.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtextstream.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontiguouscache.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsharedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qshareddata.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsharedpointer_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiterator.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearraylist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringlist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringmatcher.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmap.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qshareddata_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qset.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qhash.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvarlengtharray.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q23utility.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20utility.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobject.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcoreevent.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbasictimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qabstracteventdispatcher.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qeventloop.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdeadlinetimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qelapsedtimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobject_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbindingstorage.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qregularexpression.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qurl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/quuid.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qendian.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsondocument.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonparseerror.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QString
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/obj/BacktestHtmlTemplateRenderer.o Backtest/BacktestHtmlTemplateRenderer.cpp
+
+release/obj/BacktestMetricsMapper.o: Backtest/BacktestMetricsMapper.cpp Backtest/BacktestMetricsMapper.h \
+		DB/dbdatatypes.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QString \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstring.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qchar.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qglobal.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcoreglobal.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtversionchecks.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtconfiginclude.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qconfig.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcore-config.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtconfigmacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtdeprecationdefinitions.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompilerdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qprocessordetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsystemdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcoreexports.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtdeprecationmarkers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtclasshelpermacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtpreprocessorsupport.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qassert.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtnoop.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtypes.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtversion.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtypeinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainerfwd.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsysinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlogging.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qflags.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompare_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbasicatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qatomic_cxx11.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qgenericatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qyieldcpu.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qconstructormacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdarwinhelpers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qexceptionhandling.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qforeach.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qttypetraits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfunctionpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qglobalstatic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmalloc.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qminmax.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qnumeric.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qoverload.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qswap.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtenvironmentvariables.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtresource.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qttranslation.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qversiontagging.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompare.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstdlibdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcomparehelpers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20type_traits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearray.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qrefcount.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qnamespace.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtmetamacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydata.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qpair.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydatapointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydataops.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainertools_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qxptype_traits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20functional.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20memory.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q17memory.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearrayalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearrayview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringfwd.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringliteral.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlatin1stringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qanystringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qutf8stringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringtokenizer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringbuilder.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringconverter.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringconverter_base.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QDateTime \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdatetime.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcalendar.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlocale.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvariant.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmetatype.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdatastream.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qscopedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiodevicebase.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfloat16.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qhashfunctions.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmath.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtformat_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiterable.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmetacontainer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainerinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtaggedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobjectdefs.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobjectdefs_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfunctionaltools_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qscopeguard.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdebug.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtextstream.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontiguouscache.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsharedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qshareddata.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsharedpointer_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiterator.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearraylist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringlist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringmatcher.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmap.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qshareddata_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qset.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qhash.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvarlengtharray.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q23utility.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20utility.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobject.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcoreevent.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbasictimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qabstracteventdispatcher.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qeventloop.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdeadlinetimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qelapsedtimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobject_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbindingstorage.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QList \
+		Backtest/BacktestResult.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QVector \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvector.h \
+		Backtest/FilledOrder.h \
+		Backtest/LedgerSnapshot.h \
+		Backtest/DataQuality.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/obj/BacktestMetricsMapper.o Backtest/BacktestMetricsMapper.cpp
+
+release/obj/MomentumSemanticHtmlWriter.o: Backtest/Reporting/MomentumSemanticHtmlWriter.cpp Backtest/Reporting/MomentumSemanticHtmlWriter.h \
+		Backtest/BacktestResult.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QVector \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvector.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydatapointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydataops.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydata.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qpair.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainerfwd.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtconfigmacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtconfiginclude.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qconfig.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcore-config.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtdeprecationdefinitions.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompilerdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qprocessordetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsystemdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtversionchecks.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtypes.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qassert.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcoreexports.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtdeprecationmarkers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtclasshelpermacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtnoop.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qglobal.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcoreglobal.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtpreprocessorsupport.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtversion.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtypeinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsysinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlogging.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qflags.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompare_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbasicatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qatomic_cxx11.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qgenericatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qyieldcpu.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qconstructormacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdarwinhelpers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qexceptionhandling.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qforeach.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qttypetraits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfunctionpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qglobalstatic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmalloc.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qminmax.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qnumeric.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qoverload.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qswap.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtenvironmentvariables.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtresource.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qttranslation.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qversiontagging.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainertools_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qxptype_traits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20type_traits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qnamespace.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompare.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstdlibdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcomparehelpers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtmetamacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20functional.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20memory.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q17memory.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qhashfunctions.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstring.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qchar.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearray.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qrefcount.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearrayalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearrayview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringfwd.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringliteral.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlatin1stringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qanystringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qutf8stringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringtokenizer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringbuilder.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringconverter.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringconverter_base.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiterator.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearraylist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringlist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringmatcher.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QDateTime \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdatetime.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcalendar.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlocale.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvariant.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmetatype.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdatastream.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qscopedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiodevicebase.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfloat16.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmath.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtformat_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiterable.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmetacontainer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainerinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtaggedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobjectdefs.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobjectdefs_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfunctionaltools_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qscopeguard.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdebug.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtextstream.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontiguouscache.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsharedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qshareddata.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsharedpointer_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmap.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qshareddata_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qset.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qhash.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvarlengtharray.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q23utility.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20utility.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobject.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcoreevent.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbasictimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qabstracteventdispatcher.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qeventloop.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdeadlinetimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qelapsedtimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobject_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbindingstorage.h \
+		Backtest/FilledOrder.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QString \
+		Backtest/LedgerSnapshot.h \
+		Backtest/DataQuality.h \
+		Backtest/HistoricalBarUtils.h \
+		IBComm/HistoricalDataRouter.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QObject \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMap \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMetaType \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QPointF \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qpoint.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QStringList \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QTextStream \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QFile \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfile.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfiledevice.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiodevice.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qspan.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20iterator.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QDate \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QHash
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/obj/MomentumSemanticHtmlWriter.o Backtest/Reporting/MomentumSemanticHtmlWriter.cpp
 
 release/obj/BacktestWorkspaceDock.o: BacktestUI/BacktestWorkspaceDock.cpp BacktestUI/BacktestWorkspaceDock.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtWidgets/QDockWidget \
@@ -51977,7 +53822,8 @@ release/obj/StrategyPipelineRunner.o: Pipeline/StrategyPipelineRunner.cpp Pipeli
 		Common/Expected.h \
 		ThirdParty/expected.hpp \
 		Ports/IPositionRepositoryPort.h \
-		IBComm/MarketDataRouter.h
+		IBComm/MarketDataRouter.h \
+		Pipeline/IDataSubscriptionPort.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/obj/StrategyPipelineRunner.o Pipeline/StrategyPipelineRunner.cpp
 
 release/obj/IAlphaBlock.o: Pipeline/IAlphaBlock.cpp Pipeline/IAlphaBlock.h \
@@ -52126,6 +53972,7 @@ release/obj/IAlphaBlock.o: Pipeline/IAlphaBlock.cpp Pipeline/IAlphaBlock.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonarray.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMetaType \
 		Pipeline/PipelineRuntimeContext.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMap \
 		Pipeline/IHistoricalRead.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QVector \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvector.h \
@@ -52289,6 +54136,9 @@ release/obj/IRebalanceBlock.o: Pipeline/IRebalanceBlock.cpp Pipeline/IRebalanceB
 		Strategies/Generic/UnifiedModelData.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QList \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QSharedPointer \
+		Pipeline/PipelineRuntimeContext.h \
+		Pipeline/IHistoricalRead.h \
+		Pipeline/IMarketDataAccessor.h \
 		Pipeline/SemanticModelDataMapper.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QStringList
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/obj/IRebalanceBlock.o Pipeline/IRebalanceBlock.cpp
@@ -52445,8 +54295,11 @@ release/obj/IRiskBlock.o: Pipeline/IRiskBlock.cpp Pipeline/IRiskBlock.h \
 		Strategies/Generic/UnifiedModelData.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QList \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QSharedPointer \
-		Pipeline/SemanticModelDataMapper.h \
+		Pipeline/PipelineRuntimeContext.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMap \
+		Pipeline/IHistoricalRead.h \
+		Pipeline/IMarketDataAccessor.h \
+		Pipeline/SemanticModelDataMapper.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QStringList
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/obj/IRiskBlock.o Pipeline/IRiskBlock.cpp
 
@@ -53188,9 +55041,10 @@ release/obj/MarketDataCoordinator.o: Pipeline/MarketDataCoordinator.cpp Pipeline
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/obj/MarketDataCoordinator.o Pipeline/MarketDataCoordinator.cpp
 
 release/obj/SubscriptionRequestStore.o: Pipeline/SubscriptionRequestStore.cpp Pipeline/SubscriptionRequestStore.h \
-		../../../../Qt/6.9.2/gcc_64/include/QtCore/QHash \
-		../../../../Qt/6.9.2/gcc_64/include/QtCore/qhash.h \
-		../../../../Qt/6.9.2/gcc_64/include/QtCore/qalgorithms.h \
+		Pipeline/IDataSubscriptionPort.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QString \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstring.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qchar.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qglobal.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcoreglobal.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtversionchecks.h \
@@ -53237,15 +55091,10 @@ release/obj/SubscriptionRequestStore.o: Pipeline/SubscriptionRequestStore.cpp Pi
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtresource.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qttranslation.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qversiontagging.h \
-		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainertools_impl.h \
-		../../../../Qt/6.9.2/gcc_64/include/QtCore/qxptype_traits.h \
-		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20type_traits.h \
-		../../../../Qt/6.9.2/gcc_64/include/QtCore/qhashfunctions.h \
-		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstring.h \
-		../../../../Qt/6.9.2/gcc_64/include/QtCore/qchar.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompare.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstdlibdetection.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcomparehelpers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20type_traits.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringview.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearray.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qrefcount.h \
@@ -53255,6 +55104,8 @@ release/obj/SubscriptionRequestStore.o: Pipeline/SubscriptionRequestStore.cpp Pi
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qpair.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydatapointer.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydataops.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainertools_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qxptype_traits.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20functional.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20memory.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/q17memory.h \
@@ -53270,11 +55121,17 @@ release/obj/SubscriptionRequestStore.o: Pipeline/SubscriptionRequestStore.cpp Pi
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringbuilder.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringconverter.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringconverter_base.h \
-		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiterator.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QVector \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvector.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qhashfunctions.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiterator.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearraylist.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringlist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qalgorithms.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringmatcher.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QHash \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qhash.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMutex \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmutex.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdeadlinetimer.h \
@@ -53295,13 +55152,252 @@ release/obj/SubscriptionRequestStore.o: Pipeline/SubscriptionRequestStore.cpp Pi
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfunctionaltools_impl.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qscopeguard.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtsan_impl.h \
-		../../../../Qt/6.9.2/gcc_64/include/QtCore/QString \
-		../../../../Qt/6.9.2/gcc_64/include/QtCore/QVector \
-		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvector.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMutexLocker \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QSet \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qset.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/obj/SubscriptionRequestStore.o Pipeline/SubscriptionRequestStore.cpp
+
+release/obj/NoOpSubscriptionPort.o: Pipeline/NoOpSubscriptionPort.cpp Pipeline/NoOpSubscriptionPort.h \
+		Pipeline/IDataSubscriptionPort.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QString \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstring.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qchar.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qglobal.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcoreglobal.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtversionchecks.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtconfiginclude.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qconfig.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcore-config.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtconfigmacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtdeprecationdefinitions.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompilerdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qprocessordetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsystemdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcoreexports.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtdeprecationmarkers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtclasshelpermacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtpreprocessorsupport.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qassert.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtnoop.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtypes.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtversion.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtypeinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainerfwd.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsysinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlogging.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qflags.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompare_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbasicatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qatomic_cxx11.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qgenericatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qyieldcpu.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qconstructormacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdarwinhelpers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qexceptionhandling.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qforeach.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qttypetraits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfunctionpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qglobalstatic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmalloc.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qminmax.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qnumeric.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qoverload.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qswap.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtenvironmentvariables.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtresource.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qttranslation.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qversiontagging.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompare.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstdlibdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcomparehelpers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20type_traits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearray.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qrefcount.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qnamespace.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtmetamacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydata.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qpair.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydatapointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydataops.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainertools_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qxptype_traits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20functional.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20memory.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q17memory.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearrayalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearrayview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringfwd.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringliteral.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlatin1stringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qanystringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qutf8stringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringtokenizer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringbuilder.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringconverter.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringconverter_base.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QVector \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvector.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qhashfunctions.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiterator.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearraylist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringlist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringmatcher.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/obj/NoOpSubscriptionPort.o Pipeline/NoOpSubscriptionPort.cpp
+
+release/obj/RouterMarketDataAccessor.o: Pipeline/RouterMarketDataAccessor.cpp Pipeline/RouterMarketDataAccessor.h \
+		Pipeline/IMarketDataAccessor.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QString \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstring.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qchar.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qglobal.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcoreglobal.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtversionchecks.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtconfiginclude.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qconfig.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcore-config.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtconfigmacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtdeprecationdefinitions.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompilerdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qprocessordetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsystemdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcoreexports.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtdeprecationmarkers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtclasshelpermacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtpreprocessorsupport.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qassert.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtnoop.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtypes.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtversion.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtypeinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainerfwd.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsysinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlogging.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qflags.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompare_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbasicatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qatomic_cxx11.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qgenericatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qyieldcpu.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qconstructormacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdarwinhelpers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qexceptionhandling.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qforeach.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qttypetraits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfunctionpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qglobalstatic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmalloc.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qminmax.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qnumeric.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qoverload.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qswap.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtenvironmentvariables.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtresource.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qttranslation.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qversiontagging.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompare.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstdlibdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcomparehelpers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20type_traits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearray.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qrefcount.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qnamespace.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtmetamacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydata.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qpair.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydatapointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydataops.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainertools_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qxptype_traits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20functional.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20memory.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q17memory.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearrayalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearrayview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringfwd.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringliteral.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlatin1stringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qanystringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qutf8stringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringtokenizer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringbuilder.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringconverter.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringconverter_base.h \
+		Pipeline/Contracts.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QObject \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobject.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobjectdefs.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobjectdefs_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfunctionaltools_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qhashfunctions.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiterator.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearraylist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringlist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringmatcher.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcoreevent.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbasictimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qabstracteventdispatcher.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qeventloop.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdeadlinetimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qelapsedtimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmetatype.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdatastream.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qscopedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiodevicebase.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfloat16.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmath.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtformat_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiterable.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmetacontainer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainerinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtaggedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qscopeguard.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobject_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbindingstorage.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QDateTime \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdatetime.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcalendar.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlocale.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvariant.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdebug.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtextstream.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontiguouscache.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsharedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qshareddata.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsharedpointer_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmap.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qshareddata_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qset.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qhash.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvarlengtharray.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q23utility.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20utility.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QJsonObject \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonobject.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonvalue.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcborvalue.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcborcommon.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qregularexpression.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qurl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/quuid.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qendian.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsondocument.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonparseerror.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QJsonArray \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonarray.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMetaType \
+		IBComm/MarketDataRouter.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMap
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/obj/RouterMarketDataAccessor.o Pipeline/RouterMarketDataAccessor.cpp
 
 release/obj/PipelineFactory.o: Pipeline/PipelineFactory.cpp Pipeline/PipelineFactory.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QJsonObject \
@@ -53496,6 +55592,8 @@ release/obj/PipelineFactory.o: Pipeline/PipelineFactory.cpp Pipeline/PipelineFac
 		Blocks/MovingAverageCrossoverAlphaBlock.h \
 		Blocks/MaxPositionRiskBlock.h \
 		Blocks/MarketOrderExecutionBlock.h \
+		Blocks/SimpleRebalanceBlock.h \
+		Blocks/PassAllSelectionBlock.h \
 		Blocks/LimitOrderExecutionBlock.h \
 		Blocks/StaticListSelectionBlock.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/obj/PipelineFactory.o Pipeline/PipelineFactory.cpp
@@ -54445,9 +56543,6 @@ release/obj/MomentumAlphaBlock.o: Blocks/MomentumAlphaBlock.cpp Blocks/MomentumA
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qendian.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsondocument.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonparseerror.h \
-		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMap \
-		../../../../Qt/6.9.2/gcc_64/include/QtCore/QVector \
-		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvector.h \
 		Pipeline/IAlphaBlock.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QObject \
 		Pipeline/Contracts.h \
@@ -54457,16 +56552,20 @@ release/obj/MomentumAlphaBlock.o: Blocks/MomentumAlphaBlock.cpp Blocks/MomentumA
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonarray.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMetaType \
 		Pipeline/PipelineRuntimeContext.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMap \
 		Pipeline/IHistoricalRead.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QVector \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvector.h \
 		Pipeline/IMarketDataAccessor.h \
 		Pipeline/SemanticTypes.h \
 		Strategies/Generic/UnifiedModelData.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QList \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QSharedPointer \
 		Common/IClock.h \
+		Pipeline/BlockSubscriptionUtils.h \
+		Pipeline/IDataSubscriptionPort.h \
 		Pipeline/SemanticModelDataMapper.h \
-		../../../../Qt/6.9.2/gcc_64/include/QtCore/QStringList \
-		../../../../Qt/6.9.2/gcc_64/include/QtCore/QUuid
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QStringList
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/obj/MomentumAlphaBlock.o Blocks/MomentumAlphaBlock.cpp
 
 release/obj/MeanReversionAlphaBlock.o: Blocks/MeanReversionAlphaBlock.cpp Blocks/MeanReversionAlphaBlock.h \
@@ -54626,6 +56725,8 @@ release/obj/MeanReversionAlphaBlock.o: Blocks/MeanReversionAlphaBlock.cpp Blocks
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QList \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QSharedPointer \
 		Common/IClock.h \
+		Pipeline/BlockSubscriptionUtils.h \
+		Pipeline/IDataSubscriptionPort.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QUuid
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/obj/MeanReversionAlphaBlock.o Blocks/MeanReversionAlphaBlock.cpp
 
@@ -54928,6 +57029,7 @@ release/obj/MaxPositionRiskBlock.o: Blocks/MaxPositionRiskBlock.cpp Blocks/MaxPo
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsondocument.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonparseerror.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMap \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QSet \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QVector \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvector.h \
 		Pipeline/IRiskBlock.h \
@@ -54942,7 +57044,16 @@ release/obj/MaxPositionRiskBlock.o: Blocks/MaxPositionRiskBlock.cpp Blocks/MaxPo
 		Pipeline/SemanticTypes.h \
 		Strategies/Generic/UnifiedModelData.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QList \
-		../../../../Qt/6.9.2/gcc_64/include/QtCore/QSharedPointer
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QSharedPointer \
+		Pipeline/BlockSubscriptionUtils.h \
+		Pipeline/IDataSubscriptionPort.h \
+		Pipeline/PipelineRuntimeContext.h \
+		Pipeline/IHistoricalRead.h \
+		Pipeline/IMarketDataAccessor.h \
+		Ports/IPositionRepositoryPort.h \
+		Common/Expected.h \
+		ThirdParty/expected.hpp \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QUuid
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/obj/MaxPositionRiskBlock.o Blocks/MaxPositionRiskBlock.cpp
 
 release/obj/StaticListSelectionBlock.o: Blocks/StaticListSelectionBlock.cpp Blocks/StaticListSelectionBlock.h \
@@ -55088,8 +57199,17 @@ release/obj/StaticListSelectionBlock.o: Blocks/StaticListSelectionBlock.cpp Bloc
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QString \
 		Pipeline/ISelectionBlock.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QObject \
+		Pipeline/BlockSubscriptionUtils.h \
+		Pipeline/IDataSubscriptionPort.h \
+		Pipeline/PipelineRuntimeContext.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMap \
+		Pipeline/IHistoricalRead.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QDateTime \
+		Pipeline/IMarketDataAccessor.h \
+		Pipeline/Contracts.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QJsonArray \
-		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonarray.h
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonarray.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMetaType
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/obj/StaticListSelectionBlock.o Blocks/StaticListSelectionBlock.cpp
 
 release/obj/LimitOrderExecutionBlock.o: Blocks/LimitOrderExecutionBlock.cpp Blocks/LimitOrderExecutionBlock.h \
@@ -55248,6 +57368,9 @@ release/obj/LimitOrderExecutionBlock.o: Blocks/LimitOrderExecutionBlock.cpp Bloc
 		Ports/IOrderExecutionPort.h \
 		Common/Expected.h \
 		ThirdParty/expected.hpp \
+		Pipeline/PipelineRuntimeContext.h \
+		Pipeline/IHistoricalRead.h \
+		Pipeline/IMarketDataAccessor.h \
 		Pipeline/SemanticModelDataMapper.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QStringList
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/obj/LimitOrderExecutionBlock.o Blocks/LimitOrderExecutionBlock.cpp
@@ -55405,14 +57528,322 @@ release/obj/MarketOrderExecutionBlock.o: Blocks/MarketOrderExecutionBlock.cpp Bl
 		Strategies/Generic/UnifiedModelData.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QList \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QSharedPointer \
-		Pipeline/IRebalanceBlock.h \
-		Pipeline/ISelectionBlock.h \
 		Ports/IOrderExecutionPort.h \
 		Common/Expected.h \
 		ThirdParty/expected.hpp \
+		Pipeline/PipelineRuntimeContext.h \
+		Pipeline/IHistoricalRead.h \
+		Pipeline/IMarketDataAccessor.h \
 		Pipeline/SemanticModelDataMapper.h \
-		../../../../Qt/6.9.2/gcc_64/include/QtCore/QStringList
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QStringList \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QLoggingCategory \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qloggingcategory.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/obj/MarketOrderExecutionBlock.o Blocks/MarketOrderExecutionBlock.cpp
+
+release/obj/SimpleRebalanceBlock.o: Blocks/SimpleRebalanceBlock.cpp Blocks/SimpleRebalanceBlock.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QDateTime \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdatetime.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcalendar.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qglobal.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcoreglobal.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtversionchecks.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtconfiginclude.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qconfig.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcore-config.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtconfigmacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtdeprecationdefinitions.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompilerdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qprocessordetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsystemdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcoreexports.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtdeprecationmarkers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtclasshelpermacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtpreprocessorsupport.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qassert.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtnoop.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtypes.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtversion.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtypeinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainerfwd.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsysinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlogging.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qflags.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompare_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbasicatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qatomic_cxx11.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qgenericatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qyieldcpu.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qconstructormacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdarwinhelpers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qexceptionhandling.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qforeach.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qttypetraits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfunctionpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qglobalstatic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmalloc.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qminmax.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qnumeric.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qoverload.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qswap.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtenvironmentvariables.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtresource.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qttranslation.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qversiontagging.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlocale.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvariant.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompare.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstdlibdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcomparehelpers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20type_traits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmetatype.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearray.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qrefcount.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qnamespace.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtmetamacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydata.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qpair.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydatapointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydataops.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainertools_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qxptype_traits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20functional.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20memory.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q17memory.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearrayalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearrayview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringfwd.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdatastream.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qscopedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiodevicebase.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfloat16.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qhashfunctions.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstring.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qchar.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringliteral.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlatin1stringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qanystringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qutf8stringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringtokenizer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringbuilder.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringconverter.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringconverter_base.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmath.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtformat_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiterable.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmetacontainer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainerinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtaggedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobjectdefs.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobjectdefs_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfunctionaltools_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qscopeguard.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdebug.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtextstream.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontiguouscache.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsharedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qshareddata.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsharedpointer_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiterator.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearraylist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringlist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringmatcher.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmap.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qshareddata_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qset.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qhash.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvarlengtharray.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q23utility.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20utility.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobject.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcoreevent.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbasictimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qabstracteventdispatcher.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qeventloop.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdeadlinetimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qelapsedtimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobject_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbindingstorage.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QJsonObject \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonobject.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonvalue.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcborvalue.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcborcommon.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qregularexpression.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qurl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/quuid.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qendian.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsondocument.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonparseerror.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QSet \
+		Pipeline/IRebalanceBlock.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QObject \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QVector \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvector.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMap \
+		Pipeline/Contracts.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QString \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QJsonArray \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonarray.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMetaType \
+		Pipeline/SemanticTypes.h \
+		Strategies/Generic/UnifiedModelData.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QList \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QSharedPointer \
+		Common/IClock.h \
+		Pipeline/PipelineRuntimeContext.h \
+		Pipeline/IHistoricalRead.h \
+		Pipeline/IMarketDataAccessor.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/obj/SimpleRebalanceBlock.o Blocks/SimpleRebalanceBlock.cpp
+
+release/obj/PassAllSelectionBlock.o: Blocks/PassAllSelectionBlock.cpp Blocks/PassAllSelectionBlock.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QJsonObject \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonobject.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonvalue.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcborvalue.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearray.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qrefcount.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbasicatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qatomic_cxx11.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qgenericatomic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompilerdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qprocessordetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsystemdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtconfiginclude.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qconfig.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcore-config.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtconfigmacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtdeprecationdefinitions.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtversionchecks.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtypes.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qassert.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcoreexports.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtdeprecationmarkers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtclasshelpermacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtnoop.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qyieldcpu.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qnamespace.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qglobal.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtcoreglobal.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtpreprocessorsupport.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtversion.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtypeinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainerfwd.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsysinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlogging.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qflags.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompare_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qconstructormacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdarwinhelpers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qexceptionhandling.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qforeach.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qttypetraits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfunctionpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qglobalstatic.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmalloc.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qminmax.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qnumeric.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qoverload.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qswap.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtenvironmentvariables.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtresource.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qttranslation.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qversiontagging.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcompare.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstdlibdetection.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcomparehelpers.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20type_traits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtmetamacros.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydata.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qpair.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydatapointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qarraydataops.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainertools_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qxptype_traits.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20functional.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20memory.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q17memory.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearrayalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearrayview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringfwd.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcborcommon.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobjectdefs.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobjectdefs_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfunctionaltools_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmetatype.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdatastream.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qscopedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiodevicebase.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfloat16.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qhashfunctions.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstring.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qchar.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringliteral.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlatin1stringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qanystringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qutf8stringview.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringtokenizer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringbuilder.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringconverter.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringconverter_base.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmath.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qalgorithms.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtformat_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiterable.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmetacontainer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontainerinfo.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtaggedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qscopeguard.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdatetime.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcalendar.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlocale.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvariant.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdebug.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qtextstream.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcontiguouscache.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsharedpointer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qshareddata.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qsharedpointer_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qlist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qiterator.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbytearraylist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringlist.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qstringmatcher.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qmap.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qshareddata_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qset.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qhash.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvarlengtharray.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q23utility.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/q20utility.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobject.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qcoreevent.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbasictimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qabstracteventdispatcher.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qeventloop.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qdeadlinetimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qelapsedtimer.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qobject_impl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qbindingstorage.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qregularexpression.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qurl.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/quuid.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qendian.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsondocument.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qjsonparseerror.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QVector \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/qvector.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QString \
+		Pipeline/ISelectionBlock.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QObject
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/obj/PassAllSelectionBlock.o Blocks/PassAllSelectionBlock.cpp
 
 release/obj/StrategyRuntime.o: Supervision/StrategyRuntime.cpp Supervision/StrategyRuntime.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QObject \
@@ -55595,7 +58026,9 @@ release/obj/StrategyRuntime.o: Supervision/StrategyRuntime.cpp Supervision/Strat
 		Pipeline/PipelineDefinition.h \
 		IBComm/MarketDataRouter.h \
 		Adapters/LiveHistoricalReadAdapter.h \
-		Pipeline/IDataSubscriptionPort.h
+		Pipeline/IDataSubscriptionPort.h \
+		Pipeline/RouterMarketDataAccessor.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMetaObject
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/obj/StrategyRuntime.o Supervision/StrategyRuntime.cpp
 
 release/obj/Supervisor.o: Supervision/Supervisor.cpp Supervision/Supervisor.h \
@@ -56229,6 +58662,7 @@ release/obj/ModelTreeRepository.o: Backend/ModelTreeRepository.cpp Backend/Model
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QDateTime \
 		DB/dbdatatypes.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QList \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QStringList \
 		../../../../Qt/6.9.2/gcc_64/include/QtSql/QSqlDatabase \
 		../../../../Qt/6.9.2/gcc_64/include/QtSql/qsqldatabase.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtSql/qtsqlglobal.h \
@@ -56390,6 +58824,7 @@ release/obj/ModelTreeRepositoryPostgres.o: Backend/ModelTreeRepositoryPostgres.c
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QDateTime \
 		DB/dbdatatypes.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QList \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QStringList \
 		../../../../Qt/6.9.2/gcc_64/include/QtSql/QSqlDatabase \
 		../../../../Qt/6.9.2/gcc_64/include/QtSql/qsqldatabase.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtSql/qtsqlglobal.h \
@@ -56552,6 +58987,7 @@ release/obj/PersistenceFactory.o: Backend/PersistenceFactory.cpp Backend/Persist
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QDateTime \
 		DB/dbdatatypes.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QList \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QStringList \
 		Backend/ModelTreeRepository.h \
 		Backend/ModelTreeRepositoryPostgres.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/obj/PersistenceFactory.o Backend/PersistenceFactory.cpp
@@ -56969,6 +59405,7 @@ release/obj/SystemBackendImpl.o: Backend/SystemBackendImpl.cpp Backend/SystemBac
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QDateTime \
 		DB/dbdatatypes.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QList \
+		../../../../Qt/6.9.2/gcc_64/include/QtCore/QStringList \
 		Backend/ModelTreeMapper.h \
 		Strategies/Generic/cgenericmodelApi.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QSharedPointer \
@@ -57071,7 +59508,6 @@ release/obj/SystemBackendImpl.o: Backend/SystemBackendImpl.cpp Backend/SystemBac
 		Backtest/BacktestDataTypes.h \
 		Backtest/BacktestConstants.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QLatin1StringView \
-		../../../../Qt/6.9.2/gcc_64/include/QtCore/QStringList \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QJsonDocument \
 		Backtest/BacktestResult.h \
 		Backtest/FilledOrder.h \
@@ -57088,6 +59524,13 @@ release/obj/SystemBackendImpl.o: Backend/SystemBackendImpl.cpp Backend/SystemBac
 		Common/IClock.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QMetaObject \
 		Pipeline/PipelineConstants.h \
+		Common/NHelper.h \
+		Common/StorageConfig.h \
+		DB/dbquery.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtSql/QSqlError \
+		../../../../Qt/6.9.2/gcc_64/include/QtSql/qsqlerror.h \
+		../../../../Qt/6.9.2/gcc_64/include/QtSql/QSqlQuery \
+		../../../../Qt/6.9.2/gcc_64/include/QtSql/qsqlquery.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/QFile \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfile.h \
 		../../../../Qt/6.9.2/gcc_64/include/QtCore/qfiledevice.h \
@@ -60547,6 +62990,12 @@ release/obj/moc_MaxPositionRiskBlock.o: release/moc/moc_MaxPositionRiskBlock.cpp
 
 release/obj/moc_MarketOrderExecutionBlock.o: release/moc/moc_MarketOrderExecutionBlock.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/obj/moc_MarketOrderExecutionBlock.o release/moc/moc_MarketOrderExecutionBlock.cpp
+
+release/obj/moc_SimpleRebalanceBlock.o: release/moc/moc_SimpleRebalanceBlock.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/obj/moc_SimpleRebalanceBlock.o release/moc/moc_SimpleRebalanceBlock.cpp
+
+release/obj/moc_PassAllSelectionBlock.o: release/moc/moc_PassAllSelectionBlock.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/obj/moc_PassAllSelectionBlock.o release/moc/moc_PassAllSelectionBlock.cpp
 
 release/obj/moc_MeanReversionAlphaBlock.o: release/moc/moc_MeanReversionAlphaBlock.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/obj/moc_MeanReversionAlphaBlock.o release/moc/moc_MeanReversionAlphaBlock.cpp

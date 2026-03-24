@@ -10,7 +10,7 @@
 #include "Pipeline/Contracts.h"
 #include "Blocks/MomentumAlphaBlock.h"
 #include "Blocks/MaxPositionRiskBlock.h"
-#include "Blocks/MarketOrderExecutionBlock.h"
+#include "Blocks/SimpleRebalanceBlock.h"
 #include "Blocks/StaticListSelectionBlock.h"
 #include "Adapters/MockExecutionAdapter.h"
 #include "Adapters/MockPositionRepository.h"

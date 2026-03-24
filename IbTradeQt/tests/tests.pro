@@ -73,6 +73,8 @@ SOURCES += \
     backtest/tst_historical_data_manager_cache.cpp \
     backtest/tst_workspace_session.cpp \
     backtest/tst_backtest_run_persistence.cpp \
+    backtest/tst_backtest_statistics.cpp \
+    backtest/tst_backtest_report_golden.cpp \
     ../Brokers/IB/src/Decimal.cpp \
     ../CObjects/caccountsummary.cpp \
     ../CObjects/cposition.cpp \
@@ -125,6 +127,16 @@ SOURCES += \
     ../Backtest/SimulatedLedger.cpp \
     ../Backtest/SimulatedExecutionAdapter.cpp \
     ../Backtest/BacktestMetricsCollector.cpp \
+    ../Backtest/BacktestStatistics.cpp \
+    ../Backtest/BacktestStatisticsCalculator.cpp \
+    ../Backtest/HistoricalBarUtils.cpp \
+    ../Backtest/BacktestFillValidation.cpp \
+    ../Backtest/SemanticMomentumPipeline.cpp \
+    ../Backtest/BacktestReportModel.cpp \
+    ../Backtest/BacktestReportModelBuilder.cpp \
+    ../Backtest/BacktestHtmlTemplateRenderer.cpp \
+    ../Backtest/BacktestMetricsMapper.cpp \
+    ../Backtest/Reporting/MomentumSemanticHtmlWriter.cpp \
     ../Backtest/BacktestSession.cpp \
     ../Backtest/BacktestMarketDataAccessor.cpp \
     ../Backtest/BacktestHistoricalReadAdapter.cpp \
@@ -184,6 +196,8 @@ SOURCES += \
     ../Blocks/StaticListSelectionBlock.cpp \
     ../Blocks/LimitOrderExecutionBlock.cpp \
     ../Blocks/MarketOrderExecutionBlock.cpp \
+    ../Blocks/SimpleRebalanceBlock.cpp \
+    ../Blocks/PassAllSelectionBlock.cpp \
     ../Supervision/StrategyRuntime.cpp \
     ../Supervision/Supervisor.cpp \
     ../Plugin/PluginLoader.cpp \
@@ -230,6 +244,8 @@ HEADERS += \
     ../Blocks/MomentumAlphaBlock.h \
     ../Blocks/MaxPositionRiskBlock.h \
     ../Blocks/MarketOrderExecutionBlock.h \
+    ../Blocks/SimpleRebalanceBlock.h \
+    ../Blocks/PassAllSelectionBlock.h \
     ../Blocks/MeanReversionAlphaBlock.h \
     ../Pipeline/PipelineFactory.h \
     ../Plugin/BlockPlugin.h \
@@ -313,18 +329,20 @@ HEADERS += \
     ../Backtest/HistoricalDataManager.h \
     backtest/tst_backtest.h \
     backtest/tst_yahoo_backtest.h \
-    backtest/tst_momentum_strategy_e2e.h \
     backtest/tst_momentum_three_stock_validation.h \
+    backtest/tst_momentum_hundred_stock_validation.h \
+    backtest/momentum_e2e_universe.h \
     backtest/tst_market_session_utils.h \
     blocks/tst_quant_momentum_blocks.h \
     backtest/tst_instrument_metadata_resolver.h \
     backtest/tst_historical_data_manager_cache.h \
     backtest/tst_backtest_extended.h \
     backtest/tst_live_backtest.h \
-    backtest/tst_semantic_live_historical.h \
     backtest/tst_backtest_engine_coverage.h \
     backtest/tst_workspace_session.h \
     backtest/tst_backtest_run_persistence.h \
+    backtest/tst_backtest_statistics.h \
+    backtest/tst_backtest_report_golden.h \
     db/tst_dbhandler_disconnect.h \
     backend/tst_storage_config.h \
     backend/tst_persistence_factory.h \

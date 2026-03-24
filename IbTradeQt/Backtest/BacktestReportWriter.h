@@ -7,8 +7,10 @@
 #include <QDateTime>
 #include <QDir>
 #include <cmath>
-#include "Backtest/BacktestResult.h"
 #include "Backtest/BacktestConfig.h"
+#include "Backtest/BacktestResult.h"
+#include "Backtest/BacktestStatistics.h"
+#include "Backtest/BacktestStatisticsCalculator.h"
 
 namespace Backtest {
 
@@ -36,8 +38,10 @@ public:
         const QString htmlPath = m_outputDir + "/" + stem + ".html";
         const QString txtPath  = m_outputDir + "/" + stem + ".txt";
 
-        writeTxt(txtPath,  config, result);
-        writeHtml(htmlPath, config, result);
+        BacktestStatisticsCalculator calc;
+        const BacktestStatistics     stats = calc.compute(result);
+        writeTxt(txtPath,  config, result, stats);
+        writeHtml(htmlPath, config, result, stats);
 
         return htmlPath;
     }
@@ -48,7 +52,8 @@ private:
     // -----------------------------------------------------------------------
     void writeTxt(const QString& path,
                   const BacktestConfig& config,
-                  const BacktestResult& result) const
+                  const BacktestResult& result,
+                  const BacktestStatistics& stats) const
     {
         QFile f(path);
         if (!f.open(QIODevice::WriteOnly | QIODevice::Text)) return;
@@ -86,6 +91,11 @@ private:
         out << row("Total trades",     QString::number(result.totalTrades));
         out << row("Equity curve pts", QString::number(result.equityCurve.size()));
         out << row("Data quality",     dataQualityName(result.dataQuality));
+        out << row("Sortino (approx)", QString::number(stats.sortinoRatio, 'f', 4));
+        out << row("Calmar",           QString::number(stats.calmarRatio, 'f', 4));
+        out << row("Profit factor",    QString::number(stats.profitFactor, 'f', 4));
+        out << row("Avg exposure",     pct(stats.averageExposurePct));
+        out << row("Turnover (ann.)",  QString::number(stats.turnoverAnnualized, 'f', 4));
         out << "\n";
 
         if (!result.benchmark.symbol.isEmpty()) {
@@ -135,7 +145,8 @@ private:
     // -----------------------------------------------------------------------
     void writeHtml(const QString& path,
                    const BacktestConfig& config,
-                   const BacktestResult& result) const
+                   const BacktestResult& result,
+                   const BacktestStatistics& stats) const
     {
         QFile f(path);
         if (!f.open(QIODevice::WriteOnly | QIODevice::Text)) return;
@@ -219,6 +230,10 @@ private:
         emitCard(out, "Win Rate",          pct(result.winRate),
                  result.winRate >= 0.5 ? "pos" : "neu");
         emitCard(out, "Total Trades",      QString::number(result.totalTrades), "neu");
+        emitCard(out, "Sortino",           QString::number(stats.sortinoRatio, 'f', 2), "neu");
+        emitCard(out, "Calmar",            QString::number(stats.calmarRatio, 'f', 2), "neu");
+        emitCard(out, "Avg exposure",      pct(stats.averageExposurePct), "neu");
+        emitCard(out, "Turnover (ann.)",   QString::number(stats.turnoverAnnualized, 'f', 2), "neu");
         out << "</div>\n";
 
         // ---- Benchmark KPI cards ----

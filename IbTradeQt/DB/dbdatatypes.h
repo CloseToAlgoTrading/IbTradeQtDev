@@ -144,6 +144,13 @@ struct DbBacktestMetrics {
     double  benchmarkReturn  = 0.0;
     double  benchmarkSharpe  = 0.0;
     double  alpha            = 0.0;
+    double  sortinoRatio           = 0.0;
+    double  calmarRatio            = 0.0;
+    double  profitFactor           = 0.0;
+    double  averageExposurePct     = 0.0;
+    double  turnoverAnnualized     = 0.0;
+    int     metricDefinitionsVersion = 0;
+    QString statisticsJson; ///< Full `BacktestStatistics::toJson` for monthly/yearly arrays and versioning
 };
 
 struct DbBacktestTrade {

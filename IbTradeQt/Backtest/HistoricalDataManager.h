@@ -45,11 +45,19 @@ class HistoricalDataManager : public QObject {
     Q_OBJECT
 
 public:
+    struct Config {
+        int yahooFetchTimeoutMs = 60000;
+        int yahooFetchBatchSize = 20;
+    };
+
     // dbConnectionName: name of the already-open QSqlDatabase connection.
     // networkManager:   shared QNetworkAccessManager (may be nullptr — one is created internally).
     explicit HistoricalDataManager(const QString& dbConnectionName,
                                    QNetworkAccessManager* networkManager = nullptr,
                                    QObject* parent = nullptr);
+
+    void setConfig(const Config& config) { m_config = config; }
+    Config config() const { return m_config; }
 
     // Fetch bars for a single (symbol, resolution, dataSourceId) tuple within [from, to].
     // Queries cache, fetches only missing sub-ranges, inserts into DB, returns full range.
@@ -77,6 +85,24 @@ public:
         QString* dataRefreshedAt = nullptr,
         const QHash<QString, QVariantMap>& strategyAssetBySymbol = {});
 
+    struct PrefetchRetryOptions {
+        int minBarsPerSymbol = 0;
+        int maxRetries       = 0;
+        int firstBackoffMs   = 2000;
+        int laterBackoffMs   = 4000;
+    };
+
+    /// Calls getBarsMulti, then retries symbols with fewer than minBarsPerSymbol (when set) with backoff.
+    QMap<QString, QVector<IBComm::HistoricalBar>> getBarsMultiWithRetry(
+        const QStringList& symbols,
+        const QString& resolution,
+        const QString& dataSourceId,
+        const QDateTime& from,
+        const QDateTime& to,
+        const PrefetchRetryOptions& retry,
+        QString* dataRefreshedAt = nullptr,
+        const QHash<QString, QVariantMap>& strategyAssetBySymbol = {});
+
 private:
     struct CachedRange {
         bool   hasData  = false;
@@ -95,11 +121,19 @@ private:
                                                    const QString& toUtc) const;
 
     // Fetch from Yahoo Finance and insert into cache. Returns fetched bars.
+    // Automatically batches large symbol lists to stay within timeout limits.
     QVector<IBComm::HistoricalBar> fetchAndCache(const QStringList& symbols,
                                                    const QString& resolution,
                                                    const QString& dataSourceId,
                                                    const QDateTime& from,
                                                    const QDateTime& to);
+
+    // Fetch a single batch of symbols from Yahoo Finance (no batching, no caching).
+    QVector<IBComm::HistoricalBar> fetchBatchFromYahoo(const QStringList& symbols,
+                                                         const QDateTime& from,
+                                                         const QDateTime& to,
+                                                         const QString& resolution,
+                                                         int timeoutMs) const;
 
     // Insert bars into HistoricalBars table (INSERT OR REPLACE).
     // Bars with timestamp >= today at daily resolution are skipped.
@@ -114,6 +148,7 @@ private:
     QString                  m_dbConnectionName;
     QNetworkAccessManager*   m_networkManager;
     bool                     m_ownsNetworkManager = false;
+    Config                   m_config;
 };
 
 } // namespace Backtest

@@ -32,13 +32,14 @@
 #include "backtest/tst_historical_data_manager_cache.h"
 #include "backtest/tst_backtest_extended.h"
 #include "backtest/tst_live_backtest.h"
-#include "backtest/tst_semantic_live_historical.h"
 #include "backtest/tst_backtest_engine_coverage.h"
-#include "backtest/tst_momentum_strategy_e2e.h"
 #include "backtest/tst_momentum_three_stock_validation.h"
+#include "backtest/tst_momentum_hundred_stock_validation.h"
 #include "db/tst_dbhandler_disconnect.h"
 #include "backtest/tst_workspace_session.h"
 #include "backtest/tst_backtest_run_persistence.h"
+#include "backtest/tst_backtest_statistics.h"
+#include "backtest/tst_backtest_report_golden.h"
 #include "backend/tst_storage_config.h"
 #include "backend/tst_persistence_factory.h"
 #include "backend/tst_model_tree_repository.h"
@@ -67,6 +68,13 @@
 
 int main(int argc, char *argv[])
 {
+    // Default QTest per-function limit is 300s. The 100-stock Yahoo + long replay can exceed it.
+    if (qEnvironmentVariable("IBTRADING_TEST_CLASS").trimmed()
+            == QStringLiteral("TestMomentumHundredStockValidation")
+        && qEnvironmentVariableIsEmpty("QTEST_FUNCTION_TIMEOUT")) {
+        qputenv("QTEST_FUNCTION_TIMEOUT", QByteArray::number(2LL * 60 * 60 * 1000)); // 2 hours
+    }
+
     QApplication app(argc, argv);
     Pipeline::registerPipelineMetaTypes();
     int status = 0;
@@ -143,11 +151,13 @@ int main(int argc, char *argv[])
     IBTRADING_RUN_TEST(TestYahooBacktestSessionMockFailure, tc);
     IBTRADING_RUN_TEST(TestYahooBacktestPipelineVariants, tc);
     IBTRADING_RUN_TEST(TestBacktestEngineCoverage, tc);
-    IBTRADING_RUN_TEST(TestMomentumStrategyE2E, tc);
     IBTRADING_RUN_TEST(TestMomentumThreeStockValidation, tc);
+    IBTRADING_RUN_TEST(TestMomentumHundredStockValidation, tc);
     IBTRADING_RUN_TEST(TestDbHandlerDisconnect, tc);
     IBTRADING_RUN_TEST(TestWorkspaceSession, tc);
     IBTRADING_RUN_TEST(TestBacktestRunPersistence, tc);
+    IBTRADING_RUN_TEST(TestBacktestStatistics, tc);
+    IBTRADING_RUN_TEST(TestBacktestReportGolden, tc);
 
     // Extended LEGO backtests (CSV + default pipeline JSON). Run: IBTRADING_EXTENDED_BACKTEST=1 ./tests
     if (qEnvironmentVariable("IBTRADING_EXTENDED_BACKTEST") == "1") {
@@ -157,11 +167,6 @@ int main(int argc, char *argv[])
     // Live Yahoo backtests — require internet, write HTML+TXT reports (IBTRADING_LIVE_TESTS=1)
     if (qEnvironmentVariable("IBTRADING_LIVE_TESTS") == "1") {
         IBTRADING_RUN_TEST(TestLiveBacktest, tc);
-    }
-
-    // Yahoo + semanticPipeline / semanticModelRebalance smoke (IBTRADING_SEMANTIC_LIVE_TESTS=1)
-    if (qEnvironmentVariable("IBTRADING_SEMANTIC_LIVE_TESTS") == "1") {
-        IBTRADING_RUN_TEST(TestSemanticPipelineLiveHistorical, tc);
     }
 
     IBTRADING_RUN_TEST(TestStorageConfig, tc);

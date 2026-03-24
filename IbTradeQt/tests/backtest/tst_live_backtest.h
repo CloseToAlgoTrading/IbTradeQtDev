@@ -13,8 +13,7 @@
 // Capital   : $100,000
 // Fill      : MidPrice, SignalOnClose→FillNextBarOpen, 5 bps slippage
 //
-// After each test a report is written to:
-//   $TMPDIR/ibtrading_backtest_reports/  (or /tmp/ibtrading_backtest_reports/)
+// After each test a report is written to tests/outputs/ (SRCDIR/outputs).
 // Both .html and .txt formats are produced.
 // The path is printed to the test output so you can open it directly.
 // ---------------------------------------------------------------------------
@@ -64,8 +63,8 @@ static QString writeMACrossoverConfig(QTemporaryFile& f,
 // ---------------------------------------------------------------------------
 static QString reportDir()
 {
-    const QString base = qEnvironmentVariable("TMPDIR", "/tmp");
-    const QString dir  = base + "/ibtrading_backtest_reports";
+    const QString dir =
+        QDir(QString(SRCDIR)).absoluteFilePath(QStringLiteral("outputs"));
     QDir().mkpath(dir);
     return dir;
 }

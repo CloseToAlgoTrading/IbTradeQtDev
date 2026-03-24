@@ -6,6 +6,7 @@
 #include <QTimer>
 #include "Pipeline/StrategyPipelineRunner.h"
 #include "Blocks/MarketOrderExecutionBlock.h"
+#include "Blocks/SimpleRebalanceBlock.h"
 #include "Adapters/MockExecutionAdapter.h"
 #include "Adapters/MockPositionRepository.h"
 #include "Strategies/Generic/UnifiedModelData.h"

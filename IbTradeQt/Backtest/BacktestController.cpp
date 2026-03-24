@@ -1,4 +1,6 @@
 #include "Backtest/BacktestController.h"
+#include "Backtest/BacktestMetricsMapper.h"
+#include "Backtest/BacktestStatisticsCalculator.h"
 #include "Backtest/BacktestRunPersistence.h"
 #include "Backtest/HistoricalDataManager.h"
 #include "Backtest/BacktestConstants.h"
@@ -376,20 +378,9 @@ void BacktestController::persistResult(const BacktestResult& result,
     QSqlDatabase db = QSqlDatabase::database(m_dbConnectionName);
     if (!db.isOpen()) return;
 
-    // Metrics
-    DbBacktestMetrics m;
-    m.runId            = m_currentRunId;
-    m.totalReturn      = result.totalReturn;
-    m.annualizedReturn = result.annualizedReturn;
-    m.sharpeRatio      = result.sharpeRatio;
-    m.maxDrawdown      = result.maxDrawdown;
-    m.winRate          = result.winRate;
-    m.totalTrades      = result.totalTrades;
-    m.initialCapital   = result.initialCapital;
-    m.finalCapital     = result.finalCapital;
-    m.benchmarkReturn  = result.benchmark.totalReturn;
-    m.benchmarkSharpe  = result.benchmark.sharpeRatio;
-    m.alpha            = result.alphaVsBenchmark;
+    BacktestStatisticsCalculator calc;
+    const BacktestStatistics     stats = calc.compute(result);
+    const DbBacktestMetrics        m   = toDbBacktestMetrics(m_currentRunId, result, stats);
     {
         auto q = query_insertBacktestMetrics(m, m_dbConnectionName);
         if (!q.exec())

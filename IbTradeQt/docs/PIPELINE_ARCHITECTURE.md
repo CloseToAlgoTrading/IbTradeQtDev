@@ -787,7 +787,7 @@ IbTradeQt/
 - **Async alphas:** If `IAlphaBlock::semanticCompletionIsAsync()` is `true`, the runner waits for `semanticReady(ModelDataList, correlationId)` instead of using the synchronous return value of `processSemantic` for that block (e.g. `AlphaModelAdapter` when the legacy model finishes in `dataProcessed`). Otherwise `processSemantic` completes on the bar-close thread. Tick/bar `signalGenerated` still applies for non-semantic or parallel paths; use `combineTickAndSemanticSignals: false` if tick and semantic paths must not double-count.
 - **Signals:** `Pipeline::Signal::suggestedQuantity` maps to `UnifiedModelData::amount`; `SimpleRebalanceBlock` uses it when `> 0`.
 
-**Live historical check (optional):** Set `IBTRADING_SEMANTIC_LIVE_TESTS=1` when running `ibtrading_tests` so `TestSemanticPipelineLiveHistorical` is registered; it downloads real Yahoo daily bars and runs a short-window backtest with `semanticPipeline` + `semanticModelRebalance` (see `tests/BACKTEST_TESTING.md`).
+**Automated semantic smoke:** `TestSemanticE2E` in `ibtrading_tests` exercises `semanticPipeline` + `semanticModelRebalance` with mock ports (no live Yahoo). For real Yahoo + HTML reports, use `IBTRADING_LIVE_TESTS=1` and `TestLiveBacktest` (see `tests/BACKTEST_TESTING.md`).
 
 ---
 

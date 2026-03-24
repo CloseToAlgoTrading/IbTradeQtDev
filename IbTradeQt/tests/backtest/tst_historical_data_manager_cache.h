@@ -12,6 +12,8 @@ private slots:
     void preloadedRange_endOfDayTo_doesNotTriggerYahooGet();
     void secondIdenticalGetBars_doesNotIncrementRequestCount();
     void getBars_withStrategyAssetMapUsesResolverPath();
+    /// Empty cache + MockNetworkAccessManager: exercises fetchAndCache Yahoo batching (no real HTTP).
+    void getBarsMulti_uncachedSymbols_mockYahooUsesBatchedFetch();
 };
 
 #endif

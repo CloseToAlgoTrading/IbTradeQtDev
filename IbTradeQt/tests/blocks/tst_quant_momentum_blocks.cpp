@@ -3,7 +3,7 @@
 #include "Adapters/MockPositionRepository.h"
 #include "Blocks/MaxPositionRiskBlock.h"
 #include "Blocks/MomentumAlphaBlock.h"
-#include "Blocks/MarketOrderExecutionBlock.h"
+#include "Blocks/SimpleRebalanceBlock.h"
 #include "Pipeline/IHistoricalRead.h"
 #include "Pipeline/IMarketDataAccessor.h"
 #include "Pipeline/PipelineRuntimeContext.h"

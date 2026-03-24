@@ -10,6 +10,7 @@
 #include "Blocks/MomentumAlphaBlock.h"
 #include "Blocks/MaxPositionRiskBlock.h"
 #include "Blocks/MarketOrderExecutionBlock.h"
+#include "Blocks/SimpleRebalanceBlock.h"
 #include "Blocks/StaticListSelectionBlock.h"
 #include "Pipeline/IDataSubscriptionPort.h"
 #include "Pipeline/IHistoricalRead.h"
@@ -387,7 +388,8 @@ private slots:
 
         Pipeline::Signal sig;
         sig.symbol = "GOOG";
-        sig.direction = Pipeline::Signal::Sell;
+        // Buy: rebalance produces a default long target without an existing position (Sell would be skipped).
+        sig.direction = Pipeline::Signal::Buy;
         sig.confidence = 0.7;
 
         Blocks::SimpleRebalanceBlock rebalance;

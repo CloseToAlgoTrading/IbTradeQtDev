@@ -46,6 +46,13 @@ void DBHandler::initializeBacktestTables() {
 
     exec(CREATE_TABLE_BACKTEST_RUNS);
     exec(CREATE_TABLE_BACKTEST_METRICS);
+    execSilent(ALTER_BACKTEST_METRICS_ADD_SORTINO_RATIO);
+    execSilent(ALTER_BACKTEST_METRICS_ADD_CALMAR_RATIO);
+    execSilent(ALTER_BACKTEST_METRICS_ADD_PROFIT_FACTOR);
+    execSilent(ALTER_BACKTEST_METRICS_ADD_AVERAGE_EXPOSURE_PCT);
+    execSilent(ALTER_BACKTEST_METRICS_ADD_TURNOVER_ANNUALIZED);
+    execSilent(ALTER_BACKTEST_METRICS_ADD_METRIC_DEFS_VERSION);
+    execSilent(ALTER_BACKTEST_METRICS_ADD_STATISTICS_JSON);
     exec(CREATE_TABLE_BACKTEST_TRADES);
     exec(CREATE_TABLE_BACKTEST_EQUITY_CURVE);
     exec(CREATE_TABLE_HISTORICAL_BARS);
@@ -441,6 +448,13 @@ void DBHandler::slotFetchLoadedRun(const QString& runId) {
             metrics.benchmarkReturn  = q.value("benchmarkReturn").toDouble();
             metrics.benchmarkSharpe  = q.value("benchmarkSharpe").toDouble();
             metrics.alpha            = q.value("alpha").toDouble();
+            metrics.sortinoRatio           = q.value(QStringLiteral("sortinoRatio")).toDouble();
+            metrics.calmarRatio            = q.value(QStringLiteral("calmarRatio")).toDouble();
+            metrics.profitFactor           = q.value(QStringLiteral("profitFactor")).toDouble();
+            metrics.averageExposurePct     = q.value(QStringLiteral("averageExposurePct")).toDouble();
+            metrics.turnoverAnnualized     = q.value(QStringLiteral("turnoverAnnualized")).toDouble();
+            metrics.metricDefinitionsVersion = q.value(QStringLiteral("metricDefinitionsVersion")).toInt();
+            metrics.statisticsJson         = q.value(QStringLiteral("statisticsJson")).toString();
         }
     }
 

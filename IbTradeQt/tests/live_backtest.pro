@@ -62,6 +62,8 @@ SOURCES += \
     ../Backtest/SimulatedLedger.cpp \
     ../Backtest/SimulatedExecutionAdapter.cpp \
     ../Backtest/BacktestMetricsCollector.cpp \
+    ../Backtest/BacktestStatistics.cpp \
+    ../Backtest/BacktestStatisticsCalculator.cpp \
     ../Backtest/BacktestSession.cpp \
     ../Backtest/YahooFinanceDataSource.cpp \
     ../Pipeline/StrategyPipelineRunner.cpp \
@@ -77,7 +79,9 @@ SOURCES += \
     ../Blocks/MaxPositionRiskBlock.cpp \
     ../Blocks/StaticListSelectionBlock.cpp \
     ../Blocks/LimitOrderExecutionBlock.cpp \
-    ../Blocks/MarketOrderExecutionBlock.cpp
+    ../Blocks/MarketOrderExecutionBlock.cpp \
+    ../Blocks/SimpleRebalanceBlock.cpp \
+    ../Blocks/PassAllSelectionBlock.cpp
 
 HEADERS += \
     ../Pipeline/Contracts.h \
@@ -106,6 +110,8 @@ HEADERS += \
     ../Blocks/MomentumAlphaBlock.h \
     ../Blocks/MaxPositionRiskBlock.h \
     ../Blocks/MarketOrderExecutionBlock.h \
+    ../Blocks/SimpleRebalanceBlock.h \
+    ../Blocks/PassAllSelectionBlock.h \
     ../Blocks/MeanReversionAlphaBlock.h \
     ../Blocks/MovingAverageCrossoverAlphaBlock.h \
     ../Blocks/StaticListSelectionBlock.h \
@@ -132,6 +138,8 @@ HEADERS += \
     ../Backtest/SimulatedLedger.h \
     ../Backtest/SimulatedExecutionAdapter.h \
     ../Backtest/BacktestMetricsCollector.h \
+    ../Backtest/BacktestStatistics.h \
+    ../Backtest/BacktestStatisticsCalculator.h \
     ../Backtest/IHistoricalDataSource.h \
     ../Backtest/JsonlHistoricalDataSource.h \
     ../Backtest/CsvHistoricalDataSource.h \
