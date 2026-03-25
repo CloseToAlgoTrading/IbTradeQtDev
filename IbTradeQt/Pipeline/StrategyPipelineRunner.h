@@ -175,13 +175,8 @@ public:
     void setClock(IClock* clock) { m_clock = clock; }
 
     /// Injected ports for all pipeline blocks (realtime/historical/orders/positions). Same types in backtest and live.
-    void setRuntimeContext(const PipelineRuntimeContext& ctx) {
-        m_runtimeContext = ctx;
-        m_runtimeContext.execution = m_executionPort;
-        m_runtimeContext.positions = m_positionRepo;
-        m_runtimeContext.strategyId = strategyId();
-        applyRuntimeContextToBlocks();
-    }
+    /// Backtest: context pre-populated with resolved policy. Live: fallback parses from graph config if not resolved.
+    void setRuntimeContext(const PipelineRuntimeContext& ctx);
 
     /// Live: inject last-tick accessor (e.g. RouterMarketDataAccessor) after MarketDataRouter is connected.
     void setMarketDataAccessor(IMarketDataAccessor* accessor);

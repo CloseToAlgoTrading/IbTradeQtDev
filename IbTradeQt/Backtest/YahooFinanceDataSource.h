@@ -7,6 +7,7 @@
 #include <QStringList>
 #include <QDateTime>
 #include <QVector>
+#include <QSet>
 #include "Backtest/IHistoricalDataSource.h"
 
 namespace Backtest {
@@ -74,7 +75,7 @@ private:
     QDateTime               m_to;
     QString                 m_lastError;
     int                     m_pendingCount = 0;
-    bool                    m_failed       = false;
+    QSet<QString>           m_failedSymbols;
     QString                 m_instrumentMetadataDbConnection;
 };
 

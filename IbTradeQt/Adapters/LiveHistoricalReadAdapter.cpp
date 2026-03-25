@@ -54,9 +54,11 @@ QVector<HistoricalBarSnapshot> LiveHistoricalReadAdapter::getBars(
     const QString& resolution,
     const QString& dataSourceId,
     const QDateTime& from,
-    const QDateTime& to)
+    const QDateTime& to,
+    HistoricalReadPolicy policy)
 {
     Q_UNUSED(dataSourceId);
+    Q_UNUSED(policy);
 
     QVector<HistoricalBarSnapshot> out;
     if (!s_broker || !s_broker->getClien() || !s_broker->historicalDataRouter()) {

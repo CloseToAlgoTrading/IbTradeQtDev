@@ -90,7 +90,8 @@ double MeanReversionAlphaBlock::zScoreFromHistoricalBars(const QString& symbol) 
     const QDateTime to = QDateTime::currentDateTimeUtc();
     const QDateTime from = to.addYears(-m_lookbackYears);
     const QVector<Pipeline::HistoricalBarSnapshot> bars =
-        runtimeContext()->historical->getBars(sym, m_resolution, m_dataSourceId, from, to);
+        runtimeContext()->historical->getBars(sym, m_resolution, m_dataSourceId, from, to,
+                                              runtimeContext()->historicalReadPolicyDefault);
     if (bars.size() < m_period)
         return std::numeric_limits<double>::quiet_NaN();
     const int take = qMin(m_period + 1, bars.size());

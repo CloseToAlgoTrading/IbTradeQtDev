@@ -38,6 +38,7 @@ signals:
     void barLoaded(const IBComm::HistoricalBar& bar);
     void tickLoaded(const Pipeline::MarketTick& tick);
     void tickByTickLoaded(const Pipeline::TickByTickTrade& trade);
+    void symbolFailed(const QString& symbol, const QString& reason);
     void loadFinished();
     void loadFailed(const QString& reason);
 };

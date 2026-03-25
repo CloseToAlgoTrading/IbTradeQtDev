@@ -16,6 +16,15 @@ private slots:
     void getBarsMulti_uncachedSymbols_mockYahooUsesBatchedFetch();
     /// Partial cache with trailing gap: Yahoo GET must use period1 at the first missing day, not a degenerate end-only window.
     void getBarsMulti_trailingGap_yahooPeriodSpansMissingTail();
+    
+    // Historical Read Policy tests
+    void refreshFromSource_fetchesFullRange_notJustGaps();
+    void refreshFromSource_writesThrough_andReturnsFetchedData();
+    void sourceOnly_doesNotReadOrWriteDB();
+    void sourceOnly_returnsFetchedDataOnly();
+    void normalizationEquivalence_allPoliciesReturnIdenticalBars();
+    void getBarsMulti_partialFailure_transportError_omitsSymbol();
+    void getBarsMulti_partialFailure_validEmpty_includesEmptyVector();
 };
 
 #endif

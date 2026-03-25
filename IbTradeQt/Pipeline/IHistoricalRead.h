@@ -1,6 +1,7 @@
 #ifndef PIPELINE_IHISTORICALREAD_H
 #define PIPELINE_IHISTORICALREAD_H
 
+#include "HistoricalReadPolicy.h"
 #include <QDateTime>
 #include <QString>
 #include <QVector>
@@ -26,7 +27,8 @@ public:
         const QString& resolution,
         const QString& dataSourceId,
         const QDateTime& from,
-        const QDateTime& to) = 0;
+        const QDateTime& to,
+        HistoricalReadPolicy policy = HistoricalReadPolicy::PreferCache) = 0;
 };
 
 } // namespace Pipeline

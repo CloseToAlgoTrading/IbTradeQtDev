@@ -14,14 +14,15 @@ QVector<Pipeline::HistoricalBarSnapshot> BacktestHistoricalReadAdapter::getBars(
     const QString& resolution,
     const QString& dataSourceId,
     const QDateTime& from,
-    const QDateTime& to)
+    const QDateTime& to,
+    Pipeline::HistoricalReadPolicy policy)
 {
     QVector<Pipeline::HistoricalBarSnapshot> out;
     if (!m_manager)
         return out;
 
     const QVector<IBComm::HistoricalBar> raw =
-        m_manager->getBars(symbol, resolution, dataSourceId, from, to);
+        m_manager->getBars(symbol, resolution, dataSourceId, from, to, nullptr, {}, policy);
     out.reserve(raw.size());
     for (const auto& b : raw) {
         Pipeline::HistoricalBarSnapshot s;

@@ -80,7 +80,8 @@ double SimpleRebalanceBlock::resolvePriceForSymbol(const QString& symbol) const
             return 0.0;
         const QDateTime from = toUtc.addYears(-2);
         const QVector<Pipeline::HistoricalBarSnapshot> bars =
-            m_runtimeContext->historical->getBars(sym, m_priceResolution, m_priceDataSourceId, from, toUtc);
+            m_runtimeContext->historical->getBars(sym, m_priceResolution, m_priceDataSourceId, from, toUtc,
+                                                  m_runtimeContext->historicalReadPolicyDefault);
         if (!bars.isEmpty() && bars.last().close > 0.0)
             return bars.last().close;
         return 0.0;

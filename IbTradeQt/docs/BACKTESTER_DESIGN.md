@@ -550,6 +550,27 @@ Three different ideas are easy to conflate; only **one** is in scope for Phase A
 
 **Not implemented in Phase A.** IB requires a separate provider (connection gating, bar size mapping, pacing/rate limits). The public operation remains `requestSyncBarsCoverage`; routing by provenance will add an `IbHistoricalBarsCoverageSyncProvider` when ready.
 
+### 11.5 Historical Read Policy and Reproducibility [IMPLEMENTED]
+
+The `HistoricalReadPolicy` enum controls how historical bar requests interact with the persistent cache (SQLite `HistoricalBars` table) and remote data sources:
+
+- **PreferCache** (default): Uses gap-aware cache logic. Queries the local store for coverage; fetches only missing gaps from the provider; persists fetched bars; returns the full requested range from cache. This is the existing behavior and provides the strongest reproducibility when the cache is stable.
+
+- **RefreshFromSource**: Bypasses cache consultation for this request. Fetches the full requested range from the remote provider; writes-through to the persistent store (updates cache for other consumers and future runs); returns the fetched bars directly after normalization (no DB reread for the response). Useful for refreshing stale data or development runs against the latest provider state.
+
+- **SourceOnly** (ephemeral): Fetches the full requested range from the remote provider; does not consult or update the persistent store for this request; returns fetched bars after normalization. Useful for isolated experiments or parameter sweeps that should not pollute the shared cache.
+
+**Configuration:** Set `historicalReadPolicy` in the pipeline JSON root config. Valid string values: `"preferCache"` (default), `"refreshFromSource"`, `"sourceOnly"`. Parsing is case-insensitive; unknown values default to `preferCache` with a warning.
+
+**Reproducibility considerations:**
+
+When `historicalReadPolicy` is set to `RefreshFromSource` or `SourceOnly`, backtests fetch data from the remote provider at run time. This provides the latest available data but **weakens reproducibility** unless the provider's responses are stable or snapshotted.
+
+- **PreferCache**: Bit-identical reruns if the cache is unchanged. Best for regression validation and parameter sweeps over fixed historical data.
+- **RefreshFromSource** / **SourceOnly**: Results depend on provider state at run time. Acceptable for "latest Yahoo" development/research runs; not suitable for regression validation without fixed data snapshots or version-controlled exports.
+
+**Implementation details:** `BacktestController` parses the policy once from `pipelineConfigJson` using `Pipeline::StrategyPipelineRuntimeOptions::fromJson()` and passes it to both `HistoricalDataManager::getBarsMulti()` (prefetch) and `BacktestSession::setHistoricalReadPolicy()`. The session injects the resolved policy into `PipelineRuntimeContext::historicalReadPolicyDefault`, which strategy blocks pass to `IHistoricalRead::getBars()` calls. Normalization is guaranteed equivalent across all three policies via a shared `HistoricalDataManager::normalizeAndFilterBars()` helper.
+
 ---
 
 ## 12. Performance Metrics

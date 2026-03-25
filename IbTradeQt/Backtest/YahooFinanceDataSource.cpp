@@ -194,7 +194,7 @@ void YahooFinanceDataSource::requestBars(const QStringList& symbols,
     m_requestedSymbols = syms;
     setFilterBoundsFromRequest(m_from, m_to, from, to);
     m_pendingCount = 0;
-    m_failed       = false;
+    m_failedSymbols.clear();
     m_lastError.clear();
 
     // Yahoo Finance free API only supports daily data reliably for multi-year ranges.
@@ -241,18 +241,13 @@ void YahooFinanceDataSource::onReplyFinished(QNetworkReply* reply)
 {
     reply->deleteLater();
 
-    if (m_failed) {
-        --m_pendingCount;
-        checkAllDone();
-        return;
-    }
-
     if (reply->error() != QNetworkReply::NoError) {
         const QString symbol = reply->request().attribute(QNetworkRequest::User).toString();
         const QVariant statusVar = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute);
         const QByteArray body      = reply->readAll();
         const QString    bodyPrev  = QString::fromUtf8(body.left(512));
 
+        const QString errorMsg = QStringLiteral("HTTP/transport failure: %1").arg(reply->errorString());
         m_lastError = QStringLiteral("HTTP/transport failure for %1: %2")
                           .arg(symbol, reply->errorString());
         qCWarning(lcYahoo) << "YahooFinanceDataSource: HTTP/transport failure for" << symbol
@@ -260,7 +255,10 @@ void YahooFinanceDataSource::onReplyFinished(QNetworkReply* reply)
                            << "httpStatus=" << statusVar
                            << "url=" << reply->url().toString()
                            << "body=" << bodyPrev;
-        m_failed = true;
+        
+        m_failedSymbols.insert(symbol);
+        emit symbolFailed(symbol, errorMsg);
+        
         --m_pendingCount;
         checkAllDone();
         return;
@@ -363,7 +361,7 @@ void YahooFinanceDataSource::checkAllDone()
 {
     if (m_pendingCount > 0) return;
 
-    if (m_failed) {
+    if (m_failedSymbols.size() == m_requestedSymbols.size()) {
         emit loadFailed(m_lastError);
     } else {
         emit loadFinished();

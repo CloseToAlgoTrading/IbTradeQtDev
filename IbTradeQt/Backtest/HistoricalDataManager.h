@@ -33,13 +33,20 @@
 #include <QSqlDatabase>
 #include <QVariantMap>
 #include <QEventLoop>
+#include <QSet>
 #include "IBComm/HistoricalDataRouter.h"
 #include "Backtest/IHistoricalDataSource.h"
 #include "DB/dbdatatypes.h"
+#include "Pipeline/HistoricalReadPolicy.h"
 
 class QNetworkAccessManager;
 
 namespace Backtest {
+
+struct YahooFetchResult {
+    QVector<IBComm::HistoricalBar> bars;
+    QSet<QString> failedSymbols;
+};
 
 class HistoricalDataManager : public QObject {
     Q_OBJECT
@@ -60,22 +67,24 @@ public:
     Config config() const { return m_config; }
 
     // Fetch bars for a single (symbol, resolution, dataSourceId) tuple within [from, to].
-    // Queries cache, fetches only missing sub-ranges, inserts into DB, returns full range.
+    // Policy controls cache consultation and write behavior (see Pipeline::HistoricalReadPolicy).
     // Blocks until all network fetches complete (use on a background thread).
-    // dataRefreshedAt is set to the UTC time when any remote fetch was performed,
-    // or empty if the entire range was served from cache.
+    // dataRefreshedAt is set to the UTC time when any remote fetch was performed.
     // Returns bars ordered by timestamp ascending, deduplicated, normalised to UTC.
     /// \a strategyAssetBySymbol optional per-symbol assetList entries (classification override, session policy).
+    /// \a policy controls read behavior (default PreferCache uses existing gap-aware logic).
     QVector<IBComm::HistoricalBar> getBars(const QString& symbol,
                                             const QString& resolution,
                                             const QString& dataSourceId,
                                             const QDateTime& from,
                                             const QDateTime& to,
                                             QString* dataRefreshedAt = nullptr,
-                                            const QHash<QString, QVariantMap>& strategyAssetBySymbol = {});
+                                            const QHash<QString, QVariantMap>& strategyAssetBySymbol = {},
+                                            Pipeline::HistoricalReadPolicy policy = Pipeline::HistoricalReadPolicy::PreferCache);
 
     // Batch variant: fetches bars for multiple symbols with the same resolution/source.
-    // Returns a map from symbol -> bars.
+    // Returns a map from symbol -> bars. Policy controls cache/fetch behavior.
+    // Partial failures: transport/malformed errors omit symbol; valid empty results include empty vector.
     QMap<QString, QVector<IBComm::HistoricalBar>> getBarsMulti(
         const QStringList& symbols,
         const QString& resolution,
@@ -83,7 +92,8 @@ public:
         const QDateTime& from,
         const QDateTime& to,
         QString* dataRefreshedAt = nullptr,
-        const QHash<QString, QVariantMap>& strategyAssetBySymbol = {});
+        const QHash<QString, QVariantMap>& strategyAssetBySymbol = {},
+        Pipeline::HistoricalReadPolicy policy = Pipeline::HistoricalReadPolicy::PreferCache);
 
     struct PrefetchRetryOptions {
         int minBarsPerSymbol = 0;
@@ -101,7 +111,8 @@ public:
         const QDateTime& to,
         const PrefetchRetryOptions& retry,
         QString* dataRefreshedAt = nullptr,
-        const QHash<QString, QVariantMap>& strategyAssetBySymbol = {});
+        const QHash<QString, QVariantMap>& strategyAssetBySymbol = {},
+        Pipeline::HistoricalReadPolicy policy = Pipeline::HistoricalReadPolicy::PreferCache);
 
 private:
     struct CachedRange {
@@ -129,11 +140,12 @@ private:
                                                    const QDateTime& to);
 
     // Fetch a single batch of symbols from Yahoo Finance (no batching, no caching).
-    QVector<IBComm::HistoricalBar> fetchBatchFromYahoo(const QStringList& symbols,
-                                                         const QDateTime& from,
-                                                         const QDateTime& to,
-                                                         const QString& resolution,
-                                                         int timeoutMs) const;
+    // Returns bars and a set of symbols that encountered transport errors.
+    YahooFetchResult fetchBatchFromYahoo(const QStringList& symbols,
+                                          const QDateTime& from,
+                                          const QDateTime& to,
+                                          const QString& resolution,
+                                          int timeoutMs) const;
 
     // Insert bars into HistoricalBars table (INSERT OR REPLACE).
     // Bars with timestamp >= today at daily resolution are skipped.
@@ -144,6 +156,53 @@ private:
     static QString toUtcIso(const QDateTime& dt);
     static QDateTime fromUtcIso(const QString& s);
     static bool isIncompleteBar(const IBComm::HistoricalBar& bar, const QString& resolution);
+
+    QVector<IBComm::HistoricalBar> getBarsPreferCache(
+        const QString& symbol,
+        const QString& resolution,
+        const QString& dataSourceId,
+        const QDateTime& from,
+        const QDateTime& to,
+        QString* dataRefreshedAt,
+        const QHash<QString, QVariantMap>& strategyAssetBySymbol);
+
+    QVector<IBComm::HistoricalBar> getBarsRefreshFromSource(
+        const QString& symbol,
+        const QString& resolution,
+        const QString& dataSourceId,
+        const QDateTime& from,
+        const QDateTime& to,
+        QString* dataRefreshedAt,
+        const QHash<QString, QVariantMap>& strategyAssetBySymbol);
+
+    QVector<IBComm::HistoricalBar> getBarsSourceOnly(
+        const QString& symbol,
+        const QString& resolution,
+        const QString& dataSourceId,
+        const QDateTime& from,
+        const QDateTime& to,
+        QString* dataRefreshedAt,
+        const QHash<QString, QVariantMap>& strategyAssetBySymbol);
+
+    /// Normalize, filter, sort, dedupe fetched bars to match readFromCache contract.
+    /// Used by RefreshFromSource and SourceOnly to guarantee behavioral equivalence with PreferCache.
+    /// Deduplication uses "keep last in fetch order" for (symbol, timestamp) — matches INSERT OR REPLACE.
+    QVector<IBComm::HistoricalBar> normalizeAndFilterBars(
+        const QVector<IBComm::HistoricalBar>& fetched,
+        const QString& fromUtc,
+        const QString& toUtc) const;
+
+    /// Simple multi-symbol fetch for RefreshFromSource and SourceOnly policies.
+    /// No gap detection; fetches all symbols in batch.
+    QMap<QString, QVector<IBComm::HistoricalBar>> getBarsMultiSimple(
+        const QStringList& symbols,
+        const QString& resolution,
+        const QString& dataSourceId,
+        const QDateTime& from,
+        const QDateTime& to,
+        QString* dataRefreshedAt,
+        const QHash<QString, QVariantMap>& strategyAssetBySymbol,
+        Pipeline::HistoricalReadPolicy policy);
 
     QString                  m_dbConnectionName;
     QNetworkAccessManager*   m_networkManager;

@@ -3,9 +3,26 @@
 #include "../IBComm/MarketDataRouter.h"
 #include "IDataSubscriptionPort.h"
 #include "IMarketDataAccessor.h"
+#include "StrategyPipelineRuntimeOptions.h"
 #include <QUuid>
 
 namespace Pipeline {
+
+void StrategyPipelineRunner::setRuntimeContext(const PipelineRuntimeContext& ctx)
+{
+    m_runtimeContext = ctx;
+    m_runtimeContext.execution = m_executionPort;
+    m_runtimeContext.positions = m_positionRepo;
+    m_runtimeContext.strategyId = strategyId();
+    
+    if (!m_runtimeContext.historicalReadPolicyResolved) {
+        StrategyPipelineRuntimeOptions opts = StrategyPipelineRuntimeOptions::fromJson(m_graph.config);
+        m_runtimeContext.historicalReadPolicyDefault = opts.historicalReadPolicy;
+        m_runtimeContext.historicalReadPolicyResolved = true;
+    }
+    
+    applyRuntimeContextToBlocks();
+}
 
 void StrategyPipelineRunner::applyRuntimeContextToBlocks()
 {

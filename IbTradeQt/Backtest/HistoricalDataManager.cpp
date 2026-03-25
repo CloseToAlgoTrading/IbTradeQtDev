@@ -84,6 +84,32 @@ QVector<IBComm::HistoricalBar> HistoricalDataManager::getBars(
     const QDateTime& from,
     const QDateTime& to,
     QString* dataRefreshedAt,
+    const QHash<QString, QVariantMap>& strategyAssetBySymbol,
+    Pipeline::HistoricalReadPolicy policy)
+{
+    switch (policy) {
+    case Pipeline::HistoricalReadPolicy::PreferCache:
+        return getBarsPreferCache(symbol, resolution, dataSourceId, from, to,
+                                  dataRefreshedAt, strategyAssetBySymbol);
+    
+    case Pipeline::HistoricalReadPolicy::RefreshFromSource:
+        return getBarsRefreshFromSource(symbol, resolution, dataSourceId, from, to,
+                                        dataRefreshedAt, strategyAssetBySymbol);
+    
+    case Pipeline::HistoricalReadPolicy::SourceOnly:
+        return getBarsSourceOnly(symbol, resolution, dataSourceId, from, to,
+                                dataRefreshedAt, strategyAssetBySymbol);
+    }
+    return QVector<IBComm::HistoricalBar>();
+}
+
+QVector<IBComm::HistoricalBar> HistoricalDataManager::getBarsPreferCache(
+    const QString& symbol,
+    const QString& resolution,
+    const QString& dataSourceId,
+    const QDateTime& from,
+    const QDateTime& to,
+    QString* dataRefreshedAt,
     const QHash<QString, QVariantMap>& strategyAssetBySymbol)
 {
     const QString fromUtc = toUtcIso(from);
@@ -164,8 +190,8 @@ QVector<IBComm::HistoricalBar> HistoricalDataManager::getBars(
     return readFromCache(symbol, resolution, dataSourceId, fromUtc, toUtc);
 }
 
-QMap<QString, QVector<IBComm::HistoricalBar>> HistoricalDataManager::getBarsMulti(
-    const QStringList& symbols,
+QVector<IBComm::HistoricalBar> HistoricalDataManager::getBarsRefreshFromSource(
+    const QString& symbol,
     const QString& resolution,
     const QString& dataSourceId,
     const QDateTime& from,
@@ -173,6 +199,161 @@ QMap<QString, QVector<IBComm::HistoricalBar>> HistoricalDataManager::getBarsMult
     QString* dataRefreshedAt,
     const QHash<QString, QVariantMap>& strategyAssetBySymbol)
 {
+    const QString fromUtc = toUtcIso(from);
+    const QString toUtc   = toUtcIso(to);
+
+    const QDateTime effectiveTo =
+        effectiveToForYahooDay1(QStringList{symbol}, dataSourceId, resolution, to, m_dbConnectionName,
+                                strategyAssetBySymbol);
+
+    QVector<IBComm::HistoricalBar> fetched =
+        fetchAndCache({symbol}, resolution, dataSourceId, from, effectiveTo);
+
+    if (dataRefreshedAt) {
+        *dataRefreshedAt = QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
+    }
+
+    return normalizeAndFilterBars(fetched, fromUtc, toUtc);
+}
+
+QVector<IBComm::HistoricalBar> HistoricalDataManager::getBarsSourceOnly(
+    const QString& symbol,
+    const QString& resolution,
+    const QString& dataSourceId,
+    const QDateTime& from,
+    const QDateTime& to,
+    QString* dataRefreshedAt,
+    const QHash<QString, QVariantMap>& strategyAssetBySymbol)
+{
+    const QString fromUtc = toUtcIso(from);
+    const QString toUtc   = toUtcIso(to);
+
+    const QDateTime effectiveTo =
+        effectiveToForYahooDay1(QStringList{symbol}, dataSourceId, resolution, to, m_dbConnectionName,
+                                strategyAssetBySymbol);
+
+    QVector<IBComm::HistoricalBar> fetched;
+    if (dataSourceId == QLatin1String("yahoo")) {
+        YahooFetchResult fetchResult = fetchBatchFromYahoo({symbol}, from, effectiveTo, resolution, m_config.yahooFetchTimeoutMs);
+        fetched = fetchResult.bars;
+    } else {
+        qCWarning(lcHistData) << "HistoricalDataManager: SourceOnly unsupported for dataSourceId:" << dataSourceId;
+    }
+
+    if (dataRefreshedAt) {
+        // For SourceOnly, this indicates fetch time even though no cache update occurred.
+        // The field semantics are "provider consultation time," not "cache update time."
+        *dataRefreshedAt = QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
+    }
+
+    return normalizeAndFilterBars(fetched, fromUtc, toUtc);
+}
+
+QVector<IBComm::HistoricalBar> HistoricalDataManager::normalizeAndFilterBars(
+    const QVector<IBComm::HistoricalBar>& fetched,
+    const QString& fromUtc,
+    const QString& toUtc) const
+{
+    const QDateTime fromDt = QDateTime::fromString(fromUtc, Qt::ISODate).toUTC();
+    const QDateTime toDt = QDateTime::fromString(toUtc, Qt::ISODate).toUTC();
+    
+    QMap<QPair<QString, QDateTime>, IBComm::HistoricalBar> uniqueBars;
+    for (const auto& bar : fetched) {
+        QPair<QString, QDateTime> key{bar.symbol, bar.timestamp.toUTC()};
+        uniqueBars[key] = bar;
+    }
+    
+    QVector<IBComm::HistoricalBar> filtered;
+    for (auto it = uniqueBars.begin(); it != uniqueBars.end(); ++it) {
+        const QDateTime barDt = it.value().timestamp.toUTC();
+        if (barDt >= fromDt && barDt <= toDt) {
+            filtered.append(it.value());
+        }
+    }
+    
+    std::sort(filtered.begin(), filtered.end(),
+              [](const IBComm::HistoricalBar& a, const IBComm::HistoricalBar& b) {
+                  const QDateTime aDt = a.timestamp.toUTC();
+                  const QDateTime bDt = b.timestamp.toUTC();
+                  if (aDt != bDt)
+                      return aDt < bDt;
+                  return a.symbol < b.symbol;
+              });
+    
+    return filtered;
+}
+
+QMap<QString, QVector<IBComm::HistoricalBar>> HistoricalDataManager::getBarsMultiSimple(
+    const QStringList& symbols,
+    const QString& resolution,
+    const QString& dataSourceId,
+    const QDateTime& from,
+    const QDateTime& to,
+    QString* dataRefreshedAt,
+    const QHash<QString, QVariantMap>& strategyAssetBySymbol,
+    Pipeline::HistoricalReadPolicy policy)
+{
+    QMap<QString, QVector<IBComm::HistoricalBar>> result;
+    const QString fromUtc = toUtcIso(from);
+    const QString toUtc = toUtcIso(to);
+
+    const QDateTime effectiveTo =
+        effectiveToForYahooDay1(symbols, dataSourceId, resolution, to, m_dbConnectionName,
+                                strategyAssetBySymbol);
+
+    if (dataSourceId == QLatin1String("yahoo")) {
+        YahooFetchResult fetchResult =
+            fetchBatchFromYahoo(symbols, from, effectiveTo, resolution, m_config.yahooFetchTimeoutMs);
+
+        if (policy == Pipeline::HistoricalReadPolicy::RefreshFromSource && !fetchResult.bars.isEmpty()) {
+            insertIntoCache(fetchResult.bars, resolution, dataSourceId);
+        }
+
+        QMap<QString, QVector<IBComm::HistoricalBar>> rawBySymbol;
+        for (const auto& bar : fetchResult.bars) {
+            rawBySymbol[bar.symbol].append(bar);
+        }
+
+        for (const QString& sym : symbols) {
+            if (fetchResult.failedSymbols.contains(sym)) {
+                qCWarning(lcHistData) << "getBarsMulti:" << sym << "— transport/network error, omitting from result";
+                continue;
+            }
+            
+            if (rawBySymbol.contains(sym)) {
+                result[sym] = normalizeAndFilterBars(rawBySymbol[sym], fromUtc, toUtc);
+            } else {
+                qCInfo(lcHistData) << "getBarsMulti:" << sym << "— provider returned no bars for range (valid empty)";
+                result[sym] = QVector<IBComm::HistoricalBar>();
+            }
+        }
+    } else {
+        qCWarning(lcHistData) << "HistoricalDataManager: unsupported dataSourceId for RefreshFromSource/SourceOnly:" << dataSourceId;
+    }
+
+    if (dataRefreshedAt) {
+        *dataRefreshedAt = QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
+    }
+
+    return result;
+}
+
+QMap<QString, QVector<IBComm::HistoricalBar>> HistoricalDataManager::getBarsMulti(
+    const QStringList& symbols,
+    const QString& resolution,
+    const QString& dataSourceId,
+    const QDateTime& from,
+    const QDateTime& to,
+    QString* dataRefreshedAt,
+    const QHash<QString, QVariantMap>& strategyAssetBySymbol,
+    Pipeline::HistoricalReadPolicy policy)
+{
+    if (policy == Pipeline::HistoricalReadPolicy::RefreshFromSource || 
+        policy == Pipeline::HistoricalReadPolicy::SourceOnly) {
+        return getBarsMultiSimple(symbols, resolution, dataSourceId, from, to,
+                                  dataRefreshedAt, strategyAssetBySymbol, policy);
+    }
+
     const QDateTime effectiveTo =
         effectiveToForYahooDay1(symbols, dataSourceId, resolution, to, m_dbConnectionName,
                                 strategyAssetBySymbol);
@@ -267,11 +448,12 @@ QMap<QString, QVector<IBComm::HistoricalBar>> HistoricalDataManager::getBarsMult
     const QDateTime& to,
     const PrefetchRetryOptions& retry,
     QString* dataRefreshedAt,
-    const QHash<QString, QVariantMap>& strategyAssetBySymbol)
+    const QHash<QString, QVariantMap>& strategyAssetBySymbol,
+    Pipeline::HistoricalReadPolicy policy)
 {
     QString refreshed;
     QMap<QString, QVector<IBComm::HistoricalBar>> barsBySym =
-        getBarsMulti(symbols, resolution, dataSourceId, from, to, &refreshed, strategyAssetBySymbol);
+        getBarsMulti(symbols, resolution, dataSourceId, from, to, &refreshed, strategyAssetBySymbol, policy);
 
     auto symbolsBelowThreshold = [&](const QStringList& syms) {
         QStringList out;
@@ -290,7 +472,7 @@ QMap<QString, QVector<IBComm::HistoricalBar>> HistoricalDataManager::getBarsMult
         QThread::msleep(static_cast<unsigned long>(backoff));
         QString                                       r2;
         QMap<QString, QVector<IBComm::HistoricalBar>> extra =
-            getBarsMulti(missing, resolution, dataSourceId, from, to, &r2, strategyAssetBySymbol);
+            getBarsMulti(missing, resolution, dataSourceId, from, to, &r2, strategyAssetBySymbol, policy);
         for (auto it = extra.begin(); it != extra.end(); ++it) {
             if (!it.value().isEmpty())
                 barsBySym[it.key()] = it.value();
@@ -380,20 +562,21 @@ QVector<IBComm::HistoricalBar> HistoricalDataManager::fetchAndCache(
                                    << ((symbols.size() + batchSize - 1) / batchSize)
                                    << ":" << batch.size() << "symbols";
                 
-                QVector<IBComm::HistoricalBar> batchBars =
+                YahooFetchResult batchResult =
                     fetchBatchFromYahoo(batch, from, to, resolution, timeoutMs);
                 
-                fetchedBars.append(batchBars);
+                fetchedBars.append(batchResult.bars);
                 
-                if (!batchBars.isEmpty()) {
-                    insertIntoCache(batchBars, resolution, dataSourceId);
+                if (!batchResult.bars.isEmpty()) {
+                    insertIntoCache(batchResult.bars, resolution, dataSourceId);
                 }
             }
         } else {
-            fetchedBars = fetchBatchFromYahoo(symbols, from, to, resolution, timeoutMs);
+            YahooFetchResult fetchResult = fetchBatchFromYahoo(symbols, from, to, resolution, timeoutMs);
+            fetchedBars = fetchResult.bars;
             
-            if (!fetchedBars.isEmpty()) {
-                insertIntoCache(fetchedBars, resolution, dataSourceId);
+            if (!fetchResult.bars.isEmpty()) {
+                insertIntoCache(fetchResult.bars, resolution, dataSourceId);
             }
         }
     } else {
@@ -404,14 +587,14 @@ QVector<IBComm::HistoricalBar> HistoricalDataManager::fetchAndCache(
     return fetchedBars;
 }
 
-QVector<IBComm::HistoricalBar> HistoricalDataManager::fetchBatchFromYahoo(
+YahooFetchResult HistoricalDataManager::fetchBatchFromYahoo(
     const QStringList& symbols,
     const QDateTime& from,
     const QDateTime& to,
     const QString& resolution,
     int timeoutMs) const
 {
-    QVector<IBComm::HistoricalBar> batchBars;
+    YahooFetchResult result;
 
     YahooFinanceDataSource source;
     source.setNetworkManager(m_networkManager);
@@ -423,8 +606,12 @@ QVector<IBComm::HistoricalBar> HistoricalDataManager::fetchBatchFromYahoo(
     QObject::connect(&source, &IHistoricalDataSource::loadFailed,
                      &loop, &QEventLoop::quit);
     QObject::connect(&source, &IHistoricalDataSource::barLoaded,
-                     [&batchBars](const IBComm::HistoricalBar& bar) {
-        batchBars.append(bar);
+                     [&result](const IBComm::HistoricalBar& bar) {
+        result.bars.append(bar);
+    });
+    QObject::connect(&source, &IHistoricalDataSource::symbolFailed,
+                     [&result](const QString& symbol, const QString& /*reason*/) {
+        result.failedSymbols.insert(symbol);
     });
 
     QTimer timeout;
@@ -437,7 +624,7 @@ QVector<IBComm::HistoricalBar> HistoricalDataManager::fetchBatchFromYahoo(
     source.requestBars(symbols, from, to, res);
     loop.exec();
 
-    return batchBars;
+    return result;
 }
 
 void HistoricalDataManager::insertIntoCache(const QVector<IBComm::HistoricalBar>& bars,

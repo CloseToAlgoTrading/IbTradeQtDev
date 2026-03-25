@@ -10,6 +10,7 @@
 #include "Backtest/FilledOrder.h"
 #include "Backtest/MarketPriceStore.h"
 #include "Pipeline/Contracts.h"
+#include "Pipeline/HistoricalReadPolicy.h"
 #include "Common/IClock.h"
 
 namespace Pipeline {
@@ -37,6 +38,10 @@ public:
     void setHistoricalFillFallback(Pipeline::IHistoricalRead* historical,
                                    const QString& resolution,
                                    const QString& dataSourceId);
+
+    void setHistoricalReadPolicy(Pipeline::HistoricalReadPolicy policy) {
+        m_historicalReadPolicy = policy;
+    }
 
     // IOrderExecutionPort
     Expected<Ports::OrderResult, Error> placeOrder(
@@ -76,6 +81,7 @@ private:
     Pipeline::IHistoricalRead*          m_histFallback = nullptr;
     QString                             m_histResolution;
     QString                             m_histDataSourceId;
+    Pipeline::HistoricalReadPolicy      m_historicalReadPolicy = Pipeline::HistoricalReadPolicy::PreferCache;
     QVector<Pipeline::ExecutionIntent>  m_pendingOrders;
     QVector<FilledOrder>                m_filledOrders;
     QMap<int, FilledOrder>              m_orderById;

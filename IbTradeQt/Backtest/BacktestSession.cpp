@@ -217,6 +217,8 @@ void BacktestSession::buildObjectGraph()
         if (cap <= 0.0)
             cap = m_config.initialCapital;
         ctx.strategyAllocatedCapital = cap;
+        ctx.historicalReadPolicyDefault = m_historicalReadPolicy;
+        ctx.historicalReadPolicyResolved = true;
         m_pipelineRunner->setRuntimeContext(ctx);
     }
 
@@ -226,6 +228,7 @@ void BacktestSession::buildObjectGraph()
         m_execAdapter->setHistoricalFillFallback(m_historicalReadAdapter.get(),
                                                  barResolutionToPipelineString(m_config.resolution),
                                                  ds);
+        m_execAdapter->setHistoricalReadPolicy(m_historicalReadPolicy);
     }
 
     // --- Wire signals in priority order (all Qt::DirectConnection, same thread) ---

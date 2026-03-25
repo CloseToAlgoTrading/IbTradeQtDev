@@ -220,6 +220,7 @@ SOURCES += \
     Pipeline/PipelineConfigMutations.cpp \
     Pipeline/PipelineLog.cpp \
     Pipeline/StrategyPipelineRunner.cpp \
+    Pipeline/StrategyPipelineRuntimeOptions.cpp \
     Pipeline/IAlphaBlock.cpp \
     Pipeline/IRebalanceBlock.cpp \
     Pipeline/IRiskBlock.cpp \
@@ -336,6 +337,8 @@ HEADERS += \
     Pipeline/PipelineConfigMutations.h \
     Pipeline/BlockRegistry.h \
     Pipeline/StrategyPipelineRunner.h \
+    Pipeline/StrategyPipelineRuntimeOptions.h \
+    Pipeline/HistoricalReadPolicy.h \
     Pipeline/BlockGraphSerializer.h \
     Blocks/MomentumAlphaBlock.h \
     Blocks/MaxPositionRiskBlock.h \

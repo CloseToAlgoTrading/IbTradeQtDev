@@ -5,6 +5,7 @@
 
 #include "IHistoricalRead.h"
 #include "IMarketDataAccessor.h"
+#include "HistoricalReadPolicy.h"
 
 class IClock;
 
@@ -35,6 +36,12 @@ struct PipelineRuntimeContext {
     IClock* clock = nullptr;
     /// Filled by StrategyPipelineRunner::setRuntimeContext from graph.config strategyId.
     int strategyId = 0;
+    /// Default policy for historical bar requests. Backtest pre-resolves from controller;
+    /// live runner parses from graph config as fallback.
+    HistoricalReadPolicy historicalReadPolicyDefault = HistoricalReadPolicy::PreferCache;
+    /// True if historicalReadPolicyDefault was explicitly resolved (not just struct default).
+    /// Prevents runner fallback from overriding an intentional PreferCache selection.
+    bool historicalReadPolicyResolved = false;
 };
 
 /// Prefer \a ctx->holdings when \a ctx is non-null (runner-filled). Otherwise use \a passed (e.g. tests).

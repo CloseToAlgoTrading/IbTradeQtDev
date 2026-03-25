@@ -75,7 +75,8 @@ Pipeline::ModelDataList MomentumAlphaBlock::processSemantic(
         if (sym.isEmpty())
             continue;
         QVector<Pipeline::HistoricalBarSnapshot> bars =
-            runtimeContext()->historical->getBars(sym, m_resolution, m_dataSourceId, from, to);
+            runtimeContext()->historical->getBars(sym, m_resolution, m_dataSourceId, from, to,
+                                                  runtimeContext()->historicalReadPolicyDefault);
         if (bars.size() <= period)
             continue;
         const double baseClose = bars[bars.size() - 1 - period].close;

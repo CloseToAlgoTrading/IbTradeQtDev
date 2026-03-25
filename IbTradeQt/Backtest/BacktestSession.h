@@ -20,6 +20,7 @@
 #include "Common/IClock.h"
 #include "Replay/MarketDataReplayer.h"
 #include "Pipeline/StrategyPipelineRunner.h"
+#include "Pipeline/HistoricalReadPolicy.h"
 #include "Strategies/Generic/cpipelinestrategyadapter.h"
 
 class QNetworkAccessManager;
@@ -75,6 +76,12 @@ public:
     /// Yahoo bars; cleared automatically when the manager is destroyed after `run()`.
     void setHistoricalDataManager(HistoricalDataManager* mgr) { m_historicalDataManager = mgr; }
 
+    /// Set the historical read policy for this session (parsed once by BacktestController).
+    /// Must be called before run().
+    void setHistoricalReadPolicy(Pipeline::HistoricalReadPolicy policy) {
+        m_historicalReadPolicy = policy;
+    }
+
     // Preload-then-replay: all historical data is loaded into MarketDataReplayer
     // before the replay loop starts. Blocks until finished or cancelled.
     void run();
@@ -121,6 +128,7 @@ private:
     QMap<QString, QVector<IBComm::HistoricalBar>>   m_preloadedBars;
     QVector<IBComm::HistoricalBar>                  m_preloadedBenchmarkBars;
     QNetworkAccessManager*                         m_yahooNetworkManager = nullptr;
+    Pipeline::HistoricalReadPolicy                  m_historicalReadPolicy = Pipeline::HistoricalReadPolicy::PreferCache;
 };
 
 } // namespace Backtest

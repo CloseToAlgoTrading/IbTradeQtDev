@@ -6,6 +6,7 @@
 #include "Backtest/BacktestConstants.h"
 #include "Backtest/LedgerSnapshot.h"
 #include "Pipeline/UniverseResolver.h"
+#include "Pipeline/StrategyPipelineRuntimeOptions.h"
 #include "DB/dbquery.h"
 #include "DB/dbdatatypes.h"
 #include <algorithm>
@@ -142,6 +143,9 @@ void BacktestController::start(const BacktestRunConfig& config) {
             config.pipelineConfigJson.toUtf8()).object();
     }
 
+    const Pipeline::StrategyPipelineRuntimeOptions runtimeOpts =
+        Pipeline::StrategyPipelineRuntimeOptions::fromJson(pipelineJson);
+
     // Resolve symbols from the pipeline selection config if the run config
     // has no explicit symbols. This ensures data fetching matches the pipeline.
     BacktestRunConfig resolvedConfig = config;
@@ -230,6 +234,7 @@ void BacktestController::start(const BacktestRunConfig& config) {
 
     const QString benchmarkSymbol = resolvedConfig.benchmarkSymbol;
     const QHash<QString, QVariantMap> strategyAssets = assetListJsonToHash(resolvedConfig.assetListJson);
+    const Pipeline::HistoricalReadPolicy historicalReadPolicy = runtimeOpts.historicalReadPolicy;
 
     connect(m_workerThread, &QThread::started, m_session, [=]() mutable {
         // Scope the QSqlDatabase handle so no instance outlives removeDatabase (Qt requirement).
@@ -251,17 +256,18 @@ void BacktestController::start(const BacktestRunConfig& config) {
                 QString refreshedAt;
                 QMap<QString, QVector<IBComm::HistoricalBar>> strategyBars =
                     histMgr->getBarsMulti(symbols, resolution, dataSourceId,
-                                          startDate, endDate, &refreshedAt, strategyAssets);
+                                          startDate, endDate, &refreshedAt, strategyAssets, historicalReadPolicy);
 
                 // Inject pre-fetched strategy bars — BacktestSession will skip its own fetch
                 m_session->setPreloadedBars(strategyBars);
                 m_session->setHistoricalDataManager(histMgr.get());
+                m_session->setHistoricalReadPolicy(historicalReadPolicy);
 
                 // Pre-fetch and inject benchmark bars too (avoid second network round-trip)
                 if (!benchmarkSymbol.isEmpty()) {
                     QMap<QString, QVector<IBComm::HistoricalBar>> bmMap =
                         histMgr->getBarsMulti({benchmarkSymbol}, QStringLiteral("Day1"),
-                                              dataSourceId, startDate, endDate, nullptr, strategyAssets);
+                                              dataSourceId, startDate, endDate, nullptr, strategyAssets, historicalReadPolicy);
                     m_session->setPreloadedBenchmarkBars(bmMap.value(benchmarkSymbol));
                 }
 

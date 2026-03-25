@@ -53,7 +53,7 @@ std::optional<Pipeline::MarketTick> SimulatedExecutionAdapter::resolveTickForSym
     // exactly match tick timestamps (QDateTime equality) or if cache vs replay ordering differs.
     if (m_histFallback) {
         const QVector<Pipeline::HistoricalBarSnapshot> bars =
-            m_histFallback->getBars(symNorm, m_histResolution, m_histDataSourceId, from, toUtc);
+            m_histFallback->getBars(symNorm, m_histResolution, m_histDataSourceId, from, toUtc, m_historicalReadPolicy);
         if (!bars.isEmpty()) {
             const auto& b = bars.last();
             if (b.close > 0.0)
