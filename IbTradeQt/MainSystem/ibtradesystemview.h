@@ -24,6 +24,7 @@ class UiLayoutStore;
 
 namespace BacktestUI { class BacktestStrategySelector; }
 namespace StrategyMgmt { class StrategyManagementPanel; }
+namespace DataManagementUI { class DataManagementPanel; }
 
 class CIBTradeSystemView : public QMainWindow
 {
@@ -46,6 +47,8 @@ public:
                                                { return m_backtestSelector; }
     StrategyMgmt::StrategyManagementPanel* strategyManagementPanel() const
                                                { return m_strategyMgmtPanel; }
+    DataManagementUI::DataManagementPanel* dataManagementPanel() const
+                                               { return m_dataManagementPanel; }
 
     QSplitter* mainSplitter() const { return m_mainSplitter; }
     QSplitter* backtestSplitter() const { return m_backtestSplitter; }
@@ -90,6 +93,7 @@ private:
     QTabWidget*       m_mainTabWidget    = nullptr;
     BacktestUI::BacktestStrategySelector* m_backtestSelector = nullptr;
     StrategyMgmt::StrategyManagementPanel* m_strategyMgmtPanel = nullptr;
+    DataManagementUI::DataManagementPanel* m_dataManagementPanel = nullptr;
 
     QWidget* m_settingsOverlay   = nullptr;
     QFrame*  m_settingsBackdrop  = nullptr;

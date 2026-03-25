@@ -5,6 +5,7 @@
 #include "ContextWorkspace.h"
 #include "BacktestUI/BacktestStrategySelector.h"
 #include "StrategyManagementUI/StrategyManagementPanel.h"
+#include "DataManagementUI/DataManagementPanel.h"
 #include <time.h>
 #include <QStandardItemModel>
 #include "GlobalDef.h"
@@ -148,10 +149,12 @@ void CIBTradeSystemView::setupConsoleLayout()
     m_mainTabWidget->setDocumentMode(false);
     m_mainTabWidget->setObjectName(QStringLiteral("MainTabWidget"));
     m_strategyMgmtPanel = new StrategyMgmt::StrategyManagementPanel(this);
+    m_dataManagementPanel = new DataManagementUI::DataManagementPanel(this);
 
     m_mainTabWidget->addTab(m_mainSplitter,      QStringLiteral("Live Trading"));
     m_mainTabWidget->addTab(m_backtestSplitter,  QStringLiteral("Backtest"));
     m_mainTabWidget->addTab(m_strategyMgmtPanel,  QStringLiteral("Strategy Management"));
+    m_mainTabWidget->addTab(m_dataManagementPanel, QStringLiteral("Data Management"));
 
     // Remove and hide the old .ui splitter hierarchy.
     ui.verticalLayout_2->removeWidget(ui.splitter_2);

@@ -30,6 +30,7 @@
 #include "backtest/tst_market_session_utils.h"
 #include "backtest/tst_instrument_metadata_resolver.h"
 #include "backtest/tst_historical_data_manager_cache.h"
+#include "data_management/tst_data_management.h"
 #include "backtest/tst_backtest_extended.h"
 #include "backtest/tst_live_backtest.h"
 #include "backtest/tst_backtest_engine_coverage.h"
@@ -144,6 +145,7 @@ int main(int argc, char *argv[])
 
     // Backtester — Yahoo Finance data source + benchmark comparison
     IBTRADING_RUN_TEST(TestHistoricalDataManagerCache, tc);
+    IBTRADING_RUN_TEST(TestDataManagement, tc);
     IBTRADING_RUN_TEST(TestMarketSessionUtils, tc);
     IBTRADING_RUN_TEST(TestInstrumentMetadataResolver, tc);
     IBTRADING_RUN_TEST(TestYahooFinanceDataSource, tc);

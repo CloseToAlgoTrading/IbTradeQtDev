@@ -624,6 +624,73 @@ inline QSqlQuery query_cachedBarRange(const QString& symbol,
     return q;
 }
 
+// Inventory: one row per (symbol, resolution, dataSourceId) with counts and time range.
+inline QSqlQuery query_historicalBarsInventory(const QString& conn)
+{
+    QSqlQuery q(QSqlDatabase::database(conn));
+    q.prepare(
+        "SELECT symbol, resolution, dataSourceId, COUNT(*), MIN(timestamp), MAX(timestamp) "
+        "FROM HistoricalBars "
+        "GROUP BY symbol, resolution, dataSourceId "
+        "ORDER BY symbol, resolution, dataSourceId");
+    return q;
+}
+
+inline QSqlQuery query_deleteHistoricalBarsDataset(const QString& symbol,
+                                                    const QString& resolution,
+                                                    const QString& dataSourceId,
+                                                    const QString& conn)
+{
+    QSqlQuery q(QSqlDatabase::database(conn));
+    q.prepare(
+        "DELETE FROM HistoricalBars "
+        "WHERE symbol = :symbol AND resolution = :resolution AND dataSourceId = :dataSourceId");
+    q.bindValue(":symbol", symbol);
+    q.bindValue(":resolution", resolution);
+    q.bindValue(":dataSourceId", dataSourceId);
+    return q;
+}
+
+inline QSqlQuery query_historicalBarsPreviewFirst(const QString& symbol,
+                                                   const QString& resolution,
+                                                   const QString& dataSourceId,
+                                                   int limit,
+                                                   const QString& conn)
+{
+    QSqlQuery q(QSqlDatabase::database(conn));
+    q.prepare(
+        "SELECT timestamp, open, high, low, close, volume "
+        "FROM HistoricalBars "
+        "WHERE symbol = :symbol AND resolution = :resolution AND dataSourceId = :dataSourceId "
+        "ORDER BY timestamp ASC "
+        "LIMIT :lim");
+    q.bindValue(":symbol", symbol);
+    q.bindValue(":resolution", resolution);
+    q.bindValue(":dataSourceId", dataSourceId);
+    q.bindValue(":lim", limit);
+    return q;
+}
+
+inline QSqlQuery query_historicalBarsPreviewLast(const QString& symbol,
+                                                  const QString& resolution,
+                                                  const QString& dataSourceId,
+                                                  int limit,
+                                                  const QString& conn)
+{
+    QSqlQuery q(QSqlDatabase::database(conn));
+    q.prepare(
+        "SELECT timestamp, open, high, low, close, volume "
+        "FROM HistoricalBars "
+        "WHERE symbol = :symbol AND resolution = :resolution AND dataSourceId = :dataSourceId "
+        "ORDER BY timestamp DESC "
+        "LIMIT :lim");
+    q.bindValue(":symbol", symbol);
+    q.bindValue(":resolution", resolution);
+    q.bindValue(":dataSourceId", dataSourceId);
+    q.bindValue(":lim", limit);
+    return q;
+}
+
 // ---------------------------------------------------------------------------
 // BacktestRunProfiles DDL
 // owner_type: "strategy_definition" | "live_strategy" | "portfolio" | "account"

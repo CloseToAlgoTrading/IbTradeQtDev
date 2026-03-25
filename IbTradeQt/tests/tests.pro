@@ -66,6 +66,17 @@ win32 {
 
 SOURCES += \
     main.cpp \
+    data_management/tst_data_management.cpp \
+    ../DataManagement/BacktestMarketDataRepository.cpp \
+    ../DataManagement/DataSourceIdNormalizer.cpp \
+    ../DataManagement/ExportFilenameUtils.cpp \
+    ../DataManagement/CsvBarsImporter.cpp \
+    ../DataManagement/CsvBarsExporter.cpp \
+    ../DataManagement/DataManagementWorker.cpp \
+    ../DataManagement/DataManagementService.cpp \
+    ../DataManagement/HistoricalBarsCoverageSyncRegistry.cpp \
+    ../DataManagement/YahooHistoricalBarsCoveragePlanner.cpp \
+    ../DataManagement/YahooHistoricalBarsCoverageSyncProvider.cpp \
     db/tst_dbhandler_disconnect.cpp \
     backtest/tst_market_session_utils.cpp \
     blocks/tst_quant_momentum_blocks.cpp \
@@ -340,6 +351,9 @@ HEADERS += \
     blocks/tst_quant_momentum_blocks.h \
     backtest/tst_instrument_metadata_resolver.h \
     backtest/tst_historical_data_manager_cache.h \
+    data_management/tst_data_management.h \
+    ../DataManagement/DataManagementWorker.h \
+    ../DataManagement/DataManagementService.h \
     backtest/tst_backtest_extended.h \
     backtest/tst_live_backtest.h \
     backtest/tst_backtest_engine_coverage.h \

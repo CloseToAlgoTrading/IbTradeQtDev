@@ -30,6 +30,7 @@
 #include <QUuid>
 #include "BacktestWorkspaceCoordinator.h"
 #include "StrategyManagementCoordinator.h"
+#include "DataManagementCoordinator.h"
 #include "BacktestUI/BacktestWorkspaceDock.h"
 #include "BacktestUI/BacktestStrategySelector.h"
 #include "StrategyManagementUI/StrategyManagementPanel.h"
@@ -272,6 +273,11 @@ void CPresenter::MapSignals()
     m_stratMgmtCoord->setPanel(pIbtsView->strategyManagementPanel());
     m_stratMgmtCoord->wireSignals();
 
+    m_dataMgmtCoord = new DataManagementCoordinator(this);
+    m_dataMgmtCoord->setView(pIbtsView);
+    m_dataMgmtCoord->setPanel(pIbtsView->dataManagementPanel());
+    m_dataMgmtCoord->wireSignals();
+
     connect(m_stratMgmtCoord, &StrategyManagementCoordinator::openInBacktest,
             m_backtestCoord, &BacktestWorkspaceCoordinator::openCatalogVersion);
 
@@ -320,6 +326,8 @@ void CPresenter::MapSignals()
                 m_backtestCoord->refreshStrategies();
             else if (index == kStrategyMgmtTab)
                 m_stratMgmtCoord->refreshCatalog();
+            else if (index == 3 && m_dataMgmtCoord)
+                m_dataMgmtCoord->refreshContextAndInventory();
         });
     }
 

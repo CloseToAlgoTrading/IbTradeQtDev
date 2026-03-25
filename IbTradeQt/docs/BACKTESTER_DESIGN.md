@@ -523,6 +523,33 @@ All sources produce `IBComm::HistoricalBar`. `MarketDataReplayer` receives bars 
 
 **See also:** `tests/BACKTEST_TESTING.md` (Yahoo prefetch and cache behaviour).
 
+### 11.2 Data Management tab — `HistoricalBars` on backtest store [IMPLEMENTED]
+
+The fourth main-window tab manages **dataset-level** SQLite `HistoricalBars` rows on **`StorageConfig::backtestStore.path`** (same file Yahoo prefetch and CSV backtests use). It does **not** use `DBHandler`’s app DB for bars.
+
+- **Module:** `DataManagement/` (`DataManagementService` on the GUI thread, `DataManagementWorker` + `QThread`, `BacktestMarketDataRepository`), `DataManagementUI/DataManagementPanel`, `MainSystem/DataManagementCoordinator` (orchestration, overwrite prompts, post-delete/post-import inventory refresh).
+- **Contract:** `request*` returns an `operationId`; completion signals echo it so the coordinator can ignore stale completions when operations overlap. CSV import/export matches the header and column order of `CsvHistoricalDataSource` / `CsvBarsImporter`.
+- **Detail spec:** `.cursor/plans/data_management_tab.plan.md` (V1 scope, non-goals, DTOs).
+- **Tests:** `TestDataManagement::service_asyncContract_importInventoryAndErrors` exercises `DataManagementService` (import→inventory via worker + `DataManagementError` on invalid resolution, missing file, and inventory when the DB path is a directory). Repository/CSV unit tests live in the same suite.
+
+### 11.3 Coverage sync vs other “gap” concepts (Phase A)
+
+Three different ideas are easy to conflate; only **one** is in scope for Phase A:
+
+| Concept | Meaning | Phase A |
+|--------|---------|--------|
+| **Coverage sync** | Extend the **cached** `HistoricalBars` range toward the **requested** UTC window by fetching **leading** (prefix) and/or **trailing** (suffix) segments from the external source. Aligns with how `HistoricalDataManager::getBars` decides what to fetch: missing data **before** the cached minimum, **after** the cached maximum, or the **full** window when the cache is empty. | **Implemented** via `DataManagementService::requestSyncBarsCoverage` → provider (Yahoo first). |
+| **Calendar / expected-session gaps** | Trading-calendar expectations (holidays, early closes). Not a separate repair pass in the cache layer. | Out of scope. |
+| **Internal holes** | Missing bars **between** cached min and max (e.g. a gap mid-range). | **Explicit non-goal** — coverage sync does **not** scan or repair internal holes. |
+
+**Source of truth for “what is in the DB” after a successful sync:** the coordinator triggers a normal **bars inventory** refresh (same as after import/delete). `SyncCoverageResult` may include optional **resulting** min/max from a cheap `MIN/MAX` query (diagnostics); the inventory refresh remains authoritative for the table.
+
+**See also:** `HistoricalDataManager` (§11.1) for Yahoo `Day1` normalization, UTC calendar-date gap checks, incomplete daily bar handling, and weekend-only trailing skip — the Yahoo coverage planner mirrors that segment policy for Data Management sync.
+
+### 11.4 Interactive Brokers historical coverage sync (Phase B)
+
+**Not implemented in Phase A.** IB requires a separate provider (connection gating, bar size mapping, pacing/rate limits). The public operation remains `requestSyncBarsCoverage`; routing by provenance will add an `IbHistoricalBarsCoverageSyncProvider` when ready.
+
 ---
 
 ## 12. Performance Metrics

@@ -269,7 +269,20 @@ SOURCES += \
     StrategyManagementUI/CatalogTreeModel.cpp \
     StrategyManagementUI/StrategyCatalogPanel.cpp \
     StrategyManagementUI/StrategyDetailPanel.cpp \
-    StrategyManagementUI/StrategyManagementPanel.cpp
+    StrategyManagementUI/StrategyManagementPanel.cpp \
+    DataManagement/DataSourceIdNormalizer.cpp \
+    DataManagement/ExportFilenameUtils.cpp \
+    DataManagement/BacktestMarketDataRepository.cpp \
+    DataManagement/CsvBarsImporter.cpp \
+    DataManagement/CsvBarsExporter.cpp \
+    DataManagement/DataManagementWorker.cpp \
+    DataManagement/DataManagementService.cpp \
+    DataManagement/HistoricalBarsCoverageSyncRegistry.cpp \
+    DataManagement/YahooHistoricalBarsCoveragePlanner.cpp \
+    DataManagement/YahooHistoricalBarsCoverageSyncProvider.cpp \
+    DataManagementUI/DatasetTableModel.cpp \
+    DataManagementUI/DataManagementPanel.cpp \
+    MainSystem/DataManagementCoordinator.cpp
 
 
 HEADERS += \
@@ -488,6 +501,23 @@ HEADERS += \
     StrategyManagementUI/StrategyCatalogPanel.h \
     StrategyManagementUI/StrategyDetailPanel.h \
     StrategyManagementUI/StrategyManagementPanel.h \
+    DataManagement/DataManagementTypes.h \
+    DataManagement/DataManagementConstants.h \
+    DataManagement/DataSourceIdNormalizer.h \
+    DataManagement/BarResolutionConstants.h \
+    DataManagement/ExportFilenameUtils.h \
+    DataManagement/BacktestMarketDataRepository.h \
+    DataManagement/CsvBarsImporter.h \
+    DataManagement/CsvBarsExporter.h \
+    DataManagement/DataManagementWorker.h \
+    DataManagement/DataManagementService.h \
+    DataManagement/HistoricalBarsCoverageSyncRegistry.h \
+    DataManagement/IHistoricalBarsCoverageSyncProvider.h \
+    DataManagement/YahooHistoricalBarsCoveragePlanner.h \
+    DataManagement/YahooHistoricalBarsCoverageSyncProvider.h \
+    DataManagementUI/DatasetTableModel.h \
+    DataManagementUI/DataManagementPanel.h \
+    MainSystem/DataManagementCoordinator.h \
     Strategies/Generic/modelConstants.h \
     Strategies/StateMachine/cmodelstate.h \
     Strategies/StateMachine/cmodelstateimpl.h \

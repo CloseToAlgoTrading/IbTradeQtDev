@@ -23,6 +23,7 @@ class SystemTreeDelegate;
 class ISystemBackend;
 class BacktestWorkspaceCoordinator;
 class StrategyManagementCoordinator;
+class DataManagementCoordinator;
 
 class CPresenter : public QObject
 {
@@ -97,6 +98,7 @@ private:
 
     BacktestWorkspaceCoordinator*     m_backtestCoord  = nullptr;
     StrategyManagementCoordinator*    m_stratMgmtCoord = nullptr;
+    DataManagementCoordinator*        m_dataMgmtCoord  = nullptr;
     int                                 m_lastMainTabIndex = 0;
 };
 
