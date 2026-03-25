@@ -61,6 +61,19 @@ inline constexpr int kFontSizeStrategyOverviewState = 14;
 
 inline constexpr int kFontSizeMetricValue = 13;
 
+/** Qt Charts (TradingChartTheme) — keep THEME PALETTE in operations-console.qss in sync */
+inline constexpr char kChartPlotBg[]    = "#121218";
+inline constexpr char kChartGrid[]      = "#2e2e38";
+inline constexpr char kChartBull[]      = "#22c55e";
+inline constexpr char kChartBear[]      = "#ef4444";
+/** Wick / body stroke (QCandlestickSeries pen) — thin line on dark plot */
+inline constexpr char kChartCandleStroke[] = "#7a7a8c";
+inline constexpr char kChartStrategyLine[] = "#6ea8ff";
+inline constexpr char kChartBenchmarkLine[] = "#d4a84b";
+/** Entry/exit scatter markers (distinct from candle fills, like pro terminals) */
+inline constexpr char kChartBuyMarker[]  = "#38bdf8";
+inline constexpr char kChartSellMarker[] = "#fb923c";
+
 // ── Layout (pixels; used in C++ — document in operations-console.qss THEME note) ──
 
 /** Backtest workspace dock / embedded panel (keeps main window central area flexible). */

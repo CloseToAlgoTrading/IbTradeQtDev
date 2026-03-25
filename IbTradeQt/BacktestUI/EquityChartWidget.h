@@ -17,8 +17,8 @@
 class QEvent;
 class QObject;
 class QChart;
-class QChartView;
 class QLineSeries;
+class TradingChartView;
 class QDateTimeAxis;
 class QValueAxis;
 
@@ -55,15 +55,19 @@ public:
 protected:
     bool eventFilter(QObject* watched, QEvent* event) override;
 
+private slots:
+    void onChartViewRangeChanged();
+
 private:
     void setupChart();
     void updateAxes();
+    void refitYToVisiblePnl();
     void updateCrosshairFromScenePos(const QPointF& scenePos);
 
     static double interpolateYAtX(const QVector<QPointF>& sortedPoints, double x);
 
-    QChart*        m_chart            = nullptr;
-    QChartView*    m_chartView        = nullptr;
+    QChart*           m_chart            = nullptr;
+    TradingChartView* m_chartView        = nullptr;
     QLineSeries*   m_strategySeries   = nullptr;
     QLineSeries*   m_benchmarkSeries  = nullptr;
     QLineSeries*   m_crosshairSeries  = nullptr;

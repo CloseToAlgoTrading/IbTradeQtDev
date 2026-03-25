@@ -24,6 +24,15 @@
  *  layout (px)   —         Dock/panel mins & chart mins: UiTheme::kBacktestWorkspaceMinWidth,
  *                         kBacktestWorkspaceMinHeight, kEventLogMinHeight, kEventLogDockInitialHeight,
  *                         kBacktestChartViewMinHeight in ThemePalette.h (set in C++; not in QSS)
+ *  chartPlotBg   #121218   Qt Charts plot area (TradingChartTheme; C++ + QSS chrome)
+ *  chartGrid     #2e2e38   Chart grid lines
+ *  chartBull     #22c55e   Candlestick bullish (green)
+ *  chartBear     #ef4444   Candlestick bearish (red)
+ *  chartCandleStroke #7a7a8c  Candle wick/body stroke (QCandlestickSeries pen)
+ *  chartBuyMarker  #38bdf8  Entry marker (scatter)
+ *  chartSellMarker #fb923c  Exit marker (scatter)
+ *  chartStrategyLine #6ea8ff  Equity strategy P&L line
+ *  chartBenchmarkLine #d4a84b Benchmark P&L line
  *  ────────────────────────────────────────────────────────────────────────── */
 
 * {
@@ -42,6 +51,17 @@ QDialog,
 QWizard {
     background-color: #1b1b1b;
     color: #d0d0d0;
+}
+
+/* Qt Charts: chrome around TradingChartView (plot colors set in C++ via TradingChartTheme) */
+QChartView#tradingChartView {
+    background-color: #161616;
+    border: 1px solid #2a2a2a;
+    border-radius: 2px;
+}
+
+QChartView#tradingChartView > QWidget {
+    background-color: #161616;
 }
 
 /* ── Labels ── */

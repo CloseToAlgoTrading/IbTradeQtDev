@@ -271,6 +271,8 @@ SOURCES += \
     SharedUI/BlockInspectorPresenter.cpp \
     SharedUI/StrategyDetailPresenter.cpp \
     SharedUI/FilterableTableWidget.cpp \
+    SharedUI/TradingChartView.cpp \
+    SharedUI/TradingChartTheme.cpp \
     BacktestUI/BacktestTreeModel.cpp \
     BacktestUI/PreparePreflightDialog.cpp \
     BacktestUI/YahooSymbolCheckDialog.cpp \
@@ -511,6 +513,8 @@ HEADERS += \
     SharedUI/PipelineDiagramModel.h \
     SharedUI/BlockInspectorPresenter.h \
     SharedUI/StrategyDetailPresenter.h \
+    SharedUI/TradingChartView.h \
+    SharedUI/TradingChartTheme.h \
     BacktestUI/BacktestTreeModel.h \
     BacktestUI/PreparePreflightDialog.h \
     BacktestUI/YahooSymbolCheckDialog.h \

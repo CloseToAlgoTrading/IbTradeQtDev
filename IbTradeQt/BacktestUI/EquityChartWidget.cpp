@@ -1,8 +1,9 @@
 #include "BacktestUI/EquityChartWidget.h"
 #include "Backtest/EquityCurvePnl.h"
+#include "SharedUI/TradingChartTheme.h"
+#include "SharedUI/TradingChartView.h"
 #include "ThemePalette.h"
 #include <QChart>
-#include <QChartView>
 #include <QCursor>
 #include <QDateTime>
 #include <QTimeZone>
@@ -15,6 +16,7 @@
 #include <QToolTip>
 #include <QValueAxis>
 #include <QVBoxLayout>
+#include <QSignalBlocker>
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -52,18 +54,20 @@ void EquityChartWidget::setupChart()
 
     m_strategySeries = new QLineSeries();
     m_strategySeries->setName(QStringLiteral("Strategy"));
+    m_strategySeries->setPen(QPen(QColor(QString::fromLatin1(UiTheme::kChartStrategyLine)), 2));
     m_chart->addSeries(m_strategySeries);
 
     m_benchmarkSeries = new QLineSeries();
     m_benchmarkSeries->setName(QStringLiteral("Benchmark"));
-    QPen benchPen = m_benchmarkSeries->pen();
+    QPen benchPen(QColor(QString::fromLatin1(UiTheme::kChartBenchmarkLine)));
     benchPen.setStyle(Qt::DashLine);
+    benchPen.setWidth(2);
     m_benchmarkSeries->setPen(benchPen);
     m_chart->addSeries(m_benchmarkSeries);
 
     m_crosshairSeries = new QLineSeries();
     m_crosshairSeries->setName(QStringLiteral(""));
-    QPen crossPen(QColor(180, 180, 180));
+    QPen crossPen(QColor(QString::fromLatin1(UiTheme::kChartGrid)));
     crossPen.setWidth(1);
     crossPen.setStyle(Qt::DashLine);
     m_crosshairSeries->setPen(crossPen);
@@ -87,14 +91,60 @@ void EquityChartWidget::setupChart()
     m_benchmarkSeries->attachAxis(m_axisY);
     m_crosshairSeries->attachAxis(m_axisY);
 
-    m_chartView = new QChartView(m_chart);
-    m_chartView->setRenderHint(QPainter::Antialiasing);
+    m_chartView = new TradingChartView(m_chart);
+    m_chartView->setObjectName(QStringLiteral("tradingChartView"));
+    m_chartView->setTimeAxis(m_axisX);
+    m_chartView->setValueAxis(m_axisY);
+    m_chartView->setMappingSeries(m_strategySeries);
     m_chartView->setMouseTracking(true);
     // Mouse move/leave are delivered to the viewport, not the QChartView itself.
     QWidget* vp = m_chartView->viewport();
     vp->setMouseTracking(true);
     vp->installEventFilter(this);
     m_chartView->setMinimumHeight(UiTheme::kBacktestChartViewMinHeight);
+
+    TradingChartTheme::applyDarkTheme(m_chart);
+
+    connect(m_chartView, &TradingChartView::viewRangeChanged,
+            this, &EquityChartWidget::onChartViewRangeChanged);
+}
+
+void EquityChartWidget::onChartViewRangeChanged()
+{
+    refitYToVisiblePnl();
+}
+
+void EquityChartWidget::refitYToVisiblePnl()
+{
+    if (!m_axisX || !m_axisY || m_strategyPnlPoints.isEmpty())
+        return;
+
+    const qint64 xMin = m_axisX->min().toMSecsSinceEpoch();
+    const qint64 xMax = m_axisX->max().toMSecsSinceEpoch();
+    double       minV = std::numeric_limits<double>::infinity();
+    double       maxV = -std::numeric_limits<double>::infinity();
+
+    auto scan = [&](const QVector<QPointF>& pts) {
+        if (pts.isEmpty())
+            return;
+        auto it = std::lower_bound(pts.begin(), pts.end(), static_cast<double>(xMin),
+                                   [](const QPointF& p, double vx) { return p.x() < vx; });
+        for (; it != pts.end() && it->x() <= static_cast<double>(xMax); ++it) {
+            minV = qMin(minV, it->y());
+            maxV = qMax(maxV, it->y());
+        }
+    };
+    scan(m_strategyPnlPoints);
+    if (m_benchmarkSeries->isVisible())
+        scan(m_benchmarkPnlPoints);
+
+    if (!std::isfinite(minV) || !std::isfinite(maxV))
+        return;
+
+    const double span   = maxV - minV;
+    const double margin = span > 1e-12 ? span * 0.05 : 1.0;
+    QSignalBlocker blocker(m_axisY);
+    m_axisY->setRange(minV - margin, maxV + margin);
 }
 
 double EquityChartWidget::interpolateYAtX(const QVector<QPointF>& sortedPoints, double x)
@@ -275,6 +325,8 @@ void EquityChartWidget::clear()
     m_benchmarkPnlPoints.clear();
     m_benchmarkLabelForTooltip.clear();
     m_chart->setTitle(QStringLiteral("Cumulative P&L"));
+    if (m_chartView)
+        m_chartView->clearFullRange();
 }
 
 void EquityChartWidget::updateAxes()
@@ -296,8 +348,11 @@ void EquityChartWidget::updateAxes()
     if (m_benchmarkSeries->isVisible())
         process(m_benchmarkSeries);
 
-    if (minTs >= maxTs)
+    if (minTs >= maxTs) {
+        if (m_chartView)
+            m_chartView->clearFullRange();
         return;
+    }
 
     m_axisX->setRange(QDateTime::fromMSecsSinceEpoch(minTs),
                       QDateTime::fromMSecsSinceEpoch(maxTs));
@@ -305,6 +360,10 @@ void EquityChartWidget::updateAxes()
     const double span = maxVal - minVal;
     const double margin = span > 1e-12 ? span * 0.05 : 1.0;
     m_axisY->setRange(minVal - margin, maxVal + margin);
+
+    if (m_chartView)
+        m_chartView->setFullRange(minTs, maxTs, minVal - margin, maxVal + margin);
+    refitYToVisiblePnl();
 }
 
 } // namespace BacktestUI
