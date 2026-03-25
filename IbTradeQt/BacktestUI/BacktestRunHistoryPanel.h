@@ -33,15 +33,15 @@ public:
 signals:
     // Emitted when the user clicks a row. CPresenter fetches the full run.
     void loadRunRequested(const QString& runId);
+    void deleteRunRequested(const QString& runId);
 
 private slots:
     void onRowActivated(const QModelIndex& index);
+    void onCustomContextMenu(const QPoint& pos);
 
 private:
     QTableView*         m_table = nullptr;
     QStandardItemModel* m_model = nullptr;
-
-    QList<DbBacktestRunSummary> m_runs; // stored so we can look up runId by row
 
     static constexpr int ColDate    = 0;
     static constexpr int ColPeriod  = 1;

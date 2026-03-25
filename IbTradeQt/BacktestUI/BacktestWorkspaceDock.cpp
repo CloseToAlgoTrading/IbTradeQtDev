@@ -166,6 +166,8 @@ void BacktestWorkspaceDock::buildDock() {
 
     connect(m_historyPanel, &BacktestRunHistoryPanel::loadRunRequested,
             this, &BacktestWorkspaceDock::loadRunRequested);
+    connect(m_historyPanel, &BacktestRunHistoryPanel::deleteRunRequested,
+            this, &BacktestWorkspaceDock::deleteRunRequested);
 }
 
 void BacktestWorkspaceDock::applyWorkspaceSession(const Backtest::Workspace::Session& session,
@@ -332,6 +334,15 @@ void BacktestWorkspaceDock::applyLoadedRunConfiguration(const Backtest::Backtest
 
 void BacktestWorkspaceDock::setRunHistory(const QList<DbBacktestRunSummary>& runs) {
     m_historyPanel->setRuns(runs);
+}
+
+void BacktestWorkspaceDock::clearDisplayedBacktestResult()
+{
+    m_equityChart->clear();
+    if (m_summaryStatisticsPanel)
+        m_summaryStatisticsPanel->clear();
+    m_candleChart->clear();
+    m_tradeLog->clear();
 }
 
 void BacktestWorkspaceDock::setProgress(int percent) {

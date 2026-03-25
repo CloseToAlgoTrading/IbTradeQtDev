@@ -42,6 +42,9 @@ public:
 
     void setRunHistory(const QList<DbBacktestRunSummary>& runs);
 
+    /// Clears equity, statistics, candlestick, and trade log (e.g. after deleting the loaded run).
+    void clearDisplayedBacktestResult();
+
     void setProgress(int percent);
     void setStatus(const QString& status);
     void setRunning(bool running);
@@ -63,6 +66,7 @@ signals:
     void prepareRunRequested(const Backtest::BacktestRunConfig& config);
     void stopBacktestRequested();
     void loadRunRequested(const QString& runId);
+    void deleteRunRequested(const QString& runId);
 
     void userWorkspacePipelineEdited(const QJsonObject& newWorkingPipeline);
     void userRunFieldsEdited();

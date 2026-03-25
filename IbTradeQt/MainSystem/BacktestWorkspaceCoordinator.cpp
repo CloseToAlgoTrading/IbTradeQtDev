@@ -188,6 +188,9 @@ void BacktestWorkspaceCoordinator::wireSignals()
     connect(m_dock, &BacktestUI::BacktestWorkspaceDock::loadRunRequested,
             this, &BacktestWorkspaceCoordinator::onLoadRun);
 
+    connect(m_dock, &BacktestUI::BacktestWorkspaceDock::deleteRunRequested,
+            this, &BacktestWorkspaceCoordinator::onDeleteRunRequested);
+
     connect(m_dock, &BacktestUI::BacktestWorkspaceDock::stopBacktestRequested,
             this, [this]() {
                 ensureController();
@@ -636,6 +639,17 @@ void BacktestWorkspaceCoordinator::refreshStrategies()
     selector->populateCatalog(catalogItems);
 }
 
+void BacktestWorkspaceCoordinator::refreshActiveRunHistory()
+{
+    if (!m_dock || !m_activeKey || !m_sessions.contains(*m_activeKey))
+        return;
+    Session& s = m_sessions[*m_activeKey];
+    if (m_activeKey->kind == SessionKind::LiveNode)
+        populateRunHistory(m_activeKey->nodeId, s.strategyDefId);
+    else
+        populateRunHistory(QString(), s.strategyDefId);
+}
+
 void BacktestWorkspaceCoordinator::populateRunHistory(
     const QString& strategyId, const QString& strategyDefId)
 {
@@ -793,7 +807,54 @@ void BacktestWorkspaceCoordinator::onLoadRun(const QString& runId)
     }
 
     m_dock->applyLoadedRunConfiguration(loaded);
+    if (m_activeKey && m_sessions.contains(*m_activeKey) && !loaded.record.runId.isEmpty()) {
+        Session& s = m_sessions[*m_activeKey];
+        s.lastRunId = loaded.record.runId;
+        s.resultsStale = false;
+        m_dock->setResultsStale(false);
+    }
     m_dock->displayResult(loaded, QStringLiteral("Ready"));
+}
+
+void BacktestWorkspaceCoordinator::onDeleteRunRequested(const QString& runId)
+{
+    if (runId.isEmpty() || !m_dock)
+        return;
+    ensureController();
+    if (!m_controller)
+        return;
+
+    const auto ans = QMessageBox::question(
+        m_view ? m_view->window() : nullptr,
+        QStringLiteral("Delete backtest run"),
+        QStringLiteral("Permanently delete this run from the database? This cannot be undone."),
+        QMessageBox::Yes | QMessageBox::No,
+        QMessageBox::No);
+    if (ans != QMessageBox::Yes)
+        return;
+
+    const QString conn = m_controller->dbConnectionName();
+    if (!query_deleteBacktestRunByRunId(runId, conn)) {
+        QMessageBox::warning(
+            m_view ? m_view->window() : nullptr,
+            QStringLiteral("Delete failed"),
+            QStringLiteral("Could not delete the run."));
+        return;
+    }
+
+    if (m_activeKey && m_sessions.contains(*m_activeKey)) {
+        Session& s = m_sessions[*m_activeKey];
+        if (s.lastRunId == runId) {
+            s.lastRunId.clear();
+            s.resultsStale = false;
+            m_dock->clearDisplayedBacktestResult();
+            m_dock->setResultsStale(false);
+            recomputeSessionDirty(s);
+            m_dock->setSessionDirtyState(s.dirty);
+        }
+    }
+
+    refreshActiveRunHistory();
 }
 
 void BacktestWorkspaceCoordinator::onBacktestFinished(const Backtest::BacktestLoadedRun& run)

@@ -822,4 +822,43 @@ inline bool query_deleteBacktestDataForCatalogStrategy(const QString& strategyId
     return true;
 }
 
+/** Deletes a single backtest run and all dependent rows (metrics, trades, equity curve). */
+inline bool query_deleteBacktestRunByRunId(const QString& runId, const QString& conn)
+{
+    if (runId.isEmpty())
+        return false;
+
+    QSqlDatabase db = QSqlDatabase::database(conn);
+    if (!db.isOpen())
+        return false;
+
+    auto runSql = [&db, &runId](const QString& sql) -> bool {
+        QSqlQuery q(db);
+        q.prepare(sql);
+        q.bindValue(QStringLiteral(":runId"), runId);
+        if (!q.exec()) {
+            qWarning() << "query_deleteBacktestRunByRunId:" << q.lastError().text();
+            return false;
+        }
+        return true;
+    };
+
+    if (!db.transaction())
+        return false;
+
+    if (!runSql(QStringLiteral("DELETE FROM BacktestMetrics WHERE runId = :runId")) ||
+        !runSql(QStringLiteral("DELETE FROM BacktestTrades WHERE runId = :runId")) ||
+        !runSql(QStringLiteral("DELETE FROM BacktestEquityCurve WHERE runId = :runId")) ||
+        !runSql(QStringLiteral("DELETE FROM BacktestRuns WHERE runId = :runId"))) {
+        db.rollback();
+        return false;
+    }
+
+    if (!db.commit()) {
+        db.rollback();
+        return false;
+    }
+    return true;
+}
+
 #endif // DBQUERY_H

@@ -53,6 +53,7 @@ signals:
 
 private slots:
     void onLoadRun(const QString& runId);
+    void onDeleteRunRequested(const QString& runId);
     void onBacktestFinished(const Backtest::BacktestLoadedRun& run);
     void onBacktestFailed(const QString& reason);
     void onPreFlightPrepareFinished(const Backtest::BacktestPreFlightResult& result);
@@ -69,6 +70,7 @@ private:
     void mergeSessionAssetListIntoRunConfig(Backtest::BacktestRunConfig& runCfg);
     void launchPrepareRun(const Backtest::BacktestRunConfig& config);
     void populateRunHistory(const QString& strategyId, const QString& strategyDefId);
+    void refreshActiveRunHistory();
 
     bool tryResolveSessionSwitch(const Backtest::Workspace::SessionKey& nextKey);
     void activateSession(const Backtest::Workspace::SessionKey& key, bool clearResultPanels);
