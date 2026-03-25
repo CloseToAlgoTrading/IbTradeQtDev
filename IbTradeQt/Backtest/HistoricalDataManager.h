@@ -38,14 +38,20 @@
 #include "Backtest/IHistoricalDataSource.h"
 #include "DB/dbdatatypes.h"
 #include "Pipeline/HistoricalReadPolicy.h"
+#include "Backtest/YahooChartBatchFetch.h"
 
 class QNetworkAccessManager;
 
 namespace Backtest {
 
-struct YahooFetchResult {
-    QVector<IBComm::HistoricalBar> bars;
-    QSet<QString> failedSymbols;
+/// Per-symbol cache coverage for a PreferCache-style request (read-only; no network).
+struct SymbolCoveragePlanEntry {
+    enum class Status {
+        FullyCached, ///< No fetch required for this symbol at this resolution/source.
+        NeedsFetch,  ///< No rows in cache for (symbol, resolution, dataSourceId).
+        PartialGap   ///< Cache exists but does not cover the full requested window.
+    };
+    Status status = Status::FullyCached;
 };
 
 class HistoricalDataManager : public QObject {
@@ -113,6 +119,15 @@ public:
         QString* dataRefreshedAt = nullptr,
         const QHash<QString, QVariantMap>& strategyAssetBySymbol = {},
         Pipeline::HistoricalReadPolicy policy = Pipeline::HistoricalReadPolicy::PreferCache);
+
+    /// Read-only PreferCache gap analysis (same rules as getBarsMulti / getBarsPreferCache). No I/O.
+    QMap<QString, SymbolCoveragePlanEntry> computeCoveragePlan(
+        const QStringList& symbols,
+        const QString& resolution,
+        const QString& dataSourceId,
+        const QDateTime& from,
+        const QDateTime& to,
+        const QHash<QString, QVariantMap>& strategyAssetBySymbol = {}) const;
 
 private:
     struct CachedRange {

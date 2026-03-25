@@ -79,6 +79,15 @@ void BacktestRunConfigPanel::buildForm() {
     m_runButton = new QPushButton(QStringLiteral("▶  Run Backtest"));
     m_runButton->setMinimumHeight(32);
 
+    m_prepareButton = new QPushButton(QStringLiteral("Prepare run…"));
+    m_prepareButton->setMinimumHeight(32);
+    m_prepareButton->setToolTip(
+        QStringLiteral("Validate Yahoo symbols and show cache coverage before running."));
+
+    m_stopButton = new QPushButton(QStringLiteral("Stop"));
+    m_stopButton->setMinimumHeight(32);
+    m_stopButton->setVisible(false);
+
     m_progressBar = new QProgressBar();
     m_progressBar->setRange(0, 100);
     m_progressBar->setValue(0);
@@ -133,6 +142,8 @@ void BacktestRunConfigPanel::buildForm() {
     scrollArea->setWidget(scrollContent);
 
     auto* btnRow = new QHBoxLayout();
+    btnRow->addWidget(m_prepareButton);
+    btnRow->addWidget(m_stopButton);
     btnRow->addWidget(m_runButton);
     btnRow->addWidget(m_statusLabel);
 
@@ -143,6 +154,10 @@ void BacktestRunConfigPanel::buildForm() {
     layout->addWidget(m_progressBar);
 
     connect(m_runButton, &QPushButton::clicked, this, &BacktestRunConfigPanel::onRunClicked);
+    connect(m_stopButton, &QPushButton::clicked, this, [this]() { emit stopRequested(); });
+    connect(m_prepareButton, &QPushButton::clicked, this, [this]() {
+        emit prepareRunRequested(currentConfig());
+    });
 
     wireUserEditSignals();
 }
@@ -375,9 +390,36 @@ void BacktestRunConfigPanel::setStatus(const QString& status) {
 }
 
 void BacktestRunConfigPanel::setRunning(bool running) {
-    m_runButton->setEnabled(!running);
+    m_runButton->setVisible(!running);
+    m_stopButton->setVisible(running);
+    m_prepareButton->setEnabled(!running);
     m_progressBar->setVisible(running);
-    if (!running) m_progressBar->setValue(0);
+    m_progressBar->setRange(0, 100);
+    if (!running)
+        m_progressBar->setValue(0);
+}
+
+void BacktestRunConfigPanel::setRenderingResults(bool on, const QString& statusWhenDone)
+{
+    if (on) {
+        m_runButton->setVisible(false);
+        m_stopButton->setVisible(false);
+        m_statusLabel->setText(QStringLiteral("Rendering results…"));
+        m_progressBar->setVisible(true);
+        m_progressBar->setRange(0, 0);
+    } else {
+        m_progressBar->setRange(0, 100);
+        m_progressBar->setVisible(false);
+        m_runButton->setVisible(true);
+        m_stopButton->setVisible(false);
+        m_statusLabel->setText(statusWhenDone.isEmpty() ? QStringLiteral("Finished")
+                                                        : statusWhenDone);
+    }
+}
+
+void BacktestRunConfigPanel::setPrepareEnabled(bool enabled) {
+    if (m_prepareButton)
+        m_prepareButton->setEnabled(enabled);
 }
 
 void BacktestRunConfigPanel::onRunClicked() {

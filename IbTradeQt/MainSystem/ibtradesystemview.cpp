@@ -366,6 +366,12 @@ void CIBTradeSystemView::switchToStrategyManagementTab()
         m_mainTabWidget->setCurrentIndex(2);
 }
 
+void CIBTradeSystemView::switchToDataManagementTab()
+{
+    if (m_mainTabWidget)
+        m_mainTabWidget->setCurrentIndex(3);
+}
+
 Ui::IBTradeSystemClass CIBTradeSystemView::getUi()
 {
     return ui;

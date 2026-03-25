@@ -46,12 +46,12 @@ BacktestSession::BacktestSession(const BacktestConfig& config, QObject* parent)
 
 void BacktestSession::cancel()
 {
-    m_cancelled = true;
+    m_cancelled.store(true, std::memory_order_release);
 }
 
 void BacktestSession::run()
 {
-    m_cancelled  = false;
+    m_cancelled.store(false, std::memory_order_release);
     m_buildFailed = false;
 
     buildObjectGraph();
@@ -81,7 +81,7 @@ void BacktestSession::run()
     } else {
         loadHistoricalData();
         if (m_loadFailed) return;   // failed() already emitted inside loadHistoricalData()
-        if (m_cancelled) {
+        if (m_cancelled.load(std::memory_order_acquire)) {
             emit failed("Cancelled during data load");
             return;
         }
@@ -89,7 +89,7 @@ void BacktestSession::run()
 
     driveReplayLoop();
 
-    if (m_cancelled) {
+    if (m_cancelled.load(std::memory_order_acquire)) {
         emit failed("Cancelled during replay");
         return;
     }
@@ -104,6 +104,10 @@ void BacktestSession::run()
     // Load benchmark data if configured
     if (!m_config.benchmarkSymbol.isEmpty()) {
         loadBenchmarkData();
+        if (m_cancelled.load(std::memory_order_acquire)) {
+            emit failed(QStringLiteral("Cancelled during benchmark load"));
+            return;
+        }
         m_result.alphaVsBenchmark =
             m_result.annualizedReturn - m_result.benchmark.annualizedReturn;
     }
@@ -335,14 +339,24 @@ void BacktestSession::loadHistoricalData()
                 &loop, &QEventLoop::quit, Qt::DirectConnection);
         connect(m_dataSource.get(), &IHistoricalDataSource::loadFailed,
                 &loop, &QEventLoop::quit, Qt::DirectConnection);
+        connect(m_dataSource.get(), &IHistoricalDataSource::barLoaded,
+                this, [&loop, this](const IBComm::HistoricalBar&) {
+                    if (m_cancelled.load(std::memory_order_acquire))
+                        loop.quit();
+                },
+                Qt::DirectConnection);
         loop.exec();
     }
 
     if (!loadError.isEmpty()) {
-        m_cancelled  = true;
+        m_cancelled.store(true, std::memory_order_release);
         m_loadFailed = true;
         emit failed(loadError);
     } else {
+        if (m_cancelled.load(std::memory_order_acquire)) {
+            emit failed(QStringLiteral("Cancelled during data load"));
+            return;
+        }
         if (bufferYahooBars && !yahooBars.isEmpty()) {
             std::sort(yahooBars.begin(), yahooBars.end(),
                       [](const IBComm::HistoricalBar& a, const IBComm::HistoricalBar& b) {
@@ -377,7 +391,9 @@ void BacktestSession::driveReplayLoop()
                 }
             }, Qt::DirectConnection);
 
-    m_replayer->replay();
+    m_replayer->replay([this]() {
+        return m_cancelled.load(std::memory_order_relaxed);
+    });
     if (m_pipelineRunner)
         m_pipelineRunner->flushBarClosePipeline();
 }
@@ -444,8 +460,17 @@ void BacktestSession::loadBenchmarkData()
                 &loop, &QEventLoop::quit, Qt::DirectConnection);
         connect(bmSource.get(), &IHistoricalDataSource::loadFailed,
                 &loop, &QEventLoop::quit, Qt::DirectConnection);
+        connect(bmSource.get(), &IHistoricalDataSource::barLoaded,
+                this, [&loop, this](const IBComm::HistoricalBar&) {
+                    if (m_cancelled.load(std::memory_order_acquire))
+                        loop.quit();
+                },
+                Qt::DirectConnection);
         loop.exec();
     }
+
+    if (m_cancelled.load(std::memory_order_acquire))
+        return;
 
     if (!err.isEmpty()) {
         qCWarning(lcBacktestSession) << "BacktestSession: benchmark load failed:" << err;

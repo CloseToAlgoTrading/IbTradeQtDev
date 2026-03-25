@@ -73,6 +73,7 @@ YahooEpochBounds computeYahooChartEpochBounds(const QDateTime& from, const QDate
 {
     YahooEpochBounds b;
     const qint64 nowSec = QDateTime::currentDateTimeUtc().toSecsSinceEpoch();
+    const QDate  todayUtc = QDateTime::currentDateTimeUtc().date();
 
     if (!from.isValid() && !to.isValid()) {
         b.period1 = 0;
@@ -82,7 +83,9 @@ YahooEpochBounds computeYahooChartEpochBounds(const QDateTime& from, const QDate
     }
     if (!from.isValid() && to.isValid()) {
         b.period1 = 0;
-        const QDate d = to.toUTC().date();
+        QDate d = to.toUTC().date();
+        if (d > todayUtc)
+            d = todayUtc;
         b.period2 = QDateTime(d.addDays(1), QTime(0, 0), Qt::UTC).toSecsSinceEpoch();
         b.valid   = b.period2 > b.period1;
         return b;
@@ -94,8 +97,15 @@ YahooEpochBounds computeYahooChartEpochBounds(const QDateTime& from, const QDate
         b.valid   = b.period2 > b.period1;
         return b;
     }
-    const QDate d1 = from.toUTC().date();
-    const QDate d2 = to.toUTC().date();
+    QDate d1 = from.toUTC().date();
+    QDate d2 = to.toUTC().date();
+    // Yahoo has no daily bars after "today" in UTC; clamp a mis-set future end date.
+    if (d2 > todayUtc)
+        d2 = todayUtc;
+    if (d1 > d2) {
+        b.valid = false;
+        return b;
+    }
     b.period1 = QDateTime(d1, QTime(0, 0), Qt::UTC).toSecsSinceEpoch();
     b.period2 = QDateTime(d2.addDays(1), QTime(0, 0), Qt::UTC).toSecsSinceEpoch();
     b.valid   = b.period2 > b.period1;
@@ -250,11 +260,20 @@ void YahooFinanceDataSource::onReplyFinished(QNetworkReply* reply)
         const QString errorMsg = QStringLiteral("HTTP/transport failure: %1").arg(reply->errorString());
         m_lastError = QStringLiteral("HTTP/transport failure for %1: %2")
                           .arg(symbol, reply->errorString());
-        qCWarning(lcYahoo) << "YahooFinanceDataSource: HTTP/transport failure for" << symbol
-                           << "qtError=" << static_cast<int>(reply->error())
-                           << "httpStatus=" << statusVar
-                           << "url=" << reply->url().toString()
-                           << "body=" << bodyPrev;
+        const int httpStatus = statusVar.toInt();
+        if (httpStatus == 404) {
+            qCWarning(lcYahoo) << "YahooFinanceDataSource: chart HTTP 404 for" << symbol
+                               << "— Yahoo has no chart data (wrong ticker, delisted, or no bars in range)."
+                               << "qtError=" << static_cast<int>(reply->error())
+                               << "url=" << reply->url().toString()
+                               << "body=" << bodyPrev;
+        } else {
+            qCWarning(lcYahoo) << "YahooFinanceDataSource: HTTP/transport failure for" << symbol
+                               << "qtError=" << static_cast<int>(reply->error())
+                               << "httpStatus=" << statusVar
+                               << "url=" << reply->url().toString()
+                               << "body=" << bodyPrev;
+        }
         
         m_failedSymbols.insert(symbol);
         emit symbolFailed(symbol, errorMsg);

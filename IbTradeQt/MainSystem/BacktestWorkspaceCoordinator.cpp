@@ -3,9 +3,12 @@
 #include "ISystemBackend.h"
 #include "ibtradesystemview.h"
 #include "BacktestUI/BacktestWorkspaceDock.h"
+#include "BacktestUI/PreparePreflightDialog.h"
+#include "BacktestUI/YahooSymbolCheckDialog.h"
 #include "BacktestUI/BacktestStrategySelector.h"
 #include "BacktestUI/BacktestRunConfigPanel.h"
 #include "Backtest/BacktestController.h"
+#include "Backtest/BacktestPreFlightCoordinator.h"
 #include "Backtest/BacktestDataTypes.h"
 #include "Backtest/DataQuality.h"
 #include <cmath>
@@ -17,6 +20,8 @@
 #include <QJsonDocument>
 #include <QMessageBox>
 #include <QtSql/QSqlDatabase>
+
+#include "Pipeline/UniverseResolver.h"
 
 using Backtest::Workspace::Session;
 using Backtest::Workspace::SessionKey;
@@ -87,6 +92,10 @@ void repairBenchmarkEquityMisstoredZeros(QVector<Backtest::LedgerSnapshot>& bm)
 
 } // namespace
 
+namespace {
+
+} // namespace
+
 BacktestWorkspaceCoordinator::BacktestWorkspaceCoordinator(QObject* parent)
     : QObject(parent)
     , m_unsavedPrompt(std::make_unique<QtUnsavedChangesPrompt>())
@@ -140,34 +149,51 @@ void BacktestWorkspaceCoordinator::wireSignals()
         ensureController();
         if (!m_controller) return;
         Backtest::BacktestRunConfig runCfg = config;
-        if (m_activeKey && m_sessions.contains(*m_activeKey)) {
-            const Session& s = m_sessions[*m_activeKey];
-            QJsonObject      al;
-            if (s.key.kind == SessionKind::LiveNode && m_backend && !s.key.nodeId.isEmpty()) {
-                al = m_backend->nodeInfo(s.key.nodeId).value(QStringLiteral("assetList")).toObject();
-            } else if (s.key.kind == SessionKind::CatalogVersion) {
-                al = s.workingPipeline.value(QStringLiteral("assetList")).toObject();
+        mergeSessionAssetListIntoRunConfig(runCfg);
+
+        if (runCfg.dataSourceId == QLatin1String("yahoo")) {
+            QStringList syms =
+                Backtest::BacktestPreFlightCoordinator::resolveRunConfigSymbols(runCfg).symbols;
+            const QString bm = runCfg.benchmarkSymbol.trimmed().toUpper();
+            if (!bm.isEmpty() && !syms.contains(bm))
+                syms.append(bm);
+            if (syms.isEmpty()) {
+                QMessageBox::warning(
+                    m_dock ? m_dock->window() : nullptr,
+                    QStringLiteral("Yahoo symbol check"),
+                    QStringLiteral(
+                        "No symbols to validate. Add symbols or configure a pipeline with a static universe."));
+                return;
             }
-            // Merge: strategy/catalog assetList first, then Run Configuration panel overrides
-            // (same symbol key) so ad-hoc SYMBOL:Type in the dock wins for that run.
-            QJsonObject merged = al;
-            if (!runCfg.assetListJson.isEmpty()) {
-                const QJsonObject panel =
-                    QJsonDocument::fromJson(runCfg.assetListJson.toUtf8()).object();
-                for (auto it = panel.begin(); it != panel.end(); ++it)
-                    merged[it.key()] = it.value();
-            }
-            if (!merged.isEmpty()) {
-                runCfg.assetListJson =
-                    QString::fromUtf8(QJsonDocument(merged).toJson(QJsonDocument::Compact));
-            }
+            m_pendingYahooRun = runCfg;
+            m_dock->setRunning(true);
+            auto* flight = new Backtest::BacktestPreFlightCoordinator(this);
+            QObject::connect(
+                flight, &Backtest::BacktestPreFlightCoordinator::yahooSymbolCheckFinished, this,
+                [this, flight](const Backtest::YahooUniverseValidator::Result& r) {
+                    flight->deleteLater();
+                    onYahooRunValidationFinished(r);
+                });
+            flight->requestYahooSymbolCheckAsync(syms);
+            return;
         }
+
         m_dock->setRunning(true);
         m_controller->start(runCfg);
     });
 
+    connect(m_dock, &BacktestUI::BacktestWorkspaceDock::prepareRunRequested,
+            this, [this](const Backtest::BacktestRunConfig& config) { launchPrepareRun(config); });
+
     connect(m_dock, &BacktestUI::BacktestWorkspaceDock::loadRunRequested,
             this, &BacktestWorkspaceCoordinator::onLoadRun);
+
+    connect(m_dock, &BacktestUI::BacktestWorkspaceDock::stopBacktestRequested,
+            this, [this]() {
+                ensureController();
+                if (m_controller)
+                    m_controller->requestStop();
+            });
 
     connect(m_dock, &BacktestUI::BacktestWorkspaceDock::userWorkspacePipelineEdited,
             this, &BacktestWorkspaceCoordinator::onUserPipelineEdited);
@@ -767,7 +793,7 @@ void BacktestWorkspaceCoordinator::onLoadRun(const QString& runId)
     }
 
     m_dock->applyLoadedRunConfiguration(loaded);
-    m_dock->displayResult(loaded);
+    m_dock->displayResult(loaded, QStringLiteral("Ready"));
 }
 
 void BacktestWorkspaceCoordinator::onBacktestFinished(const Backtest::BacktestLoadedRun& run)
@@ -855,5 +881,99 @@ void BacktestWorkspaceCoordinator::onBacktestFailed(const QString& reason)
 {
     if (!m_dock) return;
     m_dock->setRunning(false);
-    m_dock->setStatus(QStringLiteral("Failed: ") + reason);
+    if (reason.startsWith(QStringLiteral("Cancelled")))
+        m_dock->setStatus(reason);
+    else
+        m_dock->setStatus(QStringLiteral("Failed: ") + reason);
+}
+
+void BacktestWorkspaceCoordinator::mergeSessionAssetListIntoRunConfig(Backtest::BacktestRunConfig& runCfg)
+{
+    if (!m_activeKey || !m_sessions.contains(*m_activeKey))
+        return;
+    const Session& s = m_sessions[*m_activeKey];
+    QJsonObject      al;
+    if (s.key.kind == SessionKind::LiveNode && m_backend && !s.key.nodeId.isEmpty()) {
+        al = m_backend->nodeInfo(s.key.nodeId).value(QStringLiteral("assetList")).toObject();
+    } else if (s.key.kind == SessionKind::CatalogVersion) {
+        al = s.workingPipeline.value(QStringLiteral("assetList")).toObject();
+    }
+    QJsonObject merged = al;
+    if (!runCfg.assetListJson.isEmpty()) {
+        const QJsonObject panel =
+            QJsonDocument::fromJson(runCfg.assetListJson.toUtf8()).object();
+        for (auto it = panel.begin(); it != panel.end(); ++it)
+            merged[it.key()] = it.value();
+    }
+    if (!merged.isEmpty()) {
+        runCfg.assetListJson =
+            QString::fromUtf8(QJsonDocument(merged).toJson(QJsonDocument::Compact));
+    }
+}
+
+void BacktestWorkspaceCoordinator::launchPrepareRun(const Backtest::BacktestRunConfig& config)
+{
+    Backtest::BacktestRunConfig runCfg = config;
+    mergeSessionAssetListIntoRunConfig(runCfg);
+    auto* panel = m_dock ? m_dock->runConfigPanel() : nullptr;
+    if (panel)
+        panel->setPrepareEnabled(false);
+    auto* flight = new Backtest::BacktestPreFlightCoordinator(this);
+    QObject::connect(flight, &Backtest::BacktestPreFlightCoordinator::prepareFinished, this,
+                     [this, flight](const Backtest::BacktestPreFlightResult& res) {
+                         flight->deleteLater();
+                         onPreFlightPrepareFinished(res);
+                     });
+    Backtest::BacktestPreFlightCoordinator::PrepareInput in;
+    in.dbFilePath = NHelper::getStorageConfig().backtestStore.path;
+    in.runConfig  = runCfg;
+    flight->requestPrepareAsync(in);
+}
+
+void BacktestWorkspaceCoordinator::onPreFlightPrepareFinished(const Backtest::BacktestPreFlightResult& r)
+{
+    if (m_dock && m_dock->runConfigPanel())
+        m_dock->runConfigPanel()->setPrepareEnabled(true);
+    QWidget* parent = m_dock ? m_dock->window() : nullptr;
+    if (!r.ok) {
+        QMessageBox::warning(parent, QStringLiteral("Prepare run"), r.errorMessage);
+        return;
+    }
+    bool openDataManagement = false;
+    PreparePreflightDialog::run(parent, r, r.needsDataAttention(), &openDataManagement);
+    if (openDataManagement && m_view)
+        m_view->switchToDataManagementTab();
+}
+
+void BacktestWorkspaceCoordinator::onYahooRunValidationFinished(
+    const Backtest::YahooUniverseValidator::Result& r)
+{
+    Backtest::BacktestRunConfig cfg = m_pendingYahooRun;
+    m_pendingYahooRun               = {};
+
+    if (!m_dock)
+        return;
+    if (!r.failedSymbolErrors.isEmpty()) {
+        const auto choice =
+            YahooSymbolCheckDialog::run(m_dock->window(), r.failedSymbolErrors);
+        if (choice == YahooSymbolCheckDialog::Choice::Cancelled) {
+            m_dock->setRunning(false);
+            return;
+        }
+        const QStringList kept =
+            Backtest::BacktestPreFlightCoordinator::stripRunConfigRemovingYahooFailures(
+                &cfg, r.failedSymbolErrors);
+        if (kept.isEmpty()) {
+            QMessageBox::warning(m_dock->window(), QStringLiteral("Yahoo symbol check"),
+                                 QStringLiteral("No symbols remain after removing failed tickers."));
+            m_dock->setRunning(false);
+            return;
+        }
+    }
+    ensureController();
+    if (!m_controller) {
+        m_dock->setRunning(false);
+        return;
+    }
+    m_controller->start(cfg);
 }

@@ -5,6 +5,7 @@
 #include <QList>
 #include "Backtest/BacktestDataTypes.h"
 #include "Backtest/BacktestWorkspaceSession.h"
+#include "BacktestResultDisplayPreparer.h"
 #include "DB/dbdatatypes.h"
 
 class QLabel;
@@ -33,7 +34,8 @@ public:
     void applyWorkspaceSession(const Backtest::Workspace::Session& session,
                                bool clearResultPanels);
 
-    void displayResult(const Backtest::BacktestLoadedRun& run);
+    void displayResult(const Backtest::BacktestLoadedRun& run,
+                       const QString& statusAfterRendering = QString());
 
     /// Restore Run Configuration tab from a persisted run (historical row).
     void applyLoadedRunConfiguration(const Backtest::BacktestLoadedRun& run);
@@ -52,10 +54,14 @@ public:
     void setResultsStale(bool stale);
     void setSessionDirtyState(bool dirty);
 
+    void setResultRendering(bool on, const QString& statusWhenDone = QString());
+
     BacktestRunConfigPanel* runConfigPanel() const { return m_configPanel; }
 
 signals:
     void runRequested(const Backtest::BacktestRunConfig& config);
+    void prepareRunRequested(const Backtest::BacktestRunConfig& config);
+    void stopBacktestRequested();
     void loadRunRequested(const QString& runId);
 
     void userWorkspacePipelineEdited(const QJsonObject& newWorkingPipeline);
@@ -69,6 +75,7 @@ private:
     void buildDock();
     void updateStrategyHeader();
     void rebuildActionRow();
+    void applyPreparedDisplay(const PreparedBacktestDisplay& prepared);
 
     QString m_currentStrategyId;
     QString m_currentDisplayName;

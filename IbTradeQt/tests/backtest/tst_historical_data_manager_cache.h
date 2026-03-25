@@ -25,6 +25,10 @@ private slots:
     void normalizationEquivalence_allPoliciesReturnIdenticalBars();
     void getBarsMulti_partialFailure_transportError_omitsSymbol();
     void getBarsMulti_partialFailure_validEmpty_includesEmptyVector();
+
+    void computeCoveragePlan_day_fullyCached();
+    void computeCoveragePlan_minute_partialGap_when_intraday_missing();
+    void computeCoveragePlan_tick_partialGap();
 };
 
 #endif

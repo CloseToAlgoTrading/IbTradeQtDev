@@ -1,14 +1,13 @@
 #include "Backtest/HistoricalDataManager.h"
+#include "Backtest/HistoricalRangeNormalizer.h"
 #include "Backtest/InstrumentInference.h"
+#include "Backtest/YahooChartBatchFetch.h"
 #include "Backtest/InstrumentMetadataResolver.h"
 #include "Backtest/MarketSessionUtils.h"
-#include "Backtest/YahooFinanceDataSource.h"
 #include "DB/dbquery.h"
 #include <QSqlQuery>
 #include <QSqlError>
 #include <QNetworkAccessManager>
-#include <QEventLoop>
-#include <QTimer>
 #include <QHash>
 #include <QLoggingCategory>
 #include <QThread>
@@ -34,28 +33,6 @@ QDateTime effectiveToForYahooDay1(const QStringList& symbolsInBatch,
                                                        strategyAssetBySymbol))
         return to;
     return clampEndDateTimeForUsEquityDaily(to);
-}
-
-/// Yahoo daily bars use ~session-close UTC (e.g. 21:00); UI `to` is often end-of-calendar-day
-/// (23:59:59). Comparing QDateTime would set needAfter every run even when that day is cached.
-bool cacheNeedsBefore(const QDateTime& from,
-                      const QDateTime& cachedMin,
-                      const QString& resolution,
-                      const QString& dataSourceId)
-{
-    if (dataSourceId == QLatin1String("yahoo") && resolution == QLatin1String("Day1"))
-        return from.toUTC().date() < cachedMin.toUTC().date();
-    return from < cachedMin;
-}
-
-bool cacheNeedsAfter(const QDateTime& effectiveTo,
-                      const QDateTime& cachedMax,
-                      const QString& resolution,
-                      const QString& dataSourceId)
-{
-    if (dataSourceId == QLatin1String("yahoo") && resolution == QLatin1String("Day1"))
-        return effectiveTo.toUTC().date() > cachedMax.toUTC().date();
-    return effectiveTo > cachedMax;
 }
 
 } // namespace
@@ -115,6 +92,9 @@ QVector<IBComm::HistoricalBar> HistoricalDataManager::getBarsPreferCache(
     const QString fromUtc = toUtcIso(from);
     const QString toUtc   = toUtcIso(to);
 
+    const NormalizedCoverageRange norm = normalizeRangeForCoverage(resolution, from, to);
+    const QDateTime                  compareFrom = norm.from;
+
     const QDateTime effectiveTo =
         effectiveToForYahooDay1(QStringList{symbol}, dataSourceId, resolution, to, m_dbConnectionName,
                                 strategyAssetBySymbol);
@@ -133,9 +113,9 @@ QVector<IBComm::HistoricalBar> HistoricalDataManager::getBarsPreferCache(
         QDateTime cachedMin = fromUtcIso(cached.minTs);
         QDateTime cachedMax = fromUtcIso(cached.maxTs);
 
-        if (cacheNeedsBefore(from, cachedMin, resolution, dataSourceId))
+        if (gapNeedsBefore(compareFrom, cachedMin, resolution, dataSourceId))
             needFetchBefore = true;
-        if (cacheNeedsAfter(effectiveTo, cachedMax, resolution, dataSourceId))
+        if (gapNeedsAfter(effectiveTo, cachedMax, resolution, dataSourceId))
             needFetchAfter = true;
 
         // If the cache already runs through `effectiveTo`, a missing prefix (request `from`
@@ -358,6 +338,9 @@ QMap<QString, QVector<IBComm::HistoricalBar>> HistoricalDataManager::getBarsMult
         effectiveToForYahooDay1(symbols, dataSourceId, resolution, to, m_dbConnectionName,
                                 strategyAssetBySymbol);
 
+    const NormalizedCoverageRange norm = normalizeRangeForCoverage(resolution, from, to);
+    const QDateTime                  compareFrom = norm.from;
+
     // Union of per-symbol fetch segments — must mirror getBars() so trailing-only /
     // prefix-only gaps do not collapse to a degenerate window (fetchFrom == effectiveTo
     // or fetchTo == from), which would ask Yahoo for a single calendar day.
@@ -387,8 +370,8 @@ QMap<QString, QVector<IBComm::HistoricalBar>> HistoricalDataManager::getBarsMult
             QDateTime cachedMin = fromUtcIso(cached.minTs);
             QDateTime cachedMax = fromUtcIso(cached.maxTs);
 
-            bool needBefore = cacheNeedsBefore(from, cachedMin, resolution, dataSourceId);
-            bool needAfter  = cacheNeedsAfter(effectiveTo, cachedMax, resolution, dataSourceId);
+            bool needBefore = gapNeedsBefore(compareFrom, cachedMin, resolution, dataSourceId);
+            bool needAfter  = gapNeedsAfter(effectiveTo, cachedMax, resolution, dataSourceId);
 
             if (needBefore && cachedMax >= effectiveTo)
                 needBefore = false;
@@ -438,6 +421,62 @@ QMap<QString, QVector<IBComm::HistoricalBar>> HistoricalDataManager::getBarsMult
         result[sym] = readFromCache(sym, resolution, dataSourceId, fromUtc, toUtc);
     }
     return result;
+}
+
+QMap<QString, SymbolCoveragePlanEntry> HistoricalDataManager::computeCoveragePlan(
+    const QStringList& symbols,
+    const QString& resolution,
+    const QString& dataSourceId,
+    const QDateTime& from,
+    const QDateTime& to,
+    const QHash<QString, QVariantMap>& strategyAssetBySymbol) const
+{
+    QMap<QString, SymbolCoveragePlanEntry> out;
+
+    const QDateTime effectiveTo =
+        effectiveToForYahooDay1(symbols, dataSourceId, resolution, to, m_dbConnectionName,
+                                strategyAssetBySymbol);
+    const NormalizedCoverageRange norm = normalizeRangeForCoverage(resolution, from, to);
+    const QDateTime                  compareFrom = norm.from;
+
+    for (const QString& sym : symbols) {
+        SymbolCoveragePlanEntry entry;
+        CachedRange             cached = queryCachedRange(sym, resolution, dataSourceId);
+
+        if (!cached.hasData) {
+            entry.status = SymbolCoveragePlanEntry::Status::NeedsFetch;
+            out.insert(sym, entry);
+            continue;
+        }
+
+        QDateTime cachedMin = fromUtcIso(cached.minTs);
+        QDateTime cachedMax = fromUtcIso(cached.maxTs);
+
+        bool needBefore = gapNeedsBefore(compareFrom, cachedMin, resolution, dataSourceId);
+        bool needAfter  = gapNeedsAfter(effectiveTo, cachedMax, resolution, dataSourceId);
+
+        if (needBefore && cachedMax >= effectiveTo)
+            needBefore = false;
+
+        if (needAfter && !needBefore && dataSourceId == QLatin1String("yahoo")
+            && resolution == QLatin1String("Day1")
+            && appliesYahooUsCashEquitySessionDaily(
+                   InstrumentMetadataResolver::resolve(m_dbConnectionName, sym, dataSourceId,
+                                                       strategyAssetBySymbol.value(sym))
+                       .effectiveAssetKind)
+            && isWeekendOnlyYahooEquityGap(cachedMax.addDays(1), effectiveTo)) {
+            needAfter = false;
+        }
+
+        if (!needBefore && !needAfter) {
+            entry.status = SymbolCoveragePlanEntry::Status::FullyCached;
+        } else {
+            entry.status = SymbolCoveragePlanEntry::Status::PartialGap;
+        }
+        out.insert(sym, entry);
+    }
+
+    return out;
 }
 
 QMap<QString, QVector<IBComm::HistoricalBar>> HistoricalDataManager::getBarsMultiWithRetry(
@@ -594,37 +633,8 @@ YahooFetchResult HistoricalDataManager::fetchBatchFromYahoo(
     const QString& resolution,
     int timeoutMs) const
 {
-    YahooFetchResult result;
-
-    YahooFinanceDataSource source;
-    source.setNetworkManager(m_networkManager);
-    source.setInstrumentMetadataDbConnection(m_dbConnectionName);
-
-    QEventLoop loop;
-    QObject::connect(&source, &IHistoricalDataSource::loadFinished,
-                     &loop, &QEventLoop::quit);
-    QObject::connect(&source, &IHistoricalDataSource::loadFailed,
-                     &loop, &QEventLoop::quit);
-    QObject::connect(&source, &IHistoricalDataSource::barLoaded,
-                     [&result](const IBComm::HistoricalBar& bar) {
-        result.bars.append(bar);
-    });
-    QObject::connect(&source, &IHistoricalDataSource::symbolFailed,
-                     [&result](const QString& symbol, const QString& /*reason*/) {
-        result.failedSymbols.insert(symbol);
-    });
-
-    QTimer timeout;
-    timeout.setSingleShot(true);
-    timeout.setInterval(timeoutMs);
-    QObject::connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
-    timeout.start();
-
-    BarResolution res = BarResolution::Day1;
-    source.requestBars(symbols, from, to, res);
-    loop.exec();
-
-    return result;
+    return fetchYahooChartBatch(symbols, from, to, resolution, timeoutMs, m_networkManager,
+                                m_dbConnectionName);
 }
 
 void HistoricalDataManager::insertIntoCache(const QVector<IBComm::HistoricalBar>& bars,

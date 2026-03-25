@@ -26,7 +26,8 @@ public:
         const QString& /*resolution*/,
         const QString& /*dataSourceId*/,
         const QDateTime& /*from*/,
-        const QDateTime& /*to*/) override
+        const QDateTime& /*to*/,
+        Pipeline::HistoricalReadPolicy /*policy*/ = Pipeline::HistoricalReadPolicy::PreferCache) override
     {
         return barsBySymbol.value(symbol.toUpper());
     }

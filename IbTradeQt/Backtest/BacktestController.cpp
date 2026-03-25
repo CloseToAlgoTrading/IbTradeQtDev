@@ -1,11 +1,11 @@
 #include "Backtest/BacktestController.h"
+#include "Backtest/BacktestPreFlightCoordinator.h"
 #include "Backtest/BacktestMetricsMapper.h"
 #include "Backtest/BacktestStatisticsCalculator.h"
 #include "Backtest/BacktestRunPersistence.h"
 #include "Backtest/HistoricalDataManager.h"
 #include "Backtest/BacktestConstants.h"
 #include "Backtest/LedgerSnapshot.h"
-#include "Pipeline/UniverseResolver.h"
 #include "Pipeline/StrategyPipelineRuntimeOptions.h"
 #include "DB/dbquery.h"
 #include "DB/dbdatatypes.h"
@@ -20,6 +20,8 @@
 #include <QVector>
 #include <QLoggingCategory>
 #include <QCoreApplication>
+#include <QFutureWatcher>
+#include <QtConcurrent/QtConcurrent>
 #include <QtSql/QSqlDatabase>
 #include <QtSql/QSqlQuery>
 #include <QtSql/QSqlError>
@@ -74,6 +76,69 @@ double benchmarkPortfolioValueAtTimestamp(const QVector<LedgerSnapshot>& bm,
     return (it - 1)->portfolioValue;
 }
 
+/// Persists metrics, trades, and equity points using a dedicated connection (any thread).
+void persistBacktestResultImpl(const QString& dbFilePath,
+                               const QString& uniqueConnectionName,
+                               const QString& runId,
+                               const BacktestResult& result)
+{
+    QSqlDatabase db = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), uniqueConnectionName);
+    db.setDatabaseName(dbFilePath);
+    if (!db.open()) {
+        qCWarning(lcBacktestController) << "BacktestController: persist thread cannot open DB";
+        return;
+    }
+
+    BacktestStatisticsCalculator calc;
+    const BacktestStatistics     stats = calc.compute(result);
+    const DbBacktestMetrics        m   = toDbBacktestMetrics(runId, result, stats);
+    {
+        auto q = query_insertBacktestMetrics(m, uniqueConnectionName);
+        if (!q.exec())
+            qCWarning(lcBacktestController) << "BacktestController: persistMetrics failed:" << q.lastError().text();
+    }
+
+    if (!result.tradeLog.isEmpty()) {
+        db.transaction();
+        for (const auto& fill : result.tradeLog) {
+            DbBacktestTrade t;
+            t.runId     = runId;
+            t.symbol    = fill.symbol;
+            t.side      = fill.quantity > 0 ? QStringLiteral("BUY") : QStringLiteral("SELL");
+            t.quantity  = std::abs(fill.quantity);
+            t.fillPrice = fill.fillPrice;
+            t.timestamp = fill.timestamp.toUTC().toString(Qt::ISODate);
+            auto q = query_insertBacktestTrade(t, uniqueConnectionName);
+            if (!q.exec())
+                qCWarning(lcBacktestController) << "BacktestController: insertTrade failed:" << q.lastError().text();
+        }
+        db.commit();
+    }
+
+    const auto& curve   = result.equityCurve;
+    const auto& bmCurve = result.benchmark.equityCurve;
+    const int total     = curve.size();
+    const int step      = qMax(1, total / 500);
+
+    if (total > 0) {
+        db.transaction();
+        for (int i = 0; i < total; i += step) {
+            DbBacktestEquityPoint p;
+            p.runId          = runId;
+            p.timestamp      = curve[i].timestamp.toUTC().toString(Qt::ISODate);
+            p.value          = curve[i].portfolioValue;
+            p.benchmarkValue = benchmarkPortfolioValueAtTimestamp(bmCurve, curve[i].timestamp);
+            auto q = query_insertEquityPoint(p, uniqueConnectionName);
+            if (!q.exec())
+                qCWarning(lcBacktestController) << "BacktestController: insertEquity failed:" << q.lastError().text();
+        }
+        db.commit();
+    }
+
+    db.close();
+    QSqlDatabase::removeDatabase(uniqueConnectionName);
+}
+
 } // namespace
 
 BacktestController::BacktestController(const QString& dbFileName,
@@ -91,6 +156,8 @@ BacktestController::BacktestController(const QString& dbFileName,
     db.setDatabaseName(dbFileName);
     if (!db.open()) {
         qCWarning(lcBacktestController) << "BacktestController: cannot open DB" << dbFileName;
+    } else {
+        m_dbFilePath = db.databaseName();
     }
 }
 
@@ -124,6 +191,15 @@ BacktestController::~BacktestController() {
 // Public API
 // ---------------------------------------------------------------------------
 
+void BacktestController::requestStop()
+{
+    if (!m_session || !m_workerThread || !m_workerThread->isRunning())
+        return;
+    // Must not use QueuedConnection: the worker thread is blocked inside replay() and will not
+    // process events until the loop ends. cancel() only sets an atomic flag (thread-safe).
+    m_session->cancel();
+}
+
 void BacktestController::start(const BacktestRunConfig& config) {
     if (isRunning()) {
         qCWarning(lcBacktestController) << "BacktestController: a run is already in progress — ignoring start()";
@@ -148,15 +224,10 @@ void BacktestController::start(const BacktestRunConfig& config) {
 
     // Resolve symbols from the pipeline selection config if the run config
     // has no explicit symbols. This ensures data fetching matches the pipeline.
-    BacktestRunConfig resolvedConfig = config;
-    if (resolvedConfig.symbols.isEmpty() && !pipelineJson.isEmpty()) {
-        auto resolved = Pipeline::UniverseResolver::resolve(pipelineJson);
-        if (resolved.mode == Pipeline::UniverseResolutionResult::Mode::ExplicitStaticSymbols) {
-            for (const auto& sym : resolved.symbols)
-                resolvedConfig.symbols.append(sym);
-            qCDebug(lcBacktestController) << "BacktestController: resolved symbols from pipeline config:"
-                     << resolvedConfig.symbols;
-        }
+    BacktestRunConfig resolvedConfig = BacktestPreFlightCoordinator::resolveRunConfigSymbols(config);
+    if (resolvedConfig.symbols != config.symbols) {
+        qCDebug(lcBacktestController) << "BacktestController: resolved symbols from pipeline config:"
+                                      << resolvedConfig.symbols;
     }
 
     // Authoritative run config for persistence and onSessionFinished (includes resolved symbols).
@@ -325,9 +396,6 @@ void BacktestController::onSessionProgress(int percent) {
 
 void BacktestController::onSessionFinished(const BacktestResult& result) {
     const qint64 durationMs = m_elapsed.elapsed();
-    persistResult(result, m_dataRefreshedAt);
-    updateRunStatus(QString(Backtest::Status::Finished), QString(), durationMs, m_dataRefreshedAt);
-    emit statusChanged(QString(Backtest::Status::Finished));
 
     BacktestLoadedRun loaded;
     loaded.record.runId               = m_currentRunId;
@@ -356,13 +424,45 @@ void BacktestController::onSessionFinished(const BacktestResult& result) {
     cleanupWorker();
     m_lastHistBars.clear();
 
-    emit finished(loaded);
+    if (m_dbFilePath.isEmpty()) {
+        updateRunStatus(QString(Backtest::Status::Finished), QString(), durationMs, m_dataRefreshedAt);
+        emit statusChanged(QString(Backtest::Status::Finished));
+        emit finished(loaded);
+        return;
+    }
+
+    const QString persistConn =
+        QStringLiteral("bt_persist_") + m_currentRunId + QLatin1Char('_') +
+        QUuid::createUuid().toString(QUuid::WithoutBraces);
+    const QString runId     = m_currentRunId;
+    const QString dbFile    = m_dbFilePath;
+    const QString dataRef   = m_dataRefreshedAt;
+    const BacktestResult resCopy = result;
+
+    auto* watcher = new QFutureWatcher<void>(this);
+    connect(watcher, &QFutureWatcher<void>::finished, this,
+            [this, loaded, watcher, durationMs, dataRef]() {
+                watcher->deleteLater();
+                updateRunStatus(QString(Backtest::Status::Finished), QString(), durationMs, dataRef);
+                emit statusChanged(QString(Backtest::Status::Finished));
+                emit finished(loaded);
+            });
+    watcher->setFuture(QtConcurrent::run([dbFile, persistConn, runId, resCopy]() {
+        persistBacktestResultImpl(dbFile, persistConn, runId, resCopy);
+    }));
 }
 
 void BacktestController::onSessionFailed(const QString& reason) {
     const qint64 durationMs = m_elapsed.elapsed();
-    updateRunStatus(QString(Backtest::Status::Failed), reason, durationMs, m_dataRefreshedAt);
-    emit statusChanged(QString(Backtest::Status::Failed));
+    const bool cancelled =
+        reason.startsWith(QStringLiteral("Cancelled"));
+    if (cancelled) {
+        updateRunStatus(QString(Backtest::Status::Cancelled), reason, durationMs, m_dataRefreshedAt);
+        emit statusChanged(QString(Backtest::Status::Cancelled));
+    } else {
+        updateRunStatus(QString(Backtest::Status::Failed), reason, durationMs, m_dataRefreshedAt);
+        emit statusChanged(QString(Backtest::Status::Failed));
+    }
 
     cleanupWorker();
 
@@ -405,62 +505,6 @@ void BacktestController::updateRunStatus(const QString& status,
         m_currentRunId, status, errorText, durationMs, dataRefreshedAt, m_dbConnectionName);
     if (!q.exec())
         qCWarning(lcBacktestController) << "BacktestController: updateRunStatus failed:" << q.lastError().text();
-}
-
-void BacktestController::persistResult(const BacktestResult& result,
-                                        const QString& dataRefreshedAt) {
-    Q_UNUSED(dataRefreshedAt)
-    QSqlDatabase db = QSqlDatabase::database(m_dbConnectionName);
-    if (!db.isOpen()) return;
-
-    BacktestStatisticsCalculator calc;
-    const BacktestStatistics     stats = calc.compute(result);
-    const DbBacktestMetrics        m   = toDbBacktestMetrics(m_currentRunId, result, stats);
-    {
-        auto q = query_insertBacktestMetrics(m, m_dbConnectionName);
-        if (!q.exec())
-            qCWarning(lcBacktestController) << "BacktestController: persistMetrics failed:" << q.lastError().text();
-    }
-
-    // Trades (batch insert in a transaction)
-    if (!result.tradeLog.isEmpty()) {
-        db.transaction();
-        for (const auto& fill : result.tradeLog) {
-            DbBacktestTrade t;
-            t.runId     = m_currentRunId;
-            t.symbol    = fill.symbol;
-            t.side      = fill.quantity > 0 ? QStringLiteral("BUY") : QStringLiteral("SELL");
-            t.quantity  = std::abs(fill.quantity);
-            t.fillPrice = fill.fillPrice;
-            t.timestamp = fill.timestamp.toUTC().toString(Qt::ISODate);
-            auto q = query_insertBacktestTrade(t, m_dbConnectionName);
-            if (!q.exec())
-                qCWarning(lcBacktestController) << "BacktestController: insertTrade failed:" << q.lastError().text();
-        }
-        db.commit();
-    }
-
-    // Equity curve — downsample to at most 500 points
-    const auto& curve = result.equityCurve;
-    const auto& bmCurve = result.benchmark.equityCurve;
-
-    const int total = curve.size();
-    const int step  = qMax(1, total / 500);
-
-    if (total > 0) {
-        db.transaction();
-        for (int i = 0; i < total; i += step) {
-            DbBacktestEquityPoint p;
-            p.runId          = m_currentRunId;
-            p.timestamp      = curve[i].timestamp.toUTC().toString(Qt::ISODate);
-            p.value          = curve[i].portfolioValue;
-            p.benchmarkValue = benchmarkPortfolioValueAtTimestamp(bmCurve, curve[i].timestamp);
-            auto q = query_insertEquityPoint(p, m_dbConnectionName);
-            if (!q.exec())
-                qCWarning(lcBacktestController) << "BacktestController: insertEquity failed:" << q.lastError().text();
-        }
-        db.commit();
-    }
 }
 
 // ---------------------------------------------------------------------------

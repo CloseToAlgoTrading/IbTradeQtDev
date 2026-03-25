@@ -714,3 +714,124 @@ void TestHistoricalDataManagerCache::getBarsMulti_partialFailure_validEmpty_incl
     }
     QSqlDatabase::removeDatabase(conn);
 }
+
+void TestHistoricalDataManagerCache::computeCoveragePlan_day_fullyCached()
+{
+    const QString conn = QStringLiteral("cov_day_") + QUuid::createUuid().toString(QUuid::WithoutBraces);
+
+    QTemporaryFile dbFile;
+    dbFile.setAutoRemove(true);
+    QVERIFY(dbFile.open());
+    dbFile.close();
+
+    {
+        QSqlDatabase db = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), conn);
+        db.setDatabaseName(dbFile.fileName());
+        QVERIFY(db.open());
+        createHistoricalBarsTable(conn);
+        insertSpyDailyRange(conn, QDate(2020, 1, 1), QDate(2020, 1, 10));
+    }
+
+    HistoricalDataManager mgr(conn, nullptr);
+
+    const QDateTime from = QDateTime(QDate(2020, 1, 1), QTime(0, 0), QTimeZone::utc());
+    const QDateTime to   = QDateTime(QDate(2020, 1, 10), QTime(23, 59, 59), QTimeZone::utc());
+
+    const auto plan = mgr.computeCoveragePlan({QStringLiteral("SPY")}, QStringLiteral("Day1"),
+                                              QStringLiteral("yahoo"), from, to, {});
+    QVERIFY(plan.contains(QStringLiteral("SPY")));
+    QCOMPARE(plan.value(QStringLiteral("SPY")).status, SymbolCoveragePlanEntry::Status::FullyCached);
+
+    {
+        QSqlDatabase db = QSqlDatabase::database(conn);
+        if (db.isOpen())
+            db.close();
+    }
+    QSqlDatabase::removeDatabase(conn);
+}
+
+void TestHistoricalDataManagerCache::computeCoveragePlan_minute_partialGap_when_intraday_missing()
+{
+    const QString conn = QStringLiteral("cov_min_") + QUuid::createUuid().toString(QUuid::WithoutBraces);
+
+    QTemporaryFile dbFile;
+    dbFile.setAutoRemove(true);
+    QVERIFY(dbFile.open());
+    dbFile.close();
+
+    {
+        QSqlDatabase db = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), conn);
+        db.setDatabaseName(dbFile.fileName());
+        QVERIFY(db.open());
+        createHistoricalBarsTable(conn);
+        QSqlQuery q(db);
+        q.prepare(QLatin1String(
+            "INSERT OR REPLACE INTO HistoricalBars "
+            "(symbol, resolution, dataSourceId, timestamp, open, high, low, close, volume) "
+            "VALUES ('AMD','Min1','yahoo',:ts,100,101,99,100.5,1e6)"));
+        const QDateTime ts(QDate(2024, 1, 2), QTime(14, 0), QTimeZone::utc());
+        q.bindValue(QStringLiteral(":ts"), ts.toUTC().toString(Qt::ISODate));
+        QVERIFY(q.exec());
+        db.close();
+    }
+
+    HistoricalDataManager mgr(conn, nullptr);
+
+    const QDateTime from = QDateTime(QDate(2024, 1, 2), QTime(9, 30), QTimeZone::utc());
+    const QDateTime to   = QDateTime(QDate(2024, 1, 2), QTime(16, 0), QTimeZone::utc());
+
+    const auto plan = mgr.computeCoveragePlan({QStringLiteral("AMD")}, QStringLiteral("Min1"),
+                                              QStringLiteral("yahoo"), from, to, {});
+    QVERIFY(plan.contains(QStringLiteral("AMD")));
+    QCOMPARE(plan.value(QStringLiteral("AMD")).status, SymbolCoveragePlanEntry::Status::PartialGap);
+
+    {
+        QSqlDatabase db = QSqlDatabase::database(conn);
+        if (db.isOpen())
+            db.close();
+    }
+    QSqlDatabase::removeDatabase(conn);
+}
+
+void TestHistoricalDataManagerCache::computeCoveragePlan_tick_partialGap()
+{
+    const QString conn = QStringLiteral("cov_tick_") + QUuid::createUuid().toString(QUuid::WithoutBraces);
+
+    QTemporaryFile dbFile;
+    dbFile.setAutoRemove(true);
+    QVERIFY(dbFile.open());
+    dbFile.close();
+
+    {
+        QSqlDatabase db = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), conn);
+        db.setDatabaseName(dbFile.fileName());
+        QVERIFY(db.open());
+        createHistoricalBarsTable(conn);
+        QSqlQuery q(db);
+        q.prepare(QLatin1String(
+            "INSERT OR REPLACE INTO HistoricalBars "
+            "(symbol, resolution, dataSourceId, timestamp, open, high, low, close, volume) "
+            "VALUES ('SPY','Tick','yahoo',:ts,100,101,99,100.5,1e3)"));
+        const QDateTime ts(QDate(2024, 1, 2), QTime(14, 0, 0), QTimeZone::utc());
+        q.bindValue(QStringLiteral(":ts"), ts.toUTC().toString(Qt::ISODate));
+        QVERIFY(q.exec());
+        db.close();
+    }
+
+    HistoricalDataManager mgr(conn, nullptr);
+
+    const QDateTime from = QDateTime(QDate(2024, 1, 2), QTime(13, 0), QTimeZone::utc());
+    const QDateTime to   = QDateTime(QDate(2024, 1, 2), QTime(15, 0), QTimeZone::utc());
+
+    const auto plan = mgr.computeCoveragePlan({QStringLiteral("SPY")}, QStringLiteral("Tick"),
+                                              QStringLiteral("yahoo"), from, to, {});
+    QVERIFY(plan.contains(QStringLiteral("SPY")));
+    QCOMPARE(plan.value(QStringLiteral("SPY")).status, SymbolCoveragePlanEntry::Status::PartialGap);
+
+    {
+        QSqlDatabase db = QSqlDatabase::database(conn);
+        if (db.isOpen())
+            db.close();
+    }
+    QSqlDatabase::removeDatabase(conn);
+}

@@ -6,6 +6,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QVector>
+#include <functional>
 #include "IBComm/HistoricalDataRouter.h"
 #include "Pipeline/Contracts.h"
 
@@ -148,10 +149,20 @@ public:
         m_blockGraphConfig = QJsonObject();
     }
 
-    void replay() {
+    /// Full replay. Equivalent to `replay({})` with no interrupt.
+    void replay() { replay(std::function<bool()>()); }
+
+    /// Cooperative replay: if \a shouldInterrupt is set and returns true, stops early
+    /// (used for backtest cancellation).
+    void replay(const std::function<bool()>& shouldInterrupt) {
         int barIdx = 0;
         const int nTicks = m_ticks.size();
+        const auto shouldStop = [&shouldInterrupt]() {
+            return shouldInterrupt && shouldInterrupt();
+        };
         for (int i = 0; i < nTicks; ++i) {
+            if (shouldStop())
+                return;
             emit tick(m_ticks[i]);
 
             const bool isLastTickForTs = (i + 1 >= nTicks)
@@ -160,12 +171,16 @@ public:
             if (isLastTickForTs) {
                 while (barIdx < m_barCloses.size()
                        && m_barCloses[barIdx].timestamp <= m_ticks[i].timestamp) {
+                    if (shouldStop())
+                        return;
                     emit ohlcvBar(m_barCloses[barIdx]);
                     ++barIdx;
                 }
             }
         }
         while (barIdx < m_barCloses.size()) {
+            if (shouldStop())
+                return;
             emit ohlcvBar(m_barCloses[barIdx]);
             ++barIdx;
         }

@@ -238,6 +238,34 @@ void EquityChartWidget::setData(const QVector<Backtest::LedgerSnapshot>& strateg
     }
 }
 
+void EquityChartWidget::setPnlSeriesData(const QVector<Backtest::LedgerSnapshot>& stratPnl,
+                                         const QVector<Backtest::LedgerSnapshot>& benchPnl,
+                                         const QString& benchmarkSymbol,
+                                         bool hasBenchmarkData)
+{
+    m_strategyPnlPoints = snapshotsToPoints(stratPnl);
+    m_benchmarkPnlPoints = snapshotsToPoints(benchPnl);
+
+    if (!benchmarkSymbol.isEmpty() || hasBenchmarkData) {
+        m_benchmarkLabelForTooltip =
+            benchmarkSymbol.isEmpty()
+                ? QStringLiteral("Benchmark (buy-and-hold)")
+                : QStringLiteral("%1 (buy-and-hold)").arg(benchmarkSymbol);
+    } else {
+        m_benchmarkLabelForTooltip.clear();
+    }
+
+    setStrategyCurve(stratPnl);
+    if (!benchmarkSymbol.isEmpty() || hasBenchmarkData) {
+        const QString benchLabel = benchmarkSymbol.isEmpty()
+            ? QStringLiteral("Benchmark (buy-and-hold)")
+            : QStringLiteral("%1 (buy-and-hold)").arg(benchmarkSymbol);
+        setBenchmarkCurve(benchPnl, benchLabel);
+    } else {
+        setBenchmarkCurve({}, QString());
+    }
+}
+
 void EquityChartWidget::clear()
 {
     m_crosshairSeries->clear();

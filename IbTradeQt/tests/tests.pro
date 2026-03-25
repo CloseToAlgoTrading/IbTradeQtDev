@@ -82,6 +82,9 @@ SOURCES += \
     blocks/tst_quant_momentum_blocks.cpp \
     backtest/tst_instrument_metadata_resolver.cpp \
     backtest/tst_historical_data_manager_cache.cpp \
+    backtest/tst_historical_range_normalizer.cpp \
+    backtest/tst_yahoo_universe_validator.cpp \
+    backtest/tst_backtest_preflight_coordinator.cpp \
     backtest/tst_workspace_session.cpp \
     backtest/tst_backtest_run_persistence.cpp \
     backtest/tst_backtest_statistics.cpp \
@@ -166,6 +169,10 @@ SOURCES += \
     ../Backtest/AssetUniverseInput.cpp \
     ../Backtest/InstrumentMetadataIb.cpp \
     ../Backtest/HistoricalDataManager.cpp \
+    ../Backtest/HistoricalRangeNormalizer.cpp \
+    ../Backtest/YahooChartBatchFetch.cpp \
+    ../Backtest/YahooUniverseValidator.cpp \
+    ../Backtest/BacktestPreFlightCoordinator.cpp \
     ../Backtest/BacktestController.cpp \
     ../SharedUI/StrategyTreeDelegate.cpp \
     ../MainSystem/ciconhandler.cpp \
@@ -202,6 +209,7 @@ SOURCES += \
     ../Pipeline/BlockGraphSerializer.cpp \
     ../Pipeline/UniverseResolver.cpp \
     ../Pipeline/StrategyRuntimePolicy.cpp \
+    ../Pipeline/StrategyPipelineRuntimeOptions.cpp \
     ../Pipeline/SignalMergePolicies.cpp \
     ../Pipeline/PipelineExecutionHost.cpp \
     ../Blocks/MomentumAlphaBlock.cpp \
@@ -253,6 +261,7 @@ HEADERS += \
     ../Pipeline/BlockRegistry.h \
     ../Pipeline/StrategyPipelineRunner.h \
     ../Pipeline/StrategyRuntimePolicy.h \
+    ../Pipeline/StrategyPipelineRuntimeOptions.h \
     ../Pipeline/PipelineDefinition.h \
     ../Pipeline/UniverseResolver.h \
     ../Pipeline/BlockGraphSerializer.h \
@@ -333,6 +342,7 @@ HEADERS += \
     ../Backtest/BacktestMarketDataAccessor.h \
     ../Backtest/BacktestHistoricalReadAdapter.h \
     ../Backtest/BacktestController.h \
+    ../Backtest/BacktestPreFlightCoordinator.h \
     ../Backtest/MarketSessionUtils.h \
     ../Backtest/InstrumentClassification.h \
     ../Backtest/InstrumentInference.h \
@@ -342,6 +352,8 @@ HEADERS += \
     ../Backtest/AssetUniverseInput.h \
     ../Backtest/InstrumentMetadataIb.h \
     ../Backtest/HistoricalDataManager.h \
+    ../Backtest/HistoricalRangeNormalizer.h \
+    ../Backtest/YahooChartBatchFetch.h \
     backtest/tst_backtest.h \
     backtest/tst_yahoo_backtest.h \
     backtest/tst_momentum_three_stock_validation.h \
@@ -351,6 +363,9 @@ HEADERS += \
     blocks/tst_quant_momentum_blocks.h \
     backtest/tst_instrument_metadata_resolver.h \
     backtest/tst_historical_data_manager_cache.h \
+    backtest/tst_historical_range_normalizer.h \
+    backtest/tst_yahoo_universe_validator.h \
+    backtest/tst_backtest_preflight_coordinator.h \
     data_management/tst_data_management.h \
     ../DataManagement/DataManagementWorker.h \
     ../DataManagement/DataManagementService.h \

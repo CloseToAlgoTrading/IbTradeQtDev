@@ -8,7 +8,9 @@
 #include <optional>
 
 #include "Backtest/BacktestDataTypes.h"
+#include "Backtest/BacktestPreFlightCoordinator.h"
 #include "Backtest/BacktestWorkspaceSession.h"
+#include "Backtest/YahooUniverseValidator.h"
 #include "IUnsavedChangesPrompt.h"
 
 class ISystemBackend;
@@ -53,6 +55,8 @@ private slots:
     void onLoadRun(const QString& runId);
     void onBacktestFinished(const Backtest::BacktestLoadedRun& run);
     void onBacktestFailed(const QString& reason);
+    void onPreFlightPrepareFinished(const Backtest::BacktestPreFlightResult& result);
+    void onYahooRunValidationFinished(const Backtest::YahooUniverseValidator::Result& result);
 
     void onUserPipelineEdited(const QJsonObject& pipeline);
     void onUserRunFieldsEdited();
@@ -62,6 +66,8 @@ private slots:
 
 private:
     void ensureController();
+    void mergeSessionAssetListIntoRunConfig(Backtest::BacktestRunConfig& runCfg);
+    void launchPrepareRun(const Backtest::BacktestRunConfig& config);
     void populateRunHistory(const QString& strategyId, const QString& strategyDefId);
 
     bool tryResolveSessionSwitch(const Backtest::Workspace::SessionKey& nextKey);
@@ -89,6 +95,8 @@ private:
 
     QHash<Backtest::Workspace::SessionKey, Backtest::Workspace::Session> m_sessions;
     std::optional<Backtest::Workspace::SessionKey> m_activeKey;
+
+    Backtest::BacktestRunConfig m_pendingYahooRun;
 };
 
 #endif // BACKTESTWORKSPACECOORDINATOR_H

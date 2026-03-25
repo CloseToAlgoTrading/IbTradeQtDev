@@ -581,7 +581,8 @@ private slots:
                 const QString&,
                 const QString&,
                 const QDateTime&,
-                const QDateTime&) override
+                const QDateTime&,
+                Pipeline::HistoricalReadPolicy = Pipeline::HistoricalReadPolicy::PreferCache) override
             {
                 QVector<Pipeline::HistoricalBarSnapshot> bars;
                 Pipeline::HistoricalBarSnapshot s;

@@ -43,6 +43,12 @@ public:
                  const QString& benchmarkSymbol,
                  double initialCapital);
 
+    /// Same as setData but \a strategyPnl / \a benchmarkPnl are already P&L series (off-thread prep).
+    void setPnlSeriesData(const QVector<Backtest::LedgerSnapshot>& strategyPnl,
+                          const QVector<Backtest::LedgerSnapshot>& benchmarkPnl,
+                          const QString& benchmarkSymbol,
+                          bool hasBenchmarkData);
+
     // Clear all series.
     void clear();
 

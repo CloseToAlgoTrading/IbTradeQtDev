@@ -544,6 +544,51 @@ QTableView QHeaderView::section {
  * For data-driven colours (e.g. status), use a QStyledItemDelegate instead.
  */
 
+/* ── FilterableTableWidget (Prepare preflight + reuse) ───────────────────── */
+#FilterableTableWidget QLabel#filterableTableFilterLabel,
+#FilterableTableWidget QLabel#filterableTableStatusLabel {
+    color: #b8b8b8;
+    font-size: 11px;
+}
+
+#FilterableTableWidget QLineEdit#filterableTableFilterEdit {
+    background-color: #212121;
+    border: 1px solid #333333;
+    border-radius: 2px;
+    padding: 2px 8px;
+    min-height: 22px;
+    font-size: 11px;
+    color: #e8e8e8;
+}
+
+#FilterableTableWidget QComboBox#filterableTableStatusCombo {
+    background-color: #212121;
+    border: 1px solid #333333;
+    border-radius: 2px;
+    padding: 2px 8px;
+    min-height: 22px;
+    min-width: 140px;
+    font-size: 11px;
+    color: #e8e8e8;
+}
+
+#FilterableTableWidget QTableView#filterableTableView {
+    max-height: 240px;
+    border: 1px solid #2a2a2a;
+    border-radius: 2px;
+}
+
+/* ── Prepare preflight modal ─────────────────────────────────────────────── */
+#PreparePreflightDialog QLabel#preparePreflightNoteLabel {
+    color: #b8b8b8;
+    font-size: 11px;
+}
+
+#YahooSymbolCheckDialog QLabel#yahooSymbolCheckIntroLabel {
+    color: #e8e8e8;
+    font-size: 12px;
+}
+
 /* ── List widgets ── */
 QListWidget, QListView {
     background-color: #1b1b1b;

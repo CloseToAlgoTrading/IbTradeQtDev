@@ -307,6 +307,24 @@ private slots:
             QCOMPARE(run1[i].timestamp, run2[i].timestamp);
         }
     }
+
+    void replayInterruptibleStopsEarly()
+    {
+        MarketDataReplayer replayer;
+        for (int i = 0; i < 10'000; ++i) {
+            Pipeline::MarketTick t;
+            t.symbol = "AAPL";
+            t.bid    = 100.0;
+            t.ask    = 100.1;
+            t.timestamp = QDateTime(QDate(2026, 3, 4), QTime(0, 0), QTimeZone::utc()).addMSecs(i);
+            replayer.addTick(t);
+        }
+        qRegisterMetaType<Pipeline::MarketTick>("Pipeline::MarketTick");
+        QSignalSpy spy(&replayer, &MarketDataReplayer::tick);
+        int tickCount = 0;
+        replayer.replay([&tickCount]() { return tickCount++ >= 100; });
+        QCOMPARE(spy.count(), 100);
+    }
 };
 
 #endif // TST_REPLAY_H

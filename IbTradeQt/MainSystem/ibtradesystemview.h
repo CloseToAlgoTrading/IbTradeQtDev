@@ -61,6 +61,7 @@ public:
 
     void switchToBacktestTab();
     void switchToStrategyManagementTab();
+    void switchToDataManagementTab();
 
     void mapSignals();
 

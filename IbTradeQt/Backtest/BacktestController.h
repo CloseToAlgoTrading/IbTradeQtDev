@@ -9,7 +9,8 @@
 //   Created → Running → Finished
 //                    ↘ Failed
 //
-// Cooperative cancellation is deferred to v2 — no Cancelled status.
+// Cooperative cancellation: requestStop() queues cancel() on the worker thread.
+// User stop persists Status::Cancelled; errors use Status::Failed.
 //
 // Usage (from CPresenter):
 //   auto* ctrl = new BacktestController(dbConnName, networkMgr, this);
@@ -51,6 +52,9 @@ public:
     // Returns true if a run is currently in progress.
     bool isRunning() const { return m_workerThread && m_workerThread->isRunning(); }
 
+    /// Request cooperative cancellation (replay / load loops honor BacktestSession::cancel()).
+    void requestStop();
+
     const QString& currentRunId() const { return m_currentRunId; }
     const QString& dbConnectionName() const { return m_dbConnectionName; }
 
@@ -71,14 +75,13 @@ private:
                          const QString& errorText,
                          qint64 durationMs,
                          const QString& dataRefreshedAt);
-    void persistResult(const BacktestResult& result, const QString& dataRefreshedAt);
-
     static BacktestConfig buildBacktestConfig(const BacktestRunConfig& rc);
     static QString engineVersion();
     static QString downsample(const QVector<LedgerSnapshot>& curve, int maxPoints);
     void cleanupWorker();
 
     QString                   m_dbConnectionName;
+    QString                   m_dbFilePath;
     QNetworkAccessManager*    m_networkManager = nullptr;
     QString                   m_currentRunId;
     BacktestRunConfig         m_currentConfig;

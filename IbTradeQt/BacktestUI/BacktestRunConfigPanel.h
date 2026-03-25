@@ -71,9 +71,13 @@ public:
     void setProgress(int percent);
     void setStatus(const QString& status);
     void setRunning(bool running);
+    void setPrepareEnabled(bool enabled);
+    void setRenderingResults(bool on, const QString& statusWhenDone = QString());
 
 signals:
     void runRequested(const Backtest::BacktestRunConfig& config);
+    void prepareRunRequested(const Backtest::BacktestRunConfig& config);
+    void stopRequested();
     void userEdited();
 
 private slots:
@@ -106,6 +110,8 @@ private:
     QComboBox*      m_dataSourceCombo  = nullptr;
 
     QPushButton*    m_runButton        = nullptr;
+    QPushButton*    m_stopButton       = nullptr;
+    QPushButton*    m_prepareButton    = nullptr;
     QProgressBar*   m_progressBar      = nullptr;
     QLabel*         m_statusLabel      = nullptr;
     QLabel*         m_universeLabel    = nullptr;

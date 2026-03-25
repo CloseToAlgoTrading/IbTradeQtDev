@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui charts sql printsupport network svg
+QT       += core gui charts sql printsupport network svg concurrent
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -182,6 +182,10 @@ SOURCES += \
     Backtest/AssetUniverseInput.cpp \
     Backtest/InstrumentMetadataIb.cpp \
     Backtest/HistoricalDataManager.cpp \
+    Backtest/HistoricalRangeNormalizer.cpp \
+    Backtest/YahooChartBatchFetch.cpp \
+    Backtest/YahooUniverseValidator.cpp \
+    Backtest/BacktestPreFlightCoordinator.cpp \
     Backtest/BacktestController.cpp \
     Backtest/BacktestStatistics.cpp \
     Backtest/BacktestStatisticsCalculator.cpp \
@@ -200,6 +204,7 @@ SOURCES += \
     BacktestUI/BacktestRunConfigPanel.cpp \
     BacktestUI/BacktestRunHistoryPanel.cpp \
     BacktestUI/EquityChartWidget.cpp \
+    BacktestUI/BacktestResultDisplayPreparer.cpp \
     BacktestUI/BacktestSummaryStatisticsPanel.cpp \
     BacktestUI/BacktestCandlestickWidget.cpp \
     BacktestUI/TradeLogWidget.cpp \
@@ -265,7 +270,10 @@ SOURCES += \
     SharedUI/PipelineDiagramModel.cpp \
     SharedUI/BlockInspectorPresenter.cpp \
     SharedUI/StrategyDetailPresenter.cpp \
+    SharedUI/FilterableTableWidget.cpp \
     BacktestUI/BacktestTreeModel.cpp \
+    BacktestUI/PreparePreflightDialog.cpp \
+    BacktestUI/YahooSymbolCheckDialog.cpp \
     StrategyManagementUI/StrategyCatalogModel.cpp \
     StrategyManagementUI/CatalogTreeModel.cpp \
     StrategyManagementUI/StrategyCatalogPanel.cpp \
@@ -441,6 +449,10 @@ HEADERS += \
     Backtest/BacktestRunPersistence.h \
     Backtest/BacktestDataTypes.h \
     Backtest/HistoricalDataManager.h \
+    Backtest/HistoricalRangeNormalizer.h \
+    Backtest/YahooChartBatchFetch.h \
+    Backtest/YahooUniverseValidator.h \
+    Backtest/BacktestPreFlightCoordinator.h \
     Backtest/BacktestController.h \
     Backtest/BacktestStatistics.h \
     Backtest/BacktestStatisticsCalculator.h \
@@ -461,6 +473,7 @@ HEADERS += \
     BacktestUI/BacktestRunConfigPanel.h \
     BacktestUI/BacktestRunHistoryPanel.h \
     BacktestUI/EquityChartWidget.h \
+    BacktestUI/BacktestResultDisplayPreparer.h \
     BacktestUI/BacktestSummaryStatisticsPanel.h \
     BacktestUI/BacktestCandlestickWidget.h \
     BacktestUI/TradeLogWidget.h \
@@ -499,6 +512,8 @@ HEADERS += \
     SharedUI/BlockInspectorPresenter.h \
     SharedUI/StrategyDetailPresenter.h \
     BacktestUI/BacktestTreeModel.h \
+    BacktestUI/PreparePreflightDialog.h \
+    BacktestUI/YahooSymbolCheckDialog.h \
     StrategyManagementUI/StrategyCatalogModel.h \
     StrategyManagementUI/CatalogTreeModel.h \
     StrategyManagementUI/StrategyCatalogPanel.h \

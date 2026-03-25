@@ -2,6 +2,7 @@
 #define BACKTEST_BACKTESTSESSION_H
 
 #include <QObject>
+#include <atomic>
 #include <memory>
 #include <QJsonObject>
 #include <QMap>
@@ -85,6 +86,7 @@ public:
     // Preload-then-replay: all historical data is loaded into MarketDataReplayer
     // before the replay loop starts. Blocks until finished or cancelled.
     void run();
+    /// Thread-safe: may be called from any thread (only flips the cancel flag).
     void cancel();
 
     const BacktestResult& result() const { return m_result; }
@@ -117,7 +119,7 @@ private:
     std::unique_ptr<CPipelineStrategyAdapter>       m_strategyAdapter;
     Pipeline::StrategyPipelineRunner*               m_pipelineRunner = nullptr;
     BacktestResult                                  m_result;
-    bool                                            m_cancelled  = false;
+    std::atomic<bool>                               m_cancelled{false};
     // Set when buildObjectGraph() emitted failed() — run() must not load data or replay.
     bool                                            m_buildFailed = false;
     // Separate from m_cancelled: set only when loadHistoricalData() emits failed().
