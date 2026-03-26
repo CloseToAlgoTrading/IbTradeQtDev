@@ -5,6 +5,7 @@ namespace {
 int g_displayedResultCount = 0;
 int g_runHistorySetCount = 0;
 QString g_lastDisplayedRunId;
+QStringList g_lastRunHistoryRunIds;
 int g_resultsStaleSetCount = 0;
 bool g_lastResultsStale = false;
 bool g_isEmptyStateVisible = false;
@@ -19,6 +20,7 @@ void reset()
     g_displayedResultCount = 0;
     g_runHistorySetCount = 0;
     g_lastDisplayedRunId.clear();
+    g_lastRunHistoryRunIds.clear();
     g_resultsStaleSetCount = 0;
     g_lastResultsStale = false;
     g_isEmptyStateVisible = false;
@@ -28,6 +30,7 @@ void reset()
 int displayedResultCount() { return g_displayedResultCount; }
 int runHistorySetCount() { return g_runHistorySetCount; }
 QString lastDisplayedRunId() { return g_lastDisplayedRunId; }
+QStringList lastRunHistoryRunIds() { return g_lastRunHistoryRunIds; }
 int resultsStaleSetCount() { return g_resultsStaleSetCount; }
 bool lastResultsStale() { return g_lastResultsStale; }
 bool isEmptyStateVisible() { return g_isEmptyStateVisible; }
@@ -105,9 +108,12 @@ void BacktestWorkspaceDock::applyLoadedRunConfiguration(const Backtest::Backtest
                 QJsonDocument::fromJson(run.record.configJson.toUtf8()).object()));
 }
 
-void BacktestWorkspaceDock::setRunHistory(const QList<DbBacktestRunSummary>&)
+void BacktestWorkspaceDock::setRunHistory(const QList<DbBacktestRunSummary>& runs)
 {
     ++g_runHistorySetCount;
+    g_lastRunHistoryRunIds.clear();
+    for (const DbBacktestRunSummary& run : runs)
+        g_lastRunHistoryRunIds.append(run.runId);
 }
 void BacktestWorkspaceDock::clearDisplayedBacktestResult() {}
 void BacktestWorkspaceDock::setProgress(int percent)

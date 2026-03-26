@@ -757,11 +757,11 @@ void BacktestWorkspaceCoordinator::activateSession(const SessionKey& key, bool c
             if (auto* sel = m_view->backtestStrategySelector())
                 sel->highlightStrategy(key.nodeId);
         }
-        populateRunHistory(key.nodeId, s.strategyDefId);
+        populateRunHistory(key.nodeId, s.strategyDefId, QString(), s.strategyVersion);
     } else {
         if (m_view)
             m_view->switchToBacktestTab();
-        populateRunHistory(QString(), s.strategyDefId);
+        populateRunHistory(QString(), s.strategyDefId, s.catalogVersionId, s.strategyVersion);
     }
 }
 
@@ -965,13 +965,16 @@ void BacktestWorkspaceCoordinator::refreshRunHistoryForSession(const SessionKey&
 
     const Session& s = m_sessions[key];
     if (key.kind == SessionKind::LiveNode)
-        populateRunHistory(key.nodeId, s.strategyDefId);
+        populateRunHistory(key.nodeId, s.strategyDefId, QString(), s.strategyVersion);
     else
-        populateRunHistory(QString(), s.strategyDefId);
+        populateRunHistory(QString(), s.strategyDefId, s.catalogVersionId, s.strategyVersion);
 }
 
 void BacktestWorkspaceCoordinator::populateRunHistory(
-    const QString& strategyId, const QString& strategyDefId)
+    const QString& strategyId,
+    const QString& strategyDefId,
+    const QString& catalogVersionId,
+    int strategyVersion)
 {
     ensureController();
     if (!m_controller) return;
@@ -997,13 +1000,20 @@ void BacktestWorkspaceCoordinator::populateRunHistory(
                 s.scopeRefId      = q.value(QStringLiteral("scopeRefId")).toString();
                 s.strategyVersion = q.value(QStringLiteral("strategyVersion")).isNull()
                                         ? 1 : q.value(QStringLiteral("strategyVersion")).toInt();
+                s.catalogStrategyId = q.value(QStringLiteral("catalogStrategyId")).toString();
+                s.catalogVersionId = q.value(QStringLiteral("catalogVersionId")).toString();
                 summaries.append(s);
             }
         }
         m_dock->setRunHistory(summaries);
     };
 
-    if (!strategyDefId.isEmpty())
+    if (!strategyDefId.isEmpty() && !catalogVersionId.isEmpty())
+        populate(query_fetchRunsForCatalogVersion(strategyDefId,
+                                                  catalogVersionId,
+                                                  strategyVersion,
+                                                  conn));
+    else if (!strategyDefId.isEmpty())
         populate(query_fetchRunsForDefinition(strategyDefId, conn));
     else if (!strategyId.isEmpty())
         populate(query_fetchRunsForStrategy(strategyId, conn));

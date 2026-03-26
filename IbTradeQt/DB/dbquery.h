@@ -780,6 +780,35 @@ inline QSqlQuery query_fetchRunsForDefinition(const QString& strategyDefId, cons
     return q;
 }
 
+// Returns runs for a specific catalog strategy version, newest first.
+// Legacy rows that predate catalogVersionId are matched by strategyVersion.
+inline QSqlQuery query_fetchRunsForCatalogVersion(const QString& strategyDefId,
+                                                  const QString& catalogVersionId,
+                                                  int strategyVersion,
+                                                  const QString& conn)
+{
+    QSqlQuery q(QSqlDatabase::database(conn));
+    q.prepare(
+        "SELECT r.runId, r.strategyId, r.strategyDefId, r.scopeType, r.scopeRefId, "
+        "       r.symbols, r.startDate, r.endDate, "
+        "       r.status, r.dataSourceId, r.createdAt, r.strategyVersion, "
+        "       COALESCE(r.catalogStrategyId, '') AS catalogStrategyId, "
+        "       COALESCE(r.catalogVersionId, '')  AS catalogVersionId, "
+        "       COALESCE(m.totalReturn, 0) AS totalReturn, "
+        "       COALESCE(m.sharpeRatio, 0) AS sharpeRatio "
+        "FROM BacktestRuns r "
+        "LEFT JOIN BacktestMetrics m ON r.runId = m.runId "
+        "WHERE (r.catalogStrategyId = :defId AND r.catalogVersionId = :verId) "
+        "   OR (r.strategyDefId = :defId "
+        "       AND COALESCE(r.catalogVersionId, '') = '' "
+        "       AND r.strategyVersion = :strategyVersion) "
+        "ORDER BY r.createdAt DESC");
+    q.bindValue(":defId", strategyDefId);
+    q.bindValue(":verId", catalogVersionId);
+    q.bindValue(":strategyVersion", strategyVersion > 0 ? strategyVersion : 1);
+    return q;
+}
+
 /** Removes persisted backtest rows for a v3 catalog strategy (matches catalogStrategyId or legacy strategyDefId). */
 inline bool query_deleteBacktestDataForCatalogStrategy(const QString& strategyId, const QString& conn)
 {

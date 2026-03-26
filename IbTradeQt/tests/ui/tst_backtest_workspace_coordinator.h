@@ -29,6 +29,7 @@ void reset();
 int displayedResultCount();
 int runHistorySetCount();
 QString lastDisplayedRunId();
+QStringList lastRunHistoryRunIds();
 int resultsStaleSetCount();
 bool lastResultsStale();
 bool isEmptyStateVisible();
@@ -748,6 +749,52 @@ private slots:
         QCOMPARE(BacktestWorkspaceCoordinatorTestProbe::runHistorySetCount(), 1);
         QCOMPARE(BacktestWorkspaceCoordinatorTestProbe::resultsStaleSetCount(), 1);
         QVERIFY(!BacktestWorkspaceCoordinatorTestProbe::lastResultsStale());
+    }
+
+    void testCatalogVersionRunHistoryIsScopedPerVersion()
+    {
+        const StrategyHandle strategy =
+            createStrategy(QStringLiteral("Alpha"), QStringLiteral("sum"));
+        QJsonObject edited = m_backend->pipelineConfig(strategy.nodeId);
+        edited.insert(QStringLiteral("mergePolicy"), QStringLiteral("version-two"));
+        QVERIFY(m_backend->updatePipelineConfig(strategy.nodeId, edited));
+        const QString newVersionId =
+            m_backend->createStrategyVersion(strategy.strategyDefId, edited, QStringLiteral(""));
+        QVERIFY(!newVersionId.isEmpty());
+        const VersionInfo version2 = latestVersion(strategy.strategyDefId);
+
+        Backtest::BacktestLoadedRun v1Run =
+            makeCatalogFinishedRun(strategy, QStringLiteral("run-v1-only"));
+        v1Run.record.createdAt =
+            QDateTime(QDate(2021, 3, 30), QTime(12, 0), Qt::UTC).toString(Qt::ISODate);
+        seedPersistedRun(v1Run);
+
+        Backtest::BacktestLoadedRun v2Run = v1Run;
+        v2Run.record.runId = QStringLiteral("run-v2-only");
+        v2Run.record.catalogVersionId = version2.versionId;
+        v2Run.record.strategyVersion = version2.versionNumber;
+        Backtest::BacktestRunConfig v2Config = Backtest::BacktestRunConfig::fromJson(
+            QJsonDocument::fromJson(v2Run.record.configJson.toUtf8()).object());
+        v2Config.catalogVersionId = version2.versionId;
+        v2Config.strategyVersion = version2.versionNumber;
+        v2Run.record.configJson = QString::fromUtf8(
+            QJsonDocument(v2Config.toJson()).toJson(QJsonDocument::Compact));
+        v2Run.record.createdAt =
+            QDateTime(QDate(2021, 3, 31), QTime(12, 0), Qt::UTC).toString(Qt::ISODate);
+        seedPersistedRun(v2Run);
+
+        BacktestWorkspaceCoordinator coordinator;
+        coordinator.setBackend(m_backend.get());
+        BacktestUI::BacktestWorkspaceDock dock;
+        coordinator.setDock(&dock);
+
+        coordinator.openCatalogVersion(strategy.strategyDefId, strategy.versionId);
+        QCOMPARE(BacktestWorkspaceCoordinatorTestProbe::lastRunHistoryRunIds(),
+                 QStringList{QStringLiteral("run-v1-only")});
+
+        coordinator.openCatalogVersion(strategy.strategyDefId, version2.versionId);
+        QCOMPARE(BacktestWorkspaceCoordinatorTestProbe::lastRunHistoryRunIds(),
+                 QStringList{QStringLiteral("run-v2-only")});
     }
 
     void testCatalogPreviewAfterRunCancelKeepsCurrentSession()

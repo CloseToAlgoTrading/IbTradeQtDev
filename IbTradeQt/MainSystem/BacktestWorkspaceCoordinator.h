@@ -90,7 +90,10 @@ private:
     void ensureController();
     void mergeSessionAssetListIntoRunConfig(Backtest::BacktestRunConfig& runCfg);
     void launchPrepareRun(const Backtest::BacktestRunConfig& config);
-    void populateRunHistory(const QString& strategyId, const QString& strategyDefId);
+    void populateRunHistory(const QString& strategyId,
+                            const QString& strategyDefId,
+                            const QString& catalogVersionId = QString(),
+                            int strategyVersion = 1);
     void refreshActiveRunHistory();
     void refreshRunHistoryForSession(const Backtest::Workspace::SessionKey& key);
 
