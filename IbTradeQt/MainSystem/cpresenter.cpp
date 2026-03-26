@@ -32,6 +32,7 @@
 #include "StrategyManagementCoordinator.h"
 #include "DataManagementCoordinator.h"
 #include "BacktestUI/BacktestWorkspaceDock.h"
+#include "BacktestUI/BacktestSummaryStatisticsPanel.h"
 #include "BacktestUI/BacktestStrategySelector.h"
 #include "StrategyManagementUI/StrategyManagementPanel.h"
 #include "StrategyManagementUI/StrategyDetailPanel.h"
@@ -245,17 +246,28 @@ void CPresenter::MapSignals()
     btDock->hide();
     m_backtestCoord->setDock(btDock);
 
-    auto* backtestRightPane = this->pIbtsView->findChild<QWidget*>(
-        QStringLiteral("BacktestRightPane"));
-    if (backtestRightPane && btDock->widget()) {
-        QLayout* paneLayout = backtestRightPane->layout();
-        while (QLayoutItem* item = paneLayout->takeAt(0)) {
-            if (item->widget()) item->widget()->deleteLater();
-            delete item;
-        }
+    auto* backtestHost = this->pIbtsView->backtestDockHost();
+    auto* btSummaryDock = new QDockWidget(QStringLiteral("Backtest Summary Statistics"),
+                                          backtestHost ? backtestHost : this->pIbtsView);
+    btSummaryDock->setObjectName(QStringLiteral("BacktestSummaryStatisticsDock"));
+    btSummaryDock->setAllowedAreas(Qt::LeftDockWidgetArea
+                                   | Qt::RightDockWidgetArea
+                                   | Qt::BottomDockWidgetArea);
+    btSummaryDock->setFeatures(QDockWidget::DockWidgetMovable
+                               | QDockWidget::DockWidgetFloatable
+                               | QDockWidget::DockWidgetClosable);
+    auto* btSummaryPanel = new BacktestUI::BacktestSummaryStatisticsPanel(btSummaryDock);
+    btSummaryDock->setWidget(btSummaryPanel);
+    this->pIbtsView->setBacktestSummaryDock(btSummaryDock);
+    btDock->setSummaryStatisticsPanel(btSummaryPanel);
+    btDock->setStatisticsDockWidget(btSummaryDock);
+
+    if (backtestHost && btDock->widget()) {
         QWidget* btContent = btDock->widget();
-        btContent->setParent(backtestRightPane);
-        paneLayout->addWidget(btContent);
+        btContent->setParent(backtestHost);
+        backtestHost->setCentralWidget(btContent);
+        backtestHost->addDockWidget(Qt::RightDockWidgetArea, btSummaryDock);
+        btSummaryDock->show();
     }
 
     QObject::connect(pPConfigModel, &CPortfolioConfigModel::openInBacktestWorkspace,

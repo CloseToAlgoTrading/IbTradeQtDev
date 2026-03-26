@@ -24,6 +24,8 @@ void applySplitterDefaults(QSplitter* mainLive, QSplitter* backtest, QSplitter* 
 void applyMainTabDefault(QTabWidget* tabs);
 void applyMainWindowDockDefaults(QMainWindow* mainWindow, EventLogPanel* eventLogDock,
                                  QDockWidget* diagramDock = nullptr);
+void applyBacktestDockDefaults(QMainWindow* backtestDockHost,
+                               QDockWidget* backtestSummaryDock = nullptr);
 
 void applyFullDefaults(CIBTradeSystemView* view);
 

@@ -11,8 +11,10 @@
 class QLabel;
 class QTabWidget;
 class QWidget;
+class QStackedWidget;
 class QPushButton;
 class QHBoxLayout;
+class QDockWidget;
 class BlockInspectorPanel;
 class BacktestPresenter;
 
@@ -30,6 +32,10 @@ class BacktestWorkspaceDock : public QDockWidget {
 
 public:
     explicit BacktestWorkspaceDock(QWidget* parent = nullptr);
+
+    void showEmptyState();
+    void setSummaryStatisticsPanel(BacktestSummaryStatisticsPanel* panel);
+    void setStatisticsDockWidget(QDockWidget* dock);
 
     void applyWorkspaceSession(const Backtest::Workspace::Session& session,
                                bool clearResultPanels);
@@ -77,6 +83,7 @@ signals:
 
 private:
     void buildDock();
+    void setWorkspaceMode(bool hasActiveSession);
     void updateStrategyHeader();
     void rebuildActionRow();
     void applyPreparedDisplay(const PreparedBacktestDisplay& prepared);
@@ -90,10 +97,15 @@ private:
 
     QLabel*                  m_headerLabel     = nullptr;
     QLabel*                  m_staleLabel      = nullptr;
+    QLabel*                  m_emptyLabel      = nullptr;
     QHBoxLayout*             m_actionRowLayout = nullptr;
     QPushButton*             m_saveBtn         = nullptr;
     QPushButton*             m_resetBtn        = nullptr;
     QPushButton*             m_saveVerBtn      = nullptr;
+    QPushButton*             m_showStatsBtn    = nullptr;
+    QStackedWidget*          m_modeStack       = nullptr;
+    QWidget*                 m_emptyPage       = nullptr;
+    QWidget*                 m_workspacePage   = nullptr;
 
     QTabWidget*              m_tabWidget       = nullptr;
     BacktestRunConfigPanel*  m_configPanel     = nullptr;
@@ -103,13 +115,15 @@ private:
     BacktestRunHistoryPanel* m_historyPanel    = nullptr;
     QWidget*                 m_equityTab       = nullptr;
     EquityChartWidget*       m_equityChart     = nullptr;
-    BacktestSummaryStatisticsPanel* m_summaryStatisticsPanel = nullptr;
+    BacktestSummaryStatisticsPanel* m_summaryStatisticsPanel = nullptr; // not owned
+    QDockWidget*              m_statisticsDock  = nullptr; // not owned
     BacktestCandlestickWidget* m_candleChart   = nullptr;
     TradeLogWidget*          m_tradeLog        = nullptr;
 
     QJsonObject              m_pipelineConfig;
     bool                     m_programmaticDockUpdate = false;
     bool                     m_sessionDirty         = false;
+    bool                     m_hasActiveSession     = false;
 
     BacktestPresenter*       m_btPresenter    = nullptr;
 };

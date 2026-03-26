@@ -2,6 +2,7 @@
 #include "IModelTreeRepository.h"
 #include "ibtradesystemview.h"
 #include "EventLogPanel.h"
+#include "BacktestUI/BacktestSummaryStatisticsPanel.h"
 #include "BacktestUI/BacktestStrategySelector.h"
 #include "StrategyManagementUI/StrategyManagementPanel.h"
 #include "StrategyManagementUI/StrategyCatalogPanel.h"
@@ -92,6 +93,7 @@ void UiLayoutStore::attachToView(CIBTradeSystemView* view)
         return;
 
     m_mainWindow = view;
+    m_backtestDockHost = view->backtestDockHost();
     m_mainTabWidget = view->mainTabWidget();
 
     if (QSplitter* s = view->mainSplitter()) {
@@ -163,6 +165,25 @@ void UiLayoutStore::attachToView(CIBTradeSystemView* view)
         connect(dd, &QDockWidget::topLevelChanged, this, &UiLayoutStore::scheduleSave,
                 Qt::UniqueConnection);
     }
+
+    if (auto* statsDock = view->backtestSummaryDock()) {
+        connect(statsDock, &QDockWidget::dockLocationChanged, this, &UiLayoutStore::scheduleSave,
+                Qt::UniqueConnection);
+        connect(statsDock, &QDockWidget::topLevelChanged, this, &UiLayoutStore::scheduleSave,
+                Qt::UniqueConnection);
+        connect(statsDock, &QDockWidget::visibilityChanged, this, &UiLayoutStore::scheduleSave,
+                Qt::UniqueConnection);
+
+        if (auto* panel = qobject_cast<BacktestUI::BacktestSummaryStatisticsPanel*>(
+                statsDock->widget())) {
+            connect(panel, &BacktestUI::BacktestSummaryStatisticsPanel::headerStateRestorable,
+                    this, &UiLayoutStore::restorePendingHeaders, Qt::UniqueConnection);
+            if (auto* table = panel->tableView()) {
+                table->setObjectName(QStringLiteral("BacktestSummaryStatisticsTable"));
+                registerHeaderView(table);
+            }
+        }
+    }
 }
 
 void UiLayoutStore::load()
@@ -193,6 +214,11 @@ void UiLayoutStore::load()
         m_mainWindow->restoreGeometry(geom);
     if (!st.isEmpty())
         m_mainWindow->restoreState(st, kQtStateVersion);
+
+    const QByteArray backtestDockHostState =
+        bytesFromJson(root.value(QStringLiteral("backtestDockHostState")).toString());
+    if (m_backtestDockHost && !backtestDockHostState.isEmpty())
+        m_backtestDockHost->restoreState(backtestDockHostState, kQtStateVersion);
 
     QJsonObject splitters = root.value(QStringLiteral("splitters")).toObject();
     for (const QString& key : splitters.keys()) {
@@ -233,8 +259,8 @@ void UiLayoutStore::restorePendingHeaders()
         if (it == m_pendingHeaderStates.end() || it.value().isEmpty())
             continue;
         if (QHeaderView* h = headerForPersistedView(v.get())) {
-            if (h->count() > 0)
-                h->restoreState(it.value());
+            if (h->count() > 0 && h->restoreState(it.value()))
+                m_pendingHeaderStates.erase(it);
         }
     }
 }
@@ -251,6 +277,9 @@ void UiLayoutStore::save()
     mw[QStringLiteral("geometry")] = bytesToJson(m_mainWindow->saveGeometry());
     mw[QStringLiteral("state")] = bytesToJson(m_mainWindow->saveState(kQtStateVersion));
     root[QStringLiteral("mainWindow")] = mw;
+    if (m_backtestDockHost)
+        root[QStringLiteral("backtestDockHostState")] =
+            bytesToJson(m_backtestDockHost->saveState(kQtStateVersion));
 
     QJsonObject splitters;
     for (const auto& sp : m_splitters) {

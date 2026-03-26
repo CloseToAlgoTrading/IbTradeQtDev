@@ -23,6 +23,11 @@ public:
 
     void clear();
 
+    QTableView* tableView() const { return m_table; }
+
+signals:
+    void headerStateRestorable();
+
 private:
     QTableView*           m_table  = nullptr;
     QStandardItemModel*   m_model  = nullptr;

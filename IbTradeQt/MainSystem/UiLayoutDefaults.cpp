@@ -41,6 +41,19 @@ void applyMainWindowDockDefaults(QMainWindow* mainWindow, EventLogPanel* eventLo
 {
     if (!mainWindow || !eventLogDock)
         return;
+
+    eventLogDock->setFloating(false);
+    eventLogDock->show();
+    mainWindow->addDockWidget(Qt::BottomDockWidgetArea, eventLogDock);
+
+    if (diagramDock) {
+        diagramDock->setFloating(false);
+        diagramDock->show();
+        mainWindow->addDockWidget(Qt::BottomDockWidgetArea, diagramDock);
+        mainWindow->tabifyDockWidget(eventLogDock, diagramDock);
+        eventLogDock->raise();
+    }
+
     QList<QDockWidget*> docks;
     docks << eventLogDock;
     QList<int> heights;
@@ -50,6 +63,19 @@ void applyMainWindowDockDefaults(QMainWindow* mainWindow, EventLogPanel* eventLo
         heights << UiTheme::kEventLogDockInitialHeight;
     }
     mainWindow->resizeDocks(docks, heights, Qt::Vertical);
+
+}
+
+void applyBacktestDockDefaults(QMainWindow* backtestDockHost,
+                               QDockWidget* backtestSummaryDock)
+{
+    if (!backtestDockHost || !backtestSummaryDock)
+        return;
+
+    backtestSummaryDock->setFloating(false);
+    backtestSummaryDock->show();
+    backtestDockHost->addDockWidget(Qt::RightDockWidgetArea, backtestSummaryDock);
+    backtestDockHost->resizeDocks({backtestSummaryDock}, {420}, Qt::Horizontal);
 }
 
 void applyFullDefaults(CIBTradeSystemView* view)
@@ -63,7 +89,10 @@ void applyFullDefaults(CIBTradeSystemView* view)
                               ? view->strategyManagementPanel()->horizontalSplitter()
                               : nullptr);
     applyMainTabDefault(view->mainTabWidget());
-    applyMainWindowDockDefaults(view, view->eventLogPanel(), view->diagramDock());
+    applyMainWindowDockDefaults(view,
+                                view->eventLogPanel(),
+                                view->diagramDock());
+    applyBacktestDockDefaults(view->backtestDockHost(), view->backtestSummaryDock());
 
     applySystemTreeColumnDefaults(view->getPortfolioConfigTreeView());
 

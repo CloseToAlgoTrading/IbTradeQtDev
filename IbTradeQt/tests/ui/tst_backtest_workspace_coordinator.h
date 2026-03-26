@@ -8,11 +8,14 @@
 #include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QUuid>
+#include <QtSql/QSqlDatabase>
+#include <QtSql/QSqlQuery>
 
 #include "Common/NHelper.h"
 #include "Common/StorageConfig.h"
 #include "Backend/ModelTreeRepository.h"
 #include "Backend/SystemBackendImpl.h"
+#include "DB/dbquery.h"
 #include "MainSystem/BacktestWorkspaceCoordinator.h"
 #include "MainSystem/ibtradesystemview.h"
 #include "BacktestUI/BacktestWorkspaceDock.h"
@@ -28,6 +31,8 @@ int runHistorySetCount();
 QString lastDisplayedRunId();
 int resultsStaleSetCount();
 bool lastResultsStale();
+bool isEmptyStateVisible();
+int lastDisplayedHistoricalSymbolCount();
 }
 
 class TestUnsavedPrompt final : public IUnsavedChangesPrompt
@@ -181,17 +186,64 @@ private:
         config.strategyVersion = handle.versionNumber;
         config.catalogStrategyId = handle.strategyDefId;
         config.catalogVersionId = handle.versionId;
+        config.symbols = { QStringLiteral("AMD"), QStringLiteral("NVDA") };
+        config.startDate = QDateTime(QDate(2021, 3, 26), QTime(0, 0), Qt::UTC);
+        config.endDate = QDateTime(QDate(2021, 3, 29), QTime(0, 0), Qt::UTC);
+        config.initialCapital = 100000.0;
+        config.benchmarkSymbol = QStringLiteral("SPY");
+        config.resolution = QStringLiteral("Day1");
+        config.dataSourceId = QStringLiteral("yahoo");
 
         run.record.runId = runId;
         run.record.strategyId = handle.nodeId;
         run.record.strategyDisplayName = handle.name;
+        run.record.portfolioPath = QStringLiteral("/Test/%1").arg(handle.name);
+        run.record.symbols = QStringLiteral("AMD,NVDA");
+        run.record.startDate = config.startDate.toString(Qt::ISODate);
+        run.record.endDate = config.endDate.toString(Qt::ISODate);
         run.record.status = QStringLiteral("Finished");
+        run.record.dataSourceId = config.dataSourceId;
+        run.record.createdAt = QDateTime(QDate(2021, 3, 30), QTime(12, 0), Qt::UTC)
+                                   .toString(Qt::ISODate);
         run.record.strategyDefId = handle.strategyDefId;
+        run.record.scopeType = QStringLiteral("strategy");
+        run.record.scopeRefId = handle.strategyDefId;
         run.record.strategyVersion = handle.versionNumber;
         run.record.catalogStrategyId = handle.strategyDefId;
         run.record.catalogVersionId = handle.versionId;
         run.record.configJson = QString::fromUtf8(
             QJsonDocument(config.toJson()).toJson(QJsonDocument::Compact));
+        run.result.startDate = config.startDate;
+        run.result.endDate = config.endDate;
+        run.result.initialCapital = config.initialCapital;
+        run.result.finalCapital = 110000.0;
+        run.result.totalReturn = 0.10;
+        run.result.annualizedReturn = 0.12;
+        run.result.sharpeRatio = 1.4;
+        run.result.maxDrawdown = 0.05;
+        run.result.winRate = 0.5;
+        run.result.totalTrades = 2;
+        run.result.alphaVsBenchmark = 0.03;
+        run.result.benchmark.symbol = config.benchmarkSymbol;
+        run.result.benchmark.totalReturn = 0.07;
+        run.result.equityCurve.append(
+            {config.startDate, config.initialCapital});
+        run.result.equityCurve.append(
+            {config.endDate, run.result.finalCapital});
+        Backtest::FilledOrder buy;
+        buy.orderId = 1;
+        buy.symbol = QStringLiteral("AMD");
+        buy.quantity = 10.0;
+        buy.fillPrice = 100.0;
+        buy.timestamp = QDateTime(QDate(2021, 3, 26), QTime(21, 0), Qt::UTC);
+        run.result.tradeLog.append(buy);
+        Backtest::FilledOrder sell;
+        sell.orderId = 2;
+        sell.symbol = QStringLiteral("AMD");
+        sell.quantity = -10.0;
+        sell.fillPrice = 110.0;
+        sell.timestamp = QDateTime(QDate(2021, 3, 29), QTime(21, 0), Qt::UTC);
+        run.result.tradeLog.append(sell);
         return run;
     }
 
@@ -242,6 +294,157 @@ private:
             &coordinator,
             "onResetToBaselineRequested",
             Qt::DirectConnection);
+    }
+
+    static bool invokeLoadRun(BacktestWorkspaceCoordinator& coordinator,
+                              const QString& runId)
+    {
+        return QMetaObject::invokeMethod(
+            &coordinator,
+            "onLoadRun",
+            Qt::DirectConnection,
+            Q_ARG(QString, runId));
+    }
+
+    static bool initBacktestStoreSchema(const QString& dbPath)
+    {
+        const QString conn =
+            QStringLiteral("bt_ws_init_") + QUuid::createUuid().toString(QUuid::WithoutBraces);
+        {
+            QSqlDatabase db = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), conn);
+            db.setDatabaseName(dbPath);
+            if (!db.open())
+                return false;
+
+            auto exec = [&db](const char* sql) {
+                QSqlQuery q(db);
+                return q.exec(QLatin1String(sql));
+            };
+            auto execSilent = [&db](const char* sql) {
+                QSqlQuery q(db);
+                q.exec(QLatin1String(sql));
+            };
+
+            if (!exec(CREATE_TABLE_BACKTEST_RUNS))
+                return false;
+            if (!exec(CREATE_TABLE_BACKTEST_METRICS))
+                return false;
+            execSilent(ALTER_BACKTEST_METRICS_ADD_SORTINO_RATIO);
+            execSilent(ALTER_BACKTEST_METRICS_ADD_CALMAR_RATIO);
+            execSilent(ALTER_BACKTEST_METRICS_ADD_PROFIT_FACTOR);
+            execSilent(ALTER_BACKTEST_METRICS_ADD_AVERAGE_EXPOSURE_PCT);
+            execSilent(ALTER_BACKTEST_METRICS_ADD_TURNOVER_ANNUALIZED);
+            execSilent(ALTER_BACKTEST_METRICS_ADD_METRIC_DEFS_VERSION);
+            execSilent(ALTER_BACKTEST_METRICS_ADD_STATISTICS_JSON);
+            execSilent(ALTER_BACKTEST_METRICS_ADD_BENCHMARK_SYMBOL);
+            execSilent(ALTER_BACKTEST_METRICS_ADD_BENCHMARK_ANNUALIZED);
+            execSilent(ALTER_BACKTEST_METRICS_ADD_BENCHMARK_MAX_DD);
+            execSilent(ALTER_BACKTEST_METRICS_ADD_BENCHMARK_START_PRICE);
+            execSilent(ALTER_BACKTEST_METRICS_ADD_BENCHMARK_END_PRICE);
+            if (!exec(CREATE_TABLE_BACKTEST_TRADES))
+                return false;
+            if (!exec(CREATE_TABLE_BACKTEST_EQUITY_CURVE))
+                return false;
+            if (!exec(CREATE_TABLE_HISTORICAL_BARS))
+                return false;
+            execSilent(ALTER_BACKTEST_RUNS_ADD_STRATEGY_DEF_ID);
+            execSilent(ALTER_BACKTEST_RUNS_ADD_SCOPE_TYPE);
+            execSilent(ALTER_BACKTEST_RUNS_ADD_SCOPE_REF_ID);
+            execSilent(ALTER_BACKTEST_RUNS_ADD_STRATEGY_VERSION);
+            execSilent(ALTER_BACKTEST_RUNS_ADD_CATALOG_STRATEGY_ID);
+            execSilent(ALTER_BACKTEST_RUNS_ADD_CATALOG_VERSION_ID);
+            db.close();
+        }
+
+        QSqlDatabase::removeDatabase(conn);
+        return true;
+    }
+
+    void seedPersistedRun(const Backtest::BacktestLoadedRun& run,
+                          const QList<DbHistoricalBar>& historicalBars = {})
+    {
+        QVERIFY(initBacktestStoreSchema(m_backtestDbPath));
+
+        const QString conn =
+            QStringLiteral("bt_ws_seed_") + QUuid::createUuid().toString(QUuid::WithoutBraces);
+        {
+            QSqlDatabase db = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), conn);
+            db.setDatabaseName(m_backtestDbPath);
+            QVERIFY(db.open());
+
+            DbBacktestRun dbRun;
+            dbRun.runId = run.record.runId;
+            dbRun.strategyId = run.record.strategyId;
+            dbRun.strategyDisplayName = run.record.strategyDisplayName;
+            dbRun.portfolioPath = run.record.portfolioPath;
+            dbRun.configJson = run.record.configJson;
+            dbRun.symbols = run.record.symbols;
+            dbRun.startDate = run.record.startDate;
+            dbRun.endDate = run.record.endDate;
+            dbRun.status = run.record.status;
+            dbRun.errorText = run.record.errorText;
+            dbRun.durationMs = run.record.durationMs;
+            dbRun.engineVersion = run.record.engineVersion;
+            dbRun.dataSourceId = run.record.dataSourceId;
+            dbRun.dataRefreshedAt = run.record.dataRefreshedAt;
+            dbRun.createdAt = run.record.createdAt;
+            dbRun.strategyDefId = run.record.strategyDefId;
+            dbRun.scopeType = run.record.scopeType;
+            dbRun.scopeRefId = run.record.scopeRefId;
+            dbRun.strategyVersion = run.record.strategyVersion;
+            dbRun.catalogStrategyId = run.record.catalogStrategyId;
+            dbRun.catalogVersionId = run.record.catalogVersionId;
+            QVERIFY(query_insertBacktestRun(dbRun, conn).exec());
+
+            DbBacktestMetrics metrics;
+            metrics.runId = run.record.runId;
+            metrics.totalReturn = run.result.totalReturn;
+            metrics.annualizedReturn = run.result.annualizedReturn;
+            metrics.sharpeRatio = run.result.sharpeRatio;
+            metrics.maxDrawdown = run.result.maxDrawdown;
+            metrics.winRate = run.result.winRate;
+            metrics.totalTrades = run.result.totalTrades;
+            metrics.initialCapital = run.result.initialCapital;
+            metrics.finalCapital = run.result.finalCapital;
+            metrics.benchmarkReturn = run.result.benchmark.totalReturn;
+            metrics.benchmarkSharpe = run.result.benchmark.sharpeRatio;
+            metrics.benchmarkSymbol = run.result.benchmark.symbol;
+            metrics.benchmarkAnnualizedReturn = run.result.benchmark.annualizedReturn;
+            metrics.benchmarkMaxDrawdown = run.result.benchmark.maxDrawdown;
+            metrics.benchmarkStartPrice = run.result.benchmark.startPrice;
+            metrics.benchmarkEndPrice = run.result.benchmark.endPrice;
+            metrics.alpha = run.result.alphaVsBenchmark;
+            QVERIFY(query_insertBacktestMetrics(metrics, conn).exec());
+
+            for (const Backtest::LedgerSnapshot& point : run.result.equityCurve) {
+                DbBacktestEquityPoint dbPoint;
+                dbPoint.runId = run.record.runId;
+                dbPoint.timestamp = point.timestamp.toUTC().toString(Qt::ISODate);
+                dbPoint.value = point.portfolioValue;
+                dbPoint.benchmarkValue = 0.0;
+                QVERIFY(query_insertEquityPoint(dbPoint, conn).exec());
+            }
+
+            for (const Backtest::FilledOrder& trade : run.result.tradeLog) {
+                DbBacktestTrade dbTrade;
+                dbTrade.runId = run.record.runId;
+                dbTrade.symbol = trade.symbol;
+                dbTrade.side = trade.quantity >= 0.0
+                    ? QStringLiteral("BUY")
+                    : QStringLiteral("SELL");
+                dbTrade.quantity = qAbs(trade.quantity);
+                dbTrade.fillPrice = trade.fillPrice;
+                dbTrade.timestamp = trade.timestamp.toUTC().toString(Qt::ISODate);
+                QVERIFY(query_insertBacktestTrade(dbTrade, conn).exec());
+            }
+
+            for (const DbHistoricalBar& bar : historicalBars)
+                QVERIFY(query_upsertHistoricalBar(bar, conn).exec());
+
+            db.close();
+        }
+
+        QSqlDatabase::removeDatabase(conn);
     }
 
     VersionInfo latestVersion(const QString& strategyDefId) const
@@ -319,6 +522,58 @@ private slots:
             m_backend->listStrategyVersions(strategy.strategyDefId).size();
 
         QCOMPARE(versionCountAfter, versionCountBefore);
+    }
+
+    void testCoordinatorStartsInEmptyStateWithoutActiveSession()
+    {
+        BacktestWorkspaceCoordinator coordinator;
+        coordinator.setBackend(m_backend.get());
+        BacktestUI::BacktestWorkspaceDock dock;
+
+        coordinator.setDock(&dock);
+
+        QVERIFY(BacktestWorkspaceCoordinatorTestProbe::isEmptyStateVisible());
+        QCOMPARE(BacktestWorkspaceCoordinatorTestProbe::displayedResultCount(), 0);
+        QCOMPARE(BacktestWorkspaceCoordinatorTestProbe::runHistorySetCount(), 0);
+    }
+
+    void testOpeningStrategyExitsEmptyState()
+    {
+        const StrategyHandle strategy =
+            createStrategy(QStringLiteral("Alpha"), QStringLiteral("sum"));
+
+        BacktestWorkspaceCoordinator coordinator;
+        coordinator.setBackend(m_backend.get());
+        BacktestUI::BacktestWorkspaceDock dock;
+        coordinator.setDock(&dock);
+
+        QVERIFY(BacktestWorkspaceCoordinatorTestProbe::isEmptyStateVisible());
+        openStrategy(coordinator, strategy);
+
+        QVERIFY(!BacktestWorkspaceCoordinatorTestProbe::isEmptyStateVisible());
+        QCOMPARE(dock.runConfigPanel()->currentConfig().strategyId, strategy.nodeId);
+    }
+
+    void testSelectingStrategyPopulatesHistoryWithoutAutoLoadingLastRun()
+    {
+        const StrategyHandle strategy =
+            createStrategy(QStringLiteral("Alpha"), QStringLiteral("sum"));
+
+        Backtest::BacktestLoadedRun persisted =
+            makeLiveFinishedRun(strategy, QStringLiteral("run-history-only"));
+        seedPersistedRun(persisted);
+
+        BacktestWorkspaceCoordinator coordinator;
+        coordinator.setBackend(m_backend.get());
+        BacktestUI::BacktestWorkspaceDock dock;
+        coordinator.setDock(&dock);
+
+        BacktestWorkspaceCoordinatorTestProbe::reset();
+        openStrategy(coordinator, strategy);
+
+        QCOMPARE(BacktestWorkspaceCoordinatorTestProbe::displayedResultCount(), 0);
+        QCOMPARE(BacktestWorkspaceCoordinatorTestProbe::lastDisplayedRunId(), QString());
+        QCOMPARE(BacktestWorkspaceCoordinatorTestProbe::runHistorySetCount(), 1);
     }
 
     void testLiveNodeDirtyAfterRunStillAllowsSaveOnSwitch()
@@ -723,6 +978,111 @@ private slots:
 
         QCOMPARE(BacktestWorkspaceCoordinatorTestProbe::resultsStaleSetCount(), 1);
         QVERIFY(BacktestWorkspaceCoordinatorTestProbe::lastResultsStale());
+    }
+
+    void testLoadingHistoricalRunHydratesCachedCandlestickBars()
+    {
+        const StrategyHandle strategy =
+            createStrategy(QStringLiteral("Alpha"), QStringLiteral("sum"));
+
+        Backtest::BacktestLoadedRun persisted =
+            makeLiveFinishedRun(strategy, QStringLiteral("run-with-bars"));
+        const Backtest::BacktestRunConfig config = Backtest::BacktestRunConfig::fromJson(
+            QJsonDocument::fromJson(persisted.record.configJson.toUtf8()).object());
+
+        QList<DbHistoricalBar> bars;
+        DbHistoricalBar bar1;
+        bar1.symbol = QStringLiteral("AMD");
+        bar1.resolution = config.resolution;
+        bar1.dataSourceId = config.dataSourceId;
+        bar1.timestamp = QDateTime(QDate(2021, 3, 26), QTime(21, 0), Qt::UTC).toString(Qt::ISODate);
+        bar1.open = 100.0;
+        bar1.high = 101.0;
+        bar1.low = 99.0;
+        bar1.close = 100.5;
+        bar1.volume = 1000.0;
+        bars.append(bar1);
+
+        DbHistoricalBar bar2 = bar1;
+        bar2.timestamp = QDateTime(QDate(2021, 3, 29), QTime(21, 0), Qt::UTC).toString(Qt::ISODate);
+        bar2.close = 110.0;
+        bars.append(bar2);
+
+        seedPersistedRun(persisted, bars);
+
+        BacktestWorkspaceCoordinator coordinator;
+        coordinator.setBackend(m_backend.get());
+        BacktestUI::BacktestWorkspaceDock dock;
+        coordinator.setDock(&dock);
+        openStrategy(coordinator, strategy);
+
+        BacktestWorkspaceCoordinatorTestProbe::reset();
+        QVERIFY(invokeLoadRun(coordinator, persisted.record.runId));
+
+        QCOMPARE(BacktestWorkspaceCoordinatorTestProbe::displayedResultCount(), 1);
+        QCOMPARE(BacktestWorkspaceCoordinatorTestProbe::lastDisplayedRunId(),
+                 persisted.record.runId);
+        QCOMPARE(BacktestWorkspaceCoordinatorTestProbe::lastDisplayedHistoricalSymbolCount(), 1);
+    }
+
+    void testLoadingHistoricalRunWithoutCachedBarsStillDisplaysResult()
+    {
+        const StrategyHandle strategy =
+            createStrategy(QStringLiteral("Alpha"), QStringLiteral("sum"));
+
+        Backtest::BacktestLoadedRun persisted =
+            makeLiveFinishedRun(strategy, QStringLiteral("run-without-bars"));
+        seedPersistedRun(persisted);
+
+        BacktestWorkspaceCoordinator coordinator;
+        coordinator.setBackend(m_backend.get());
+        BacktestUI::BacktestWorkspaceDock dock;
+        coordinator.setDock(&dock);
+        openStrategy(coordinator, strategy);
+
+        BacktestWorkspaceCoordinatorTestProbe::reset();
+        QVERIFY(invokeLoadRun(coordinator, persisted.record.runId));
+
+        QCOMPARE(BacktestWorkspaceCoordinatorTestProbe::displayedResultCount(), 1);
+        QCOMPARE(BacktestWorkspaceCoordinatorTestProbe::lastDisplayedHistoricalSymbolCount(), 0);
+    }
+
+    void testLoadingHistoricalRunUsesAvailableSymbolsOnly()
+    {
+        const StrategyHandle strategy =
+            createStrategy(QStringLiteral("Alpha"), QStringLiteral("sum"));
+
+        Backtest::BacktestLoadedRun persisted =
+            makeLiveFinishedRun(strategy, QStringLiteral("run-partial-bars"));
+        const Backtest::BacktestRunConfig config = Backtest::BacktestRunConfig::fromJson(
+            QJsonDocument::fromJson(persisted.record.configJson.toUtf8()).object());
+
+        QList<DbHistoricalBar> bars;
+        DbHistoricalBar bar;
+        bar.symbol = QStringLiteral("NVDA");
+        bar.resolution = config.resolution;
+        bar.dataSourceId = config.dataSourceId;
+        bar.timestamp = QDateTime(QDate(2021, 3, 26), QTime(21, 0), Qt::UTC).toString(Qt::ISODate);
+        bar.open = 200.0;
+        bar.high = 205.0;
+        bar.low = 198.0;
+        bar.close = 204.0;
+        bar.volume = 1200.0;
+        bars.append(bar);
+
+        seedPersistedRun(persisted, bars);
+
+        BacktestWorkspaceCoordinator coordinator;
+        coordinator.setBackend(m_backend.get());
+        BacktestUI::BacktestWorkspaceDock dock;
+        coordinator.setDock(&dock);
+        openStrategy(coordinator, strategy);
+
+        BacktestWorkspaceCoordinatorTestProbe::reset();
+        QVERIFY(invokeLoadRun(coordinator, persisted.record.runId));
+
+        QCOMPARE(BacktestWorkspaceCoordinatorTestProbe::displayedResultCount(), 1);
+        QCOMPARE(BacktestWorkspaceCoordinatorTestProbe::lastDisplayedHistoricalSymbolCount(), 1);
     }
 };
 

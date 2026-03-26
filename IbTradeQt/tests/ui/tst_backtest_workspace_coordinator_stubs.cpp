@@ -7,6 +7,8 @@ int g_runHistorySetCount = 0;
 QString g_lastDisplayedRunId;
 int g_resultsStaleSetCount = 0;
 bool g_lastResultsStale = false;
+bool g_isEmptyStateVisible = false;
+int g_lastDisplayedHistoricalSymbolCount = 0;
 
 } // namespace
 
@@ -19,6 +21,8 @@ void reset()
     g_lastDisplayedRunId.clear();
     g_resultsStaleSetCount = 0;
     g_lastResultsStale = false;
+    g_isEmptyStateVisible = false;
+    g_lastDisplayedHistoricalSymbolCount = 0;
 }
 
 int displayedResultCount() { return g_displayedResultCount; }
@@ -26,6 +30,8 @@ int runHistorySetCount() { return g_runHistorySetCount; }
 QString lastDisplayedRunId() { return g_lastDisplayedRunId; }
 int resultsStaleSetCount() { return g_resultsStaleSetCount; }
 bool lastResultsStale() { return g_lastResultsStale; }
+bool isEmptyStateVisible() { return g_isEmptyStateVisible; }
+int lastDisplayedHistoricalSymbolCount() { return g_lastDisplayedHistoricalSymbolCount; }
 
 } // namespace BacktestWorkspaceCoordinatorTestProbe
 
@@ -38,9 +44,23 @@ BacktestWorkspaceDock::BacktestWorkspaceDock(QWidget* parent)
     setWidget(m_configPanel);
 }
 
+void BacktestWorkspaceDock::showEmptyState()
+{
+    g_isEmptyStateVisible = true;
+    m_currentStrategyId.clear();
+    m_currentDisplayName.clear();
+    m_currentPortfolioPath.clear();
+    m_currentStrategyDefId.clear();
+    m_currentStrategyVersion = 1;
+    m_isCatalogPreview = false;
+    m_sessionDirty = false;
+    m_pipelineConfig = QJsonObject();
+}
+
 void BacktestWorkspaceDock::applyWorkspaceSession(const Backtest::Workspace::Session& session,
                                                   bool)
 {
+    g_isEmptyStateVisible = false;
     m_currentStrategyId = session.key.kind == Backtest::Workspace::SessionKind::LiveNode
         ? session.key.nodeId
         : QString();
@@ -74,6 +94,7 @@ void BacktestWorkspaceDock::displayResult(const Backtest::BacktestLoadedRun& run
 {
     ++g_displayedResultCount;
     g_lastDisplayedRunId = run.record.runId;
+    g_lastDisplayedHistoricalSymbolCount = run.histBars.size();
 }
 
 void BacktestWorkspaceDock::applyLoadedRunConfiguration(const Backtest::BacktestLoadedRun& run)

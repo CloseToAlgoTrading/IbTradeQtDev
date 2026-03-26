@@ -29,6 +29,7 @@
 #include <QSignalBlocker>
 #include <QtGlobal>
 #include <QDockWidget>
+#include <QMainWindow>
 #include <QTabBar>
 #include <QTimer>
 #include <QShowEvent>
@@ -122,23 +123,20 @@ void CIBTradeSystemView::setupConsoleLayout()
     // Left: strategy selector panel
     m_backtestSelector = new BacktestUI::BacktestStrategySelector(this);
 
-    // Right: placeholder widget — CPresenter will reparent the BacktestWorkspaceDock
-    // inner widget here via addBacktestWorkspace().  We expose it as a plain
-    // QWidget so it can host whatever CPresenter injects.
-    auto* backtestRight = new QWidget(this);
-    backtestRight->setObjectName(QStringLiteral("BacktestRightPane"));
-    auto* backtestRightLayout = new QVBoxLayout(backtestRight);
-    backtestRightLayout->setContentsMargins(0, 0, 0, 0);
-    // "Nothing selected yet" placeholder — replaced when CPresenter injects the dock widget
+    // Right: nested dock host scoped to the Backtest tab only.
+    m_backtestDockHost = new QMainWindow(this);
+    m_backtestDockHost->setObjectName(QStringLiteral("BacktestDockHost"));
+    m_backtestDockHost->setDockOptions(QMainWindow::AllowNestedDocks
+                                       | QMainWindow::AnimatedDocks);
     auto* placeholder = new QLabel(
-        QStringLiteral("← Select a strategy to start a backtest"), backtestRight);
+        QStringLiteral("Select a strategy to start a backtest."), m_backtestDockHost);
     placeholder->setObjectName(QStringLiteral("BacktestPlaceholderLabel"));
     placeholder->setAlignment(Qt::AlignCenter);
-    backtestRightLayout->addWidget(placeholder);
+    m_backtestDockHost->setCentralWidget(placeholder);
 
     m_backtestSplitter = new QSplitter(Qt::Horizontal, this);
     m_backtestSplitter->addWidget(m_backtestSelector);
-    m_backtestSplitter->addWidget(backtestRight);
+    m_backtestSplitter->addWidget(m_backtestDockHost);
     m_backtestSplitter->setStretchFactor(0, 0);  // selector: fixed-ish
     m_backtestSplitter->setStretchFactor(1, 1);  // workspace: expands
     m_backtestSplitter->setHandleWidth(4);
@@ -322,6 +320,12 @@ void CIBTradeSystemView::setDiagramDock(QDockWidget* dock)
     QTimer::singleShot(0, this, [this]() { polishDockAreaTabBars(); });
 }
 
+void CIBTradeSystemView::setBacktestSummaryDock(QDockWidget* dock)
+{
+    m_backtestSummaryDock = dock;
+    QTimer::singleShot(0, this, [this]() { polishDockAreaTabBars(); });
+}
+
 void CIBTradeSystemView::polishDockAreaTabBars()
 {
     if (!m_eventLogPanel && !m_mainTabWidget)
@@ -494,5 +498,3 @@ void CIBTradeSystemView::slotUpdateTreeViewAll()
 {
     ui.test_treeView->update();
 }
-
-

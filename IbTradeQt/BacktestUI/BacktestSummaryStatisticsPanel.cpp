@@ -72,6 +72,8 @@ void BacktestSummaryStatisticsPanel::setSummaryRows(const QVector<Backtest::Back
             m_model->setItem(i, 2, b);
         }
     }
+
+    emit headerStateRestorable();
 }
 
 void BacktestSummaryStatisticsPanel::clear()

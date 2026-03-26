@@ -51,6 +51,7 @@ private:
     IModelTreeRepository* m_repo = nullptr;
 
     QPointer<QMainWindow> m_mainWindow;
+    QPointer<QMainWindow> m_backtestDockHost;
     QPointer<QTabWidget>  m_mainTabWidget;
 
     QList<QPointer<QSplitter>>          m_splitters;

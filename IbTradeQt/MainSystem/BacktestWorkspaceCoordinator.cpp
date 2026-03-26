@@ -147,6 +147,90 @@ QString temporaryBacktestStateLossMessage(const Session& s)
     return message;
 }
 
+QStringList runSymbolsForHistoricalBars(const Backtest::BacktestRunConfig& config,
+                                        const Backtest::BacktestRunRecord& record)
+{
+    QStringList symbols = config.symbols;
+    if (symbols.isEmpty()) {
+        const QStringList persisted = record.symbols.split(
+            QLatin1Char(','), Qt::SkipEmptyParts);
+        for (const QString& symbol : persisted)
+            symbols.append(symbol.trimmed());
+    }
+
+    QStringList normalized;
+    for (const QString& symbol : symbols) {
+        const QString trimmed = symbol.trimmed();
+        if (!trimmed.isEmpty() && !normalized.contains(trimmed))
+            normalized.append(trimmed);
+    }
+    return normalized;
+}
+
+QDateTime historicalBarsFromDate(const Backtest::BacktestRunConfig& config,
+                                 const Backtest::BacktestRunRecord& record)
+{
+    if (config.startDate.isValid())
+        return config.startDate.toUTC();
+    return QDateTime::fromString(record.startDate, Qt::ISODate).toUTC();
+}
+
+QDateTime historicalBarsToDate(const Backtest::BacktestRunConfig& config,
+                               const Backtest::BacktestRunRecord& record)
+{
+    if (config.endDate.isValid())
+        return config.endDate.toUTC();
+    return QDateTime::fromString(record.endDate, Qt::ISODate).toUTC();
+}
+
+QMap<QString, QList<DbHistoricalBar>> loadHistoricalBarsForRun(
+    const Backtest::BacktestRunConfig& config,
+    const Backtest::BacktestRunRecord& record,
+    const QString& conn)
+{
+    QMap<QString, QList<DbHistoricalBar>> barsBySymbol;
+
+    const QStringList symbols = runSymbolsForHistoricalBars(config, record);
+    if (symbols.isEmpty())
+        return barsBySymbol;
+
+    const QDateTime from = historicalBarsFromDate(config, record);
+    const QDateTime to = historicalBarsToDate(config, record);
+    if (!from.isValid() || !to.isValid() || from > to)
+        return barsBySymbol;
+
+    for (const QString& symbol : symbols) {
+        auto q = query_fetchHistoricalBars(symbol,
+                                           config.resolution,
+                                           config.dataSourceId,
+                                           from.toString(Qt::ISODate),
+                                           to.toString(Qt::ISODate),
+                                           conn);
+        if (!q.exec())
+            continue;
+
+        QList<DbHistoricalBar> symbolBars;
+        while (q.next()) {
+            DbHistoricalBar bar;
+            bar.symbol = symbol;
+            bar.resolution = config.resolution;
+            bar.dataSourceId = config.dataSourceId;
+            bar.timestamp = q.value(QStringLiteral("timestamp")).toString();
+            bar.open = q.value(QStringLiteral("open")).toDouble();
+            bar.high = q.value(QStringLiteral("high")).toDouble();
+            bar.low = q.value(QStringLiteral("low")).toDouble();
+            bar.close = q.value(QStringLiteral("close")).toDouble();
+            bar.volume = q.value(QStringLiteral("volume")).toDouble();
+            symbolBars.append(bar);
+        }
+
+        if (!symbolBars.isEmpty())
+            barsBySymbol.insert(symbol, symbolBars);
+    }
+
+    return barsBySymbol;
+}
+
 std::optional<SessionKey> sessionKeyForRun(const Backtest::BacktestLoadedRun& run)
 {
     if (!run.record.configJson.isEmpty()) {
@@ -226,7 +310,18 @@ bool BacktestWorkspaceCoordinator::isBacktestRunning() const
 
 void BacktestWorkspaceCoordinator::setView(CIBTradeSystemView* view) { m_view = view; }
 void BacktestWorkspaceCoordinator::setBackend(ISystemBackend* backend) { m_backend = backend; }
-void BacktestWorkspaceCoordinator::setDock(BacktestUI::BacktestWorkspaceDock* dock) { m_dock = dock; }
+void BacktestWorkspaceCoordinator::setDock(BacktestUI::BacktestWorkspaceDock* dock)
+{
+    m_dock = dock;
+    if (!m_dock)
+        return;
+
+    if (m_activeKey && m_sessions.contains(*m_activeKey)) {
+        activateSession(*m_activeKey, true);
+    } else {
+        m_dock->showEmptyState();
+    }
+}
 
 void BacktestWorkspaceCoordinator::ensureController()
 {
@@ -1010,11 +1105,13 @@ void BacktestWorkspaceCoordinator::onLoadRun(const QString& runId)
     loaded.result.endDate = QDateTime::fromString(loaded.record.endDate, Qt::ISODate);
     loaded.result.dataQuality = Backtest::DataQuality::DailyBars;
 
+    Backtest::BacktestRunConfig runConfig;
     if (!loaded.record.configJson.isEmpty()) {
-        const Backtest::BacktestRunConfig rc = Backtest::BacktestRunConfig::fromJson(
+        runConfig = Backtest::BacktestRunConfig::fromJson(
             QJsonDocument::fromJson(loaded.record.configJson.toUtf8()).object());
         if (loaded.result.benchmark.symbol.isEmpty())
-            loaded.result.benchmark.symbol = rc.benchmarkSymbol;
+            loaded.result.benchmark.symbol = runConfig.benchmarkSymbol;
+        loaded.histBars = loadHistoricalBarsForRun(runConfig, loaded.record, conn);
     }
 
     const double years =

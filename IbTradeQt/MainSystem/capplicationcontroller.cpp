@@ -343,4 +343,5 @@ void CApplicationController::slotRestoreDefaultLayout()
         return;
     m_layoutStore->clearPersistedLayout();
     UiLayoutDefaults::applyFullDefaults(pMainView);
+    m_layoutStore->save();
 }

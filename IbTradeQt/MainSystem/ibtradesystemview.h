@@ -15,6 +15,7 @@ class QSplitter;
 class QTabWidget;
 class QDockWidget;
 class QFrame;
+class QMainWindow;
 class QResizeEvent;
 class QShowEvent;
 class QEvent;
@@ -52,12 +53,15 @@ public:
 
     QSplitter* mainSplitter() const { return m_mainSplitter; }
     QSplitter* backtestSplitter() const { return m_backtestSplitter; }
+    QMainWindow* backtestDockHost() const { return m_backtestDockHost; }
 
     void setUiLayoutStore(UiLayoutStore* store);
 
     /// Bottom-area pipeline diagram dock (tabified with Events); set from CPresenter after creation.
     void setDiagramDock(QDockWidget* dock);
     QDockWidget* diagramDock() const { return m_diagramDock; }
+    void setBacktestSummaryDock(QDockWidget* dock);
+    QDockWidget* backtestSummaryDock() const { return m_backtestSummaryDock; }
 
     void switchToBacktestTab();
     void switchToStrategyManagementTab();
@@ -88,9 +92,11 @@ private:
     GlobalStatusBar*  m_globalStatusBar  = nullptr;
     EventLogPanel*    m_eventLogPanel    = nullptr;
     QDockWidget*      m_diagramDock     = nullptr;
+    QDockWidget*      m_backtestSummaryDock = nullptr;
     ContextWorkspace* m_contextWorkspace = nullptr;
     QSplitter*        m_mainSplitter     = nullptr;   // inside "Live Trading" tab
     QSplitter*        m_backtestSplitter = nullptr;
+    QMainWindow*      m_backtestDockHost = nullptr;
     QTabWidget*       m_mainTabWidget    = nullptr;
     BacktestUI::BacktestStrategySelector* m_backtestSelector = nullptr;
     StrategyMgmt::StrategyManagementPanel* m_strategyMgmtPanel = nullptr;

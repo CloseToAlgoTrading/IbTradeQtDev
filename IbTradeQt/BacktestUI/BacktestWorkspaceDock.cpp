@@ -13,6 +13,7 @@
 #include "ThemePalette.h"
 #include <QLabel>
 #include <QTabWidget>
+#include <QStackedWidget>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QPushButton>
@@ -22,6 +23,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QFutureWatcher>
+#include <QDockWidget>
 #include <QtConcurrent/QtConcurrent>
 #include <cmath>
 
@@ -85,7 +87,34 @@ BacktestWorkspaceDock::BacktestWorkspaceDock(QWidget* parent)
 
 void BacktestWorkspaceDock::buildDock() {
     auto* container = new QWidget(this);
-    auto* outerLayout = new QVBoxLayout(container);
+    auto* rootLayout = new QVBoxLayout(container);
+    rootLayout->setContentsMargins(0, 0, 0, 0);
+    rootLayout->setSpacing(0);
+
+    m_modeStack = new QStackedWidget(container);
+    rootLayout->addWidget(m_modeStack);
+
+    m_emptyPage = new QWidget(m_modeStack);
+    auto* emptyLayout = new QVBoxLayout(m_emptyPage);
+    emptyLayout->setContentsMargins(24, 24, 24, 24);
+    emptyLayout->addStretch();
+    m_emptyLabel = new QLabel(QStringLiteral("Select a strategy to start a backtest."));
+    m_emptyLabel->setObjectName(QStringLiteral("BacktestWorkspaceEmptyStateLabel"));
+    m_emptyLabel->setAlignment(Qt::AlignCenter);
+    m_emptyLabel->setWordWrap(true);
+    QFont emptyFont = m_emptyLabel->font();
+    emptyFont.setPointSize(qMax(emptyFont.pointSize() + 8, 20));
+    emptyFont.setBold(true);
+    m_emptyLabel->setFont(emptyFont);
+    m_emptyLabel->setMinimumWidth(420);
+    m_emptyLabel->setMaximumWidth(560);
+    m_emptyLabel->setMargin(16);
+    emptyLayout->addWidget(m_emptyLabel, 0, Qt::AlignCenter);
+    emptyLayout->addStretch();
+    m_modeStack->addWidget(m_emptyPage);
+
+    m_workspacePage = new QWidget(m_modeStack);
+    auto* outerLayout = new QVBoxLayout(m_workspacePage);
     outerLayout->setContentsMargins(6, 6, 6, 6);
     outerLayout->setSpacing(4);
 
@@ -105,15 +134,27 @@ void BacktestWorkspaceDock::buildDock() {
     m_saveBtn = new QPushButton(QStringLiteral("Save Changes"));
     m_resetBtn = new QPushButton(QStringLiteral("Reset to Baseline"));
     m_saveVerBtn = new QPushButton(QStringLiteral("Save as New Version"));
+    m_showStatsBtn = new QPushButton(QStringLiteral("Hide Statistics"));
+    m_showStatsBtn->setToolTip(QStringLiteral("Show or hide the summary statistics panel."));
+    m_showStatsBtn->setEnabled(false);
     m_actionRowLayout->addWidget(m_saveBtn);
     m_actionRowLayout->addWidget(m_resetBtn);
     m_actionRowLayout->addWidget(m_saveVerBtn);
+    m_actionRowLayout->addWidget(m_showStatsBtn);
     m_actionRowLayout->addStretch();
     outerLayout->addLayout(m_actionRowLayout);
 
     connect(m_saveBtn, &QPushButton::clicked, this, &BacktestWorkspaceDock::saveChangesRequested);
     connect(m_resetBtn, &QPushButton::clicked, this, &BacktestWorkspaceDock::resetToBaselineRequested);
     connect(m_saveVerBtn, &QPushButton::clicked, this, &BacktestWorkspaceDock::saveAsNewVersionRequested);
+    connect(m_showStatsBtn, &QPushButton::clicked, this, [this]() {
+        if (!m_statisticsDock)
+            return;
+        const bool shouldShow = !m_statisticsDock->isVisible();
+        m_statisticsDock->setVisible(shouldShow);
+        if (shouldShow)
+            m_statisticsDock->raise();
+    });
 
     m_tabWidget = new QTabWidget();
     m_tabWidget->setObjectName(QStringLiteral("BacktestWorkspaceMainTabs"));
@@ -142,9 +183,7 @@ void BacktestWorkspaceDock::buildDock() {
         equityLayout->setContentsMargins(0, 0, 0, 0);
         equityLayout->setSpacing(4);
         m_equityChart = new EquityChartWidget();
-        m_summaryStatisticsPanel = new BacktestSummaryStatisticsPanel();
         equityLayout->addWidget(m_equityChart, 1);
-        equityLayout->addWidget(m_summaryStatisticsPanel, 0);
     }
     m_candleChart  = new BacktestCandlestickWidget();
     m_tradeLog     = new TradeLogWidget();
@@ -168,11 +207,74 @@ void BacktestWorkspaceDock::buildDock() {
             this, &BacktestWorkspaceDock::loadRunRequested);
     connect(m_historyPanel, &BacktestRunHistoryPanel::deleteRunRequested,
             this, &BacktestWorkspaceDock::deleteRunRequested);
+
+    m_modeStack->addWidget(m_workspacePage);
+    setWorkspaceMode(false);
+}
+
+void BacktestWorkspaceDock::showEmptyState()
+{
+    m_programmaticDockUpdate = true;
+    m_currentStrategyId.clear();
+    m_currentDisplayName.clear();
+    m_currentPortfolioPath.clear();
+    m_currentStrategyDefId.clear();
+    m_currentStrategyVersion = 1;
+    m_isCatalogPreview = false;
+    m_sessionDirty = false;
+    m_pipelineConfig = QJsonObject();
+    hideBlockDetails();
+    clearDisplayedBacktestResult();
+    if (m_historyPanel)
+        m_historyPanel->clear();
+    if (m_staleLabel)
+        m_staleLabel->setVisible(false);
+    setWorkspaceMode(false);
+    m_programmaticDockUpdate = false;
+}
+
+void BacktestWorkspaceDock::setSummaryStatisticsPanel(BacktestSummaryStatisticsPanel* panel)
+{
+    m_summaryStatisticsPanel = panel;
+    if (m_summaryStatisticsPanel && !m_hasActiveSession)
+        m_summaryStatisticsPanel->clear();
+}
+
+void BacktestWorkspaceDock::setStatisticsDockWidget(QDockWidget* dock)
+{
+    if (m_statisticsDock == dock)
+        return;
+
+    if (m_statisticsDock) {
+        disconnect(m_statisticsDock, nullptr, this, nullptr);
+    }
+
+    m_statisticsDock = dock;
+    if (!m_showStatsBtn)
+        return;
+
+    if (!m_statisticsDock) {
+        m_showStatsBtn->setEnabled(false);
+        m_showStatsBtn->setText(QStringLiteral("Show Statistics"));
+        return;
+    }
+
+    const auto syncButtonText = [this](bool isVisible) {
+        if (!m_showStatsBtn)
+            return;
+        m_showStatsBtn->setText(isVisible
+            ? QStringLiteral("Hide Statistics")
+            : QStringLiteral("Show Statistics"));
+    };
+    syncButtonText(m_statisticsDock->isVisible());
+    connect(m_statisticsDock, &QDockWidget::visibilityChanged, this, syncButtonText);
+    m_showStatsBtn->setEnabled(true);
 }
 
 void BacktestWorkspaceDock::applyWorkspaceSession(const Backtest::Workspace::Session& session,
                                                  bool clearResultPanels) {
     m_programmaticDockUpdate = true;
+    setWorkspaceMode(true);
 
     m_currentStrategyId = session.key.kind == Backtest::Workspace::SessionKind::LiveNode
         ? session.key.nodeId
@@ -272,6 +374,19 @@ void BacktestWorkspaceDock::updateStrategyHeader() {
     m_headerLabel->setText(text);
 }
 
+void BacktestWorkspaceDock::setWorkspaceMode(bool hasActiveSession)
+{
+    m_hasActiveSession = hasActiveSession;
+    if (!m_modeStack)
+        return;
+
+    if (hasActiveSession) {
+        m_modeStack->setCurrentWidget(m_workspacePage);
+    } else {
+        m_modeStack->setCurrentWidget(m_emptyPage);
+    }
+}
+
 void BacktestWorkspaceDock::displayResult(const Backtest::BacktestLoadedRun& run,
                                           const QString& statusAfterRendering)
 {
@@ -311,11 +426,13 @@ void BacktestWorkspaceDock::applyPreparedDisplay(const PreparedBacktestDisplay& 
 {
     const bool hasBm = !p.benchmarkPnl.isEmpty() || p.threeColSummary;
     m_equityChart->setPnlSeriesData(p.strategyPnl, p.benchmarkPnl, p.benchmarkSymbol, hasBm);
-    m_summaryStatisticsPanel->setSummaryRows(p.summaryRows, p.threeColSummary,
-                                               p.benchmarkColumnHeader);
+    if (m_summaryStatisticsPanel) {
+        m_summaryStatisticsPanel->setSummaryRows(p.summaryRows, p.threeColSummary,
+                                                 p.benchmarkColumnHeader);
+    }
     m_candleChart->setData(p.histBars, p.dbFills);
     m_tradeLog->setFills(p.tradeLog);
-    m_tabWidget->setCurrentIndex(2);
+    m_tabWidget->setCurrentIndex(p.histBars.isEmpty() ? 1 : 2);
 }
 
 void BacktestWorkspaceDock::setResultRendering(bool on, const QString& statusWhenDone)
