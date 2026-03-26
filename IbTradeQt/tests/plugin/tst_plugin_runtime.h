@@ -14,13 +14,85 @@
 
 #include "Plugin/PluginLoader.h"
 #include "Plugin/PluginWrappers.h"
+#include "Blocks/MomentumAlphaBlock.h"
 #include "Pipeline/BlockRegistry.h"
+#include "Pipeline/IDataSubscriptionPort.h"
+#include "Pipeline/IHistoricalRead.h"
 #include "Pipeline/PipelineFactory.h"
 #include "Adapters/MockExecutionAdapter.h"
 #include "Backtest/MarketPriceStore.h"
 #include "Backtest/SimulatedLedger.h"
 #include "Common/IClock.h"
+#include "Strategies/Generic/UnifiedModelData.h"
 #include "Strategies/Generic/cpipelinestrategyadapter.h"
+
+namespace {
+
+class HistoricalStub : public Pipeline::IHistoricalRead {
+public:
+    QMap<QString, QVector<Pipeline::HistoricalBarSnapshot>> barsBySymbol;
+
+    QVector<Pipeline::HistoricalBarSnapshot> getBars(
+        const QString& symbol,
+        const QString&,
+        const QString&,
+        const QDateTime&,
+        const QDateTime&,
+        Pipeline::HistoricalReadPolicy = Pipeline::HistoricalReadPolicy::PreferCache) override
+    {
+        return barsBySymbol.value(symbol.toUpper());
+    }
+};
+
+class RecordingSubscriptionPort : public Pipeline::IDataSubscriptionPort {
+public:
+    void setDesiredSymbols(const QString& ownerId, const QVector<QString>& symbols) override
+    {
+        lastOwnerId = ownerId;
+        lastSymbols = symbols;
+        lastKindMask = Pipeline::subscriptionKindMask(Pipeline::SubscriptionKind::TopOfBook);
+    }
+
+    void setDesiredSymbolsWithKinds(const QString& ownerId,
+                                    const QVector<QString>& symbols,
+                                    quint32 kindMask) override
+    {
+        lastOwnerId = ownerId;
+        lastSymbols = symbols;
+        lastKindMask = kindMask;
+    }
+
+    void clearOwner(const QString& ownerId) override
+    {
+        lastOwnerId = ownerId;
+        lastSymbols.clear();
+        lastKindMask = 0;
+    }
+
+    void clearAll() override
+    {
+        lastOwnerId.clear();
+        lastSymbols.clear();
+        lastKindMask = 0;
+    }
+
+    void beginPipelineEvaluation() override {}
+    void endPipelineEvaluation() override {}
+
+    QString lastOwnerId;
+    QVector<QString> lastSymbols;
+    quint32 lastKindMask = 0;
+};
+
+static Pipeline::HistoricalBarSnapshot snap(double close)
+{
+    Pipeline::HistoricalBarSnapshot s;
+    s.timestamp = QDateTime::currentDateTimeUtc();
+    s.close = close;
+    return s;
+}
+
+} // namespace
 
 class TestPluginRuntime : public QObject
 {
@@ -46,6 +118,12 @@ private:
     QString exampleManifestPath() const
     {
         return QDir(examplePluginDir()).filePath(QStringLiteral("plugin.json"));
+    }
+
+    QString momentumPluginDir() const
+    {
+        return QDir(QString::fromUtf8(SRCDIR))
+            .absoluteFilePath(QStringLiteral("../plugins/examples/momentum_alpha_plugin"));
     }
 
     QJsonObject makeExtensionManifest(const QString& extensionPointId,
@@ -139,9 +217,29 @@ private:
             QDir(examplePluginDir()).filePath(QStringLiteral("build/libibtrade_strategy_suite_plugin.so"))));
     }
 
+    void buildMomentumPlugin()
+    {
+        QProcess proc;
+        proc.setWorkingDirectory(momentumPluginDir());
+        proc.start(QStringLiteral("/bin/bash"), {QStringLiteral("build.sh")});
+        QVERIFY2(proc.waitForFinished(120000), "Momentum plugin build timed out");
+        QVERIFY2(proc.exitStatus() == QProcess::NormalExit && proc.exitCode() == 0,
+                 qPrintable(proc.readAllStandardError() + proc.readAllStandardOutput()));
+        QVERIFY(QFileInfo::exists(
+            QDir(momentumPluginDir()).filePath(QStringLiteral("build/libibtrade_momentum_alpha_plugin.so"))));
+    }
+
     void loadExamplePlugin(Plugin::PluginLoader& loader)
     {
         auto result = loader.loadPlugin(examplePluginDir());
+        if (!result.has_value()) {
+            QFAIL(qPrintable(QString::fromStdString(result.error().message)));
+        }
+    }
+
+    void loadMomentumPlugin(Plugin::PluginLoader& loader)
+    {
+        auto result = loader.loadPlugin(momentumPluginDir());
         if (!result.has_value()) {
             QFAIL(qPrintable(QString::fromStdString(result.error().message)));
         }
@@ -151,6 +249,7 @@ private slots:
     void initTestCase()
     {
         buildExamplePlugin();
+        buildMomentumPlugin();
     }
 
     void init()
@@ -183,6 +282,19 @@ private slots:
             QStringLiteral("com.ibtrade.example.strategy_suite/cap-risk")));
         QVERIFY(Pipeline::BlockRegistry::instance().contains(
             QStringLiteral("com.ibtrade.example.strategy_suite/host-execution")));
+    }
+
+    void loadMomentumPackage_registersAlphaExtension()
+    {
+        Plugin::PluginLoader loader;
+        loadMomentumPlugin(loader);
+
+        QCOMPARE(loader.pluginCount(), 1);
+        QCOMPARE(loader.extensionCount(), 1);
+        QCOMPARE(loader.listPlugins().first().pluginId,
+                 QStringLiteral("com.ibtrade.example.momentum_alpha"));
+        QVERIFY(Pipeline::BlockRegistry::instance().contains(
+            QStringLiteral("com.ibtrade.example.momentum_alpha/momentum-alpha")));
     }
 
     void loadFailsWhenDuplicateBlockIdExists()
@@ -512,6 +624,82 @@ private slots:
         QCOMPARE(execPort.orderCount(), 1);
         QCOMPARE(execPort.placedOrders().first().symbol, QStringLiteral("AMD"));
         QCOMPARE(execPort.placedOrders().first().quantity, 4.0);
+    }
+
+    void momentumAlphaPlugin_matchesBuiltinMomentumSemanticOutput()
+    {
+        Plugin::PluginLoader loader;
+        loadMomentumPlugin(loader);
+
+        auto result = Pipeline::BlockRegistry::instance().createBlock(
+            QStringLiteral("com.ibtrade.example.momentum_alpha/momentum-alpha"));
+        QVERIFY(result.has_value());
+        auto* pluginAlpha = qobject_cast<Pipeline::IAlphaBlock*>(*result);
+        QVERIFY(pluginAlpha != nullptr);
+
+        Blocks::MomentumAlphaBlock builtinAlpha;
+
+        HistoricalStub hist;
+        hist.barsBySymbol[QStringLiteral("UP")] = {snap(100.0), snap(100.0), snap(110.0)};
+        hist.barsBySymbol[QStringLiteral("MID")] = {snap(100.0), snap(100.0), snap(105.0)};
+        hist.barsBySymbol[QStringLiteral("DN")] = {snap(100.0), snap(100.0), snap(101.0)};
+
+        RecordingSubscriptionPort pluginSubscriptions;
+        RecordingSubscriptionPort builtinSubscriptions;
+
+        QJsonObject cfg;
+        cfg[QStringLiteral("period")] = 2;
+        cfg[QStringLiteral("threshold")] = 0.001;
+        cfg[QStringLiteral("topN")] = 2;
+        cfg[QStringLiteral("positionSize")] = 77.0;
+        cfg[QStringLiteral("resolution")] = QStringLiteral("Day1");
+        cfg[QStringLiteral("dataSourceId")] = QStringLiteral("yahoo");
+        cfg[QStringLiteral("lookbackYears")] = 1;
+
+        Pipeline::PipelineRuntimeContext pluginCtx;
+        pluginCtx.historical = &hist;
+        pluginCtx.subscription = &pluginSubscriptions;
+
+        Pipeline::PipelineRuntimeContext builtinCtx;
+        builtinCtx.historical = &hist;
+        builtinCtx.subscription = &builtinSubscriptions;
+
+        pluginAlpha->setConfig(cfg);
+        pluginAlpha->setRuntimeContext(&pluginCtx);
+        pluginAlpha->initialize();
+
+        builtinAlpha.setConfig(cfg);
+        builtinAlpha.setRuntimeContext(&builtinCtx);
+
+        Pipeline::ModelDataList input = createDataList();
+        input->append(UnifiedModelData(QStringLiteral("UP")));
+        input->append(UnifiedModelData(QStringLiteral("MID")));
+        input->append(UnifiedModelData(QStringLiteral("DN")));
+
+        const Pipeline::ModelDataList pluginOut =
+            pluginAlpha->processSemantic(input, QStringLiteral("corr-plugin-momentum"));
+        const Pipeline::ModelDataList builtinOut =
+            builtinAlpha.processSemantic(input, QStringLiteral("corr-builtin-momentum"));
+
+        QVERIFY(pluginOut);
+        QVERIFY(builtinOut);
+        QCOMPARE(pluginOut->size(), builtinOut->size());
+        QCOMPARE(pluginOut->size(), 2);
+
+        for (int i = 0; i < pluginOut->size(); ++i) {
+            QCOMPARE(pluginOut->at(i).symbol, builtinOut->at(i).symbol);
+            QCOMPARE(pluginOut->at(i).direction, builtinOut->at(i).direction);
+            QCOMPARE(pluginOut->at(i).amount, builtinOut->at(i).amount);
+            QCOMPARE(pluginOut->at(i).probability, builtinOut->at(i).probability);
+        }
+
+        QCOMPARE(pluginSubscriptions.lastSymbols, builtinSubscriptions.lastSymbols);
+        QCOMPARE(pluginSubscriptions.lastSymbols,
+                 QVector<QString>({QStringLiteral("UP"), QStringLiteral("MID")}));
+        QCOMPARE(pluginSubscriptions.lastKindMask,
+                 Pipeline::subscriptionKindMask(Pipeline::SubscriptionKind::TopOfBook));
+
+        delete pluginAlpha;
     }
 
     void malformedPluginApiTableIsRejected()

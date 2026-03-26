@@ -200,6 +200,19 @@ Expected output:
 plugins/examples/strategy_suite_plugin/build/libibtrade_strategy_suite_plugin.so
 ```
 
+Momentum-only example:
+
+```bash
+cd plugins/examples/momentum_alpha_plugin
+./build.sh
+```
+
+Expected output:
+
+```text
+plugins/examples/momentum_alpha_plugin/build/libibtrade_momentum_alpha_plugin.so
+```
+
 ## Install a Plugin for the Host
 
 The application searches these runtime locations at startup:

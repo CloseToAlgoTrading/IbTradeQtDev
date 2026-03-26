@@ -50,7 +50,7 @@ Main source locations:
 - `plugins/sdk/`
   - helper utilities for plugin authors
 - `plugins/examples/`
-  - buildable example packages
+  - buildable example packages, including a strategy suite package and a momentum alpha package
 - `plugins/templates/`
   - starter template for a new plugin
 - `plugins/runtime/`

@@ -1,0 +1,28 @@
+{
+  "manifest_version": 1,
+  "plugin_id": "com.ibtrade.example.momentum_alpha",
+  "name": "Momentum Alpha Example",
+  "version": "1.0.0",
+  "description": "External momentum alpha plugin that mirrors the built-in historical momentum block.",
+  "vendor": "IbTrade Example",
+  "host_api_version": 1,
+  "library": "build/libibtrade_momentum_alpha_plugin.so",
+  "extensions": [
+    {
+      "extension_point_id": "pipeline.alpha",
+      "extension_id": "com.ibtrade.example.momentum_alpha/momentum-alpha",
+      "name": "External Momentum Alpha",
+      "description": "Ranks the selection universe by historical momentum and emits semantic model data for the top N symbols.",
+      "scope": "Strategy",
+      "default_config": {
+        "period": 20,
+        "threshold": 0.02,
+        "topN": 3,
+        "positionSize": 100.0,
+        "resolution": "Day1",
+        "dataSourceId": "yahoo",
+        "lookbackYears": 1
+      }
+    }
+  ]
+}
