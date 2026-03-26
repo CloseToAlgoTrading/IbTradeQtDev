@@ -1,0 +1,62 @@
+{
+  "manifest_version": 1,
+  "plugin_id": "com.ibtrade.example.strategy_suite",
+  "name": "Strategy Suite Example",
+  "version": "1.0.0",
+  "description": "Example external strategy plugin package covering selection, alpha, rebalance, risk, and execution.",
+  "vendor": "IbTrade Example",
+  "host_api_version": 1,
+  "library": "build/libibtrade_strategy_suite_plugin.so",
+  "extensions": [
+    {
+      "extension_point_id": "pipeline.selection",
+      "extension_id": "com.ibtrade.example.strategy_suite/static-selection",
+      "name": "External Static Selection",
+      "description": "Selects the first N symbols from the configured universe.",
+      "scope": "Strategy",
+      "default_config": {
+        "limit": 2
+      }
+    },
+    {
+      "extension_point_id": "pipeline.alpha",
+      "extension_id": "com.ibtrade.example.strategy_suite/semantic-alpha",
+      "name": "External Semantic Alpha",
+      "description": "Emits buy signals on ticks and semantic model outputs during evaluation.",
+      "scope": "Strategy",
+      "default_config": {
+        "fixed_probability": 0.75,
+        "fixed_amount": 25.0
+      }
+    },
+    {
+      "extension_point_id": "pipeline.rebalance",
+      "extension_id": "com.ibtrade.example.strategy_suite/fixed-rebalance",
+      "name": "External Fixed Rebalance",
+      "description": "Converts plugin alpha signals into fixed-size target positions.",
+      "scope": "Strategy",
+      "default_config": {
+        "target_size": 10.0
+      }
+    },
+    {
+      "extension_point_id": "pipeline.risk",
+      "extension_id": "com.ibtrade.example.strategy_suite/cap-risk",
+      "name": "External Cap Risk",
+      "description": "Caps absolute targets above a configured limit.",
+      "scope": "Strategy",
+      "default_config": {
+        "max_abs_target": 50.0
+      }
+    },
+    {
+      "extension_point_id": "pipeline.execution",
+      "extension_id": "com.ibtrade.example.strategy_suite/host-execution",
+      "name": "External Host Execution",
+      "description": "Routes execution intents through the host execution port.",
+      "scope": "Strategy",
+      "default_config": {
+      }
+    }
+  ]
+}

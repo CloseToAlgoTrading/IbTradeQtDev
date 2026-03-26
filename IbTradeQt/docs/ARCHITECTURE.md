@@ -13,7 +13,8 @@
 10. [Database Architecture](#database-architecture)
 11. [UI Architecture](#ui-architecture)
 12. [CLI Architecture](#cli-architecture)
-13. [Key Classes Reference](#key-classes-reference)
+13. [Plugin Extension Architecture](#plugin-extension-architecture)
+14. [Key Classes Reference](#key-classes-reference)
 
 ---
 
@@ -24,6 +25,7 @@
 ### Key Features
 - Hierarchical portfolio and strategy management (Account → Portfolio → Strategy)
 - Composable LEGO pipeline blocks (Selection → Alpha → Rebalance → Risk → Execution)
+- External plugin platform for sellable pipeline extensions with Qt-hosted wrappers
 - **Backend service as single system boundary** — all mutations flow through `ISystemBackend`
 - **Storage topology by role** — model/config (`ModelStore`), app/runtime (`AppDataStore`), backtest (`BacktestStore`), and optional future market-data store; see [Storage topology (by role)](#storage-topology-by-role). Model tree persistence (`model_nodes`, `app_metadata`) uses SQLite or PostgreSQL for ModelStore per `ibtrade.ini`.
 - Real-time and historical market data processing via typed signal routers
@@ -1121,6 +1123,30 @@ The `tst_cli_proof.h` test suite validates the CLI workflow with no GUI:
 
 ---
 
+## Plugin Extension Architecture
+
+IbTradeQt now includes a host-managed plugin platform for external extensions.
+
+High-level design:
+
+- external plugin ABI is plain C and Qt-free
+- host integration is still Qt-native through wrapper objects
+- loaded strategy extensions are mapped into the existing `Pipeline::BlockRegistry`
+- strategy persistence stays in `config_json.pipelineConfig`
+
+This keeps the current runtime architecture intact while allowing separately built plugin packages to contribute selection, alpha, rebalance, risk, and execution blocks.
+
+The GUI also includes a read-only plugin manager for inspecting:
+
+- loaded plugin packages
+- registered extensions
+- plugin search directories
+- load failures
+
+See [PLUGIN_SYSTEM.md](PLUGIN_SYSTEM.md) for the full plugin architecture and [../plugins/docs/README.md](../plugins/docs/README.md) for SDK/build/package instructions.
+
+---
+
 ## Key Classes Reference
 
 ### Backend Layer (new)
@@ -1237,4 +1263,4 @@ The test suite includes dedicated backend tests:
 
 ---
 
-*See [PIPELINE_ARCHITECTURE.md](PIPELINE_ARCHITECTURE.md) for the LEGO pipeline block system, [BACKTESTER_DESIGN.md](BACKTESTER_DESIGN.md) for the backtester design, and [UI_DECOUPLING.md](UI_DECOUPLING.md) for the UI decoupling architecture (presenters, coordinators, ViewModels, styling).*
+*See [PIPELINE_ARCHITECTURE.md](PIPELINE_ARCHITECTURE.md) for the LEGO pipeline block system, [PLUGIN_SYSTEM.md](PLUGIN_SYSTEM.md) for the external plugin platform, [BACKTESTER_DESIGN.md](BACKTESTER_DESIGN.md) for the backtester design, and [UI_DECOUPLING.md](UI_DECOUPLING.md) for the UI decoupling architecture (presenters, coordinators, ViewModels, styling).*

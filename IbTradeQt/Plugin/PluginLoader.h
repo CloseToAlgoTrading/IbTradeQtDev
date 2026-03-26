@@ -5,35 +5,46 @@
 #include <QString>
 #include <QStringList>
 #include <QVector>
-#include "BlockPlugin.h"
-#include "../Common/Expected.h"
 
-class QLibrary;
+#include "../Common/Expected.h"
+#include "ExtensionRegistry.h"
+#include "PluginRuntime.h"
 
 namespace Plugin {
+
+struct PluginLoadFailure {
+    QString sourcePath;
+    QString pluginId;
+    QString message;
+};
 
 class PluginLoader {
 public:
     Expected<void, Error> loadPlugin(const QString& path);
 
-    Expected<void, Error> loadPluginDir(const QString& dirPath,
-                                        const QStringList& filters = {QStringLiteral("*.so"), QStringLiteral("*.dll"), QStringLiteral("*.dylib")});
+    Expected<void, Error> loadPluginDir(const QString& dirPath);
 
     QVector<PluginMetadata> listPlugins() const;
 
+    QVector<PluginLoadFailure> loadFailures() const;
+
     int pluginCount() const;
+
+    int extensionCount() const;
+
+    const ExtensionRegistry& extensionRegistry() const;
+
+    void clear();
 
     ~PluginLoader();
 
 private:
-    struct PluginInfo {
-        IBlockPlugin* plugin;
-        void(*destroyFn)(IBlockPlugin*);
-        QLibrary* library;
-        PluginMetadata metadata;
-    };
+    Expected<void, Error> registerExtensions(const PluginRuntimePtr& runtime);
+    void recordFailure(const QString& sourcePath, const QString& pluginId, const QString& message);
 
-    QMap<QString, PluginInfo> m_plugins;
+    ExtensionRegistry m_extensionRegistry;
+    QMap<QString, PluginRuntimePtr> m_plugins;
+    QVector<PluginLoadFailure> m_failures;
 };
 
 } // namespace Plugin

@@ -255,7 +255,13 @@ SOURCES += \
     Blocks/PassAllSelectionBlock.cpp \
     Supervision/StrategyRuntime.cpp \
     Supervision/Supervisor.cpp \
+    Plugin/PluginManifest.cpp \
+    Plugin/ExtensionRegistry.cpp \
+    Plugin/PluginRuntime.cpp \
+    Plugin/PluginDataBridge.cpp \
+    Plugin/PluginWrappers.cpp \
     Plugin/PluginLoader.cpp \
+    MainSystem/PluginManagerDialog.cpp \
     MainSystem/AlertService.cpp \
     Backend/ModelTreeRepository.cpp \
     Backend/ModelTreeRepositoryPostgres.cpp \
@@ -362,6 +368,11 @@ HEADERS += \
     Blocks/MovingAverageCrossoverAlphaBlock.h \
     Pipeline/PipelineFactory.h \
     Plugin/BlockPlugin.h \
+    Plugin/PluginManifest.h \
+    Plugin/ExtensionRegistry.h \
+    Plugin/PluginRuntime.h \
+    Plugin/PluginDataBridge.h \
+    Plugin/PluginWrappers.h \
     Plugin/PluginLoader.h \
     Adapters/AlphaModelAdapter.h \
     Adapters/RiskModelAdapter.h \
@@ -392,6 +403,7 @@ HEADERS += \
     MainSystem/PipelineDiagramWidget.h \
     MainSystem/PortfolioModelDefines.h \
     MainSystem/TreeItemDataTypesDef.h \
+    MainSystem/PluginManagerDialog.h \
     MainSystem/capplicationcontroller.h \
     MainSystem/UiLayoutStore.h \
     MainSystem/UiLayoutDefaults.h \
@@ -665,6 +677,8 @@ FORMS += \
 
 INCLUDEPATH += \
     $$PWD/Backtest \
+    $$PWD/plugins/api \
+    $$PWD/plugins/sdk \
     $$PWD/Pipeline \
     $$PWD/Ports \
     $$PWD/ThirdParty \

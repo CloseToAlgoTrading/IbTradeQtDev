@@ -10,6 +10,8 @@
 #include <QStandardPaths>
 #include <QIcon>
 #include <QFile>
+#include <QDir>
+#include <QFileInfo>
 #include <QJsonDocument>
 #include <QColor>
 #include <QPainter>
@@ -40,6 +42,7 @@
 #include "Blocks/SimpleRebalanceBlock.h"
 #include "Blocks/LimitOrderExecutionBlock.h"
 #include "Blocks/StaticListSelectionBlock.h"
+#include "PluginManagerDialog.h"
 #include <QLoggingCategory>
 
 Q_LOGGING_CATEGORY(lcApp, "app.bootstrap")
@@ -100,6 +103,17 @@ static void registerBuiltinBlocks()
     }
 }
 
+static QStringList pluginSearchDirectories()
+{
+    QStringList dirs;
+    const QString appDir = QCoreApplication::applicationDirPath();
+    dirs << QDir::cleanPath(appDir + QStringLiteral("/plugins/runtime"));
+    dirs << QDir::cleanPath(appDir + QStringLiteral("/../plugins/runtime"));
+    dirs << QDir::cleanPath(QDir::current().filePath(QStringLiteral("plugins/runtime")));
+    dirs.removeDuplicates();
+    return dirs;
+}
+
 /** Window managers (especially on Linux) often ignore QIcon built from SVG alone — rasterize explicitly. */
 static QIcon loadApplicationIconRasterized()
 {
@@ -134,6 +148,18 @@ CApplicationController::CApplicationController(QObject *parent):
    , m_pDataRoot(nullptr)
 {
     registerBuiltinBlocks();
+
+    m_pluginLoader = std::make_unique<Plugin::PluginLoader>();
+    m_pluginSearchDirs = pluginSearchDirectories();
+    for (const QString& pluginDir : m_pluginSearchDirs) {
+        if (!QFileInfo::exists(pluginDir)) {
+            continue;
+        }
+        auto result = m_pluginLoader->loadPluginDir(pluginDir);
+        if (!result) {
+            qCWarning(lcApp) << "Plugin load skipped:" << QString::fromStdString(result.error().message);
+        }
+    }
 
     NHelper::initSettings();
     const StorageConfig storageCfg = NHelper::getStorageConfig();
@@ -230,6 +256,8 @@ CApplicationController::CApplicationController(QObject *parent):
                        this, &CApplicationController::slotRestoreDefaultLayout);
 
     QObject::connect(pMainView->getUi().actionSave, &QAction::triggered, this, &CApplicationController::slotStoreModelTree);
+    QObject::connect(pMainView->pluginManagerAction(), &QAction::triggered,
+                     this, &CApplicationController::slotShowPluginManager);
 
     m_pSupervisor = new Supervision::Supervisor(this);
     m_pSupervisor->startMonitoring(10000);
@@ -344,4 +372,17 @@ void CApplicationController::slotRestoreDefaultLayout()
     m_layoutStore->clearPersistedLayout();
     UiLayoutDefaults::applyFullDefaults(pMainView);
     m_layoutStore->save();
+}
+
+void CApplicationController::slotShowPluginManager()
+{
+    if (!m_pluginManagerDialog) {
+        m_pluginManagerDialog = new PluginManagerDialog(m_pluginLoader.get(), m_pluginSearchDirs, pMainView);
+        m_pluginManagerDialog->setAttribute(Qt::WA_DeleteOnClose, true);
+    }
+
+    m_pluginManagerDialog->refresh();
+    m_pluginManagerDialog->show();
+    m_pluginManagerDialog->raise();
+    m_pluginManagerDialog->activateWindow();
 }

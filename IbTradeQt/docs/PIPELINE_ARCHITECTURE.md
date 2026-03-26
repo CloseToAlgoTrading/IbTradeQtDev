@@ -39,6 +39,7 @@ Key characteristics:
 - **Typed `Q_GADGET` contracts** — data flowing between blocks is strongly typed (`Signal`, `TargetPosition`, `ExecutionIntent`), not `void*`.
 - **Hexagonal ports** — the pipeline never calls IB directly; it calls `IOrderExecutionPort` and `IPositionRepositoryPort`, which are swappable (live vs mock).
 - **Client independence** — backtester, GUI, CLI, and tests all use the same block code with different injected ports.
+- **External plugin support** — supported strategy extension points can also come from external C ABI packages wrapped by the Qt host.
 
 ---
 
@@ -672,6 +673,7 @@ Sub-models can exist at Account and Portfolio levels too (for hierarchical risk 
 | LiveExecutionWiring | `tests/integration/` | `IBOrderExecutionAdapter`, `OrderEventBridge`, tickSize |
 | TestRuntime | `tests/backend/tst_runtime.h` | Broker state, backtester integration, config persistence across restart |
 | TestSystemBackend | `tests/backend/tst_system_backend.h` | `addBlock`, `removeBlock`, `pipelineConfig` queries |
+| TestPluginRuntime | `tests/plugin/tst_plugin_runtime.h` | Manifest validation, ABI validation, wrapper integration, plugin-backed graph build, adapter flow, async callback safety |
 
 ---
 
@@ -791,4 +793,4 @@ IbTradeQt/
 
 ---
 
-*See [ARCHITECTURE.md](ARCHITECTURE.md) for the full system architecture and [BACKTESTER_DESIGN.md](BACKTESTER_DESIGN.md) for the backtester design.*
+*See [ARCHITECTURE.md](ARCHITECTURE.md) for the full system architecture, [PLUGIN_SYSTEM.md](PLUGIN_SYSTEM.md) for the external plugin platform, and [BACKTESTER_DESIGN.md](BACKTESTER_DESIGN.md) for the backtester design.*

@@ -20,6 +20,7 @@ class QResizeEvent;
 class QShowEvent;
 class QEvent;
 class QKeyEvent;
+class QAction;
 
 class UiLayoutStore;
 
@@ -66,6 +67,7 @@ public:
     void switchToBacktestTab();
     void switchToStrategyManagementTab();
     void switchToDataManagementTab();
+    QAction* pluginManagerAction() const { return m_pluginManagerAction; }
 
     void mapSignals();
 
@@ -105,6 +107,7 @@ private:
     QWidget* m_settingsOverlay   = nullptr;
     QFrame*  m_settingsBackdrop  = nullptr;
     QFrame*  m_settingsSheet     = nullptr;
+    QAction* m_pluginManagerAction = nullptr;
     bool     m_settingsOverlayVisible = false;
 
     UiLayoutStore* m_uiLayoutStore = nullptr;

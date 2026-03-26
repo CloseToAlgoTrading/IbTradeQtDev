@@ -8,7 +8,10 @@ DESTDIR = $$PWD/../release
 
 INCLUDEPATH += \
     $$PWD/.. \
+    $$PWD/../plugins/api \
+    $$PWD/../plugins/sdk \
     $$PWD/../Backend \
+    $$PWD/../Backtest \
     $$PWD/../Strategies/Generic \
     $$PWD/../Strategies/StateMachine \
     $$PWD/../Common \
@@ -44,6 +47,11 @@ SOURCES += \
     ../Strategies/Generic/cstrategyfactory.cpp \
     ../Strategies/Generic/cpipelinestrategyadapter.cpp \
     ../Strategies/Generic/UnifiedModelData.cpp \
+    ../Backtest/AssetUniverseInput.cpp \
+    ../Backtest/InstrumentClassification.cpp \
+    ../Backtest/InstrumentClassificationMappers.cpp \
+    ../Backtest/InstrumentMetadataIb.cpp \
+    ../Backtest/InstrumentNormalization.cpp \
     ../Common/cprocessingbase_v2.cpp \
     ../Common/globalsettings.cpp \
     ../IBComm/cbrokerdataprovider.cpp \
@@ -76,6 +84,18 @@ SOURCES += \
     ../Brokers/IB/src/Decimal.cpp \
     ../Pipeline/PipelineLog.cpp \
     ../Pipeline/StrategyPipelineRunner.cpp \
+    ../Pipeline/StrategyPipelineRuntimeOptions.cpp \
+    ../Pipeline/IAlphaBlock.cpp \
+    ../Pipeline/IRebalanceBlock.cpp \
+    ../Pipeline/IRiskBlock.cpp \
+    ../Pipeline/IExecutionBlock.cpp \
+    ../Pipeline/SemanticModelDataMapper.cpp \
+    ../Pipeline/SemanticPipelineChain.cpp \
+    ../Adapters/LiveHistoricalReadAdapter.cpp \
+    ../Pipeline/MarketDataCoordinator.cpp \
+    ../Pipeline/SubscriptionRequestStore.cpp \
+    ../Pipeline/NoOpSubscriptionPort.cpp \
+    ../Pipeline/RouterMarketDataAccessor.cpp \
     ../Pipeline/PipelineFactory.cpp \
     ../Pipeline/BlockGraphSerializer.cpp \
     ../Pipeline/UniverseResolver.cpp \
@@ -89,8 +109,15 @@ SOURCES += \
     ../Blocks/StaticListSelectionBlock.cpp \
     ../Blocks/LimitOrderExecutionBlock.cpp \
     ../Blocks/MarketOrderExecutionBlock.cpp \
+    ../Blocks/SimpleRebalanceBlock.cpp \
+    ../Blocks/PassAllSelectionBlock.cpp \
     ../Supervision/StrategyRuntime.cpp \
     ../Supervision/Supervisor.cpp \
+    ../Plugin/PluginManifest.cpp \
+    ../Plugin/ExtensionRegistry.cpp \
+    ../Plugin/PluginRuntime.cpp \
+    ../Plugin/PluginDataBridge.cpp \
+    ../Plugin/PluginWrappers.cpp \
     ../Plugin/PluginLoader.cpp \
     ../IBComm/ProcessingRouterSink.cpp
 
@@ -132,10 +159,22 @@ HEADERS += \
     ../Pipeline/SignalMergePolicies.h \
     ../Pipeline/PipelineExecutionHost.h \
     ../Pipeline/StrategyRuntimePolicy.h \
+    ../Pipeline/StrategyPipelineRuntimeOptions.h \
+    ../Pipeline/SemanticPipelineChain.h \
+    ../Pipeline/SubscriptionRequestStore.h \
+    ../Pipeline/NoOpSubscriptionPort.h \
+    ../Pipeline/RouterMarketDataAccessor.h \
     ../Pipeline/UniverseResolver.h \
     ../Pipeline/Contracts.h \
     ../Pipeline/BlockRegistry.h \
     ../Pipeline/PipelineLog.h \
+    ../Adapters/LiveHistoricalReadAdapter.h \
+    ../Plugin/PluginManifest.h \
+    ../Plugin/ExtensionRegistry.h \
+    ../Plugin/PluginRuntime.h \
+    ../Plugin/PluginDataBridge.h \
+    ../Plugin/PluginWrappers.h \
+    ../Plugin/PluginLoader.h \
     ../IBComm/MarketDataRouter.h \
     ../IBComm/PositionRouter.h \
     ../IBComm/HistoricalDataRouter.h \
@@ -150,6 +189,8 @@ HEADERS += \
     ../Blocks/MaxPositionRiskBlock.h \
     ../Blocks/MarketOrderExecutionBlock.h \
     ../Blocks/LimitOrderExecutionBlock.h \
-    ../Blocks/StaticListSelectionBlock.h
+    ../Blocks/StaticListSelectionBlock.h \
+    ../Blocks/SimpleRebalanceBlock.h \
+    ../Blocks/PassAllSelectionBlock.h
 
 LIBS += -L$$PWD/../Libs/ -lbid

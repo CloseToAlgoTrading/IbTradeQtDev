@@ -22,6 +22,8 @@ DEFINES += SRCDIR=\\\"$$PWD\\\"
 INCLUDEPATH += \
     $$PWD \
     $$PWD/.. \
+    $$PWD/../plugins/api \
+    $$PWD/../plugins/sdk \
     $$PWD/../Backend \
     $$PWD/../Backtest \
     $$PWD/../Pipeline \
@@ -229,6 +231,11 @@ SOURCES += \
     ../Blocks/PassAllSelectionBlock.cpp \
     ../Supervision/StrategyRuntime.cpp \
     ../Supervision/Supervisor.cpp \
+    ../Plugin/PluginManifest.cpp \
+    ../Plugin/ExtensionRegistry.cpp \
+    ../Plugin/PluginRuntime.cpp \
+    ../Plugin/PluginDataBridge.cpp \
+    ../Plugin/PluginWrappers.cpp \
     ../Plugin/PluginLoader.cpp \
     ../IBComm/ProcessingRouterSink.cpp \
     ../MainSystem/WorkspaceWidgets/BlockInspectorPanel.cpp \
@@ -279,6 +286,11 @@ HEADERS += \
     ../Blocks/MeanReversionAlphaBlock.h \
     ../Pipeline/PipelineFactory.h \
     ../Plugin/BlockPlugin.h \
+    ../Plugin/PluginManifest.h \
+    ../Plugin/ExtensionRegistry.h \
+    ../Plugin/PluginRuntime.h \
+    ../Plugin/PluginDataBridge.h \
+    ../Plugin/PluginWrappers.h \
     ../Plugin/PluginLoader.h \
     ../Supervision/BoundedQueue.h \
     ../Supervision/StrategyRuntime.h \
@@ -297,6 +309,7 @@ HEADERS += \
     phase2/tst_adapters.h \
     phase2/tst_integration.h \
     phase3/tst_block_registry.h \
+    plugin/tst_plugin_runtime.h \
     phase3/tst_pipeline_runner.h \
     phase3/tst_semantic_mapping.h \
     phase4/tst_supervision.h \

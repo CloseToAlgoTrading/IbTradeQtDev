@@ -90,6 +90,11 @@ CIBTradeSystemView::CIBTradeSystemView(QWidget *parent)
     ui.actionShow_Log->setIcon(m_ih.loadIconForChrome("Log"));
     ui.actionConnect->setIcon(m_ih.loadIconForChrome("Disconnect"));
 
+    m_pluginManagerAction = new QAction(m_ih.loadIconForChrome("DBStore"), QStringLiteral("Plugins"), this);
+    m_pluginManagerAction->setToolTip(QStringLiteral("Show loaded external plugins"));
+    ui.menuView->insertAction(ui.actionRestoreDefaultLayout, m_pluginManagerAction);
+    ui.mainToolBar->insertAction(ui.actionShow_Log, m_pluginManagerAction);
+
     setupConsoleLayout();
 }
 

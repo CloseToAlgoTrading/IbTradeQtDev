@@ -156,13 +156,20 @@ Supervision::StrategyRuntime* PipelineFactory::createRuntime(
 
 ISelectionBlock* PipelineFactory::createSelectionBlock(const QString& blockId)
 {
-    if (blockId == QStringLiteral("pass-all-selection") || blockId == QStringLiteral("pass-all"))
+    if (blockId.isEmpty()
+        || blockId == QStringLiteral("pass-all-selection")
+        || blockId == QStringLiteral("pass-all")) {
         return new Blocks::PassAllSelectionBlock();
-    if (blockId == QStringLiteral("static-list-selection") || blockId == QStringLiteral("static-list"))
+    }
+    if (blockId == QStringLiteral("static-list-selection") || blockId == QStringLiteral("static-list")) {
         return new Blocks::StaticListSelectionBlock();
+    }
     auto result = BlockRegistry::instance().createBlock(blockId);
-    if (result) return qobject_cast<ISelectionBlock*>(*result);
-    return new Blocks::PassAllSelectionBlock();
+    if (result) {
+        return qobject_cast<ISelectionBlock*>(*result);
+    }
+    qCWarning(pipelineFactoryLog) << "PipelineFactory: unknown selection block:" << blockId;
+    return nullptr;
 }
 
 IAlphaBlock* PipelineFactory::createAlphaBlock(const QString& blockId)
@@ -183,8 +190,11 @@ IRebalanceBlock* PipelineFactory::createRebalanceBlock(const QString& blockId)
     if (blockId == QStringLiteral("simple-rebalance") || blockId.isEmpty())
         return new Blocks::SimpleRebalanceBlock();
     auto result = BlockRegistry::instance().createBlock(blockId);
-    if (result) return qobject_cast<IRebalanceBlock*>(*result);
-    return new Blocks::SimpleRebalanceBlock();
+    if (result) {
+        return qobject_cast<IRebalanceBlock*>(*result);
+    }
+    qCWarning(pipelineFactoryLog) << "PipelineFactory: unknown rebalance block:" << blockId;
+    return nullptr;
 }
 
 IRiskBlock* PipelineFactory::createRiskBlock(const QString& blockId)
@@ -203,8 +213,11 @@ IExecutionBlock* PipelineFactory::createExecutionBlock(const QString& blockId)
     if (blockId == QStringLiteral("limit-order-execution"))
         return new Blocks::LimitOrderExecutionBlock();
     auto result = BlockRegistry::instance().createBlock(blockId);
-    if (result) return qobject_cast<IExecutionBlock*>(*result);
-    return new Blocks::MarketOrderExecutionBlock();
+    if (result) {
+        return qobject_cast<IExecutionBlock*>(*result);
+    }
+    qCWarning(pipelineFactoryLog) << "PipelineFactory: unknown execution block:" << blockId;
+    return nullptr;
 }
 
 ISignalMergePolicy* PipelineFactory::createMergePolicy(const QString& policyId)

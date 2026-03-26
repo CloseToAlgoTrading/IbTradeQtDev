@@ -1,0 +1,23 @@
+{
+  "manifest_version": 1,
+  "plugin_id": "com.yourcompany.yourplugin",
+  "name": "Your Strategy Plugin",
+  "version": "0.1.0",
+  "description": "Template package for an external IbTrade strategy plugin.",
+  "vendor": "Your Company",
+  "host_api_version": 1,
+  "library": "build/libyour_strategy_plugin.so",
+  "extensions": [
+    {
+      "extension_point_id": "pipeline.alpha",
+      "extension_id": "com.yourcompany.yourplugin/alpha",
+      "name": "Your Alpha",
+      "description": "Describe your alpha block here.",
+      "scope": "Strategy",
+      "default_config": {
+        "fixed_probability": 0.6,
+        "fixed_amount": 10.0
+      }
+    }
+  ]
+}

@@ -13,6 +13,7 @@
 #include "phase2/tst_adapters.h"
 #include "phase2/tst_integration.h"
 #include "phase3/tst_block_registry.h"
+#include "plugin/tst_plugin_runtime.h"
 #include "phase3/tst_pipeline_runner.h"
 #include "phase3/tst_semantic_mapping.h"
 #include "phase4/tst_supervision.h"
@@ -103,6 +104,7 @@ int main(int argc, char *argv[])
 
     // Phase 3
     IBTRADING_RUN_TEST(TestBlockRegistry, tc);
+    IBTRADING_RUN_TEST(TestPluginRuntime, tc);
     IBTRADING_RUN_TEST(TestPipelineRunner, tc);
     IBTRADING_RUN_TEST(TestSemanticMapping, tc);
 

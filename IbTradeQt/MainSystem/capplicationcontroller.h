@@ -18,14 +18,17 @@
 #include "IBComm/AccountRouter.h"
 #include "IBComm/TimeRouter.h"
 #include "IBComm/MarketDepthRouter.h"
+#include "Plugin/PluginLoader.h"
 #include <QSharedPointer>
 #include <QApplication>
 #include <QObject>
+#include <QPointer>
 #include <memory>
 
 class IModelTreeRepository;
 
 class UiLayoutStore;
+class PluginManagerDialog;
 
 class CApplicationController : public QObject
 {
@@ -43,6 +46,7 @@ public slots:
 
 private slots:
     void slotRestoreDefaultLayout();
+    void slotShowPluginManager();
 
 private:
 
@@ -64,6 +68,9 @@ private:
     IBComm::AccountRouter *m_pAccountRouter = nullptr;
     IBComm::TimeRouter *m_pTimeRouter = nullptr;
     IBComm::MarketDepthRouter *m_pMarketDepthRouter = nullptr;
+    std::unique_ptr<Plugin::PluginLoader> m_pluginLoader;
+    QStringList m_pluginSearchDirs;
+    QPointer<PluginManagerDialog> m_pluginManagerDialog;
 
     UiLayoutStore* m_layoutStore = nullptr;
 };
