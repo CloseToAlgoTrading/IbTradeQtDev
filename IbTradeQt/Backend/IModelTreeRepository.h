@@ -48,6 +48,7 @@ public:
     virtual DbStrategyVersion fetchStrategyVersion(const QString& versionId) const = 0;
     virtual QList<DbStrategyVersion> listStrategyVersions(const QString& strategyId) const = 0;
     virtual DbStrategyVersion fetchLatestVersion(const QString& strategyId) const = 0;
+    virtual bool deleteStrategyVersion(const QString& versionId) = 0;
     virtual bool setVersionPublished(const QString& versionId, bool published) = 0;
     virtual int nextVersionNumber(const QString& strategyId) const = 0;
 

@@ -93,6 +93,8 @@ public:
     virtual QJsonObject strategyVersionInfo(const QString& versionId) const = 0;
     // Lists all versions for a strategy, ordered by version_number ASC.
     virtual QJsonArray  listStrategyVersions(const QString& strategyId) const = 0;
+    // Deletes a single version if it is not referenced by a live binding.
+    virtual bool        deleteStrategyVersion(const QString& versionId) = 0;
     // Marks a version as published (eligible for deployment/selection).
     virtual bool        publishVersion(const QString& versionId) = 0;
 

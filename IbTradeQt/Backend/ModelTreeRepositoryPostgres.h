@@ -53,6 +53,7 @@ public:
     DbStrategyVersion fetchStrategyVersion(const QString& versionId) const override;
     QList<DbStrategyVersion> listStrategyVersions(const QString& strategyId) const override;
     DbStrategyVersion fetchLatestVersion(const QString& strategyId) const override;
+    bool deleteStrategyVersion(const QString& versionId) override;
     bool setVersionPublished(const QString& versionId, bool published) override;
     int nextVersionNumber(const QString& strategyId) const override;
 

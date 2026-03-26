@@ -42,6 +42,7 @@ signals:
     void newVersionRequested(const QString& strategyId,
                              const QJsonObject& pipelineConfig);
     void publishRequested(const QString& strategyId, const QString& versionId);
+    void deleteVersionRequested(const QString& strategyId, const QString& versionId);
     void archiveRequested(const QString& strategyId);
     void deleteStrategyRequested(const QString& strategyId);
     void useInLiveRequested(const QString& strategyId, const QString& versionId);

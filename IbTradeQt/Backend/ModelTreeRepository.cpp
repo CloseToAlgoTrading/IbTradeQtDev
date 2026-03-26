@@ -962,6 +962,20 @@ DbStrategyVersion ModelTreeRepository::fetchLatestVersion(const QString& strateg
     return {};
 }
 
+bool ModelTreeRepository::deleteStrategyVersion(const QString& versionId)
+{
+    QSqlQuery q(db());
+    q.prepare("DELETE FROM strategy_versions WHERE version_id = :vid");
+    q.bindValue(":vid", versionId);
+
+    if (!q.exec()) {
+        qCWarning(lcModelTree) << "ModelTreeRepository::deleteStrategyVersion failed:"
+                               << q.lastError().text();
+        return false;
+    }
+    return q.numRowsAffected() > 0;
+}
+
 bool ModelTreeRepository::setVersionPublished(const QString& versionId, bool published)
 {
     QSqlQuery q(db());
@@ -984,13 +998,13 @@ int ModelTreeRepository::nextVersionNumber(const QString& strategyId) const
 {
     QSqlQuery q(db());
     q.prepare(
-        "SELECT COALESCE(MAX(version_number), 0) + 1 "
+        "SELECT COALESCE(MAX(version_number), -1) + 1 "
         "FROM strategy_versions WHERE strategy_id = :sid");
     q.bindValue(":sid", strategyId);
 
     if (q.exec() && q.next())
         return q.value(0).toInt();
-    return 1;
+    return 0;
 }
 
 bool ModelTreeRepository::updateBindingVersion(const QString& bindingId, const QString& versionId)

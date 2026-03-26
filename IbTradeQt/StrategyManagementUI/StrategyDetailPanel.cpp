@@ -20,6 +20,7 @@
 #include <QJsonArray>
 #include <QTabWidget>
 #include <QScrollArea>
+#include <QSignalBlocker>
 
 namespace StrategyMgmt {
 
@@ -144,12 +145,14 @@ void StrategyDetailPanel::buildUi()
 
     m_newVersionBtn = new QPushButton(QStringLiteral("Save as New Version"));
     m_publishBtn    = new QPushButton(QStringLiteral("Publish"));
+    m_deleteVersionBtn = new QPushButton(QStringLiteral("Delete Selected Version..."));
     m_archiveBtn    = new QPushButton(QStringLiteral("Delete Strategy..."));
     m_useInLiveBtn  = new QPushButton(QStringLiteral("Use in Live"));
     m_openBtBtn     = new QPushButton(QStringLiteral("Open in Backtest"));
 
     actionBar->addWidget(m_newVersionBtn);
     actionBar->addWidget(m_publishBtn);
+    actionBar->addWidget(m_deleteVersionBtn);
     actionBar->addWidget(m_archiveBtn);
     actionBar->addStretch();
     actionBar->addWidget(m_useInLiveBtn);
@@ -166,6 +169,8 @@ void StrategyDetailPanel::buildUi()
             this, &StrategyDetailPanel::onNewVersion);
     connect(m_publishBtn, &QPushButton::clicked,
             this, &StrategyDetailPanel::onPublish);
+    connect(m_deleteVersionBtn, &QPushButton::clicked,
+            this, &StrategyDetailPanel::onDeleteVersion);
     connect(m_archiveBtn, &QPushButton::clicked,
             this, &StrategyDetailPanel::onArchive);
     connect(m_useInLiveBtn, &QPushButton::clicked,
@@ -224,19 +229,18 @@ void StrategyDetailPanel::showStrategy(const QJsonObject& catalogEntry,
     hideBlockDetails();
 
     if (versions.size() > 0) {
-        QJsonObject latest = versions.last().toObject();
-        QString cfgStr = latest.value("configJson").toString();
-        m_workingConfig = QJsonDocument::fromJson(cfgStr.toUtf8()).object();
-        m_configDirty = false;
-        m_newVersionBtn->setText(QStringLiteral("Save as New Version"));
-
-        m_suppressVersionNav = true;
-        m_versionTable->selectRow(versions.size() - 1);
-        loadVersionAtRow(versions.size() - 1);
-        m_suppressVersionNav = false;
+        selectVersionRow(versions.size() - 1);
     } else {
+        {
+            QSignalBlocker blocker(m_versionTable);
+            m_versionTable->clearSelection();
+            m_versionTable->setCurrentItem(nullptr);
+        }
         m_workingConfig = QJsonObject();
         m_configDirty = false;
+        m_policyEditor->loadFromJson(m_workingConfig);
+        updateNewVersionButtonText();
+        updateVersionActionState();
     }
 }
 
@@ -254,6 +258,8 @@ void StrategyDetailPanel::clear()
     hideBlockDetails();
     m_workingConfig = QJsonObject();
     m_configDirty = false;
+    updateNewVersionButtonText();
+    updateVersionActionState();
     setEnabled(false);
 }
 
@@ -290,10 +296,21 @@ void StrategyDetailPanel::onVersionCurrentCellChanged(int currentRow, int /*curr
     emit versionRowChangeRequested(currentRow, previousRow);
 }
 
+void StrategyDetailPanel::selectVersionRow(int row)
+{
+    if (row < 0 || row >= m_currentVersions.size())
+        return;
+
+    const QSignalBlocker blocker(m_versionTable);
+    m_versionTable->selectRow(row);
+    loadVersionAtRow(row);
+}
+
 void StrategyDetailPanel::loadVersionAtRow(int row)
 {
     if (row < 0 || row >= m_currentVersions.size()) {
         m_configViewer->clear();
+        updateVersionActionState();
         return;
     }
 
@@ -303,7 +320,7 @@ void StrategyDetailPanel::loadVersionAtRow(int row)
 
     m_workingConfig = doc.object();
     m_configDirty = false;
-    m_newVersionBtn->setText(QStringLiteral("Save as New Version"));
+    updateNewVersionButtonText();
     hideBlockDetails();
 
     m_policyEditor->loadFromJson(m_workingConfig);
@@ -337,6 +354,8 @@ void StrategyDetailPanel::loadVersionAtRow(int row)
     } else {
         m_configViewer->setPlainText(currentText);
     }
+
+    updateVersionActionState();
 }
 
 void StrategyDetailPanel::resetWorkingToSelectedVersion()
@@ -358,10 +377,11 @@ void StrategyDetailPanel::setWorkingPipelineConfig(const QJsonObject& pipelineCo
 void StrategyDetailPanel::markDirty()
 {
     m_configDirty = true;
-    m_newVersionBtn->setText(QStringLiteral("Save as New Version *"));
+    updateNewVersionButtonText();
 
     QJsonDocument doc(m_workingConfig);
     m_configViewer->setPlainText(doc.toJson(QJsonDocument::Indented));
+    updateVersionActionState();
 }
 
 // --- Metadata & actions ---
@@ -389,6 +409,13 @@ void StrategyDetailPanel::onPublish()
         emit publishRequested(m_currentStrategyId, vId);
 }
 
+void StrategyDetailPanel::onDeleteVersion()
+{
+    const QString vId = selectedVersionId();
+    if (!vId.isEmpty())
+        emit deleteVersionRequested(m_currentStrategyId, vId);
+}
+
 void StrategyDetailPanel::onArchive()
 {
     if (!m_currentStrategyId.isEmpty())
@@ -411,10 +438,36 @@ void StrategyDetailPanel::onOpenInBacktest()
 
 QString StrategyDetailPanel::selectedVersionId() const
 {
-    int row = m_versionTable->currentRow();
+    if (!m_versionTable || !m_versionTable->selectionModel())
+        return {};
+    const QModelIndexList rows = m_versionTable->selectionModel()->selectedRows();
+    if (rows.isEmpty())
+        return {};
+    const int row = rows.first().row();
     if (row < 0 || row >= m_currentVersions.size())
         return {};
     return m_currentVersions[row].toObject().value("versionId").toString();
+}
+
+void StrategyDetailPanel::updateVersionActionState()
+{
+    const bool hasSelectedVersion = !selectedVersionId().isEmpty();
+    const bool hasDiffBase = hasSelectedVersion && m_versionTable->currentRow() > 0;
+    m_publishBtn->setEnabled(hasSelectedVersion);
+    m_deleteVersionBtn->setEnabled(hasSelectedVersion);
+    m_useInLiveBtn->setEnabled(hasSelectedVersion);
+    m_openBtBtn->setEnabled(hasSelectedVersion);
+    m_diffToggle->setEnabled(hasDiffBase);
+}
+
+void StrategyDetailPanel::updateNewVersionButtonText()
+{
+    QString text = m_currentVersions.isEmpty()
+        ? QStringLiteral("Save as First Version")
+        : QStringLiteral("Save as New Version");
+    if (m_configDirty)
+        text += QStringLiteral(" *");
+    m_newVersionBtn->setText(text);
 }
 
 } // namespace StrategyMgmt

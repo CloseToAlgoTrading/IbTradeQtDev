@@ -84,6 +84,7 @@ public:
                                        const QString& fromVersionId = {}) override;
     QJsonObject strategyVersionInfo(const QString& versionId) const override;
     QJsonArray  listStrategyVersions(const QString& strategyId) const override;
+    bool        deleteStrategyVersion(const QString& versionId) override;
     bool        publishVersion(const QString& versionId) override;
 
     bool        bindLiveNodeToVersion(const QString& nodeId,

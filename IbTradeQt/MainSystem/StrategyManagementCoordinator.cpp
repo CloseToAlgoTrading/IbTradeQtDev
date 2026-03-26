@@ -74,6 +74,9 @@ void StrategyManagementCoordinator::wireSignals()
     connect(m_panel, &StrategyMgmt::StrategyManagementPanel::publishRequested,
             this, &StrategyManagementCoordinator::onPublishVersion);
 
+    connect(m_panel, &StrategyMgmt::StrategyManagementPanel::deleteVersionRequested,
+            this, &StrategyManagementCoordinator::onDeleteVersion);
+
     connect(m_panel, &StrategyMgmt::StrategyManagementPanel::archiveRequested,
             this, &StrategyManagementCoordinator::confirmAndDeleteStrategy);
 
@@ -284,9 +287,60 @@ void StrategyManagementCoordinator::onSaveVersion(const QString& strategyId,
 }
 
 void StrategyManagementCoordinator::onDeleteVersion(const QString& /*strategyId*/,
-                                                     const QString& /*versionId*/)
+                                                     const QString& versionId)
 {
-    // Placeholder for future version deletion
+    if (!m_backend || !m_view || !m_panel || !m_unsavedDraftFlow || versionId.isEmpty())
+        return;
+
+    auto* detail = m_panel->detailPanel();
+    if (!detail)
+        return;
+
+    if (!m_unsavedDraftFlow->tryResolveIfDirty(
+            QStringLiteral("Save or discard changes before deleting this version?"))) {
+        return;
+    }
+
+    const QString strategyId = detail->currentStrategyId();
+    if (strategyId.isEmpty())
+        return;
+
+    const QJsonArray versionsBefore = m_backend->listStrategyVersions(strategyId);
+    int deletedRow = -1;
+    for (int i = 0; i < versionsBefore.size(); ++i) {
+        if (versionsBefore[i].toObject().value("versionId").toString() == versionId) {
+            deletedRow = i;
+            break;
+        }
+    }
+    if (deletedRow < 0)
+        return;
+
+    const auto answer = QMessageBox::question(
+        m_view,
+        QStringLiteral("Delete Version"),
+        QStringLiteral("Delete the selected strategy version? This cannot be undone."),
+        QMessageBox::Yes | QMessageBox::No,
+        QMessageBox::No);
+    if (answer != QMessageBox::Yes)
+        return;
+
+    if (!m_backend->deleteStrategyVersion(versionId)) {
+        QMessageBox::warning(
+            m_view,
+            QStringLiteral("Delete Version Failed"),
+            QStringLiteral("This version could not be deleted. Versions that are still used by a "
+                           "live deployment must be unbound first."));
+        return;
+    }
+
+    const QJsonObject entry = m_backend->strategyCatalogEntry(strategyId);
+    const QJsonArray versionsAfter = m_backend->listStrategyVersions(strategyId);
+    m_panel->showStrategyDetail(entry, versionsAfter);
+    if (!versionsAfter.isEmpty()) {
+        const int replacementRow = qMin(deletedRow, versionsAfter.size() - 1);
+        detail->selectVersionRow(replacementRow);
+    }
 }
 
 void StrategyManagementCoordinator::onDeployVersion(const QString& catalogStrategyId,

@@ -220,7 +220,7 @@ private slots:
 
         DbStrategyDefinition def = m_repo->fetchStrategyDefinition(binding.strategyDefId);
         QVERIFY(def.isValid());
-        QCOMPARE(def.version, 1);
+        QCOMPARE(def.version, 0);
     }
 
     // ---- Sync helper / content-diff guard ----
@@ -513,7 +513,7 @@ private slots:
         QJsonObject fetched = m_backend->strategyDefinition(defId);
         QVERIFY(!fetched.isEmpty());
         QCOMPARE(fetched["name"].toString(), "CatalogStrat");
-        QCOMPARE(fetched["version"].toInt(), 1);
+        QCOMPARE(fetched["version"].toInt(), 0);
     }
 
     void testBackendUpdateStrategyDefinition_contentDiff() {
@@ -523,14 +523,14 @@ private slots:
         QString defId = m_backend->createStrategyDefinition(
             "DiffTest", static_cast<int>(ModelType::STRATEGY_PIPELINE), cfg);
 
-        // Same config — version must stay at 1
+        // Same config — version must stay at 0
         QVERIFY(m_backend->updateStrategyDefinition(defId, cfg));
-        QCOMPARE(m_backend->strategyDefinition(defId)["version"].toInt(), 1);
+        QCOMPARE(m_backend->strategyDefinition(defId)["version"].toInt(), 0);
 
         // Changed config — version must increment
         cfg["mergePolicy"] = "sum";
         QVERIFY(m_backend->updateStrategyDefinition(defId, cfg));
-        QCOMPARE(m_backend->strategyDefinition(defId)["version"].toInt(), 2);
+        QCOMPARE(m_backend->strategyDefinition(defId)["version"].toInt(), 1);
     }
 
     void testBackendArchiveDefinition() {

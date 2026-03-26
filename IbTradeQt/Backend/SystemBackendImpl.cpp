@@ -920,6 +920,8 @@ QString SystemBackendImpl::createStrategyCatalogEntry(const QString& name, int k
                                                        const QJsonObject& initialConfig,
                                                        const QString& description)
 {
+    Q_UNUSED(initialConfig);
+
     QString stratId = QUuid::createUuid().toString(QUuid::WithoutBraces);
     QString now     = nowUtcIso();
 
@@ -936,20 +938,7 @@ QString SystemBackendImpl::createStrategyCatalogEntry(const QString& name, int k
     if (!m_repo->createStrategyCatalog(strat))
         return {};
 
-    // Auto-create v0 with the initial config (empty {} if none provided)
-    DbStrategyVersion v0;
-    v0.versionId     = QUuid::createUuid().toString(QUuid::WithoutBraces);
-    v0.strategyId    = stratId;
-    v0.versionNumber = 0;
-    v0.configJson    = QString::fromUtf8(
-        QJsonDocument(initialConfig).toJson(QJsonDocument::Compact));
-    v0.notes         = QStringLiteral("Initial version");
-    v0.isPublished   = false;
-    v0.createdAt     = now;
-    m_repo->createStrategyVersion(v0);
-
     emit strategyCatalogChanged(stratId);
-    emit strategyVersionCreated(stratId, v0.versionId);
     return stratId;
 }
 
@@ -1097,6 +1086,35 @@ QJsonArray SystemBackendImpl::listStrategyVersions(const QString& strategyId) co
     return arr;
 }
 
+bool SystemBackendImpl::deleteStrategyVersion(const QString& versionId)
+{
+    if (!m_repo || versionId.isEmpty())
+        return false;
+
+    const DbStrategyVersion version = m_repo->fetchStrategyVersion(versionId);
+    if (!version.isValid())
+        return false;
+
+    DbStrategy strategy = m_repo->fetchStrategyCatalog(version.strategyId);
+    if (!strategy.isValid())
+        return false;
+
+    const QList<DbLiveStrategyBinding> bindings =
+        m_repo->listBindingsForDefinition(version.strategyId);
+    for (const DbLiveStrategyBinding& binding : bindings) {
+        if (binding.versionId == versionId)
+            return false;
+    }
+
+    if (!m_repo->deleteStrategyVersion(versionId))
+        return false;
+
+    strategy.updatedAt = nowUtcIso();
+    m_repo->updateStrategyCatalog(strategy);
+    emit strategyCatalogChanged(version.strategyId);
+    return true;
+}
+
 bool SystemBackendImpl::publishVersion(const QString& versionId)
 {
     return m_repo->setVersionPublished(versionId, true);
@@ -1241,14 +1259,13 @@ QString SystemBackendImpl::createLiveNodeForExistingCatalog(
 QString SystemBackendImpl::createStrategyDefinition(const QString& name, int kind,
                                                      const QJsonObject& fullConfig)
 {
-    // createStrategyCatalogEntry auto-creates v0 with the provided config
     QString stratId = createStrategyCatalogEntry(name, kind, fullConfig);
     if (stratId.isEmpty()) return {};
 
-    // Publish the auto-created v0
-    auto versions = m_repo->listStrategyVersions(stratId);
-    if (!versions.isEmpty())
-        publishVersion(versions.first().versionId);
+    const QString versionId = createStrategyVersion(stratId, fullConfig);
+    if (versionId.isEmpty())
+        return {};
+    publishVersion(versionId);
 
     // Also write legacy row for backward compat
     DbStrategyDefinition def;

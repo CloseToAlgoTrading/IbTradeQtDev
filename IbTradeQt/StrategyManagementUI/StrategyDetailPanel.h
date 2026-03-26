@@ -39,6 +39,7 @@ public:
     QJsonObject workingConfig() const { return m_workingConfig; }
     bool isConfigDirty() const { return m_configDirty; }
     QString currentStrategyId() const { return m_currentStrategyId; }
+    void selectVersionRow(int row);
 
     void loadVersionAtRow(int row);
     void resetWorkingToSelectedVersion();
@@ -54,6 +55,7 @@ signals:
     void newVersionRequested(const QString& strategyId,
                              const QJsonObject& pipelineConfig);
     void publishRequested(const QString& strategyId, const QString& versionId);
+    void deleteVersionRequested(const QString& strategyId, const QString& versionId);
     void archiveRequested(const QString& strategyId);
     void useInLiveRequested(const QString& strategyId, const QString& versionId);
     void openInBacktestRequested(const QString& strategyId, const QString& versionId);
@@ -74,6 +76,7 @@ private slots:
     void onSaveMetadata();
     void onNewVersion();
     void onPublish();
+    void onDeleteVersion();
     void onArchive();
     void onUseInLive();
     void onOpenInBacktest();
@@ -81,6 +84,8 @@ private slots:
 private:
     void buildUi();
     QString selectedVersionId() const;
+    void updateVersionActionState();
+    void updateNewVersionButtonText();
     void markDirty();
 
     // Metadata
@@ -111,6 +116,7 @@ private:
     // Action buttons
     QPushButton*    m_newVersionBtn = nullptr;
     QPushButton*    m_publishBtn    = nullptr;
+    QPushButton*    m_deleteVersionBtn = nullptr;
     QPushButton*    m_archiveBtn    = nullptr;
     QPushButton*    m_useInLiveBtn  = nullptr;
     QPushButton*    m_openBtBtn     = nullptr;

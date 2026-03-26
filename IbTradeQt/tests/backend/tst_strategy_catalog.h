@@ -6,6 +6,8 @@
 #include <QUuid>
 #include <QJsonDocument>
 #include <QJsonArray>
+#include <QPushButton>
+#include <QTableWidget>
 #include <QSqlDatabase>
 #include <QSqlQuery>
 #include "Backend/ModelTreeRepository.h"
@@ -13,6 +15,7 @@
 #include "DB/dbdatatypes.h"
 #include "Strategies/Generic/ModelType.h"
 #include "StrategyManagementUI/StrategyCatalogModel.h"
+#include "StrategyManagementUI/StrategyDetailPanel.h"
 #include "Backtest/BacktestDataTypes.h"
 #include <QSortFilterProxyModel>
 
@@ -249,13 +252,13 @@ private slots:
     void testNextVersionNumber() {
         setupRepo();
         m_repo->createStrategyCatalog(makeStrategy("strat-next", "NextVer"));
+        QCOMPARE(m_repo->nextVersionNumber("strat-next"), 0);
+
+        m_repo->createStrategyVersion(makeVersion("v0", "strat-next", 0));
         QCOMPARE(m_repo->nextVersionNumber("strat-next"), 1);
 
         m_repo->createStrategyVersion(makeVersion("v1", "strat-next", 1));
         QCOMPARE(m_repo->nextVersionNumber("strat-next"), 2);
-
-        m_repo->createStrategyVersion(makeVersion("v2", "strat-next", 2));
-        QCOMPARE(m_repo->nextVersionNumber("strat-next"), 3);
     }
 
     void testMigrationV2ToV3() {
@@ -342,7 +345,7 @@ private slots:
     // A.8 — Backend tests
     // =====================================================================
 
-    void testCreateCatalogEntryAutoCreatesV1() {
+    void testCreateCatalogEntryStartsWithoutVersions() {
         setupBackend();
         QJsonObject cfg;
         cfg["alphas"] = QJsonArray();
@@ -357,72 +360,66 @@ private slots:
         QCOMPARE(fetched["description"].toString(), "A description");
         QCOMPARE(fetched["lifecycleState"].toString(), "draft");
 
-        // createStrategyCatalogEntry creates strategy + v0
         QJsonArray versions = m_backend->listStrategyVersions(stratId);
-        QCOMPARE(versions.size(), 1);
-        QJsonObject v1 = versions[0].toObject();
-        QCOMPARE(v1["versionNumber"].toInt(), 0);
-        QVERIFY(v1["configJson"].toString().contains("alphas"));
+        QCOMPARE(versions.size(), 0);
     }
 
     void testCreateStrategyVersionViaBackend() {
         setupBackend();
         QString stratId = m_backend->createStrategyCatalogEntry(
             "VerStrat", static_cast<int>(ModelType::STRATEGY_PIPELINE));
-        // v0 auto-created by createStrategyCatalogEntry
 
         QJsonObject cfg;
         cfg["alphas"] = QJsonArray();
-        QString v2Id = m_backend->createStrategyVersion(stratId, cfg, "Second version");
-        QVERIFY(!v2Id.isEmpty());
+        QString v0Id = m_backend->createStrategyVersion(stratId, cfg, "Initial version");
+        QVERIFY(!v0Id.isEmpty());
 
-        QJsonObject v2Info = m_backend->strategyVersionInfo(v2Id);
-        QCOMPARE(v2Info["versionNumber"].toInt(), 1);
-        QCOMPARE(v2Info["notes"].toString(), "Second version");
-        QCOMPARE(v2Info["isPublished"].toBool(), false);
+        QJsonObject v0Info = m_backend->strategyVersionInfo(v0Id);
+        QCOMPARE(v0Info["versionNumber"].toInt(), 0);
+        QCOMPARE(v0Info["notes"].toString(), "Initial version");
+        QCOMPARE(v0Info["isPublished"].toBool(), false);
 
         cfg["mergePolicy"] = "sum";
-        QString v3Id = m_backend->createStrategyVersion(stratId, cfg, "Changed merge", v2Id);
-        QVERIFY(!v3Id.isEmpty());
+        QString v1Id = m_backend->createStrategyVersion(stratId, cfg, "Changed merge", v0Id);
+        QVERIFY(!v1Id.isEmpty());
 
-        QJsonObject v3Info = m_backend->strategyVersionInfo(v3Id);
-        QCOMPARE(v3Info["versionNumber"].toInt(), 2);
-        QCOMPARE(v3Info["createdFromVersionId"].toString(), v2Id);
+        QJsonObject v1Info = m_backend->strategyVersionInfo(v1Id);
+        QCOMPARE(v1Info["versionNumber"].toInt(), 1);
+        QCOMPARE(v1Info["createdFromVersionId"].toString(), v0Id);
     }
 
     void testPublishVersion() {
         setupBackend();
         QString stratId = m_backend->createStrategyCatalogEntry(
             "PubStrat", static_cast<int>(ModelType::STRATEGY_PIPELINE));
-        // v1 auto-created; get its id
-        QJsonArray autoVersions = m_backend->listStrategyVersions(stratId);
-        QCOMPARE(autoVersions.size(), 1);
-        QString v1Id = autoVersions[0].toObject()["versionId"].toString();
+        QJsonObject cfg;
+        cfg["alpha"] = "test";
+        const QString v0Id = m_backend->createStrategyVersion(stratId, cfg, "Initial");
+        QVERIFY(!v0Id.isEmpty());
 
-        QCOMPARE(m_backend->strategyVersionInfo(v1Id)["isPublished"].toBool(), false);
+        QCOMPARE(m_backend->strategyVersionInfo(v0Id)["isPublished"].toBool(), false);
 
-        QVERIFY(m_backend->publishVersion(v1Id));
-        QCOMPARE(m_backend->strategyVersionInfo(v1Id)["isPublished"].toBool(), true);
+        QVERIFY(m_backend->publishVersion(v0Id));
+        QCOMPARE(m_backend->strategyVersionInfo(v0Id)["isPublished"].toBool(), true);
     }
 
     void testListStrategyVersions() {
         setupBackend();
         QString stratId = m_backend->createStrategyCatalogEntry(
             "ListVerStrat", static_cast<int>(ModelType::STRATEGY_PIPELINE));
-        // v1 auto-created
 
         QJsonObject cfg;
         cfg["x"] = 1;
-        m_backend->createStrategyVersion(stratId, cfg, "v2");
+        m_backend->createStrategyVersion(stratId, cfg, "v0");
         cfg["x"] = 2;
-        m_backend->createStrategyVersion(stratId, cfg, "v3");
+        m_backend->createStrategyVersion(stratId, cfg, "v1");
         cfg["x"] = 3;
-        m_backend->createStrategyVersion(stratId, cfg, "v4");
+        m_backend->createStrategyVersion(stratId, cfg, "v2");
 
         QJsonArray versions = m_backend->listStrategyVersions(stratId);
-        QCOMPARE(versions.size(), 4);
+        QCOMPARE(versions.size(), 3);
         QCOMPARE(versions[0].toObject()["versionNumber"].toInt(), 0);
-        QCOMPARE(versions[3].toObject()["versionNumber"].toInt(), 3);
+        QCOMPARE(versions[2].toObject()["versionNumber"].toInt(), 2);
     }
 
     void testCreateStrategyFromLiveTreeAutoBindsVersion() {
@@ -597,6 +594,7 @@ private slots:
         QString stratId = m_backend->createStrategyCatalogEntry(
             QStringLiteral("DelStrat"), static_cast<int>(ModelType::STRATEGY_PIPELINE));
         QVERIFY(!stratId.isEmpty());
+        QVERIFY(!m_backend->createStrategyVersion(stratId, QJsonObject{}, QStringLiteral("Initial")).isEmpty());
         QVERIFY(!m_backend->listStrategyVersions(stratId).isEmpty());
 
         QVERIFY(m_backend->deleteStrategyCatalogCascade(stratId));
@@ -623,6 +621,67 @@ private slots:
 
         QCOMPARE(spy.count(), 1);
         QCOMPARE(spy.at(0).at(0).toString(), stratId);
+    }
+
+    void testDeleteStrategyVersionRemovesOnlySelectedVersion() {
+        setupBackend();
+        const QString stratId = m_backend->createStrategyCatalogEntry(
+            QStringLiteral("DeleteOne"), static_cast<int>(ModelType::STRATEGY_PIPELINE));
+        QVERIFY(!stratId.isEmpty());
+
+        QJsonObject cfg;
+        cfg["alpha"] = "first";
+        const QString v0Id = m_backend->createStrategyVersion(stratId, cfg, QStringLiteral("v0"));
+        QVERIFY(!v0Id.isEmpty());
+        cfg["alpha"] = "second";
+        const QString v1Id = m_backend->createStrategyVersion(stratId, cfg, QStringLiteral("v1"));
+        QVERIFY(!v1Id.isEmpty());
+
+        QVERIFY(m_backend->deleteStrategyVersion(v0Id));
+
+        const QJsonArray versions = m_backend->listStrategyVersions(stratId);
+        QCOMPARE(versions.size(), 1);
+        QCOMPARE(versions[0].toObject()["versionId"].toString(), v1Id);
+        QCOMPARE(versions[0].toObject()["versionNumber"].toInt(), 1);
+    }
+
+    void testDeleteStrategyVersionAllowsReturningToZeroVersions() {
+        setupBackend();
+        const QString stratId = m_backend->createStrategyCatalogEntry(
+            QStringLiteral("DeleteLast"), static_cast<int>(ModelType::STRATEGY_PIPELINE));
+        QVERIFY(!stratId.isEmpty());
+
+        QJsonObject cfg;
+        cfg["alpha"] = "only";
+        const QString v0Id = m_backend->createStrategyVersion(stratId, cfg, QStringLiteral("v0"));
+        QVERIFY(!v0Id.isEmpty());
+
+        QVERIFY(m_backend->deleteStrategyVersion(v0Id));
+        QVERIFY(m_backend->listStrategyVersions(stratId).isEmpty());
+    }
+
+    void testDeleteStrategyVersionFailsWhenBoundToLiveNode() {
+        setupBackend();
+        const QString acctId = m_backend->createAccount(QStringLiteral("Acct"));
+        const QString portId = m_backend->createPortfolio(acctId, QStringLiteral("Port"));
+        const QString nodeId = m_backend->createStrategy(portId, ModelType::STRATEGY_PIPELINE);
+        QVERIFY(!nodeId.isEmpty());
+
+        const QString stratId = m_backend->createStrategyCatalogEntry(
+            QStringLiteral("BoundDelete"), static_cast<int>(ModelType::STRATEGY_PIPELINE));
+        QVERIFY(!stratId.isEmpty());
+
+        QJsonObject cfg;
+        cfg["alpha"] = "bound";
+        const QString v0Id = m_backend->createStrategyVersion(stratId, cfg, QStringLiteral("v0"));
+        QVERIFY(!v0Id.isEmpty());
+        QVERIFY(m_backend->bindLiveNodeToVersion(nodeId, stratId, v0Id));
+
+        QVERIFY(!m_backend->deleteStrategyVersion(v0Id));
+
+        const QJsonArray versions = m_backend->listStrategyVersions(stratId);
+        QCOMPARE(versions.size(), 1);
+        QCOMPARE(versions[0].toObject()["versionId"].toString(), v0Id);
     }
 
     void testNodeConfigDivergedSignal_noChangeNoSignal() {
@@ -652,14 +711,14 @@ private slots:
             "Lifecycle", static_cast<int>(ModelType::STRATEGY_PIPELINE), QJsonObject{}, "Test");
         QVERIFY(!stratId.isEmpty());
 
-        // 2. Create v1
+        // 2. Create v0
         QJsonObject cfg1;
         cfg1["alphas"] = QJsonArray();
-        QString v1Id = m_backend->createStrategyVersion(stratId, cfg1, "Initial");
-        QVERIFY(!v1Id.isEmpty());
+        QString v0Id = m_backend->createStrategyVersion(stratId, cfg1, "Initial");
+        QVERIFY(!v0Id.isEmpty());
 
-        // 3. Publish v1
-        QVERIFY(m_backend->publishVersion(v1Id));
+        // 3. Publish v0
+        QVERIFY(m_backend->publishVersion(v0Id));
 
         // 4. Create live node and bind
         QString acctId  = m_backend->createAccount("A");
@@ -667,11 +726,11 @@ private slots:
         QString nodeId  = m_backend->createStrategy(portId, ModelType::STRATEGY_PIPELINE);
 
         // Rebind to our catalog entry
-        QVERIFY(m_backend->bindLiveNodeToVersion(nodeId, stratId, v1Id));
+        QVERIFY(m_backend->bindLiveNodeToVersion(nodeId, stratId, v0Id));
 
         QJsonObject binding = m_backend->bindingForNode(nodeId);
         QCOMPARE(binding["strategyId"].toString(), stratId);
-        QCOMPARE(binding["versionId"].toString(), v1Id);
+        QCOMPARE(binding["versionId"].toString(), v0Id);
 
         // 5. Edit config → divergence
         QJsonObject newCfg;
@@ -682,21 +741,21 @@ private slots:
         QVERIFY(m_backend->isNodeDivergedFromVersion(nodeId));
 
         // 6. Explicitly create v2 and rebind
-        QString v2Id = m_backend->createStrategyVersion(stratId, newCfg, "User edited", v1Id);
-        QVERIFY(!v2Id.isEmpty());
-        QVERIFY(m_backend->bindLiveNodeToVersion(nodeId, stratId, v2Id));
+        QString v1Id = m_backend->createStrategyVersion(stratId, newCfg, "User edited", v0Id);
+        QVERIFY(!v1Id.isEmpty());
+        QVERIFY(m_backend->bindLiveNodeToVersion(nodeId, stratId, v1Id));
 
-        // 7. Verify v1 is unchanged
+        // 7. Verify v0 is unchanged
+        QJsonObject v0Info = m_backend->strategyVersionInfo(v0Id);
+        QVERIFY(!v0Info["configJson"].toString().contains("changed"));
+
+        // 8. Verify v1 has the new config
         QJsonObject v1Info = m_backend->strategyVersionInfo(v1Id);
-        QVERIFY(!v1Info["configJson"].toString().contains("changed"));
+        QVERIFY(v1Info["configJson"].toString().contains("changed"));
 
-        // 8. Verify v2 has the new config
-        QJsonObject v2Info = m_backend->strategyVersionInfo(v2Id);
-        QVERIFY(v2Info["configJson"].toString().contains("changed"));
-
-        // 9. Verify version list: auto-v1 + manually-created v1 + v2 = 3
+        // 9. Verify version list: v0 + v1
         QJsonArray versions = m_backend->listStrategyVersions(stratId);
-        QCOMPARE(versions.size(), 3);
+        QCOMPARE(versions.size(), 2);
     }
 
     void testLegacyApiStillWorks() {
@@ -704,7 +763,7 @@ private slots:
         QJsonObject cfg;
         cfg["alphas"] = QJsonArray();
 
-        // Legacy createStrategyDefinition should create catalog entry + v1
+        // Legacy createStrategyDefinition should create catalog entry + initial version
         QString defId = m_backend->createStrategyDefinition(
             "LegacyStrat", static_cast<int>(ModelType::STRATEGY_PIPELINE), cfg);
         QVERIFY(!defId.isEmpty());
@@ -797,12 +856,13 @@ private slots:
         QString nodeId = m_backend->createStrategy(portId, ModelType::STRATEGY_PIPELINE);
         QVERIFY(!nodeId.isEmpty());
 
-        // Create catalog entry + v1 + bind
+        // Create catalog entry + v0 + bind
         QJsonObject config;
         config["alpha"] = "sma_cross";
         QString stratId = m_backend->createStrategyCatalogEntry(
             "PinnedStrat", static_cast<int>(ModelType::STRATEGY_PIPELINE), config);
         QVERIFY(!stratId.isEmpty());
+        QVERIFY(!m_backend->createStrategyVersion(stratId, config, QStringLiteral("v0")).isEmpty());
 
         QJsonArray versionsBefore = m_backend->listStrategyVersions(stratId);
         QCOMPARE(versionsBefore.size(), 1);
@@ -846,20 +906,19 @@ private slots:
             "BtTestStrat", static_cast<int>(ModelType::STRATEGY_PIPELINE), cfg);
         QVERIFY(!stratId.isEmpty());
 
-        QJsonArray versions = m_backend->listStrategyVersions(stratId);
-        QCOMPARE(versions.size(), 1);
-        QString v1Id = versions[0].toObject()["versionId"].toString();
+        const QString v0Id = m_backend->createStrategyVersion(stratId, cfg, "Initial");
+        QVERIFY(!v0Id.isEmpty());
 
         // Verify version info can be retrieved and config matches
-        QJsonObject v1Info = m_backend->strategyVersionInfo(v1Id);
-        QVERIFY(!v1Info.isEmpty());
-        QCOMPARE(v1Info["versionNumber"].toInt(), 0);
+        QJsonObject v0Info = m_backend->strategyVersionInfo(v0Id);
+        QVERIFY(!v0Info.isEmpty());
+        QCOMPARE(v0Info["versionNumber"].toInt(), 0);
 
-        QString v1ConfigJson = v1Info["configJson"].toString();
-        QJsonDocument v1Doc = QJsonDocument::fromJson(v1ConfigJson.toUtf8());
-        QVERIFY(!v1Doc.isNull());
-        QCOMPARE(v1Doc.object()["alpha"].toString(), "momentum");
-        QCOMPARE(v1Doc.object()["period"].toInt(), 20);
+        QString v0ConfigJson = v0Info["configJson"].toString();
+        QJsonDocument v0Doc = QJsonDocument::fromJson(v0ConfigJson.toUtf8());
+        QVERIFY(!v0Doc.isNull());
+        QCOMPARE(v0Doc.object()["alpha"].toString(), "momentum");
+        QCOMPARE(v0Doc.object()["period"].toInt(), 20);
 
         // Create v2 with modified config
         QJsonObject cfg2;
@@ -873,17 +932,17 @@ private slots:
         QJsonDocument v2Doc = QJsonDocument::fromJson(v2ConfigJson.toUtf8());
         QCOMPARE(v2Doc.object()["period"].toInt(), 50);
 
-        // v1 and v2 configs should differ
-        QVERIFY(v1Doc != v2Doc);
+        // v0 and v1 configs should differ
+        QVERIFY(v0Doc != v2Doc);
 
         // A BacktestRunConfig can carry these IDs for persistence
         Backtest::BacktestRunConfig runCfg;
         runCfg.catalogStrategyId = stratId;
-        runCfg.catalogVersionId  = v1Id;
+        runCfg.catalogVersionId  = v0Id;
         runCfg.strategyId        = "some-node-id";
         runCfg.strategyDisplayName = "BtTestStrat";
         QCOMPARE(runCfg.catalogStrategyId, stratId);
-        QCOMPARE(runCfg.catalogVersionId, v1Id);
+        QCOMPARE(runCfg.catalogVersionId, v0Id);
     }
 
     void testVersionGatingDivergenceDetection() {
@@ -899,12 +958,11 @@ private slots:
         cfg["param"] = "original";
         QString stratId = m_backend->createStrategyCatalogEntry(
             "GatedStrat", static_cast<int>(ModelType::STRATEGY_PIPELINE), cfg);
+        const QString v0Id = m_backend->createStrategyVersion(stratId, cfg, "Initial");
+        QVERIFY(!v0Id.isEmpty());
 
-        QJsonArray versions = m_backend->listStrategyVersions(stratId);
-        QString v1Id = versions[0].toObject()["versionId"].toString();
-
-        // Bind to v1
-        QVERIFY(m_backend->bindLiveNodeToVersion(nodeId, stratId, v1Id));
+        // Bind to v0
+        QVERIFY(m_backend->bindLiveNodeToVersion(nodeId, stratId, v0Id));
 
         // Initially, node should NOT be diverged (pipeline config matches version)
         // Since we set pipeline config to match v1, divergence should be false.
@@ -934,16 +992,19 @@ private slots:
         cfg["alpha"] = "test";
         QString stratId = m_backend->createStrategyCatalogEntry(
             "PubStrat", static_cast<int>(ModelType::STRATEGY_PIPELINE), cfg);
+        const QString v0Id = m_backend->createStrategyVersion(stratId, cfg, "Initial");
+        QVERIFY(!v0Id.isEmpty());
 
         QJsonArray versions = m_backend->listStrategyVersions(stratId);
         QCOMPARE(versions.size(), 1);
-        QString v1Id = versions[0].toObject()["versionId"].toString();
+        QString v0ListedId = versions[0].toObject()["versionId"].toString();
+        QCOMPARE(v0ListedId, v0Id);
 
         // By default, not published
         QCOMPARE(versions[0].toObject()["isPublished"].toBool(), false);
 
-        // Publish v1
-        QVERIFY(m_backend->publishVersion(v1Id));
+        // Publish v0
+        QVERIFY(m_backend->publishVersion(v0Id));
 
         versions = m_backend->listStrategyVersions(stratId);
         QCOMPARE(versions[0].toObject()["isPublished"].toBool(), true);
@@ -1068,13 +1129,52 @@ private slots:
         bool diverged = m_backend->isNodeDivergedFromVersion(nodeId);
         Q_UNUSED(diverged);
 
-        // Versions should still be just v1
+        // Versions should still be just v0
         QJsonObject defJson = m_backend->strategyDefinitionForNode(nodeId);
         QString stratId = defJson.value("strategyDefId").toString();
         if (!stratId.isEmpty()) {
             QJsonArray versions = m_backend->listStrategyVersions(stratId);
             QCOMPARE(versions.size(), 1);
         }
+    }
+
+    void testStrategyDetailPanelZeroVersionState() {
+        StrategyMgmt::StrategyDetailPanel panel;
+
+        QJsonObject entry;
+        entry["strategyId"] = QStringLiteral("sid");
+        entry["name"] = QStringLiteral("ZeroVersions");
+        entry["strategyKind"] = static_cast<int>(ModelType::STRATEGY_PIPELINE);
+        entry["lifecycleState"] = QStringLiteral("draft");
+
+        panel.showStrategy(entry, QJsonArray());
+
+        QCOMPARE(panel.versionTable()->rowCount(), 0);
+        auto findButton = [&panel](const QString& text) -> QPushButton* {
+            for (QPushButton* button : panel.findChildren<QPushButton*>()) {
+                if (button->text() == text)
+                    return button;
+            }
+            return nullptr;
+        };
+
+        QPushButton* saveButton = findButton(QStringLiteral("Save as First Version"));
+        QPushButton* publishButton = findButton(QStringLiteral("Publish"));
+        QPushButton* deleteVersionButton =
+            findButton(QStringLiteral("Delete Selected Version..."));
+        QPushButton* useInLiveButton = findButton(QStringLiteral("Use in Live"));
+        QPushButton* backtestButton = findButton(QStringLiteral("Open in Backtest"));
+
+        QVERIFY(saveButton);
+        QVERIFY(saveButton->isEnabled());
+        QVERIFY(publishButton);
+        QVERIFY(!publishButton->isEnabled());
+        QVERIFY(deleteVersionButton);
+        QVERIFY(!deleteVersionButton->isEnabled());
+        QVERIFY(useInLiveButton);
+        QVERIFY(!useInLiveButton->isEnabled());
+        QVERIFY(backtestButton);
+        QVERIFY(!backtestButton->isEnabled());
     }
 
     // B.9 additional — backtest run preserves config snapshot regardless
@@ -1214,15 +1314,16 @@ private slots:
         cfg["alpha"] = "test";
         QString stratId = m_backend->createStrategyCatalogEntry(
             "PickerStrat", static_cast<int>(ModelType::STRATEGY_PIPELINE), cfg);
+        const QString v0Id = m_backend->createStrategyVersion(stratId, cfg, "Initial");
+        QVERIFY(!v0Id.isEmpty());
 
-        // Auto-created v1 is unpublished
-        QJsonArray v1List = m_backend->listStrategyVersions(stratId);
-        QCOMPARE(v1List.size(), 1);
-        QString v1Id = v1List[0].toObject()["versionId"].toString();
-        QCOMPARE(v1List[0].toObject()["isPublished"].toBool(), false);
+        QJsonArray v0List = m_backend->listStrategyVersions(stratId);
+        QCOMPARE(v0List.size(), 1);
+        QCOMPARE(v0List[0].toObject()["versionId"].toString(), v0Id);
+        QCOMPARE(v0List[0].toObject()["isPublished"].toBool(), false);
 
-        // Publish v1
-        m_backend->publishVersion(v1Id);
+        // Publish v0
+        m_backend->publishVersion(v0Id);
 
         // Create v2 (unpublished)
         QJsonObject cfg2; cfg2["alpha"] = "test_v2";
