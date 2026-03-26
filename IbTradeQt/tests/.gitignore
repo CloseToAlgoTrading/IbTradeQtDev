@@ -2,12 +2,16 @@
 debug/
 release/
 Makefile
+Makefile.tests
 .qmake.stash
 moc_predefs.h
 *.o
 moc_*.cpp
 qrc_*.cpp
 ibtrading_tests
+myLocalDb.sqlite
+myLocalDb.sqlite-shm
+myLocalDb.sqlite-wal
 
 # Generated backtest HTML/TXT reports (see tests/outputs/)
 outputs/*.html

@@ -5,6 +5,7 @@ build/
 
 # qmake generated
 Makefile
+Makefile.tests
 .qmake.stash
 moc_predefs.h
 
@@ -20,6 +21,11 @@ qrc_*.cpp
 
 # Binary
 ibtrading
+
+# Local runtime/test SQLite artifacts
+myLocalDb.sqlite
+myLocalDb.sqlite-shm
+myLocalDb.sqlite-wal
 
 # Qt Creator user files
 *.pro.user*
