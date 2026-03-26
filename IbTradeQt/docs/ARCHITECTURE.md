@@ -772,7 +772,7 @@ When starting a live strategy, if the node's config has diverged from its pinned
 
 `BacktestStrategySelector` shows both live-tree strategies and a "Catalog Strategies" section with expandable version lists. Selecting a catalog version populates the backtest workspace with that version's config and records `catalogStrategyId` + `catalogVersionId` in the `BacktestRuns` table.
 
-After a backtest run, the presenter compares the run's pipeline config against the pinned version's config. If they differ, the user is prompted to save as a new version.
+After a backtest run, the run is stored in BacktestStore / Run History automatically. Creating a new catalog version is explicit via the backtest workspace's **Save as New Version** action; switching away from edited backtest state warns that the current temporary workspace state will be lost.
 
 **Yahoo runs** use `BacktestController` on a worker thread with `HistoricalDataManager` backed by the **BacktestStore** SQLite file (`HistoricalBars`). Strategy and benchmark daily bars are prefetched before `BacktestSession::run()`; the session replays from preloaded buffers while `IHistoricalRead` reads the same cache. Log lines `YahooFinanceDataSource: GET` appear during that prefetch when the cache does not yet cover the requested window. See [BACKTESTER_DESIGN.md](BACKTESTER_DESIGN.md) §11.1 and [tests/BACKTEST_TESTING.md](../tests/BACKTEST_TESTING.md).
 

@@ -11,6 +11,7 @@
 #include "Backtest/BacktestPreFlightCoordinator.h"
 #include "Backtest/BacktestWorkspaceSession.h"
 #include "Backtest/YahooUniverseValidator.h"
+#include "IBacktestSessionSwitchPrompt.h"
 #include "IUnsavedChangesPrompt.h"
 
 class ISystemBackend;
@@ -31,6 +32,7 @@ public:
     void setDock(BacktestUI::BacktestWorkspaceDock* dock);
 
     void setUnsavedChangesPrompt(std::unique_ptr<IUnsavedChangesPrompt> prompt);
+    void setBacktestSessionSwitchPrompt(std::unique_ptr<IBacktestSessionSwitchPrompt> prompt);
 
     void wireSignals();
 
@@ -47,6 +49,25 @@ public:
     BacktestUI::BacktestWorkspaceDock* dock() const { return m_dock; }
 
     bool isBacktestRunning() const;
+
+    struct CatalogVersionInfo {
+        QString versionId;
+        int versionNumber = 0;
+    };
+
+    struct SaveAsNewVersionResult {
+        enum class Outcome {
+            Created,
+            AlreadyExists,
+            MissingCatalogStrategyId,
+            Failed
+        };
+
+        Outcome outcome = Outcome::Failed;
+        CatalogVersionInfo version;
+    };
+
+    SaveAsNewVersionResult saveActiveSessionAsNewVersion();
 
 signals:
     void catalogRefreshNeeded();
@@ -71,6 +92,7 @@ private:
     void launchPrepareRun(const Backtest::BacktestRunConfig& config);
     void populateRunHistory(const QString& strategyId, const QString& strategyDefId);
     void refreshActiveRunHistory();
+    void refreshRunHistoryForSession(const Backtest::Workspace::SessionKey& key);
 
     bool tryResolveSessionSwitch(const Backtest::Workspace::SessionKey& nextKey);
     void activateSession(const Backtest::Workspace::SessionKey& key, bool clearResultPanels);
@@ -79,6 +101,10 @@ private:
 
     bool persistActiveLiveSession();
     void saveAsNewVersionForActiveSession();
+    SaveAsNewVersionResult createNewVersionForActiveSession();
+    void rebaseSessionToSavedVersion(const CatalogVersionInfo& versionInfo);
+    void updateSessionFromLoadedOrFinishedRun(const Backtest::Workspace::SessionKey& key,
+                                              const Backtest::BacktestLoadedRun& run);
 
     Backtest::Workspace::Session makeLiveSession(const Backtest::Workspace::SessionKey& key,
                                                    const QString& displayName,
@@ -94,6 +120,7 @@ private:
     Backtest::BacktestController*    m_controller = nullptr;
 
     std::unique_ptr<IUnsavedChangesPrompt> m_unsavedPrompt;
+    std::unique_ptr<IBacktestSessionSwitchPrompt> m_backtestSwitchPrompt;
 
     QHash<Backtest::Workspace::SessionKey, Backtest::Workspace::Session> m_sessions;
     std::optional<Backtest::Workspace::SessionKey> m_activeKey;

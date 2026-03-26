@@ -82,60 +82,62 @@ void persistBacktestResultImpl(const QString& dbFilePath,
                                const QString& runId,
                                const BacktestResult& result)
 {
-    QSqlDatabase db = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), uniqueConnectionName);
-    db.setDatabaseName(dbFilePath);
-    if (!db.open()) {
-        qCWarning(lcBacktestController) << "BacktestController: persist thread cannot open DB";
-        return;
-    }
-
-    BacktestStatisticsCalculator calc;
-    const BacktestStatistics     stats = calc.compute(result);
-    const DbBacktestMetrics        m   = toDbBacktestMetrics(runId, result, stats);
     {
-        auto q = query_insertBacktestMetrics(m, uniqueConnectionName);
-        if (!q.exec())
-            qCWarning(lcBacktestController) << "BacktestController: persistMetrics failed:" << q.lastError().text();
-    }
-
-    if (!result.tradeLog.isEmpty()) {
-        db.transaction();
-        for (const auto& fill : result.tradeLog) {
-            DbBacktestTrade t;
-            t.runId     = runId;
-            t.symbol    = fill.symbol;
-            t.side      = fill.quantity > 0 ? QStringLiteral("BUY") : QStringLiteral("SELL");
-            t.quantity  = std::abs(fill.quantity);
-            t.fillPrice = fill.fillPrice;
-            t.timestamp = fill.timestamp.toUTC().toString(Qt::ISODate);
-            auto q = query_insertBacktestTrade(t, uniqueConnectionName);
-            if (!q.exec())
-                qCWarning(lcBacktestController) << "BacktestController: insertTrade failed:" << q.lastError().text();
+        QSqlDatabase db = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), uniqueConnectionName);
+        db.setDatabaseName(dbFilePath);
+        if (!db.open()) {
+            qCWarning(lcBacktestController) << "BacktestController: persist thread cannot open DB";
+            return;
         }
-        db.commit();
-    }
 
-    const auto& curve   = result.equityCurve;
-    const auto& bmCurve = result.benchmark.equityCurve;
-    const int total     = curve.size();
-    const int step      = qMax(1, total / 500);
-
-    if (total > 0) {
-        db.transaction();
-        for (int i = 0; i < total; i += step) {
-            DbBacktestEquityPoint p;
-            p.runId          = runId;
-            p.timestamp      = curve[i].timestamp.toUTC().toString(Qt::ISODate);
-            p.value          = curve[i].portfolioValue;
-            p.benchmarkValue = benchmarkPortfolioValueAtTimestamp(bmCurve, curve[i].timestamp);
-            auto q = query_insertEquityPoint(p, uniqueConnectionName);
+        BacktestStatisticsCalculator calc;
+        const BacktestStatistics     stats = calc.compute(result);
+        const DbBacktestMetrics        m   = toDbBacktestMetrics(runId, result, stats);
+        {
+            auto q = query_insertBacktestMetrics(m, uniqueConnectionName);
             if (!q.exec())
-                qCWarning(lcBacktestController) << "BacktestController: insertEquity failed:" << q.lastError().text();
+                qCWarning(lcBacktestController) << "BacktestController: persistMetrics failed:" << q.lastError().text();
         }
-        db.commit();
-    }
 
-    db.close();
+        if (!result.tradeLog.isEmpty()) {
+            db.transaction();
+            for (const auto& fill : result.tradeLog) {
+                DbBacktestTrade t;
+                t.runId     = runId;
+                t.symbol    = fill.symbol;
+                t.side      = fill.quantity > 0 ? QStringLiteral("BUY") : QStringLiteral("SELL");
+                t.quantity  = std::abs(fill.quantity);
+                t.fillPrice = fill.fillPrice;
+                t.timestamp = fill.timestamp.toUTC().toString(Qt::ISODate);
+                auto q = query_insertBacktestTrade(t, uniqueConnectionName);
+                if (!q.exec())
+                    qCWarning(lcBacktestController) << "BacktestController: insertTrade failed:" << q.lastError().text();
+            }
+            db.commit();
+        }
+
+        const auto& curve   = result.equityCurve;
+        const auto& bmCurve = result.benchmark.equityCurve;
+        const int total     = curve.size();
+        const int step      = qMax(1, total / 500);
+
+        if (total > 0) {
+            db.transaction();
+            for (int i = 0; i < total; i += step) {
+                DbBacktestEquityPoint p;
+                p.runId          = runId;
+                p.timestamp      = curve[i].timestamp.toUTC().toString(Qt::ISODate);
+                p.value          = curve[i].portfolioValue;
+                p.benchmarkValue = benchmarkPortfolioValueAtTimestamp(bmCurve, curve[i].timestamp);
+                auto q = query_insertEquityPoint(p, uniqueConnectionName);
+                if (!q.exec())
+                    qCWarning(lcBacktestController) << "BacktestController: insertEquity failed:" << q.lastError().text();
+            }
+            db.commit();
+        }
+
+        db.close();
+    }
     QSqlDatabase::removeDatabase(uniqueConnectionName);
 }
 

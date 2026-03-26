@@ -131,6 +131,7 @@ SOURCES += \
     Logger/MyLogger.cpp \
     Logging/UiLogCategories.cpp \
     MainSystem/cpresenter.cpp \
+    MainSystem/QtBacktestSessionSwitchPrompt.cpp \
     MainSystem/QtUnsavedChangesPrompt.cpp \
     MainSystem/BacktestWorkspaceCoordinator.cpp \
     MainSystem/StrategyManagementCoordinator.cpp \
@@ -586,6 +587,7 @@ HEADERS += \
     Brokers/BrokerConnectionFactory.h \
     Brokers/PaperBrokerStub.h \
     MainSystem/cpresenter.h \
+    MainSystem/IBacktestSessionSwitchPrompt.h \
     MainSystem/IUnsavedChangesPrompt.h \
     MainSystem/BacktestWorkspaceCoordinator.h \
     MainSystem/StrategyManagementCoordinator.h \

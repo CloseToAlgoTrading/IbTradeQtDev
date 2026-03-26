@@ -1,5 +1,6 @@
 #include "BacktestWorkspaceCoordinator.h"
 #include "NHelper.h"
+#include "IBacktestSessionSwitchPrompt.h"
 #include "ISystemBackend.h"
 #include "ibtradesystemview.h"
 #include "BacktestUI/BacktestWorkspaceDock.h"
@@ -52,27 +53,6 @@ double annualizedReturnFromTotalReturn(double totalReturn, double years)
     return std::pow(1.0 + totalReturn, 1.0 / years) - 1.0;
 }
 
-QString findMatchingVersionNumber(ISystemBackend* backend,
-                                  const QString& catalogStrategyId,
-                                  const QJsonObject& cfg)
-{
-    if (!backend)
-        return {};
-    const QString canon = Backtest::Workspace::canonicalJsonString(cfg);
-    for (const QJsonValue& v : backend->listStrategyVersions(catalogStrategyId)) {
-        const QJsonObject o = v.toObject();
-        const QJsonDocument dj = QJsonDocument::fromJson(
-            o.value(QStringLiteral("configJson")).toString().toUtf8());
-        if (!dj.isObject())
-            continue;
-        if (Backtest::Workspace::canonicalJsonString(dj.object()) == canon) {
-            const int num = o.value(QStringLiteral("versionNumber")).toInt(0);
-            return QString::number(num);
-        }
-    }
-    return {};
-}
-
 /// Older persistence wrote benchmarkValue 0 when strategy and benchmark series lengths differed.
 /// PnL then plots as ~ -initialCapital. Forward-fill from last valid level after load.
 void repairBenchmarkEquityMisstoredZeros(QVector<Backtest::LedgerSnapshot>& bm)
@@ -94,11 +74,127 @@ void repairBenchmarkEquityMisstoredZeros(QVector<Backtest::LedgerSnapshot>& bm)
 
 namespace {
 
+struct VersionLookup {
+    QString versionId;
+    int versionNumber = 0;
+
+    bool isValid() const { return !versionId.isEmpty(); }
+};
+
+VersionLookup findMatchingVersion(ISystemBackend* backend,
+                                  const QString& catalogStrategyId,
+                                  const QJsonObject& cfg)
+{
+    VersionLookup match;
+    if (!backend)
+        return match;
+
+    const QString canon = Backtest::Workspace::canonicalJsonString(cfg);
+    for (const QJsonValue& v : backend->listStrategyVersions(catalogStrategyId)) {
+        const QJsonObject obj = v.toObject();
+        const QJsonDocument dj =
+            QJsonDocument::fromJson(obj.value(QStringLiteral("configJson")).toString().toUtf8());
+        if (!dj.isObject())
+            continue;
+        if (Backtest::Workspace::canonicalJsonString(dj.object()) != canon)
+            continue;
+
+        match.versionId = obj.value(QStringLiteral("versionId")).toString();
+        match.versionNumber = obj.value(QStringLiteral("versionNumber")).toInt(0);
+        return match;
+    }
+
+    return match;
+}
+
+VersionLookup findVersionById(ISystemBackend* backend,
+                              const QString& catalogStrategyId,
+                              const QString& versionId)
+{
+    VersionLookup match;
+    if (!backend || catalogStrategyId.isEmpty() || versionId.isEmpty())
+        return match;
+
+    for (const QJsonValue& v : backend->listStrategyVersions(catalogStrategyId)) {
+        const QJsonObject obj = v.toObject();
+        if (obj.value(QStringLiteral("versionId")).toString() != versionId)
+            continue;
+
+        match.versionId = versionId;
+        match.versionNumber = obj.value(QStringLiteral("versionNumber")).toInt(0);
+        return match;
+    }
+
+    return match;
+}
+
+bool sessionUsesTemporaryStateWarning(const Session& s)
+{
+    return s.dirty && s.key.kind == SessionKind::CatalogVersion;
+}
+
+QString temporaryBacktestStateLossMessage(const Session& s)
+{
+    QString message;
+    if (!s.lastRunId.isEmpty()) {
+        message += QStringLiteral(
+            "The last backtest run is already stored in Run History.\n\n");
+    }
+    message += QStringLiteral(
+        "The current backtest workspace state is temporary. "
+        "If you switch strategies now, this backtest workspace state will be discarded "
+        "unless you explicitly save it as a new version first.");
+    return message;
+}
+
+std::optional<SessionKey> sessionKeyForRun(const Backtest::BacktestLoadedRun& run)
+{
+    if (!run.record.configJson.isEmpty()) {
+        const QJsonDocument configDoc =
+            QJsonDocument::fromJson(run.record.configJson.toUtf8());
+        if (configDoc.isObject()) {
+            const Backtest::BacktestRunConfig config =
+                Backtest::BacktestRunConfig::fromJson(configDoc.object());
+            if (!config.strategyId.isEmpty()) {
+                SessionKey key;
+                key.kind = SessionKind::LiveNode;
+                key.nodeId = config.strategyId;
+                return key;
+            }
+            if (!config.catalogStrategyId.isEmpty() && !config.catalogVersionId.isEmpty()) {
+                SessionKey key;
+                key.kind = SessionKind::CatalogVersion;
+                key.strategyId = config.catalogStrategyId;
+                key.versionId = config.catalogVersionId;
+                return key;
+            }
+        }
+    }
+
+    if (!run.record.catalogStrategyId.isEmpty() && !run.record.catalogVersionId.isEmpty()) {
+        SessionKey key;
+        key.kind = SessionKind::CatalogVersion;
+        key.strategyId = run.record.catalogStrategyId;
+        key.versionId = run.record.catalogVersionId;
+        return key;
+    }
+
+    if (!run.record.strategyId.isEmpty()) {
+        SessionKey key;
+        key.kind = SessionKind::LiveNode;
+        key.nodeId = run.record.strategyId;
+        return key;
+    }
+
+    return std::nullopt;
+}
+
 } // namespace
 
 BacktestWorkspaceCoordinator::BacktestWorkspaceCoordinator(QObject* parent)
     : QObject(parent)
     , m_unsavedPrompt(std::make_unique<QtUnsavedChangesPrompt>())
+    , m_backtestSwitchPrompt(std::make_unique<QtBacktestSessionSwitchPrompt>())
 {
 }
 
@@ -112,6 +208,15 @@ void BacktestWorkspaceCoordinator::setUnsavedChangesPrompt(
         m_unsavedPrompt = std::move(prompt);
     else
         m_unsavedPrompt = std::make_unique<QtUnsavedChangesPrompt>();
+}
+
+void BacktestWorkspaceCoordinator::setBacktestSessionSwitchPrompt(
+    std::unique_ptr<IBacktestSessionSwitchPrompt> prompt)
+{
+    if (prompt)
+        m_backtestSwitchPrompt = std::move(prompt);
+    else
+        m_backtestSwitchPrompt = std::make_unique<QtBacktestSessionSwitchPrompt>();
 }
 
 bool BacktestWorkspaceCoordinator::isBacktestRunning() const
@@ -335,10 +440,13 @@ bool BacktestWorkspaceCoordinator::persistActiveLiveSession()
     return true;
 }
 
-void BacktestWorkspaceCoordinator::saveAsNewVersionForActiveSession()
+BacktestWorkspaceCoordinator::SaveAsNewVersionResult
+BacktestWorkspaceCoordinator::createNewVersionForActiveSession()
 {
+    SaveAsNewVersionResult result;
     if (!m_backend || !m_activeKey || !m_sessions.contains(*m_activeKey))
-        return;
+        return result;
+
     Session& s = m_sessions[*m_activeKey];
     syncActiveSessionFromPanel();
 
@@ -346,31 +454,125 @@ void BacktestWorkspaceCoordinator::saveAsNewVersionForActiveSession()
         ? s.catalogStrategyIdForCatalogPreview
         : s.strategyDefId;
     if (catalogStrategyId.isEmpty()) {
-        QMessageBox::warning(m_view, QStringLiteral("Save as New Version"),
-            QStringLiteral("No catalog strategy id."));
-        return;
+        result.outcome = SaveAsNewVersionResult::Outcome::MissingCatalogStrategyId;
+        return result;
     }
 
-    const QString matchVer = findMatchingVersionNumber(
-        m_backend, catalogStrategyId, s.workingPipeline);
-    if (!matchVer.isEmpty()) {
-        QMessageBox::information(m_view, QStringLiteral("Save as New Version"),
-            QStringLiteral("This configuration already exists as version %1").arg(matchVer));
-        return;
+    const VersionLookup match =
+        findMatchingVersion(m_backend, catalogStrategyId, s.workingPipeline);
+    if (match.isValid()) {
+        result.outcome = SaveAsNewVersionResult::Outcome::AlreadyExists;
+        result.version.versionId = match.versionId;
+        result.version.versionNumber = match.versionNumber;
+        return result;
     }
 
     const QString newVerId = m_backend->createStrategyVersion(
         catalogStrategyId,
         s.workingPipeline,
-        QStringLiteral("Saved from backtest workspace"));
-    if (newVerId.isEmpty()) {
+        QStringLiteral("Saved from backtest workspace"),
+        s.catalogVersionId);
+    if (newVerId.isEmpty())
+        return result;
+
+    const VersionLookup created = findVersionById(m_backend, catalogStrategyId, newVerId);
+    result.outcome = SaveAsNewVersionResult::Outcome::Created;
+    result.version.versionId = newVerId;
+    result.version.versionNumber = created.versionNumber;
+    emit catalogRefreshNeeded();
+    return result;
+}
+
+void BacktestWorkspaceCoordinator::rebaseSessionToSavedVersion(
+    const CatalogVersionInfo& versionInfo)
+{
+    if (!m_activeKey || !m_sessions.contains(*m_activeKey) || versionInfo.versionId.isEmpty())
+        return;
+
+    const SessionKey oldKey = *m_activeKey;
+    Session session = m_sessions.take(oldKey);
+    session.catalogVersionId = versionInfo.versionId;
+    if (versionInfo.versionNumber > 0)
+        session.strategyVersion = versionInfo.versionNumber;
+    session.baselinePipeline = session.workingPipeline;
+    session.baselineRunFields = session.workingRunFields;
+    recomputeSessionDirty(session);
+
+    SessionKey newKey = oldKey;
+    if (newKey.kind == SessionKind::CatalogVersion) {
+        newKey.versionId = versionInfo.versionId;
+        session.key = newKey;
+        const QString catalogStrategyId = session.strategyDefId.isEmpty()
+            ? session.catalogStrategyIdForCatalogPreview
+            : session.strategyDefId;
+        if (m_backend && !catalogStrategyId.isEmpty()) {
+            const QString strategyName = m_backend->strategyCatalogEntry(catalogStrategyId)
+                .value(QStringLiteral("name"))
+                .toString();
+            if (!strategyName.isEmpty()) {
+                session.displayName =
+                    strategyName + QStringLiteral(" v") + QString::number(session.strategyVersion);
+            }
+        }
+    }
+
+    if (m_sessions.contains(newKey))
+        m_sessions.remove(newKey);
+    m_sessions.insert(newKey, session);
+    m_activeKey = newKey;
+
+    if (m_dock) {
+        m_dock->applyWorkspaceSession(m_sessions[newKey], false);
+        m_dock->setSessionDirtyState(m_sessions[newKey].dirty);
+    }
+}
+
+void BacktestWorkspaceCoordinator::updateSessionFromLoadedOrFinishedRun(
+    const SessionKey& key,
+    const Backtest::BacktestLoadedRun& run)
+{
+    if (!m_sessions.contains(key) || run.record.runId.isEmpty())
+        return;
+
+    Session& s = m_sessions[key];
+    s.lastRunId = run.record.runId;
+    s.resultsStale = false;
+}
+
+void BacktestWorkspaceCoordinator::saveAsNewVersionForActiveSession()
+{
+    const SaveAsNewVersionResult result = saveActiveSessionAsNewVersion();
+
+    if (result.outcome == SaveAsNewVersionResult::Outcome::MissingCatalogStrategyId) {
+        QMessageBox::warning(m_view, QStringLiteral("Save as New Version"),
+            QStringLiteral("No catalog strategy id."));
+        return;
+    }
+    if (result.outcome == SaveAsNewVersionResult::Outcome::AlreadyExists) {
+        QMessageBox::information(m_view, QStringLiteral("Save as New Version"),
+            QStringLiteral("This configuration already exists as version %1")
+                .arg(result.version.versionNumber));
+        return;
+    }
+    if (result.outcome == SaveAsNewVersionResult::Outcome::Failed) {
         QMessageBox::warning(m_view, QStringLiteral("Save as New Version"),
             QStringLiteral("Failed to create version."));
         return;
     }
+
     QMessageBox::information(m_view, QStringLiteral("Save as New Version"),
         QStringLiteral("New version created successfully."));
-    emit catalogRefreshNeeded();
+}
+
+BacktestWorkspaceCoordinator::SaveAsNewVersionResult
+BacktestWorkspaceCoordinator::saveActiveSessionAsNewVersion()
+{
+    const SaveAsNewVersionResult result = createNewVersionForActiveSession();
+    if (result.outcome == SaveAsNewVersionResult::Outcome::Created
+        || result.outcome == SaveAsNewVersionResult::Outcome::AlreadyExists) {
+        rebaseSessionToSavedVersion(result.version);
+    }
+    return result;
 }
 
 Session BacktestWorkspaceCoordinator::makeLiveSession(const SessionKey& key,
@@ -406,6 +608,20 @@ bool BacktestWorkspaceCoordinator::tryResolveSessionSwitch(const SessionKey& nex
     if (!cur.dirty)
         return true;
 
+    if (sessionUsesTemporaryStateWarning(cur)) {
+        const BacktestSessionSwitchChoice choice =
+            m_backtestSwitchPrompt->askContinueCancel(
+                m_view,
+                QStringLiteral("Temporary backtest state"),
+                temporaryBacktestStateLossMessage(cur));
+        if (choice == BacktestSessionSwitchChoice::CancelSwitch)
+            return false;
+
+        m_sessions.remove(*m_activeKey);
+        m_activeKey.reset();
+        return true;
+    }
+
     const UnsavedPromptChoice choice = m_unsavedPrompt->askSaveDiscardCancel(
         m_view,
         QStringLiteral("Unsaved changes"),
@@ -417,8 +633,9 @@ bool BacktestWorkspaceCoordinator::tryResolveSessionSwitch(const SessionKey& nex
     if (choice == UnsavedPromptChoice::Save) {
         if (cur.key.kind == SessionKind::CatalogVersion) {
             QMessageBox::information(m_view, QStringLiteral("Unsaved changes"),
-                QStringLiteral("Catalog preview cannot be saved to the live tree. "
-                               "Use \"Save as New Version\" or discard."));
+                QStringLiteral("Catalog preview changes are temporary in backtest. "
+                               "Use the explicit \"Save as New Version\" button if you want "
+                               "to keep them, or discard them."));
             return false;
         }
         if (!persistActiveLiveSession())
@@ -643,9 +860,17 @@ void BacktestWorkspaceCoordinator::refreshActiveRunHistory()
 {
     if (!m_dock || !m_activeKey || !m_sessions.contains(*m_activeKey))
         return;
-    Session& s = m_sessions[*m_activeKey];
-    if (m_activeKey->kind == SessionKind::LiveNode)
-        populateRunHistory(m_activeKey->nodeId, s.strategyDefId);
+    refreshRunHistoryForSession(*m_activeKey);
+}
+
+void BacktestWorkspaceCoordinator::refreshRunHistoryForSession(const SessionKey& key)
+{
+    if (!m_dock || !m_sessions.contains(key))
+        return;
+
+    const Session& s = m_sessions[key];
+    if (key.kind == SessionKind::LiveNode)
+        populateRunHistory(key.nodeId, s.strategyDefId);
     else
         populateRunHistory(QString(), s.strategyDefId);
 }
@@ -808,9 +1033,7 @@ void BacktestWorkspaceCoordinator::onLoadRun(const QString& runId)
 
     m_dock->applyLoadedRunConfiguration(loaded);
     if (m_activeKey && m_sessions.contains(*m_activeKey) && !loaded.record.runId.isEmpty()) {
-        Session& s = m_sessions[*m_activeKey];
-        s.lastRunId = loaded.record.runId;
-        s.resultsStale = false;
+        updateSessionFromLoadedOrFinishedRun(*m_activeKey, loaded);
         m_dock->setResultsStale(false);
     }
     m_dock->displayResult(loaded, QStringLiteral("Ready"));
@@ -859,83 +1082,25 @@ void BacktestWorkspaceCoordinator::onDeleteRunRequested(const QString& runId)
 
 void BacktestWorkspaceCoordinator::onBacktestFinished(const Backtest::BacktestLoadedRun& run)
 {
-    if (!m_dock) return;
+    if (!m_dock)
+        return;
+
     m_dock->setRunning(false);
+
+    const std::optional<SessionKey> finishedKey = sessionKeyForRun(run);
+    if (finishedKey && m_sessions.contains(*finishedKey))
+        updateSessionFromLoadedOrFinishedRun(*finishedKey, run);
+
+    const bool affectsActive = finishedKey
+        && m_activeKey
+        && *finishedKey == *m_activeKey
+        && m_sessions.contains(*finishedKey);
+    if (!affectsActive)
+        return;
+
     m_dock->displayResult(run);
-
-    if (m_activeKey && m_sessions.contains(*m_activeKey)) {
-        Session& s = m_sessions[*m_activeKey];
-        s.lastRunId = run.record.runId;
-        s.resultsStale = false;
-        m_dock->setResultsStale(false);
-    }
-
-    ensureController();
-    const QString conn = m_controller ? m_controller->dbConnectionName()
-                                       : QString();
-    auto q = query_fetchRunsForStrategy(run.record.strategyId, conn);
-    if (q.exec()) {
-        QList<DbBacktestRunSummary> summaries;
-        while (q.next()) {
-            DbBacktestRunSummary s;
-            s.runId        = q.value(QStringLiteral("runId")).toString();
-            s.strategyId   = q.value(QStringLiteral("strategyId")).toString();
-            s.symbols      = q.value(QStringLiteral("symbols")).toString();
-            s.startDate    = q.value(QStringLiteral("startDate")).toString();
-            s.endDate      = q.value(QStringLiteral("endDate")).toString();
-            s.status       = q.value(QStringLiteral("status")).toString();
-            s.dataSourceId = q.value(QStringLiteral("dataSourceId")).toString();
-            s.createdAt    = q.value(QStringLiteral("createdAt")).toString();
-            s.totalReturn  = q.value(QStringLiteral("totalReturn")).toDouble();
-            s.sharpeRatio  = q.value(QStringLiteral("sharpeRatio")).toDouble();
-            summaries.append(s);
-        }
-        m_dock->setRunHistory(summaries);
-    }
-
-    if (m_backend && m_view
-        && !run.record.catalogStrategyId.isEmpty()
-        && !run.record.catalogVersionId.isEmpty())
-    {
-        QJsonObject fullRunConfig = QJsonDocument::fromJson(run.record.configJson.toUtf8()).object();
-        QString runPipelineJson = fullRunConfig.value(QStringLiteral("pipelineConfigJson")).toString();
-        QJsonDocument runPipelineDoc = QJsonDocument::fromJson(runPipelineJson.toUtf8());
-        if (!runPipelineDoc.isObject() || runPipelineDoc.object().isEmpty())
-            return;
-
-        const QJsonObject pipelineConfig = runPipelineDoc.object();
-
-        auto answer = QMessageBox::question(
-            m_view,
-            QStringLiteral("Save backtest pipeline?"),
-            QStringLiteral(
-                "The backtest run is stored in the database.\n\n"
-                "Save the run's pipeline configuration as a new catalog version?"),
-            QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
-
-        if (answer != QMessageBox::Yes)
-            return;
-
-        const QString matchVer = findMatchingVersionNumber(
-            m_backend, run.record.catalogStrategyId, pipelineConfig);
-        if (!matchVer.isEmpty()) {
-            QMessageBox::information(
-                m_view,
-                QStringLiteral("Save as New Version"),
-                QStringLiteral("This configuration already exists as version %1.").arg(matchVer));
-            return;
-        }
-
-        const QString newVerId = m_backend->createStrategyVersion(
-            run.record.catalogStrategyId, pipelineConfig,
-            QStringLiteral("Saved from backtest run ") + run.record.runId);
-        if (!newVerId.isEmpty()) {
-            QMessageBox::information(m_view,
-                QStringLiteral("Version Created"),
-                QStringLiteral("New version created successfully."));
-            emit catalogRefreshNeeded();
-        }
-    }
+    m_dock->setResultsStale(false);
+    refreshRunHistoryForSession(*finishedKey);
 }
 
 void BacktestWorkspaceCoordinator::onBacktestFailed(const QString& reason)

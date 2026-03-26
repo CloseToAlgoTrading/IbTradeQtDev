@@ -230,7 +230,8 @@ void BacktestWorkspaceDock::setResultsStale(bool stale)
     m_staleLabel->setVisible(stale);
     if (stale) {
         m_staleLabel->setText(QStringLiteral(
-            "<i>Results shown are from the last run and may be outdated.</i>"));
+            "<i>Results shown are from the last stored run and do not reflect the current "
+            "temporary workspace changes yet.</i>"));
     }
 }
 

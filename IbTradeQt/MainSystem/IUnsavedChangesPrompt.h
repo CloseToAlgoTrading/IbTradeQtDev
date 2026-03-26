@@ -22,8 +22,8 @@ public:
 class QtUnsavedChangesPrompt final : public IUnsavedChangesPrompt {
 public:
     UnsavedPromptChoice askSaveDiscardCancel(QWidget* parent,
-                                             const QString& title,
-                                             const QString& message) override;
+                                            const QString& title,
+                                            const QString& message) override;
 };
 
 #endif // IUNSAVEDCHANGESPROMPT_H

@@ -42,6 +42,7 @@ INCLUDEPATH += \
     $$PWD/../DB \
     $$PWD/../IBComm \
     $$PWD/../CObjects \
+    $$PWD/../GeneratedIncludes \
     $$PWD/../SharedUI \
     $$PWD/../StrategyManagementUI \
     $$PWD/../MainSystem \
@@ -66,6 +67,7 @@ win32 {
 
 SOURCES += \
     main.cpp \
+    ui/tst_backtest_workspace_coordinator_stubs.cpp \
     data_management/tst_data_management.cpp \
     ../DataManagement/BacktestMarketDataRepository.cpp \
     ../DataManagement/DataSourceIdNormalizer.cpp \
@@ -174,9 +176,13 @@ SOURCES += \
     ../Backtest/YahooUniverseValidator.cpp \
     ../Backtest/BacktestPreFlightCoordinator.cpp \
     ../Backtest/BacktestController.cpp \
+    ../BacktestUI/BacktestRunConfigPanel.cpp \
     ../SharedUI/StrategyTreeDelegate.cpp \
     ../MainSystem/ciconhandler.cpp \
     ../MainSystem/UiLayoutDefaultsCatalog.cpp \
+    ../MainSystem/BacktestWorkspaceCoordinator.cpp \
+    ../MainSystem/QtBacktestSessionSwitchPrompt.cpp \
+    ../MainSystem/QtUnsavedChangesPrompt.cpp \
     ../SharedUI/AbstractPipelineTreeModel.cpp \
     ../SharedUI/StrategyTreePanel.cpp \
     ../SharedUI/WorkspacePresenterBase.cpp \
@@ -342,6 +348,9 @@ HEADERS += \
     ../Backtest/BacktestMarketDataAccessor.h \
     ../Backtest/BacktestHistoricalReadAdapter.h \
     ../Backtest/BacktestController.h \
+    ../BacktestUI/BacktestWorkspaceDock.h \
+    ../BacktestUI/BacktestRunConfigPanel.h \
+    ../BacktestUI/BacktestStrategySelector.h \
     ../Backtest/BacktestPreFlightCoordinator.h \
     ../Backtest/MarketSessionUtils.h \
     ../Backtest/InstrumentClassification.h \
@@ -392,6 +401,9 @@ HEADERS += \
     integration/tst_semantic_e2e.h \
     parity/tst_pipeline_parity.h \
     ../Backend/ISystemBackend.h \
+    ../MainSystem/BacktestWorkspaceCoordinator.h \
+    ../MainSystem/IBacktestSessionSwitchPrompt.h \
+    ../MainSystem/IUnsavedChangesPrompt.h \
     ../Backend/SystemBackendImpl.h \
     ../Backend/ModelNodeRecord.h \
     ../Backend/IModelTreeRepository.h \
@@ -418,6 +430,7 @@ HEADERS += \
     ../Strategies/Generic/modelConstants.h \
     ../Strategies/StateMachine/cmodelstate.h \
     ../Strategies/StateMachine/cmodelstateimpl.h \
+    ui/tst_backtest_workspace_coordinator.h \
     ../Strategies/StateMachine/ModelStateUtils.h \
     ../Common/cprocessingbase_v2.h \
     ../DB/dbhandler.h \

@@ -39,6 +39,7 @@
 #include <QJsonDocument>
 #include <QList>
 #include <QMap>
+#include <QMetaType>
 #include "Backtest/BacktestResult.h"
 #include "DB/dbdatatypes.h"
 
@@ -235,5 +236,7 @@ struct BacktestLoadedRun {
 };
 
 } // namespace Backtest
+
+Q_DECLARE_METATYPE(Backtest::BacktestLoadedRun)
 
 #endif // BACKTEST_BACKTESTDATATYPES_H

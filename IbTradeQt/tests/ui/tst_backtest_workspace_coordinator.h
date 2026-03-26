@@ -1,0 +1,729 @@
+#ifndef TST_BACKTEST_WORKSPACE_COORDINATOR_H
+#define TST_BACKTEST_WORKSPACE_COORDINATOR_H
+
+#include <QtTest>
+#include <QFile>
+#include <QJsonDocument>
+#include <QLoggingCategory>
+#include <QSignalSpy>
+#include <QTemporaryDir>
+#include <QUuid>
+
+#include "Common/NHelper.h"
+#include "Common/StorageConfig.h"
+#include "Backend/ModelTreeRepository.h"
+#include "Backend/SystemBackendImpl.h"
+#include "MainSystem/BacktestWorkspaceCoordinator.h"
+#include "MainSystem/ibtradesystemview.h"
+#include "BacktestUI/BacktestWorkspaceDock.h"
+#include "BacktestUI/BacktestRunConfigPanel.h"
+#include "BacktestUI/BacktestStrategySelector.h"
+#include "BacktestUI/PreparePreflightDialog.h"
+#include "BacktestUI/YahooSymbolCheckDialog.h"
+
+namespace BacktestWorkspaceCoordinatorTestProbe {
+void reset();
+int displayedResultCount();
+int runHistorySetCount();
+QString lastDisplayedRunId();
+int resultsStaleSetCount();
+bool lastResultsStale();
+}
+
+class TestUnsavedPrompt final : public IUnsavedChangesPrompt
+{
+public:
+    UnsavedPromptChoice nextChoice = UnsavedPromptChoice::Cancel;
+    int promptCount = 0;
+
+    UnsavedPromptChoice askSaveDiscardCancel(QWidget*,
+                                             const QString&,
+                                             const QString&) override
+    {
+        ++promptCount;
+        return nextChoice;
+    }
+};
+
+class TestBacktestSessionSwitchPrompt final : public IBacktestSessionSwitchPrompt
+{
+public:
+    BacktestSessionSwitchChoice nextChoice = BacktestSessionSwitchChoice::CancelSwitch;
+    int promptCount = 0;
+    QString lastMessage;
+
+    BacktestSessionSwitchChoice askContinueCancel(QWidget*,
+                                                  const QString&,
+                                                  const QString& message) override
+    {
+        ++promptCount;
+        lastMessage = message;
+        return nextChoice;
+    }
+};
+
+class TestBacktestWorkspaceCoordinator : public QObject
+{
+    Q_OBJECT
+
+private:
+    struct StrategyHandle {
+        QString nodeId;
+        QString name;
+        QString strategyDefId;
+        QString versionId;
+        int versionNumber = 0;
+    };
+
+    struct VersionInfo {
+        QString versionId;
+        int versionNumber = 0;
+    };
+
+    std::unique_ptr<QTemporaryDir> m_settingsDir;
+    QByteArray m_savedSettingsFileEnv;
+    bool m_hadSettingsFileEnv = false;
+
+    QString m_backendDbPath;
+    QString m_backtestDbPath;
+    QString m_appDataDbPath;
+    QString m_settingsFilePath;
+    QString m_portfolioId;
+
+    std::unique_ptr<ModelTreeRepository> m_repo;
+    std::unique_ptr<SystemBackendImpl> m_backend;
+
+    void setupStorageConfig()
+    {
+        m_settingsDir = std::make_unique<QTemporaryDir>();
+        QVERIFY(m_settingsDir && m_settingsDir->isValid());
+
+        m_hadSettingsFileEnv = qEnvironmentVariableIsSet("IBTRADE_SETTINGS_FILE");
+        m_savedSettingsFileEnv = qgetenv("IBTRADE_SETTINGS_FILE");
+        m_settingsFilePath = m_settingsDir->filePath(QStringLiteral("ibtrade.ini"));
+        qputenv("IBTRADE_SETTINGS_FILE", m_settingsFilePath.toUtf8());
+
+        NHelper::initSettings();
+        StorageConfig cfg = NHelper::getStorageConfig();
+        m_backtestDbPath = m_settingsDir->filePath(QStringLiteral("bt_store.sqlite"));
+        m_appDataDbPath = m_settingsDir->filePath(QStringLiteral("app_data.sqlite"));
+        cfg.backtestStore.path = m_backtestDbPath;
+        cfg.appDataStore.path = m_appDataDbPath;
+        NHelper::saveStorageConfig(cfg);
+    }
+
+    void setupBackend()
+    {
+        m_backendDbPath = m_settingsDir->filePath(
+            QStringLiteral("backend_%1.sqlite")
+                .arg(QUuid::createUuid().toString(QUuid::WithoutBraces)));
+        m_repo = std::make_unique<ModelTreeRepository>(
+            m_backendDbPath,
+            QStringLiteral("bt_coord_conn_")
+                + QUuid::createUuid().toString(QUuid::WithoutBraces));
+        QVERIFY(m_repo->initialize());
+        m_backend = std::make_unique<SystemBackendImpl>(m_repo.get());
+
+        const QString accountId = m_backend->createAccount(QStringLiteral("Test Account"));
+        QVERIFY(!accountId.isEmpty());
+        m_portfolioId = m_backend->createPortfolio(accountId, QStringLiteral("Test Portfolio"));
+        QVERIFY(!m_portfolioId.isEmpty());
+    }
+
+    StrategyHandle createStrategy(const QString& name, const QString& mergePolicy)
+    {
+        StrategyHandle handle;
+        handle.nodeId = m_backend->createStrategy(m_portfolioId, ModelType::STRATEGY_PIPELINE);
+        if (handle.nodeId.isEmpty()) {
+            QTest::qFail("Failed to create test strategy node", __FILE__, __LINE__);
+            return {};
+        }
+        if (!m_backend->renameNode(handle.nodeId, name)) {
+            QTest::qFail("Failed to rename test strategy node", __FILE__, __LINE__);
+            return {};
+        }
+        handle.name = name;
+
+        QJsonObject config = m_backend->pipelineConfig(handle.nodeId);
+        config.insert(QStringLiteral("mergePolicy"), mergePolicy);
+        config.insert(QStringLiteral("alphas"), QJsonArray());
+        if (!m_backend->updatePipelineConfig(handle.nodeId, config)) {
+            QTest::qFail("Failed to update test pipeline config", __FILE__, __LINE__);
+            return {};
+        }
+
+        const QJsonObject defJson = m_backend->strategyDefinitionForNode(handle.nodeId);
+        if (defJson.isEmpty()) {
+            QTest::qFail("Missing strategy definition for test node", __FILE__, __LINE__);
+            return {};
+        }
+        handle.strategyDefId = defJson.value(QStringLiteral("strategyDefId")).toString();
+        handle.versionId = defJson.value(QStringLiteral("versionId")).toString();
+        handle.versionNumber = defJson.value(QStringLiteral("version")).toInt(1);
+        if (handle.strategyDefId.isEmpty() || handle.versionId.isEmpty()) {
+            QTest::qFail("Incomplete strategy definition binding for test node", __FILE__, __LINE__);
+            return {};
+        }
+        return handle;
+    }
+
+    Backtest::BacktestLoadedRun makeLiveFinishedRun(const StrategyHandle& handle,
+                                                    const QString& runId) const
+    {
+        Backtest::BacktestLoadedRun run;
+        Backtest::BacktestRunConfig config;
+        config.strategyId = handle.nodeId;
+        config.strategyDisplayName = handle.name;
+        config.pipelineConfigJson = QString::fromUtf8(
+            QJsonDocument(m_backend->pipelineConfig(handle.nodeId))
+                .toJson(QJsonDocument::Compact));
+        config.strategyDefId = handle.strategyDefId;
+        config.strategyVersion = handle.versionNumber;
+        config.catalogStrategyId = handle.strategyDefId;
+        config.catalogVersionId = handle.versionId;
+
+        run.record.runId = runId;
+        run.record.strategyId = handle.nodeId;
+        run.record.strategyDisplayName = handle.name;
+        run.record.status = QStringLiteral("Finished");
+        run.record.strategyDefId = handle.strategyDefId;
+        run.record.strategyVersion = handle.versionNumber;
+        run.record.catalogStrategyId = handle.strategyDefId;
+        run.record.catalogVersionId = handle.versionId;
+        run.record.configJson = QString::fromUtf8(
+            QJsonDocument(config.toJson()).toJson(QJsonDocument::Compact));
+        return run;
+    }
+
+    Backtest::BacktestLoadedRun makeCatalogFinishedRun(const StrategyHandle& handle,
+                                                       const QString& runId) const
+    {
+        Backtest::BacktestLoadedRun run = makeLiveFinishedRun(handle, runId);
+        Backtest::BacktestRunConfig config = Backtest::BacktestRunConfig::fromJson(
+            QJsonDocument::fromJson(run.record.configJson.toUtf8()).object());
+        config.strategyId.clear();
+        run.record.strategyId = handle.strategyDefId;
+        run.record.configJson = QString::fromUtf8(
+            QJsonDocument(config.toJson()).toJson(QJsonDocument::Compact));
+        return run;
+    }
+
+    void openStrategy(BacktestWorkspaceCoordinator& coordinator, const StrategyHandle& handle)
+    {
+        coordinator.openStrategy(handle.nodeId,
+                                 handle.name,
+                                 QStringLiteral("/Test/%1").arg(handle.name),
+                                 m_backend->pipelineConfig(handle.nodeId));
+    }
+
+    static bool invokePipelineEdited(BacktestWorkspaceCoordinator& coordinator,
+                                     const QJsonObject& pipeline)
+    {
+        return QMetaObject::invokeMethod(
+            &coordinator,
+            "onUserPipelineEdited",
+            Qt::DirectConnection,
+            Q_ARG(QJsonObject, pipeline));
+    }
+
+    static bool invokeBacktestFinished(BacktestWorkspaceCoordinator& coordinator,
+                                       const Backtest::BacktestLoadedRun& run)
+    {
+        return QMetaObject::invokeMethod(
+            &coordinator,
+            "onBacktestFinished",
+            Qt::DirectConnection,
+            Q_ARG(Backtest::BacktestLoadedRun, run));
+    }
+
+    static bool invokeResetToBaseline(BacktestWorkspaceCoordinator& coordinator)
+    {
+        return QMetaObject::invokeMethod(
+            &coordinator,
+            "onResetToBaselineRequested",
+            Qt::DirectConnection);
+    }
+
+    VersionInfo latestVersion(const QString& strategyDefId) const
+    {
+        const QJsonArray versions = m_backend->listStrategyVersions(strategyDefId);
+        if (versions.isEmpty())
+            return {};
+        const QJsonObject latest = versions.last().toObject();
+        VersionInfo info;
+        info.versionId = latest.value(QStringLiteral("versionId")).toString();
+        info.versionNumber = latest.value(QStringLiteral("versionNumber")).toInt(0);
+        return info;
+    }
+
+    static QJsonObject currentMergedPipeline(BacktestUI::BacktestWorkspaceDock& dock)
+    {
+        return QJsonDocument::fromJson(
+            dock.runConfigPanel()->mergedPipelineConfigJson().toUtf8()).object();
+    }
+
+private slots:
+    void initTestCase()
+    {
+        qRegisterMetaType<Backtest::BacktestLoadedRun>("Backtest::BacktestLoadedRun");
+        QLoggingCategory::setFilterRules(
+            QStringLiteral("db.handler.debug=false\nqt.sql.qsqlquery.warning=false"));
+    }
+
+    void init()
+    {
+        BacktestWorkspaceCoordinatorTestProbe::reset();
+        setupStorageConfig();
+        setupBackend();
+    }
+
+    void cleanup()
+    {
+        m_backend.reset();
+        m_repo.reset();
+
+        QFile::remove(m_backendDbPath);
+        QFile::remove(m_backtestDbPath);
+        QFile::remove(m_backtestDbPath + QStringLiteral("-wal"));
+        QFile::remove(m_backtestDbPath + QStringLiteral("-shm"));
+        QFile::remove(m_appDataDbPath);
+        QFile::remove(m_appDataDbPath + QStringLiteral("-wal"));
+        QFile::remove(m_appDataDbPath + QStringLiteral("-shm"));
+        QFile::remove(m_settingsFilePath);
+
+        if (m_hadSettingsFileEnv)
+            qputenv("IBTRADE_SETTINGS_FILE", m_savedSettingsFileEnv);
+        else
+            qunsetenv("IBTRADE_SETTINGS_FILE");
+        m_settingsDir.reset();
+        BacktestWorkspaceCoordinatorTestProbe::reset();
+    }
+
+    void testBacktestFinishedDoesNotAutoCreateVersion()
+    {
+        const StrategyHandle strategy =
+            createStrategy(QStringLiteral("Alpha"), QStringLiteral("sum"));
+
+        BacktestWorkspaceCoordinator coordinator;
+        coordinator.setBackend(m_backend.get());
+        BacktestUI::BacktestWorkspaceDock dock;
+        coordinator.setDock(&dock);
+
+        openStrategy(coordinator, strategy);
+
+        const int versionCountBefore =
+            m_backend->listStrategyVersions(strategy.strategyDefId).size();
+        QVERIFY(invokeBacktestFinished(
+            coordinator, makeLiveFinishedRun(strategy, QStringLiteral("run-auto"))));
+        const int versionCountAfter =
+            m_backend->listStrategyVersions(strategy.strategyDefId).size();
+
+        QCOMPARE(versionCountAfter, versionCountBefore);
+    }
+
+    void testLiveNodeDirtyAfterRunStillAllowsSaveOnSwitch()
+    {
+        const StrategyHandle strategyA =
+            createStrategy(QStringLiteral("Alpha"), QStringLiteral("sum"));
+        const StrategyHandle strategyB =
+            createStrategy(QStringLiteral("Beta"), QStringLiteral("max"));
+
+        auto unsavedPrompt = std::make_unique<TestUnsavedPrompt>();
+        TestUnsavedPrompt* unsavedPtr = unsavedPrompt.get();
+        unsavedPtr->nextChoice = UnsavedPromptChoice::Save;
+
+        auto switchPrompt = std::make_unique<TestBacktestSessionSwitchPrompt>();
+        TestBacktestSessionSwitchPrompt* switchPtr = switchPrompt.get();
+
+        BacktestWorkspaceCoordinator coordinator;
+        coordinator.setBackend(m_backend.get());
+        BacktestUI::BacktestWorkspaceDock dock;
+        coordinator.setDock(&dock);
+        coordinator.setUnsavedChangesPrompt(std::move(unsavedPrompt));
+        coordinator.setBacktestSessionSwitchPrompt(std::move(switchPrompt));
+
+        openStrategy(coordinator, strategyA);
+        QVERIFY(invokeBacktestFinished(
+            coordinator, makeLiveFinishedRun(strategyA, QStringLiteral("run-save"))));
+
+        QJsonObject edited = m_backend->pipelineConfig(strategyA.nodeId);
+        edited.insert(QStringLiteral("mergePolicy"), QStringLiteral("edited-live-save"));
+        QVERIFY(invokePipelineEdited(coordinator, edited));
+
+        openStrategy(coordinator, strategyB);
+
+        QCOMPARE(unsavedPtr->promptCount, 1);
+        QCOMPARE(switchPtr->promptCount, 0);
+        QCOMPARE(
+            m_backend->pipelineConfig(strategyA.nodeId).value(QStringLiteral("mergePolicy")).toString(),
+            QStringLiteral("edited-live-save"));
+        QCOMPARE(dock.runConfigPanel()->currentConfig().strategyId, strategyB.nodeId);
+    }
+
+    void testLiveNodeDirtyAfterRunDiscardStillSwitchesWithoutSaving()
+    {
+        const StrategyHandle strategyA =
+            createStrategy(QStringLiteral("Alpha"), QStringLiteral("sum"));
+        const StrategyHandle strategyB =
+            createStrategy(QStringLiteral("Beta"), QStringLiteral("max"));
+
+        auto unsavedPrompt = std::make_unique<TestUnsavedPrompt>();
+        TestUnsavedPrompt* unsavedPtr = unsavedPrompt.get();
+        unsavedPtr->nextChoice = UnsavedPromptChoice::Discard;
+
+        auto switchPrompt = std::make_unique<TestBacktestSessionSwitchPrompt>();
+        TestBacktestSessionSwitchPrompt* switchPtr = switchPrompt.get();
+
+        BacktestWorkspaceCoordinator coordinator;
+        coordinator.setBackend(m_backend.get());
+        BacktestUI::BacktestWorkspaceDock dock;
+        coordinator.setDock(&dock);
+        coordinator.setUnsavedChangesPrompt(std::move(unsavedPrompt));
+        coordinator.setBacktestSessionSwitchPrompt(std::move(switchPrompt));
+
+        openStrategy(coordinator, strategyA);
+        QVERIFY(invokeBacktestFinished(
+            coordinator, makeLiveFinishedRun(strategyA, QStringLiteral("run-discard"))));
+
+        QJsonObject edited = m_backend->pipelineConfig(strategyA.nodeId);
+        edited.insert(QStringLiteral("mergePolicy"), QStringLiteral("discarded-live-edit"));
+        QVERIFY(invokePipelineEdited(coordinator, edited));
+
+        openStrategy(coordinator, strategyB);
+
+        QCOMPARE(unsavedPtr->promptCount, 1);
+        QCOMPARE(switchPtr->promptCount, 0);
+        QCOMPARE(
+            m_backend->pipelineConfig(strategyA.nodeId).value(QStringLiteral("mergePolicy")).toString(),
+            QStringLiteral("sum"));
+        QCOMPARE(dock.runConfigPanel()->currentConfig().strategyId, strategyB.nodeId);
+    }
+
+    void testCatalogPreviewBeforeRunUsesTemporaryWarning()
+    {
+        const StrategyHandle strategyA =
+            createStrategy(QStringLiteral("Alpha"), QStringLiteral("sum"));
+        const StrategyHandle strategyB =
+            createStrategy(QStringLiteral("Beta"), QStringLiteral("max"));
+
+        auto unsavedPrompt = std::make_unique<TestUnsavedPrompt>();
+        TestUnsavedPrompt* unsavedPtr = unsavedPrompt.get();
+        auto switchPrompt = std::make_unique<TestBacktestSessionSwitchPrompt>();
+        TestBacktestSessionSwitchPrompt* switchPtr = switchPrompt.get();
+        switchPtr->nextChoice = BacktestSessionSwitchChoice::ContinueSwitch;
+
+        BacktestWorkspaceCoordinator coordinator;
+        coordinator.setBackend(m_backend.get());
+        BacktestUI::BacktestWorkspaceDock dock;
+        coordinator.setDock(&dock);
+        coordinator.setUnsavedChangesPrompt(std::move(unsavedPrompt));
+        coordinator.setBacktestSessionSwitchPrompt(std::move(switchPrompt));
+
+        coordinator.openCatalogVersion(strategyA.strategyDefId, strategyA.versionId);
+
+        QJsonObject edited = m_backend->pipelineConfig(strategyA.nodeId);
+        edited.insert(QStringLiteral("mergePolicy"), QStringLiteral("catalog-before-run"));
+        QVERIFY(invokePipelineEdited(coordinator, edited));
+
+        openStrategy(coordinator, strategyB);
+
+        QCOMPARE(switchPtr->promptCount, 1);
+        QCOMPARE(unsavedPtr->promptCount, 0);
+        QVERIFY(!switchPtr->lastMessage.isEmpty());
+        QCOMPARE(dock.runConfigPanel()->currentConfig().strategyId, strategyB.nodeId);
+    }
+
+    void testCatalogPreviewAfterRunContinueDiscardsTemporaryState()
+    {
+        const StrategyHandle strategyA =
+            createStrategy(QStringLiteral("Alpha"), QStringLiteral("sum"));
+        const StrategyHandle strategyB =
+            createStrategy(QStringLiteral("Beta"), QStringLiteral("max"));
+
+        auto unsavedPrompt = std::make_unique<TestUnsavedPrompt>();
+        TestUnsavedPrompt* unsavedPtr = unsavedPrompt.get();
+        auto switchPrompt = std::make_unique<TestBacktestSessionSwitchPrompt>();
+        TestBacktestSessionSwitchPrompt* switchPtr = switchPrompt.get();
+        switchPtr->nextChoice = BacktestSessionSwitchChoice::ContinueSwitch;
+
+        BacktestWorkspaceCoordinator coordinator;
+        coordinator.setBackend(m_backend.get());
+        BacktestUI::BacktestWorkspaceDock dock;
+        coordinator.setDock(&dock);
+        coordinator.setUnsavedChangesPrompt(std::move(unsavedPrompt));
+        coordinator.setBacktestSessionSwitchPrompt(std::move(switchPrompt));
+
+        coordinator.openCatalogVersion(strategyA.strategyDefId, strategyA.versionId);
+        QVERIFY(invokeBacktestFinished(
+            coordinator, makeCatalogFinishedRun(strategyA, QStringLiteral("run-continue"))));
+
+        QJsonObject edited = m_backend->pipelineConfig(strategyA.nodeId);
+        edited.insert(QStringLiteral("mergePolicy"), QStringLiteral("catalog-after-run"));
+        QVERIFY(invokePipelineEdited(coordinator, edited));
+
+        const int versionCountBefore =
+            m_backend->listStrategyVersions(strategyA.strategyDefId).size();
+        openStrategy(coordinator, strategyB);
+
+        QCOMPARE(switchPtr->promptCount, 1);
+        QCOMPARE(unsavedPtr->promptCount, 0);
+        QCOMPARE(dock.runConfigPanel()->currentConfig().strategyId, strategyB.nodeId);
+        QCOMPARE(m_backend->listStrategyVersions(strategyA.strategyDefId).size(), versionCountBefore);
+    }
+
+    void testCatalogPreviewFinishedRunUpdatesActiveUi()
+    {
+        const StrategyHandle strategy =
+            createStrategy(QStringLiteral("Alpha"), QStringLiteral("sum"));
+
+        BacktestWorkspaceCoordinator coordinator;
+        coordinator.setBackend(m_backend.get());
+        BacktestUI::BacktestWorkspaceDock dock;
+        coordinator.setDock(&dock);
+
+        coordinator.openCatalogVersion(strategy.strategyDefId, strategy.versionId);
+
+        BacktestWorkspaceCoordinatorTestProbe::reset();
+        QVERIFY(invokeBacktestFinished(
+            coordinator, makeCatalogFinishedRun(strategy, QStringLiteral("run-active-catalog"))));
+
+        QCOMPARE(BacktestWorkspaceCoordinatorTestProbe::displayedResultCount(), 1);
+        QCOMPARE(BacktestWorkspaceCoordinatorTestProbe::lastDisplayedRunId(),
+                 QStringLiteral("run-active-catalog"));
+        QCOMPARE(BacktestWorkspaceCoordinatorTestProbe::runHistorySetCount(), 1);
+        QCOMPARE(BacktestWorkspaceCoordinatorTestProbe::resultsStaleSetCount(), 1);
+        QVERIFY(!BacktestWorkspaceCoordinatorTestProbe::lastResultsStale());
+    }
+
+    void testCatalogPreviewAfterRunCancelKeepsCurrentSession()
+    {
+        const StrategyHandle strategyA =
+            createStrategy(QStringLiteral("Alpha"), QStringLiteral("sum"));
+        const StrategyHandle strategyB =
+            createStrategy(QStringLiteral("Beta"), QStringLiteral("max"));
+
+        auto unsavedPrompt = std::make_unique<TestUnsavedPrompt>();
+        TestUnsavedPrompt* unsavedPtr = unsavedPrompt.get();
+        auto switchPrompt = std::make_unique<TestBacktestSessionSwitchPrompt>();
+        TestBacktestSessionSwitchPrompt* switchPtr = switchPrompt.get();
+        switchPtr->nextChoice = BacktestSessionSwitchChoice::CancelSwitch;
+
+        BacktestWorkspaceCoordinator coordinator;
+        coordinator.setBackend(m_backend.get());
+        BacktestUI::BacktestWorkspaceDock dock;
+        coordinator.setDock(&dock);
+        coordinator.setUnsavedChangesPrompt(std::move(unsavedPrompt));
+        coordinator.setBacktestSessionSwitchPrompt(std::move(switchPrompt));
+
+        coordinator.openCatalogVersion(strategyA.strategyDefId, strategyA.versionId);
+        QVERIFY(invokeBacktestFinished(
+            coordinator, makeCatalogFinishedRun(strategyA, QStringLiteral("run-cancel"))));
+
+        QJsonObject edited = m_backend->pipelineConfig(strategyA.nodeId);
+        edited.insert(QStringLiteral("mergePolicy"), QStringLiteral("catalog-cancel"));
+        QVERIFY(invokePipelineEdited(coordinator, edited));
+
+        openStrategy(coordinator, strategyB);
+
+        QCOMPARE(switchPtr->promptCount, 1);
+        QCOMPARE(unsavedPtr->promptCount, 0);
+        QCOMPARE(dock.runConfigPanel()->currentConfig().catalogVersionId, strategyA.versionId);
+    }
+
+    void testExplicitSaveAsNewVersionRebasesSessionState()
+    {
+        const StrategyHandle strategy =
+            createStrategy(QStringLiteral("Alpha"), QStringLiteral("sum"));
+        const StrategyHandle other =
+            createStrategy(QStringLiteral("Beta"), QStringLiteral("max"));
+
+        auto unsavedPrompt = std::make_unique<TestUnsavedPrompt>();
+        TestUnsavedPrompt* unsavedPtr = unsavedPrompt.get();
+        auto switchPrompt = std::make_unique<TestBacktestSessionSwitchPrompt>();
+        TestBacktestSessionSwitchPrompt* switchPtr = switchPrompt.get();
+
+        BacktestWorkspaceCoordinator coordinator;
+        coordinator.setBackend(m_backend.get());
+        BacktestUI::BacktestWorkspaceDock dock;
+        coordinator.setDock(&dock);
+        coordinator.setUnsavedChangesPrompt(std::move(unsavedPrompt));
+        coordinator.setBacktestSessionSwitchPrompt(std::move(switchPrompt));
+
+        openStrategy(coordinator, strategy);
+
+        QJsonObject edited = m_backend->pipelineConfig(strategy.nodeId);
+        edited.insert(QStringLiteral("mergePolicy"), QStringLiteral("explicit-save"));
+        QVERIFY(invokePipelineEdited(coordinator, edited));
+
+        QSignalSpy refreshSpy(&coordinator, &BacktestWorkspaceCoordinator::catalogRefreshNeeded);
+        QVERIFY(refreshSpy.isValid());
+
+        const int versionCountBefore =
+            m_backend->listStrategyVersions(strategy.strategyDefId).size();
+        const auto result = coordinator.saveActiveSessionAsNewVersion();
+        const int versionCountAfter =
+            m_backend->listStrategyVersions(strategy.strategyDefId).size();
+        const VersionInfo latest = latestVersion(strategy.strategyDefId);
+
+        QCOMPARE(result.outcome,
+                 BacktestWorkspaceCoordinator::SaveAsNewVersionResult::Outcome::Created);
+        QCOMPARE(versionCountAfter, versionCountBefore + 1);
+        QCOMPARE(refreshSpy.count(), 1);
+        QCOMPARE(result.version.versionId, latest.versionId);
+        QCOMPARE(result.version.versionNumber, latest.versionNumber);
+        QCOMPARE(dock.runConfigPanel()->currentConfig().catalogVersionId, latest.versionId);
+        QCOMPARE(dock.runConfigPanel()->currentConfig().strategyVersion, latest.versionNumber);
+
+        QJsonObject secondEdit = currentMergedPipeline(dock);
+        secondEdit.insert(QStringLiteral("mergePolicy"), QStringLiteral("second-edit"));
+        QVERIFY(invokePipelineEdited(coordinator, secondEdit));
+        QVERIFY(invokeResetToBaseline(coordinator));
+        QCOMPARE(currentMergedPipeline(dock).value(QStringLiteral("mergePolicy")).toString(),
+                 QStringLiteral("explicit-save"));
+
+        openStrategy(coordinator, other);
+        QCOMPARE(unsavedPtr->promptCount, 0);
+        QCOMPARE(switchPtr->promptCount, 0);
+    }
+
+    void testCatalogPreviewSaveAsNewVersionRekeysSessionState()
+    {
+        const StrategyHandle strategy =
+            createStrategy(QStringLiteral("Alpha"), QStringLiteral("sum"));
+        const StrategyHandle other =
+            createStrategy(QStringLiteral("Beta"), QStringLiteral("max"));
+
+        auto unsavedPrompt = std::make_unique<TestUnsavedPrompt>();
+        TestUnsavedPrompt* unsavedPtr = unsavedPrompt.get();
+        auto switchPrompt = std::make_unique<TestBacktestSessionSwitchPrompt>();
+        TestBacktestSessionSwitchPrompt* switchPtr = switchPrompt.get();
+
+        BacktestWorkspaceCoordinator coordinator;
+        coordinator.setBackend(m_backend.get());
+        BacktestUI::BacktestWorkspaceDock dock;
+        coordinator.setDock(&dock);
+        coordinator.setUnsavedChangesPrompt(std::move(unsavedPrompt));
+        coordinator.setBacktestSessionSwitchPrompt(std::move(switchPrompt));
+
+        coordinator.openCatalogVersion(strategy.strategyDefId, strategy.versionId);
+
+        QJsonObject edited = currentMergedPipeline(dock);
+        edited.insert(QStringLiteral("mergePolicy"), QStringLiteral("catalog-save"));
+        QVERIFY(invokePipelineEdited(coordinator, edited));
+
+        QSignalSpy refreshSpy(&coordinator, &BacktestWorkspaceCoordinator::catalogRefreshNeeded);
+        QVERIFY(refreshSpy.isValid());
+
+        const int versionCountBefore =
+            m_backend->listStrategyVersions(strategy.strategyDefId).size();
+        const auto result = coordinator.saveActiveSessionAsNewVersion();
+        const int versionCountAfter =
+            m_backend->listStrategyVersions(strategy.strategyDefId).size();
+        const VersionInfo latest = latestVersion(strategy.strategyDefId);
+
+        QCOMPARE(result.outcome,
+                 BacktestWorkspaceCoordinator::SaveAsNewVersionResult::Outcome::Created);
+        QCOMPARE(versionCountAfter, versionCountBefore + 1);
+        QCOMPARE(refreshSpy.count(), 1);
+        QCOMPARE(result.version.versionId, latest.versionId);
+        QCOMPARE(result.version.versionNumber, latest.versionNumber);
+        QCOMPARE(dock.runConfigPanel()->currentConfig().catalogVersionId, latest.versionId);
+        QCOMPARE(dock.runConfigPanel()->currentConfig().strategyVersion, latest.versionNumber);
+
+        QJsonObject secondEdit = currentMergedPipeline(dock);
+        secondEdit.insert(QStringLiteral("mergePolicy"), QStringLiteral("catalog-second-edit"));
+        QVERIFY(invokePipelineEdited(coordinator, secondEdit));
+        QVERIFY(invokeResetToBaseline(coordinator));
+        QCOMPARE(currentMergedPipeline(dock).value(QStringLiteral("mergePolicy")).toString(),
+                 QStringLiteral("catalog-save"));
+
+        openStrategy(coordinator, other);
+        QCOMPARE(unsavedPtr->promptCount, 0);
+        QCOMPARE(switchPtr->promptCount, 0);
+    }
+
+    void testExplicitSaveAsNewVersionDuplicateRebindsToExistingVersion()
+    {
+        const StrategyHandle strategy =
+            createStrategy(QStringLiteral("Alpha"), QStringLiteral("sum"));
+        const StrategyHandle other =
+            createStrategy(QStringLiteral("Beta"), QStringLiteral("max"));
+
+        auto unsavedPrompt = std::make_unique<TestUnsavedPrompt>();
+        TestUnsavedPrompt* unsavedPtr = unsavedPrompt.get();
+        auto switchPrompt = std::make_unique<TestBacktestSessionSwitchPrompt>();
+        TestBacktestSessionSwitchPrompt* switchPtr = switchPrompt.get();
+
+        BacktestWorkspaceCoordinator coordinator;
+        coordinator.setBackend(m_backend.get());
+        BacktestUI::BacktestWorkspaceDock dock;
+        coordinator.setDock(&dock);
+        coordinator.setUnsavedChangesPrompt(std::move(unsavedPrompt));
+        coordinator.setBacktestSessionSwitchPrompt(std::move(switchPrompt));
+
+        openStrategy(coordinator, strategy);
+        QJsonObject duplicateConfig = currentMergedPipeline(dock);
+        duplicateConfig.insert(QStringLiteral("mergePolicy"), QStringLiteral("existing-version"));
+        QVERIFY(invokePipelineEdited(coordinator, duplicateConfig));
+
+        duplicateConfig = currentMergedPipeline(dock);
+        const QString existingVersionId = m_backend->createStrategyVersion(
+            strategy.strategyDefId, duplicateConfig, QStringLiteral("existing"), strategy.versionId);
+        QVERIFY(!existingVersionId.isEmpty());
+        const VersionInfo existingVersion = latestVersion(strategy.strategyDefId);
+
+        const int versionCountBefore =
+            m_backend->listStrategyVersions(strategy.strategyDefId).size();
+        const auto result = coordinator.saveActiveSessionAsNewVersion();
+        const int versionCountAfter =
+            m_backend->listStrategyVersions(strategy.strategyDefId).size();
+
+        QCOMPARE(result.outcome,
+                 BacktestWorkspaceCoordinator::SaveAsNewVersionResult::Outcome::AlreadyExists);
+        QCOMPARE(versionCountAfter, versionCountBefore);
+        QCOMPARE(result.version.versionId, existingVersion.versionId);
+        QCOMPARE(result.version.versionNumber, existingVersion.versionNumber);
+        QCOMPARE(dock.runConfigPanel()->currentConfig().catalogVersionId, existingVersion.versionId);
+        QCOMPARE(dock.runConfigPanel()->currentConfig().strategyVersion,
+                 existingVersion.versionNumber);
+
+        openStrategy(coordinator, other);
+        QCOMPARE(unsavedPtr->promptCount, 0);
+        QCOMPARE(switchPtr->promptCount, 0);
+    }
+
+    void testInactiveFinishedRunDoesNotOverwriteActiveDisplayOrHistory()
+    {
+        const StrategyHandle strategyA =
+            createStrategy(QStringLiteral("Alpha"), QStringLiteral("sum"));
+        const StrategyHandle strategyB =
+            createStrategy(QStringLiteral("Beta"), QStringLiteral("max"));
+
+        BacktestWorkspaceCoordinator coordinator;
+        coordinator.setBackend(m_backend.get());
+        BacktestUI::BacktestWorkspaceDock dock;
+        coordinator.setDock(&dock);
+
+        openStrategy(coordinator, strategyA);
+        openStrategy(coordinator, strategyB);
+
+        BacktestWorkspaceCoordinatorTestProbe::reset();
+        QVERIFY(invokeBacktestFinished(
+            coordinator, makeLiveFinishedRun(strategyA, QStringLiteral("run-inactive"))));
+
+        QCOMPARE(BacktestWorkspaceCoordinatorTestProbe::displayedResultCount(), 0);
+        QCOMPARE(BacktestWorkspaceCoordinatorTestProbe::runHistorySetCount(), 0);
+        QCOMPARE(dock.runConfigPanel()->currentConfig().strategyId, strategyB.nodeId);
+
+        BacktestWorkspaceCoordinatorTestProbe::reset();
+        openStrategy(coordinator, strategyA);
+        QJsonObject edited = m_backend->pipelineConfig(strategyA.nodeId);
+        edited.insert(QStringLiteral("mergePolicy"), QStringLiteral("inactive-finish-edit"));
+        QVERIFY(invokePipelineEdited(coordinator, edited));
+
+        QCOMPARE(BacktestWorkspaceCoordinatorTestProbe::resultsStaleSetCount(), 1);
+        QVERIFY(BacktestWorkspaceCoordinatorTestProbe::lastResultsStale());
+    }
+};
+
+#endif // TST_BACKTEST_WORKSPACE_COORDINATOR_H
