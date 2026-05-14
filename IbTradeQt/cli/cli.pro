@@ -91,6 +91,7 @@ SOURCES += \
     ../Pipeline/IExecutionBlock.cpp \
     ../Pipeline/SemanticModelDataMapper.cpp \
     ../Pipeline/SemanticPipelineChain.cpp \
+    ../Adapters/IBHistoricalDataFetcher.cpp \
     ../Adapters/LiveHistoricalReadAdapter.cpp \
     ../Pipeline/MarketDataCoordinator.cpp \
     ../Pipeline/SubscriptionRequestStore.cpp \
@@ -168,6 +169,7 @@ HEADERS += \
     ../Pipeline/Contracts.h \
     ../Pipeline/BlockRegistry.h \
     ../Pipeline/PipelineLog.h \
+    ../Adapters/IBHistoricalDataFetcher.h \
     ../Adapters/LiveHistoricalReadAdapter.h \
     ../Plugin/PluginManifest.h \
     ../Plugin/ExtensionRegistry.h \

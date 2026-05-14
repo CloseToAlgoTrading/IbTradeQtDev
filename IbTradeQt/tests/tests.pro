@@ -79,6 +79,7 @@ SOURCES += \
     ../DataManagement/DataManagementWorker.cpp \
     ../DataManagement/DataManagementService.cpp \
     ../DataManagement/HistoricalBarsCoverageSyncRegistry.cpp \
+    ../DataManagement/IBHistoricalBarsCoverageSyncProvider.cpp \
     ../DataManagement/YahooHistoricalBarsCoveragePlanner.cpp \
     ../DataManagement/YahooHistoricalBarsCoverageSyncProvider.cpp \
     db/tst_dbhandler_disconnect.cpp \
@@ -208,6 +209,7 @@ SOURCES += \
     ../Pipeline/IExecutionBlock.cpp \
     ../Pipeline/SemanticModelDataMapper.cpp \
     ../Pipeline/SemanticPipelineChain.cpp \
+    ../Adapters/IBHistoricalDataFetcher.cpp \
     ../Adapters/LiveHistoricalReadAdapter.cpp \
     ../Pipeline/MarketDataCoordinator.cpp \
     ../Pipeline/SubscriptionRequestStore.cpp \
@@ -243,6 +245,7 @@ SOURCES += \
 
 HEADERS += \
     ../Pipeline/SemanticPipelineChain.h \
+    ../Adapters/IBHistoricalDataFetcher.h \
     ../Adapters/LiveHistoricalReadAdapter.h \
     ../Pipeline/Contracts.h \
     ../Pipeline/IDataSubscriptionPort.h \
@@ -391,6 +394,7 @@ HEADERS += \
     data_management/tst_data_management.h \
     ../DataManagement/DataManagementWorker.h \
     ../DataManagement/DataManagementService.h \
+    ../DataManagement/IBHistoricalBarsCoverageSyncProvider.h \
     backtest/tst_backtest_extended.h \
     backtest/tst_live_backtest.h \
     backtest/tst_backtest_engine_coverage.h \

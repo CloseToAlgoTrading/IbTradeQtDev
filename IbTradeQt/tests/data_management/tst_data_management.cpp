@@ -442,7 +442,7 @@ void TestDataManagement::coverageSync_nonYahoo_emitsFailed_noDbWrites()
         spyFail.takeFirst().at(1).value<DataManagement::DataManagementError>();
     QCOMPARE(e.operation, DataManagement::DataManagementOperation::CoverageSync);
     QCOMPARE(e.operationId, id);
-    QVERIFY(e.message.contains(QStringLiteral("Yahoo")));
+    QVERIFY(e.message.contains(QStringLiteral("dataSourceId")));
 
     {
         DataManagement::BacktestMarketDataRepository verify(QStringLiteral("dm_cov_nony_verify"));

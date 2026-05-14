@@ -39,6 +39,19 @@ DataManagementService::~DataManagementService()
     m_worker = nullptr;
 }
 
+void DataManagementService::setBrokerDataProvider(CBrokerDataProvider* provider)
+{
+    if (!m_worker)
+        return;
+    QMetaObject::invokeMethod(
+        m_worker,
+        [this, provider]() {
+            if (m_worker)
+                m_worker->setBrokerDataProvider(provider);
+        },
+        Qt::QueuedConnection);
+}
+
 void DataManagementService::wireWorker()
 {
     connect(m_worker, &DataManagementWorker::inventoryFinished, this,
@@ -175,7 +188,9 @@ quint64 DataManagementService::requestSyncBarsCoverage(const QString& backtestDb
 quint64 DataManagementService::requestBatchYahooImport(const QString& backtestDbPath,
                                                      const QStringList& symbols,
                                                      const QDateTime& requestedFromUtc,
-                                                     const QDateTime& requestedToUtc)
+                                                     const QDateTime& requestedToUtc,
+                                                     const QString& resolution,
+                                                     const QString& dataSourceId)
 {
     const quint64 id = ++m_nextOperationId;
 
@@ -212,7 +227,9 @@ quint64 DataManagementService::requestBatchYahooImport(const QString& backtestDb
 
     QMetaObject::invokeMethod(m_worker, "doBatchYahooImport", Qt::QueuedConnection, Q_ARG(quint64, id),
                               Q_ARG(QString, backtestDbPath), Q_ARG(QStringList, symbols),
-                              Q_ARG(QDateTime, fromUtc), Q_ARG(QDateTime, toUtc));
+                              Q_ARG(QDateTime, fromUtc), Q_ARG(QDateTime, toUtc),
+                              Q_ARG(QString, resolution.isEmpty() ? QStringLiteral("Day1") : resolution),
+                              Q_ARG(QString, dataSourceId.isEmpty() ? QStringLiteral("yahoo") : dataSourceId));
     return id;
 }
 

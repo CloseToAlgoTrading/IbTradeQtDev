@@ -587,7 +587,7 @@ void TestHistoricalDataManagerCache::normalizationEquivalence_allPoliciesReturnI
 
     QCOMPARE(barsPrefer.size(), barsRefresh.size());
     QCOMPARE(barsPrefer.size(), barsSource.size());
-    QCOMPARE(barsPrefer.size(), 3);
+    QCOMPARE(barsPrefer.size(), 2);
 
     for (int i = 0; i < barsPrefer.size(); ++i) {
         QCOMPARE(barsPrefer[i].symbol, barsRefresh[i].symbol);

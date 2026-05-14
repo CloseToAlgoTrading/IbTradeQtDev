@@ -4,6 +4,7 @@
 #include "Backtest/YahooChartBatchFetch.h"
 #include "Backtest/InstrumentMetadataResolver.h"
 #include "Backtest/MarketSessionUtils.h"
+#include "Adapters/IBHistoricalDataFetcher.h"
 #include "DB/dbquery.h"
 #include <QSqlQuery>
 #include <QSqlError>
@@ -16,6 +17,8 @@
 Q_LOGGING_CATEGORY(lcHistData, "backtest.historical")
 
 namespace Backtest {
+
+CBrokerDataProvider* HistoricalDataManager::s_brokerDataProvider = nullptr;
 
 namespace {
 
@@ -48,6 +51,16 @@ HistoricalDataManager::HistoricalDataManager(const QString& dbConnectionName,
         m_networkManager = new QNetworkAccessManager(this);
         m_ownsNetworkManager = true;
     }
+}
+
+void HistoricalDataManager::setBrokerDataProvider(CBrokerDataProvider* provider)
+{
+    s_brokerDataProvider = provider;
+}
+
+CBrokerDataProvider* HistoricalDataManager::brokerDataProvider()
+{
+    return s_brokerDataProvider;
 }
 
 // ---------------------------------------------------------------------------
@@ -154,7 +167,8 @@ QVector<IBComm::HistoricalBar> HistoricalDataManager::getBarsPreferCache(
     bool didFetch = false;
     if (needFetchBefore || needFetchAfter) {
         QVector<IBComm::HistoricalBar> fetched =
-            fetchAndCache({symbol}, resolution, dataSourceId, fetchFrom, fetchTo);
+            fetchAndCache({symbol}, resolution, dataSourceId, fetchFrom, fetchTo,
+                          strategyAssetBySymbol);
 
         if (!fetched.isEmpty()) {
             didFetch = true;
@@ -187,7 +201,8 @@ QVector<IBComm::HistoricalBar> HistoricalDataManager::getBarsRefreshFromSource(
                                 strategyAssetBySymbol);
 
     QVector<IBComm::HistoricalBar> fetched =
-        fetchAndCache({symbol}, resolution, dataSourceId, from, effectiveTo);
+        fetchAndCache({symbol}, resolution, dataSourceId, from, effectiveTo,
+                      strategyAssetBySymbol);
 
     if (dataRefreshedAt) {
         *dataRefreshedAt = QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
@@ -214,7 +229,23 @@ QVector<IBComm::HistoricalBar> HistoricalDataManager::getBarsSourceOnly(
 
     QVector<IBComm::HistoricalBar> fetched;
     if (dataSourceId == QLatin1String("yahoo")) {
+        if (m_cancelRequested && m_cancelRequested())
+            return fetched;
         YahooFetchResult fetchResult = fetchBatchFromYahoo({symbol}, from, effectiveTo, resolution, m_config.yahooFetchTimeoutMs);
+        fetched = fetchResult.bars;
+    } else if (dataSourceId == QLatin1String("ib")) {
+        Adapters::IBHistoricalDataFetcher fetcher(s_brokerDataProvider);
+        Adapters::IBHistoricalFetchRequest req;
+        req.symbols = QStringList{symbol};
+        req.resolution = resolution;
+        req.fromUtc = from.toUTC();
+        req.toUtc = effectiveTo.toUTC();
+        req.timeoutMs = m_config.yahooFetchTimeoutMs;
+        req.assetBySymbol = strategyAssetBySymbol;
+        req.cancelRequested = m_cancelRequested;
+        auto fetchResult = fetcher.fetch(req);
+        if (!fetchResult.errorMessage.isEmpty())
+            qCWarning(lcHistData) << "HistoricalDataManager:" << fetchResult.errorMessage;
         fetched = fetchResult.bars;
     } else {
         qCWarning(lcHistData) << "HistoricalDataManager: SourceOnly unsupported for dataSourceId:" << dataSourceId;
@@ -282,6 +313,8 @@ QMap<QString, QVector<IBComm::HistoricalBar>> HistoricalDataManager::getBarsMult
                                 strategyAssetBySymbol);
 
     if (dataSourceId == QLatin1String("yahoo")) {
+        if (m_cancelRequested && m_cancelRequested())
+            return result;
         YahooFetchResult fetchResult =
             fetchBatchFromYahoo(symbols, from, effectiveTo, resolution, m_config.yahooFetchTimeoutMs);
 
@@ -306,6 +339,33 @@ QMap<QString, QVector<IBComm::HistoricalBar>> HistoricalDataManager::getBarsMult
                 qCInfo(lcHistData) << "getBarsMulti:" << sym << "— provider returned no bars for range (valid empty)";
                 result[sym] = QVector<IBComm::HistoricalBar>();
             }
+        }
+    } else if (dataSourceId == QLatin1String("ib")) {
+        Adapters::IBHistoricalDataFetcher fetcher(s_brokerDataProvider);
+        Adapters::IBHistoricalFetchRequest req;
+        req.symbols = symbols;
+        req.resolution = resolution;
+        req.fromUtc = from.toUTC();
+        req.toUtc = effectiveTo.toUTC();
+        req.timeoutMs = m_config.yahooFetchTimeoutMs;
+        req.assetBySymbol = strategyAssetBySymbol;
+        req.cancelRequested = m_cancelRequested;
+        auto fetchResult = fetcher.fetch(req);
+
+        if (policy == Pipeline::HistoricalReadPolicy::RefreshFromSource && !fetchResult.bars.isEmpty()) {
+            insertIntoCache(fetchResult.bars, resolution, dataSourceId);
+        }
+
+        QMap<QString, QVector<IBComm::HistoricalBar>> rawBySymbol;
+        for (const auto& bar : fetchResult.bars)
+            rawBySymbol[bar.symbol].append(bar);
+
+        for (const QString& sym : symbols) {
+            if (fetchResult.failedSymbols.contains(sym)) {
+                qCWarning(lcHistData) << "getBarsMulti:" << sym << "— IB request failed, omitting from result";
+                continue;
+            }
+            result[sym] = normalizeAndFilterBars(rawBySymbol.value(sym), fromUtc, toUtc);
         }
     } else {
         qCWarning(lcHistData) << "HistoricalDataManager: unsupported dataSourceId for RefreshFromSource/SourceOnly:" << dataSourceId;
@@ -403,7 +463,8 @@ QMap<QString, QVector<IBComm::HistoricalBar>> HistoricalDataManager::getBarsMult
     bool didFetch = false;
     if (!symbolsToFetch.isEmpty() && haveFetchWindow) {
         QVector<IBComm::HistoricalBar> fetched =
-            fetchAndCache(symbolsToFetch, resolution, dataSourceId, fetchFrom, fetchTo);
+            fetchAndCache(symbolsToFetch, resolution, dataSourceId, fetchFrom, fetchTo,
+                          strategyAssetBySymbol);
         didFetch = !fetched.isEmpty();
     }
 
@@ -580,7 +641,8 @@ QVector<IBComm::HistoricalBar> HistoricalDataManager::fetchAndCache(
     const QString& resolution,
     const QString& dataSourceId,
     const QDateTime& from,
-    const QDateTime& to)
+    const QDateTime& to,
+    const QHash<QString, QVariantMap>& strategyAssetBySymbol)
 {
     QVector<IBComm::HistoricalBar> fetchedBars;
 
@@ -593,6 +655,8 @@ QVector<IBComm::HistoricalBar> HistoricalDataManager::fetchAndCache(
                                << "symbols in batches of" << batchSize << "(timeout:" << timeoutMs << "ms each)";
             
             for (int i = 0; i < symbols.size(); i += batchSize) {
+                if (m_cancelRequested && m_cancelRequested())
+                    break;
                 const int remaining = symbols.size() - i;
                 const int currentBatchSize = qMin(batchSize, remaining);
                 QStringList batch = symbols.mid(i, currentBatchSize);
@@ -611,6 +675,8 @@ QVector<IBComm::HistoricalBar> HistoricalDataManager::fetchAndCache(
                 }
             }
         } else {
+            if (m_cancelRequested && m_cancelRequested())
+                return fetchedBars;
             YahooFetchResult fetchResult = fetchBatchFromYahoo(symbols, from, to, resolution, timeoutMs);
             fetchedBars = fetchResult.bars;
             
@@ -618,6 +684,22 @@ QVector<IBComm::HistoricalBar> HistoricalDataManager::fetchAndCache(
                 insertIntoCache(fetchResult.bars, resolution, dataSourceId);
             }
         }
+    } else if (dataSourceId == QLatin1String("ib")) {
+        Adapters::IBHistoricalDataFetcher fetcher(s_brokerDataProvider);
+        Adapters::IBHistoricalFetchRequest req;
+        req.symbols = symbols;
+        req.resolution = resolution;
+        req.fromUtc = from.toUTC();
+        req.toUtc = to.toUTC();
+        req.timeoutMs = m_config.yahooFetchTimeoutMs;
+        req.assetBySymbol = strategyAssetBySymbol;
+        req.cancelRequested = m_cancelRequested;
+        auto fetchResult = fetcher.fetch(req);
+        fetchedBars = fetchResult.bars;
+        if (!fetchedBars.isEmpty())
+            insertIntoCache(fetchedBars, resolution, dataSourceId);
+        if (!fetchResult.errorMessage.isEmpty())
+            qCWarning(lcHistData) << "HistoricalDataManager:" << fetchResult.errorMessage;
     } else {
         qCWarning(lcHistData) << "HistoricalDataManager: unsupported dataSourceId for fetch:" << dataSourceId;
         return fetchedBars;

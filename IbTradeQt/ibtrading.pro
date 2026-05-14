@@ -233,6 +233,7 @@ SOURCES += \
     Pipeline/IExecutionBlock.cpp \
     Pipeline/SemanticModelDataMapper.cpp \
     Pipeline/SemanticPipelineChain.cpp \
+    Adapters/IBHistoricalDataFetcher.cpp \
     Adapters/LiveHistoricalReadAdapter.cpp \
     Pipeline/MarketDataCoordinator.cpp \
     Pipeline/SubscriptionRequestStore.cpp \
@@ -296,6 +297,7 @@ SOURCES += \
     DataManagement/DataManagementWorker.cpp \
     DataManagement/DataManagementService.cpp \
     DataManagement/HistoricalBarsCoverageSyncRegistry.cpp \
+    DataManagement/IBHistoricalBarsCoverageSyncProvider.cpp \
     DataManagement/YahooHistoricalBarsCoveragePlanner.cpp \
     DataManagement/YahooHistoricalBarsCoverageSyncProvider.cpp \
     DataManagementUI/DatasetTableModel.cpp \
@@ -311,6 +313,7 @@ HEADERS += \
     Pipeline/SemanticTypes.h \
     Pipeline/SemanticModelDataMapper.h \
     Pipeline/SemanticPipelineChain.h \
+    Adapters/IBHistoricalDataFetcher.h \
     Adapters/LiveHistoricalReadAdapter.h \
     Pipeline/PipelineRuntimeContext.h \
     Pipeline/IDataSubscriptionPort.h \
@@ -548,6 +551,7 @@ HEADERS += \
     DataManagement/DataManagementService.h \
     DataManagement/HistoricalBarsCoverageSyncRegistry.h \
     DataManagement/IHistoricalBarsCoverageSyncProvider.h \
+    DataManagement/IBHistoricalBarsCoverageSyncProvider.h \
     DataManagement/YahooHistoricalBarsCoveragePlanner.h \
     DataManagement/YahooHistoricalBarsCoverageSyncProvider.h \
     DataManagementUI/DatasetTableModel.h \

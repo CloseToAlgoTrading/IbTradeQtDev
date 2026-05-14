@@ -7,6 +7,7 @@
 #include <QList>
 
 class QNetworkAccessManager;
+class CBrokerDataProvider;
 
 namespace DataManagement {
 
@@ -15,6 +16,8 @@ class DataManagementWorker : public QObject {
     Q_OBJECT
 public:
     explicit DataManagementWorker(QObject* parent = nullptr);
+
+    void setBrokerDataProvider(CBrokerDataProvider* provider);
 
 public slots:
     void doInventory(quint64 operationId, QString dbPath);
@@ -28,7 +31,8 @@ public slots:
     void doSyncCoverage(quint64 operationId, QString dbPath, HistoricalBarsDatasetKey key,
                         QDateTime requestedFromUtc, QDateTime requestedToUtc);
     void doBatchYahooImport(quint64 operationId, QString dbPath, QStringList symbols,
-                            QDateTime requestedFromUtc, QDateTime requestedToUtc);
+                            QDateTime requestedFromUtc, QDateTime requestedToUtc,
+                            QString resolution, QString dataSourceId);
 
 signals:
     void inventoryFinished(quint64 operationId, QList<DataManagement::HistoricalBarsDataset> rows);
@@ -57,6 +61,7 @@ private:
 
     BacktestMarketDataRepository m_repo;
     QNetworkAccessManager*       m_networkManager = nullptr;
+    CBrokerDataProvider*         m_brokerDataProvider = nullptr;
 };
 
 } // namespace DataManagement

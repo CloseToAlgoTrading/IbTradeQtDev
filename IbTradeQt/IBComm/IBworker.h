@@ -30,6 +30,8 @@ namespace IBWorker
 		public slots:
 		void process();
 
+    signals:
+        void connectionAttemptFinished(bool connected);
 
 	private:
         CBrokerDataProvider & m_Client;

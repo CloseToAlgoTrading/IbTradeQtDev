@@ -42,6 +42,7 @@ public:
 
 public:
     bool reqestHistoricalData(reqHistConfigData_t & _config);
+    bool cancelHistoricalData(qint32 id);
     bool requestHistoricalTicksData(reqHistTicksConfigData_t & _config);
 
     bool reqestRealTimeData(reqReadlTimeDataConfigData_t &_config);

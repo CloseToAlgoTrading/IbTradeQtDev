@@ -31,6 +31,7 @@
 #include <utility>
 #include "cpipelinestrategyadapter.h"
 #include "Adapters/LiveHistoricalReadAdapter.h"
+#include "Backtest/HistoricalDataManager.h"
 #include "IBComClientImpl.h"
 #include "Pipeline/BlockRegistry.h"
 #include "Pipeline/PipelineConstants.h"
@@ -286,8 +287,14 @@ CApplicationController::CApplicationController(QObject *parent):
 
     CPipelineStrategyAdapter::setGlobalPositionRepo(m_pLivePositionRepo);
     CPipelineStrategyAdapter::setGlobalPersistentPositionRepo(m_pPositionRepo);
+    CPipelineStrategyAdapter::setGlobalBrokerConnected(false);
+    connect(m_backend, &ISystemBackend::brokerConnectionChanged,
+            this, [](bool connected) {
+        CPipelineStrategyAdapter::setGlobalBrokerConnected(connected);
+    });
 
     Pipeline::LiveHistoricalReadAdapter::setBrokerDataProvider(pMainPresenter->getDataProvider().data());
+    Backtest::HistoricalDataManager::setBrokerDataProvider(pMainPresenter->getDataProvider().data());
 
     /*** Test Code ***/
     // DBManager m_dbManager;

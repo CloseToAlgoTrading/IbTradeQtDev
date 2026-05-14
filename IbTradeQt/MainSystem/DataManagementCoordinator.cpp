@@ -50,6 +50,12 @@ DataManagementCoordinator::~DataManagementCoordinator() = default;
 
 void DataManagementCoordinator::setView(CIBTradeSystemView* view) { m_view = view; }
 
+void DataManagementCoordinator::setBrokerDataProvider(CBrokerDataProvider* provider)
+{
+    if (m_service)
+        m_service->setBrokerDataProvider(provider);
+}
+
 void DataManagementCoordinator::setPanel(DataManagementUI::DataManagementPanel* panel)
 {
     m_panel = panel;
@@ -271,9 +277,10 @@ void DataManagementCoordinator::onPanelCoverageSync()
         return;
     }
     const DataManagement::HistoricalBarsDatasetKey k = keys.first();
-    if (k.dataSourceId != QLatin1String("yahoo") || k.resolution != QLatin1String("Day1")) {
+    if (!((k.dataSourceId == QLatin1String("yahoo") && k.resolution == QLatin1String("Day1"))
+          || k.dataSourceId == QLatin1String("ib"))) {
         QMessageBox::information(m_view, QStringLiteral("Coverage sync"),
-                                 QStringLiteral("Coverage sync (Phase A) requires Yahoo Day1."));
+                                 QStringLiteral("Coverage sync requires Yahoo Day1 or IB/TWS."));
         return;
     }
     m_busy = true;
@@ -295,9 +302,13 @@ void DataManagementCoordinator::onPanelYahooBatch()
     }
     m_busy = true;
     m_panel->setBusy(true);
+    const QString source = DataManagement::normalizeDataSourceId(m_panel->importDataSourceIdRaw()).isEmpty()
+        ? QStringLiteral("yahoo")
+        : DataManagement::normalizeDataSourceId(m_panel->importDataSourceIdRaw());
     m_pendingYahooBatchOpId =
         m_service->requestBatchYahooImport(backtestDbPath(), parsed.symbolOrder,
-                                           m_panel->coverageSyncFromUtc(), m_panel->coverageSyncToUtc());
+                                           m_panel->coverageSyncFromUtc(), m_panel->coverageSyncToUtc(),
+                                           m_panel->importResolution(), source);
 }
 
 void DataManagementCoordinator::onInventoryLoaded(quint64 operationId,

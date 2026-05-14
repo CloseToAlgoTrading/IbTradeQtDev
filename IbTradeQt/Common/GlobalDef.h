@@ -18,8 +18,8 @@
 #define CONNECTIONS_CLIENT_ID 1
 
 //#define CONNECTIONS_SERVER_PORT CONNECTIONS_REAL_SERVER_PORT
-//#define CONNECTIONS_SERVER_PORT CONNECTIONS_DEMO_SERVER_PORT
-#define CONNECTIONS_SERVER_PORT CONNECTIONS_DEMO_GW_SERVER_PORT
+#define CONNECTIONS_SERVER_PORT CONNECTIONS_DEMO_SERVER_PORT
+//#define CONNECTIONS_SERVER_PORT CONNECTIONS_DEMO_GW_SERVER_PORT
 
 
 
@@ -139,6 +139,14 @@ struct reqHistConfigData_t
     QString barSize;
     QString duration;
     QString symbol;
+    QString endDateTimeUtc;
+    QString whatToShow = QStringLiteral("TRADES");
+    qint32  useRth = 1;
+    qint32  formatDate = 1;
+    QString secType = QStringLiteral("STK");
+    QString currency = QStringLiteral("USD");
+    QString exchange = QStringLiteral("SMART");
+    QString primaryExchange;
 };
 
 

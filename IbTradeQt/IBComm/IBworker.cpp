@@ -30,7 +30,11 @@ namespace IBWorker
                     m_workerCmd = IDLE;
                     if (!m_Client.getClien()->isConnectedAPI())
                     {
-                        m_Client.getClien()->connectAPI(CONNECTIONS_SERVER_IP, NHelper::getServerPort(), CONNECTIONS_CLIENT_ID);
+                        const bool connected = m_Client.getClien()->connectAPI(CONNECTIONS_SERVER_IP, NHelper::getServerPort(), CONNECTIONS_CLIENT_ID);
+                        emit connectionAttemptFinished(connected);
+                    }
+                    else {
+                        emit connectionAttemptFinished(true);
                     }
                     break;
                 case DISCONNECT:

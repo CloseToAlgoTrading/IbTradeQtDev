@@ -29,6 +29,7 @@ Supervision::Supervisor* CPipelineStrategyAdapter::s_globalSupervisor = nullptr;
 Ports::IOrderExecutionPort* CPipelineStrategyAdapter::s_globalExecutionPort = nullptr;
 Ports::IPositionRepositoryPort* CPipelineStrategyAdapter::s_globalPositionRepo = nullptr;
 Ports::IPositionRepositoryPort* CPipelineStrategyAdapter::s_globalPersistentPositionRepo = nullptr;
+bool CPipelineStrategyAdapter::s_globalBrokerConnected = false;
 
 namespace {
 
@@ -94,6 +95,11 @@ void CPipelineStrategyAdapter::setGlobalPositionRepo(Ports::IPositionRepositoryP
 void CPipelineStrategyAdapter::setGlobalPersistentPositionRepo(Ports::IPositionRepositoryPort* repo)
 {
     s_globalPersistentPositionRepo = repo;
+}
+
+void CPipelineStrategyAdapter::setGlobalBrokerConnected(bool connected)
+{
+    s_globalBrokerConnected = connected;
 }
 
 IBComm::MarketDataRouter* CPipelineStrategyAdapter::globalRouter() { return s_globalRouter; }
@@ -244,6 +250,11 @@ bool CPipelineStrategyAdapter::start()
     }
 
     if (s_globalSupervisor && s_globalRouter) {
+        if (m_execMode == ExecutionMode::Live && !s_globalBrokerConnected) {
+            qWarning() << "CPipelineStrategyAdapter: live execution requires an active broker connection";
+            return false;
+        }
+
         QString runtimeName = getName() + QStringLiteral("_") + m_uuid.toString(QUuid::WithoutBraces).left(8);
 
         auto* execPort = (m_execMode == ExecutionMode::Live && s_globalExecutionPort)

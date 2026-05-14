@@ -195,6 +195,8 @@ BacktestController::~BacktestController() {
 
 void BacktestController::requestStop()
 {
+    if (m_stopRequested)
+        m_stopRequested->store(true, std::memory_order_release);
     if (!m_session || !m_workerThread || !m_workerThread->isRunning())
         return;
     // Must not use QueuedConnection: the worker thread is blocked inside replay() and will not
@@ -210,6 +212,7 @@ void BacktestController::start(const BacktestRunConfig& config) {
 
     m_currentRunId  = QUuid::createUuid().toString(QUuid::WithoutBraces);
     m_dataRefreshedAt.clear();
+    m_stopRequested = std::make_shared<std::atomic_bool>(false);
 
     const QString persistedStrategyId =
         Persistence::resolvedStrategyIdForPersistence(config, m_currentRunId);
@@ -308,12 +311,15 @@ void BacktestController::start(const BacktestRunConfig& config) {
     const QString benchmarkSymbol = resolvedConfig.benchmarkSymbol;
     const QHash<QString, QVariantMap> strategyAssets = assetListJsonToHash(resolvedConfig.assetListJson);
     const Pipeline::HistoricalReadPolicy historicalReadPolicy = runtimeOpts.historicalReadPolicy;
+    auto stopRequested = m_stopRequested;
 
     connect(m_workerThread, &QThread::started, m_session, [=]() mutable {
         // Scope the QSqlDatabase handle so no instance outlives removeDatabase (Qt requirement).
         {
             QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", workerConnName);
             db.setDatabaseName(dbFileName);
+            bool cancelledBeforeRun = false;
+            QString cancellationReason;
             const bool dbOk = db.open();
             if (!dbOk) {
                 qCWarning(lcBacktestController) << "BacktestController worker: cannot open DB — fetching without cache";
@@ -324,57 +330,80 @@ void BacktestController::start(const BacktestRunConfig& config) {
             // Keep the manager alive for the whole session so `IHistoricalRead` (semantic alphas)
             // can query the same cache during replay.
             std::unique_ptr<HistoricalDataManager> histMgr;
-            if (dbOk && dataSourceId == QLatin1String("yahoo")) {
+            if (dbOk && (dataSourceId == QLatin1String("yahoo")
+                         || dataSourceId == QLatin1String("ib"))) {
                 histMgr = std::make_unique<HistoricalDataManager>(workerConnName, netMgr);
+                histMgr->setCancelCallback([stopRequested]() {
+                    return stopRequested && stopRequested->load(std::memory_order_acquire);
+                });
                 QString refreshedAt;
                 QMap<QString, QVector<IBComm::HistoricalBar>> strategyBars =
                     histMgr->getBarsMulti(symbols, resolution, dataSourceId,
                                           startDate, endDate, &refreshedAt, strategyAssets, historicalReadPolicy);
 
+                if (stopRequested && stopRequested->load(std::memory_order_acquire)) {
+                    m_session->cancel();
+                    cancelledBeforeRun = true;
+                    cancellationReason = QStringLiteral("Cancelled during data load");
+                }
+
                 // Inject pre-fetched strategy bars — BacktestSession will skip its own fetch
-                m_session->setPreloadedBars(strategyBars);
-                m_session->setHistoricalDataManager(histMgr.get());
-                m_session->setHistoricalReadPolicy(historicalReadPolicy);
+                if (!cancelledBeforeRun) {
+                    m_session->setPreloadedBars(strategyBars);
+                    m_session->setHistoricalDataManager(histMgr.get());
+                    m_session->setHistoricalReadPolicy(historicalReadPolicy);
+                }
 
                 // Pre-fetch and inject benchmark bars too (avoid second network round-trip)
-                if (!benchmarkSymbol.isEmpty()) {
+                if (!cancelledBeforeRun && !benchmarkSymbol.isEmpty()) {
                     QMap<QString, QVector<IBComm::HistoricalBar>> bmMap =
                         histMgr->getBarsMulti({benchmarkSymbol}, QStringLiteral("Day1"),
                                               dataSourceId, startDate, endDate, nullptr, strategyAssets, historicalReadPolicy);
-                    m_session->setPreloadedBenchmarkBars(bmMap.value(benchmarkSymbol));
+                    if (stopRequested && stopRequested->load(std::memory_order_acquire)) {
+                        m_session->cancel();
+                        cancelledBeforeRun = true;
+                        cancellationReason = QStringLiteral("Cancelled during benchmark load");
+                    } else {
+                        m_session->setPreloadedBenchmarkBars(bmMap.value(benchmarkSymbol));
+                    }
                 }
 
                 // Build QMap<QString, QList<DbHistoricalBar>> for the candlestick UI and
                 // relay both refreshedAt and bars to main thread for display after the run.
-                QMap<QString, QList<DbHistoricalBar>> uiBars;
-                for (auto it = strategyBars.begin(); it != strategyBars.end(); ++it) {
-                    QList<DbHistoricalBar> dbList;
-                    for (const auto& bar : it.value()) {
-                        DbHistoricalBar db;
-                        db.symbol       = bar.symbol;
-                        db.resolution   = resolution;
-                        db.dataSourceId = dataSourceId;
-                        db.timestamp    = bar.timestamp.toUTC().toString(Qt::ISODate);
-                        db.open         = bar.open;
-                        db.high         = bar.high;
-                        db.low          = bar.low;
-                        db.close        = bar.close;
-                        db.volume       = bar.volume;
-                        dbList.append(db);
+                if (!cancelledBeforeRun) {
+                    QMap<QString, QList<DbHistoricalBar>> uiBars;
+                    for (auto it = strategyBars.begin(); it != strategyBars.end(); ++it) {
+                        QList<DbHistoricalBar> dbList;
+                        for (const auto& bar : it.value()) {
+                            DbHistoricalBar db;
+                            db.symbol       = bar.symbol;
+                            db.resolution   = resolution;
+                            db.dataSourceId = dataSourceId;
+                            db.timestamp    = bar.timestamp.toUTC().toString(Qt::ISODate);
+                            db.open         = bar.open;
+                            db.high         = bar.high;
+                            db.low          = bar.low;
+                            db.close        = bar.close;
+                            db.volume       = bar.volume;
+                            dbList.append(db);
+                        }
+                        uiBars[it.key()] = dbList;
                     }
-                    uiBars[it.key()] = dbList;
+                    QMetaObject::invokeMethod(self, [self, refreshedAt, uiBars]() {
+                        self->m_dataRefreshedAt = refreshedAt;
+                        self->m_lastHistBars    = uiBars;
+                    }, Qt::QueuedConnection);
                 }
-                QMetaObject::invokeMethod(self, [self, refreshedAt, uiBars]() {
-                    self->m_dataRefreshedAt = refreshedAt;
-                    self->m_lastHistBars    = uiBars;
-                }, Qt::QueuedConnection);
             } else {
                 m_session->setHistoricalDataManager(nullptr);
             }
             // For CSV/JSONL sources, BacktestSession handles loading itself (no network)
 
             // Run the simulation
-            m_session->run();
+            if (cancelledBeforeRun)
+                emit m_session->failed(cancellationReason);
+            else
+                m_session->run();
 
             if (db.isOpen())
                 db.close();

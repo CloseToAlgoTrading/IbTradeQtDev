@@ -67,6 +67,8 @@ private slots:
 	void onClickPairTraderButton();
     void onClickAutoDeltaButton();
     void onClickDBStoreButton();
+    void onBrokerConnectionChanged(bool connected);
+    void onBrokerConnectionAttemptFinished(bool connected);
 
 private:
 
@@ -93,6 +95,8 @@ private:
 	QScopedPointer<AboutDlgPresener> pAboutDlgPresenter;
 
     ISystemBackend*     m_backend             = nullptr;
+    bool                m_brokerConnected     = false;
+    bool                m_connectionRequested = false;
     SystemTreeModel*    m_pSystemTreeModel    = nullptr;
     SystemTreeDelegate* m_pSystemTreeDelegate = nullptr;
 

@@ -5,6 +5,7 @@
 #include <memory>
 
 class QNetworkAccessManager;
+class CBrokerDataProvider;
 
 namespace DataManagement {
 
@@ -17,7 +18,8 @@ public:
     /// Returns nullptr when no provider is registered for this provenance id (Phase A: non-yahoo).
     static std::unique_ptr<IHistoricalBarsCoverageSyncProvider> makeProviderForKey(
         const HistoricalBarsDatasetKey& key, QNetworkAccessManager* networkManager,
-        int yahooFetchTimeoutMs = 60000);
+        int yahooFetchTimeoutMs = 60000,
+        CBrokerDataProvider* brokerDataProvider = nullptr);
 };
 
 } // namespace DataManagement

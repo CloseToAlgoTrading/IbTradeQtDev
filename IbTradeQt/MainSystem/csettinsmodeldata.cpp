@@ -1,5 +1,6 @@
 #include "csettinsmodeldata.h"
 #include "cmainmodel.h"
+#include "GlobalDef.h"
 #include "MyLogger.h"
 #include "NHelper.h"
 #include "StorageConfig.h"
@@ -222,7 +223,9 @@ void CSettinsModelData::setupModelData(TreeItem * rootItem)
     _parent->insertChildren(_parent->childCount(), 1, rootItem->columnCount());
     m_pServerAddress = pItemDataType(new stItemData("127.0.0.1", EVT_TEXT, S_DATA_ID_SERVER_ADDRESS));
     _parent->child(_parent->childCount() - 1)->addData(0, pItemDataType(new stItemData("Address", EVT_RO_TEXT, S_DATA_ID_UNSET)));
-    m_pServerPort = pItemDataType(new stItemData("4448", EVT_TEXT, S_DATA_ID_SERVER_PORT));
+    m_pServerPort = pItemDataType(new stItemData(QString::number(CONNECTIONS_SERVER_PORT),
+                                                 EVT_TEXT,
+                                                 S_DATA_ID_SERVER_PORT));
     _parent->child(_parent->childCount() - 1)->addData(1, m_pServerAddress);
     _parent->insertChildren(_parent->childCount(), 1, rootItem->columnCount());
     _parent->child(_parent->childCount() - 1)->addData(0, pItemDataType(new stItemData("Port", EVT_RO_TEXT, S_DATA_ID_UNSET)));

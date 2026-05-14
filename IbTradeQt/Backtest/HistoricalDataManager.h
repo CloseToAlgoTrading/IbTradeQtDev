@@ -34,6 +34,7 @@
 #include <QVariantMap>
 #include <QEventLoop>
 #include <QSet>
+#include <functional>
 #include "IBComm/HistoricalDataRouter.h"
 #include "Backtest/IHistoricalDataSource.h"
 #include "DB/dbdatatypes.h"
@@ -41,6 +42,7 @@
 #include "Backtest/YahooChartBatchFetch.h"
 
 class QNetworkAccessManager;
+class CBrokerDataProvider;
 
 namespace Backtest {
 
@@ -69,8 +71,12 @@ public:
                                    QNetworkAccessManager* networkManager = nullptr,
                                    QObject* parent = nullptr);
 
+    static void setBrokerDataProvider(CBrokerDataProvider* provider);
+    static CBrokerDataProvider* brokerDataProvider();
+
     void setConfig(const Config& config) { m_config = config; }
     Config config() const { return m_config; }
+    void setCancelCallback(std::function<bool()> callback) { m_cancelRequested = std::move(callback); }
 
     // Fetch bars for a single (symbol, resolution, dataSourceId) tuple within [from, to].
     // Policy controls cache consultation and write behavior (see Pipeline::HistoricalReadPolicy).
@@ -152,7 +158,8 @@ private:
                                                    const QString& resolution,
                                                    const QString& dataSourceId,
                                                    const QDateTime& from,
-                                                   const QDateTime& to);
+                                                   const QDateTime& to,
+                                                   const QHash<QString, QVariantMap>& strategyAssetBySymbol = {});
 
     // Fetch a single batch of symbols from Yahoo Finance (no batching, no caching).
     // Returns bars and a set of symbols that encountered transport errors.
@@ -223,6 +230,8 @@ private:
     QNetworkAccessManager*   m_networkManager;
     bool                     m_ownsNetworkManager = false;
     Config                   m_config;
+    std::function<bool()>    m_cancelRequested;
+    static CBrokerDataProvider* s_brokerDataProvider;
 };
 
 } // namespace Backtest

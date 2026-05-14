@@ -141,14 +141,14 @@ DataManagementPanel::DataManagementPanel(QWidget* parent)
     for (const QString& r : DataManagement::canonicalBarResolutions())
         m_importResolution->addItem(r);
     m_importDataSource = new QLineEdit(this);
-    m_importDataSource->setPlaceholderText(QStringLiteral("dataSourceId (e.g. csv)"));
+    m_importDataSource->setPlaceholderText(QStringLiteral("dataSourceId (e.g. csv, ib)"));
     auto* importRow = new QHBoxLayout();
     importRow->addWidget(new QLabel(QStringLiteral("Import resolution:"), this));
     importRow->addWidget(m_importResolution);
     importRow->addWidget(new QLabel(QStringLiteral("dataSourceId:"), this));
     importRow->addWidget(m_importDataSource, 1);
 
-    m_coverageSyncLabel = new QLabel(QStringLiteral("Coverage sync (UTC) — Yahoo Day1 only:"), this);
+    m_coverageSyncLabel = new QLabel(QStringLiteral("Coverage sync (UTC) — Yahoo Day1 or IB:"), this);
     m_syncFrom = new QDateTimeEdit(this);
     m_syncTo   = new QDateTimeEdit(this);
     for (QDateTimeEdit* dt : {m_syncFrom, m_syncTo}) {
@@ -161,9 +161,9 @@ DataManagementPanel::DataManagementPanel(QWidget* parent)
 
     m_syncCoverageButton = new QPushButton(QStringLiteral("Sync coverage"), this);
     m_coverageSyncHint = new QLabel(
-        QStringLiteral("Select a Yahoo Day1 row in the table above. If the symbol is missing, load data "
+        QStringLiteral("Select a Yahoo Day1 or IB row in the table above. If the symbol is missing, load data "
                        "first (e.g. CSV import). Leading/trailing coverage only — no internal hole "
-                       "repair. Other sources: Phase B."),
+                       "repair."),
         this);
     m_coverageSyncHint->setWordWrap(true);
     m_coverageSyncHint->setVisible(false);
@@ -179,15 +179,15 @@ DataManagementPanel::DataManagementPanel(QWidget* parent)
     m_yahooBatchSymbolsEdit = new QLineEdit(this);
     m_yahooBatchSymbolsEdit->setPlaceholderText(AssetUniverseInput::lineEditPlaceholder());
     m_yahooBatchSymbolsEdit->setToolTip(AssetUniverseInput::lineEditToolTip());
-    m_yahooBatchFetchButton = new QPushButton(QStringLiteral("Fetch Yahoo bars"), this);
+    m_yahooBatchFetchButton = new QPushButton(QStringLiteral("Fetch provider bars"), this);
     m_yahooBatchHint =
-        new QLabel(QStringLiteral("Yahoo Day1 — comma-separated symbols (same format as backtest). "
-                                  "Uses the From/To UTC fields above."),
+        new QLabel(QStringLiteral("Yahoo or IB — comma-separated symbols (same format as backtest). "
+                                  "Uses Import resolution, dataSourceId, and the From/To UTC fields above."),
                    this);
     m_yahooBatchHint->setWordWrap(true);
 
     auto* yahooBatchRow = new QHBoxLayout();
-    yahooBatchRow->addWidget(new QLabel(QStringLiteral("External (Yahoo):"), this));
+    yahooBatchRow->addWidget(new QLabel(QStringLiteral("External source:"), this));
     yahooBatchRow->addWidget(m_yahooBatchSymbolsEdit, 1);
     yahooBatchRow->addWidget(m_yahooBatchFetchButton);
 
@@ -340,18 +340,20 @@ void DataManagementPanel::updateYahooBatchAvailability()
 void DataManagementPanel::updateCoverageSyncAvailability()
 {
     const auto keys = selectedKeys();
-    const bool yahooDay1 = keys.size() == 1 && keys.first().dataSourceId == QLatin1String("yahoo")
-                           && keys.first().resolution == QLatin1String("Day1");
+    const bool supported = keys.size() == 1
+        && ((keys.first().dataSourceId == QLatin1String("yahoo")
+             && keys.first().resolution == QLatin1String("Day1"))
+            || keys.first().dataSourceId == QLatin1String("ib"));
 
-    if (!yahooDay1)
+    if (!supported)
         m_lastCoverageSyncKey = {};
 
-    m_syncCoverageButton->setEnabled(yahooDay1 && isEnabled());
+    m_syncCoverageButton->setEnabled(supported && isEnabled());
     m_syncFrom->setEnabled(isEnabled());
     m_syncTo->setEnabled(isEnabled());
-    m_coverageSyncHint->setVisible(!yahooDay1);
+    m_coverageSyncHint->setVisible(!supported);
 
-    if (!yahooDay1 || m_table->selectionModel()->selectedRows().size() != 1)
+    if (!supported || m_table->selectionModel()->selectedRows().size() != 1)
         return;
 
     const QModelIndex proxyIdx = m_table->selectionModel()->selectedRows().first();

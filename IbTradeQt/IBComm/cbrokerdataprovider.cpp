@@ -31,6 +31,14 @@ bool CBrokerDataProvider::reqestHistoricalData(reqHistConfigData_t & _config)
     return true;
 }
 
+bool CBrokerDataProvider::cancelHistoricalData(qint32 id)
+{
+    if (!getClien() || id <= 0)
+        return false;
+    getClien()->cancelHistoricalDataAPI(id);
+    return true;
+}
+
 bool CBrokerDataProvider::requestHistoricalTicksData(reqHistTicksConfigData_t &_config)
 {
     if (_config.symbol.isEmpty()) {

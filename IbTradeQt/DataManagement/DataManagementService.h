@@ -5,6 +5,8 @@
 #include <QObject>
 #include <QList>
 
+class CBrokerDataProvider;
+
 namespace DataManagement {
 
 class DataManagementWorker;
@@ -15,6 +17,8 @@ class DataManagementService : public QObject {
 public:
     explicit DataManagementService(QObject* parent = nullptr);
     ~DataManagementService() override;
+
+    void setBrokerDataProvider(CBrokerDataProvider* provider);
 
     quint64 requestBarsInventory(const QString& backtestDbPath);
     quint64 requestDeleteDatasets(const QString& backtestDbPath,
@@ -31,9 +35,11 @@ public:
     quint64 requestSyncBarsCoverage(const QString& backtestDbPath, const HistoricalBarsDatasetKey& key,
                                     const QDateTime& requestedFromUtc, const QDateTime& requestedToUtc);
 
-    /// Yahoo Day1 only; one coverage sync per symbol. Uses same UTC range validation as `requestSyncBarsCoverage`.
+    /// Provider-backed batch import; one coverage sync per symbol. Yahoo defaults to Day1.
     quint64 requestBatchYahooImport(const QString& backtestDbPath, const QStringList& symbols,
-                                    const QDateTime& requestedFromUtc, const QDateTime& requestedToUtc);
+                                    const QDateTime& requestedFromUtc, const QDateTime& requestedToUtc,
+                                    const QString& resolution = {},
+                                    const QString& dataSourceId = {});
 
 signals:
     void barsInventoryLoaded(quint64 operationId, QList<DataManagement::HistoricalBarsDataset> rows);

@@ -59,6 +59,9 @@ CPresenter::CPresenter(QObject *parent)
 {
     QSharedPointer<IBrokerAPI> pClient = Brokers::createBrokerApi(QStringLiteral("ib"));
     m_pDataProvider->setClien(pClient);
+    QObject::connect(pClient.data(), &IBrokerAPI::signalServerStateUpdate,
+                     this, &CPresenter::onBrokerConnectionChanged,
+                     Qt::QueuedConnection);
 
     m_pMarketDataRouter = new IBComm::MarketDataRouter(this);
     if (auto* ibImpl = dynamic_cast<IBComClientImpl*>(pClient.data()))
@@ -66,6 +69,9 @@ CPresenter::CPresenter(QObject *parent)
 
     workerIBClient->moveToThread(threadIBClient);
     QObject::connect(threadIBClient, SIGNAL(started()), workerIBClient, SLOT(process()));
+    QObject::connect(workerIBClient, &IBWorker::Worker::connectionAttemptFinished,
+                     this, &CPresenter::onBrokerConnectionAttemptFinished,
+                     Qt::QueuedConnection);
     threadIBClient->start();
 
     QThread::currentThread()->setObjectName("mainThread");
@@ -287,6 +293,7 @@ void CPresenter::MapSignals()
 
     m_dataMgmtCoord = new DataManagementCoordinator(this);
     m_dataMgmtCoord->setView(pIbtsView);
+    m_dataMgmtCoord->setBrokerDataProvider(m_pDataProvider.data());
     m_dataMgmtCoord->setPanel(pIbtsView->dataManagementPanel());
     m_dataMgmtCoord->wireSignals();
 
@@ -405,8 +412,7 @@ void CPresenter::addView(CIBTradeSystemView * mw)
 
 void CPresenter::onClickMyButton()
 {
-    static bool buttonState = false;
-    if ((false == buttonState) && (!m_pDataProvider->getClien()->isConnectedAPI()))
+    if (!m_brokerConnected && !m_connectionRequested)
     {
         if (m_backend) {
             QStringList divergedNames;
@@ -461,26 +467,49 @@ void CPresenter::onClickMyButton()
                             }
                 }
             }
-
-            m_backend->connectBroker();
         }
 
+        m_connectionRequested = true;
         workerIBClient->setCommand(IBWorker::CONNECT);
-        workerAlfaTime->StartGetTimeUpdate(1000);
-
-        emit signalClickConnect(true);
-        buttonState = true;
     }
     else
     {
+        m_connectionRequested = false;
         workerAlfaTime->StopTimeUpdate();
         workerIBClient->setCommand(IBWorker::DISCONNECT);
-
-        if (m_backend) m_backend->disconnectBroker();
-        emit signalClickConnect(false);
-
-        buttonState = false;
     }
+}
+
+void CPresenter::onBrokerConnectionChanged(bool connected)
+{
+    m_brokerConnected = connected;
+    m_connectionRequested = false;
+
+    if (connected) {
+        if (m_backend)
+            m_backend->connectBroker();
+        workerAlfaTime->StartGetTimeUpdate(1000);
+        emit signalClickConnect(true);
+    } else {
+        workerAlfaTime->StopTimeUpdate();
+        if (m_backend)
+            m_backend->disconnectBroker();
+        emit signalClickConnect(false);
+    }
+}
+
+void CPresenter::onBrokerConnectionAttemptFinished(bool connected)
+{
+    if (connected)
+        return;
+
+    m_connectionRequested = false;
+    m_brokerConnected = false;
+    workerAlfaTime->StopTimeUpdate();
+    if (m_backend)
+        m_backend->disconnectBroker();
+    emit signalClickConnect(false);
+    qWarning() << "CPresenter: IB/TWS connection attempt failed";
 }
 
 

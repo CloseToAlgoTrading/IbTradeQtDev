@@ -5,6 +5,7 @@
 #include <QObject>
 
 class CIBTradeSystemView;
+class CBrokerDataProvider;
 
 namespace DataManagement {
 class DataManagementService;
@@ -22,6 +23,7 @@ public:
 
     void setView(CIBTradeSystemView* view);
     void setPanel(DataManagementUI::DataManagementPanel* panel);
+    void setBrokerDataProvider(CBrokerDataProvider* provider);
 
     void wireSignals();
     void refreshContextAndInventory();

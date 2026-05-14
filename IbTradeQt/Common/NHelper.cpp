@@ -1,4 +1,5 @@
 #include "NHelper.h"
+#include "GlobalDef.h"
 #include "StorageConfig.h"
 #include <QSettings>
 #include <QFile>
@@ -63,7 +64,7 @@ qint32 NHelper::getDBPort()
 
 quint16 NHelper::getServerPort()
 {
-    quint16 ret_port = 4002;
+    quint16 ret_port = CONNECTIONS_SERVER_PORT;
     QSettings dbsettings(settingsFilePath(), QSettings::IniFormat);
     ret_port = static_cast<quint16>(dbsettings.value("Server/serverport", ret_port).toUInt());
 
@@ -77,7 +78,7 @@ void NHelper::initSettings()
     {
         QSettings settings(path, QSettings::IniFormat);
         settings.beginGroup("Server");
-        settings.setValue("serverport", 4002);
+        settings.setValue("serverport", CONNECTIONS_SERVER_PORT);
         settings.setValue("serveraddr", "localhost");
         settings.endGroup();
         settings.beginGroup("Logger");

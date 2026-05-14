@@ -744,6 +744,8 @@ bool SystemBackendImpl::stopStrategy(const QString& uuid)
 
 bool SystemBackendImpl::connectBroker()
 {
+    if (m_brokerConnected)
+        return true;
     m_brokerConnected = true;
     emit brokerConnectionChanged(true);
     return true;
@@ -751,6 +753,8 @@ bool SystemBackendImpl::connectBroker()
 
 bool SystemBackendImpl::disconnectBroker()
 {
+    if (!m_brokerConnected)
+        return true;
     m_brokerConnected = false;
     emit brokerConnectionChanged(false);
     return true;

@@ -62,6 +62,7 @@ public:
     static void setGlobalExecutionPort(Ports::IOrderExecutionPort* port);
     static void setGlobalPositionRepo(Ports::IPositionRepositoryPort* repo);
     static void setGlobalPersistentPositionRepo(Ports::IPositionRepositoryPort* repo);
+    static void setGlobalBrokerConnected(bool connected);
 
     static IBComm::MarketDataRouter* globalRouter();
     static Supervision::Supervisor* globalSupervisor();
@@ -154,6 +155,7 @@ private:
     static Ports::IOrderExecutionPort* s_globalExecutionPort;
     static Ports::IPositionRepositoryPort* s_globalPositionRepo;
     static Ports::IPositionRepositoryPort* s_globalPersistentPositionRepo;
+    static bool s_globalBrokerConnected;
 };
 
 #endif // CPIPELINESTRATEGYADAPTER_H

@@ -127,6 +127,8 @@ void BacktestSession::buildObjectGraph()
         if (m_yahooNetworkManager)
             yahoo->setNetworkManager(m_yahooNetworkManager);
         m_dataSource = std::move(yahoo);
+    } else if (m_config.dataSourceId == "ib") {
+        m_dataSource = std::make_unique<JsonlHistoricalDataSource>(m_config.dataPath);
     } else {
         qCWarning(lcBacktestSession) << "BacktestSession: unknown dataSourceId" << m_config.dataSourceId
                    << "— defaulting to JSONL";

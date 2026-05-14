@@ -380,8 +380,13 @@ void YahooFinanceDataSource::checkAllDone()
 {
     if (m_pendingCount > 0) return;
 
-    if (m_failedSymbols.size() == m_requestedSymbols.size()) {
-        emit loadFailed(m_lastError);
+    if (!m_failedSymbols.isEmpty()) {
+        QStringList failed = m_failedSymbols.values();
+        failed.sort();
+        const QString reason = m_lastError.isEmpty()
+            ? QStringLiteral("Yahoo request failed for: %1").arg(failed.join(QStringLiteral(", ")))
+            : QStringLiteral("%1 (failed symbols: %2)").arg(m_lastError, failed.join(QStringLiteral(", ")));
+        emit loadFailed(reason);
     } else {
         emit loadFinished();
     }

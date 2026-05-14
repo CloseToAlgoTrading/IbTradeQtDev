@@ -24,6 +24,8 @@
 #include <QElapsedTimer>
 #include <QMap>
 #include <QList>
+#include <atomic>
+#include <memory>
 #include "Backtest/BacktestDataTypes.h"
 #include "Backtest/BacktestSession.h"
 #include "DB/dbdatatypes.h"
@@ -92,6 +94,7 @@ private:
 
     QThread*                  m_workerThread  = nullptr;
     BacktestSession*          m_session       = nullptr;
+    std::shared_ptr<std::atomic_bool> m_stopRequested;
 };
 
 } // namespace Backtest

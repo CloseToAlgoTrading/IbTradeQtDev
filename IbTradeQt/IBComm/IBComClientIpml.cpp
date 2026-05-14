@@ -132,32 +132,38 @@ void IBComClientImpl::cancelRealTimeDataAPI(const qint32 _id)
 void IBComClientImpl::reqHistoricalDataAPI(const reqHistConfigData_t & _config)
 {
     reqHist_t reqHist;
-    // Ending date for the time series
-    //reqHist.strEndDate = QDateTime::currentDateTime().toString("yyyyMMdd HH:mm:ss").toStdString().c_str();
-    reqHist.strEndDate = QDateTime::currentDateTime().toUTC().toString("yyyyMMdd-HH:mm:ss").toStdString().c_str();
+    reqHist.strEndDate = _config.endDateTimeUtc.trimmed().isEmpty()
+        ? QDateTime::currentDateTimeUtc().toString("yyyyMMdd-HH:mm:ss")
+        : _config.endDateTimeUtc.trimmed();
 
     // Amount of time up to the end date
     reqHist.strDuration = _config.duration;
     // Bar size
-    //reqHist.strBarSize = "1 hour";
     reqHist.strBarSize = _config.barSize;
-    // Data type TRADES= OHLC Trades with volume
-    reqHist.strWhatToShow = "TRADES";
+    reqHist.strWhatToShow = _config.whatToShow.trimmed().isEmpty()
+        ? QStringLiteral("TRADES")
+        : _config.whatToShow.trimmed();
 
     Contract m_contract;
 
     reqHist.m_contract.symbol = _config.symbol.toStdString();
-    reqHist.m_contract.secType = "STK";
+    reqHist.m_contract.secType = _config.secType.trimmed().isEmpty()
+        ? "STK"
+        : _config.secType.trimmed().toStdString();
     reqHist.m_contract.strike = 0;
-    reqHist.m_contract.currency = "USD";
-    reqHist.m_contract.exchange = "SMART";
-    reqHist.m_contract.primaryExchange = "SMART";
+    reqHist.m_contract.currency = _config.currency.trimmed().isEmpty()
+        ? "USD"
+        : _config.currency.trimmed().toStdString();
+    reqHist.m_contract.exchange = _config.exchange.trimmed().isEmpty()
+        ? "SMART"
+        : _config.exchange.trimmed().toStdString();
+    reqHist.m_contract.primaryExchange = _config.primaryExchange.trimmed().toStdString();
 
 	TagValueListSPtr mktDataOptions;
 
     m_pClient->reqHistoricalData(_config.id, reqHist.m_contract,
         reqHist.strEndDate.toStdString(), reqHist.strDuration.toStdString(), reqHist.strBarSize.toStdString(), reqHist.strWhatToShow.toStdString(),
-        1, 1, false, mktDataOptions);
+        _config.useRth, _config.formatDate, false, mktDataOptions);
 }
 
 void IBComClientImpl::cancelHistoricalDataAPI(const qint32 id)

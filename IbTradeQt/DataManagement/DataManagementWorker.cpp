@@ -20,6 +20,11 @@ DataManagementWorker::DataManagementWorker(QObject* parent)
     , m_repo(QStringLiteral("DataMgmtBacktest_") + QString::number(quintptr(this), 16))
 {}
 
+void DataManagementWorker::setBrokerDataProvider(CBrokerDataProvider* provider)
+{
+    m_brokerDataProvider = provider;
+}
+
 void DataManagementWorker::ensureNetworkManager()
 {
     if (!m_networkManager)
@@ -264,13 +269,14 @@ void DataManagementWorker::doSyncCoverage(quint64 operationId, QString dbPath,
 
     ensureNetworkManager();
 
-    auto provider = HistoricalBarsCoverageSyncRegistry::makeProviderForKey(key, m_networkManager);
+    auto provider = HistoricalBarsCoverageSyncRegistry::makeProviderForKey(
+        key, m_networkManager, 60000, m_brokerDataProvider);
     if (!provider) {
         DataManagementError e;
         e.operation   = DataManagementOperation::CoverageSync;
         e.operationId = operationId;
         e.message =
-            QStringLiteral("Coverage sync is not available for this dataSourceId (Phase A: Yahoo only).");
+            QStringLiteral("Coverage sync is not available for this dataSourceId.");
         e.keyValid = true;
         e.key      = key;
         e.path     = dbPath;
@@ -297,7 +303,8 @@ void DataManagementWorker::doSyncCoverage(quint64 operationId, QString dbPath,
 
 void DataManagementWorker::doBatchYahooImport(quint64 operationId, QString dbPath,
                                               QStringList symbols, QDateTime requestedFromUtc,
-                                              QDateTime requestedToUtc)
+                                              QDateTime requestedToUtc,
+                                              QString resolution, QString dataSourceId)
 {
     QString err;
     if (!m_repo.ensureOpen(dbPath, &err)) {
@@ -315,16 +322,17 @@ void DataManagementWorker::doBatchYahooImport(quint64 operationId, QString dbPat
     HistoricalBarsDatasetKey templateKey;
     templateKey.symbol =
         symbols.isEmpty() ? QStringLiteral("_") : symbols.first();
-    templateKey.resolution   = QStringLiteral("Day1");
-    templateKey.dataSourceId = QStringLiteral("yahoo");
+    templateKey.resolution   = resolution;
+    templateKey.dataSourceId = dataSourceId;
 
-    auto provider = HistoricalBarsCoverageSyncRegistry::makeProviderForKey(templateKey, m_networkManager);
+    auto provider = HistoricalBarsCoverageSyncRegistry::makeProviderForKey(
+        templateKey, m_networkManager, 60000, m_brokerDataProvider);
     if (!provider) {
         DataManagementError e;
         e.operation   = DataManagementOperation::YahooBatchImport;
         e.operationId = operationId;
         e.message =
-            QStringLiteral("Yahoo batch import requires Yahoo Day1 (Phase A).");
+            QStringLiteral("Batch import is not available for this dataSourceId.");
         e.path = dbPath;
         emit yahooBatchImportFailed(operationId, e);
         return;
@@ -337,13 +345,13 @@ void DataManagementWorker::doBatchYahooImport(quint64 operationId, QString dbPat
     for (const QString& sym : symbols) {
         HistoricalBarsDatasetKey k;
         k.symbol       = sym;
-        k.resolution   = QStringLiteral("Day1");
-        k.dataSourceId = QStringLiteral("yahoo");
+        k.resolution   = resolution;
+        k.dataSourceId = dataSourceId;
 
         auto opt = provider->syncCoverage(k, requestedFromUtc, requestedToUtc, m_repo, &syncErr);
         if (!opt) {
             agg.failedSymbols.append(sym);
-            agg.failedReasons.append(syncErr.isEmpty() ? QStringLiteral("Yahoo coverage sync failed.")
+            agg.failedReasons.append(syncErr.isEmpty() ? QStringLiteral("Provider coverage sync failed.")
                                                        : syncErr);
             continue;
         }

@@ -73,7 +73,7 @@ void BacktestRunConfigPanel::buildForm() {
     m_slippageSpin->setDecimals(1);
 
     m_dataSourceCombo = new QComboBox();
-    m_dataSourceCombo->addItems({"yahoo", "csv", "jsonl"});
+    m_dataSourceCombo->addItems({"yahoo", "ib", "csv", "jsonl"});
 
     // --- Run button & progress ---
     m_runButton = new QPushButton(QStringLiteral("▶  Run Backtest"));
