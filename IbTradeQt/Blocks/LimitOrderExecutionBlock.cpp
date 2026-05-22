@@ -1,5 +1,6 @@
 #include "LimitOrderExecutionBlock.h"
 
+#include "../Pipeline/JsonConfigValue.h"
 #include "../Pipeline/PipelineRuntimeContext.h"
 #include "../Pipeline/SemanticModelDataMapper.h"
 #include <QDateTime>
@@ -36,8 +37,8 @@ QJsonObject LimitOrderExecutionBlock::config() const
 
 void LimitOrderExecutionBlock::setConfig(const QJsonObject& config)
 {
-    m_minQuantity = config.value(QStringLiteral("minQuantity")).toDouble(1.0);
-    m_limitOffset = config.value(QStringLiteral("limitOffset")).toDouble(0.01);
+    m_minQuantity = Pipeline::jsonDouble(config.value(QStringLiteral("minQuantity")), 1.0);
+    m_limitOffset = Pipeline::jsonDouble(config.value(QStringLiteral("limitOffset")), 0.01);
 }
 
 void LimitOrderExecutionBlock::execute(const QVector<Pipeline::ExecutionIntent>& intents)

@@ -1,6 +1,7 @@
 #include "SimpleRebalanceBlock.h"
 
 #include "../Common/IClock.h"
+#include "../Pipeline/JsonConfigValue.h"
 #include "../Pipeline/PipelineRuntimeContext.h"
 #include <QDateTime>
 #include <QJsonObject>
@@ -23,15 +24,13 @@ QJsonObject SimpleRebalanceBlock::config() const
     QJsonObject cfg;
     cfg[QStringLiteral("defaultQuantity")] = m_defaultQuantity;
     cfg[QStringLiteral("equalWeight")] = m_equalWeight;
-    cfg[QStringLiteral("priceResolution")] = m_priceResolution;
-    cfg[QStringLiteral("priceDataSourceId")] = m_priceDataSourceId;
     return cfg;
 }
 
 void SimpleRebalanceBlock::setConfig(const QJsonObject& config)
 {
-    m_defaultQuantity = config.value(QStringLiteral("defaultQuantity")).toDouble(100.0);
-    m_equalWeight = config.value(QStringLiteral("equalWeight")).toBool(false);
+    m_defaultQuantity = Pipeline::jsonDouble(config.value(QStringLiteral("defaultQuantity")), 100.0);
+    m_equalWeight = Pipeline::jsonBool(config.value(QStringLiteral("equalWeight")), false);
     m_priceResolution = config.value(QStringLiteral("priceResolution")).toString(QStringLiteral("Day1"));
     m_priceDataSourceId = config.value(QStringLiteral("priceDataSourceId")).toString(QStringLiteral("yahoo"));
 }
@@ -79,8 +78,14 @@ double SimpleRebalanceBlock::resolvePriceForSymbol(const QString& symbol) const
         if (!m_runtimeContext->historical)
             return 0.0;
         const QDateTime from = toUtc.addYears(-2);
+        const QString resolution = m_runtimeContext->historicalResolution.isEmpty()
+            ? m_priceResolution
+            : m_runtimeContext->historicalResolution;
+        const QString dataSourceId = m_runtimeContext->historicalDataSourceId.isEmpty()
+            ? m_priceDataSourceId
+            : m_runtimeContext->historicalDataSourceId;
         const QVector<Pipeline::HistoricalBarSnapshot> bars =
-            m_runtimeContext->historical->getBars(sym, m_priceResolution, m_priceDataSourceId, from, toUtc,
+            m_runtimeContext->historical->getBars(sym, resolution, dataSourceId, from, toUtc,
                                                   m_runtimeContext->historicalReadPolicyDefault);
         if (!bars.isEmpty() && bars.last().close > 0.0)
             return bars.last().close;

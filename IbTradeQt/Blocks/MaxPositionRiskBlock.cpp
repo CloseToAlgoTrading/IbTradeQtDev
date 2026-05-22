@@ -2,6 +2,7 @@
 
 #include "../Pipeline/BlockSubscriptionUtils.h"
 #include "../Pipeline/IDataSubscriptionPort.h"
+#include "../Pipeline/JsonConfigValue.h"
 #include "../Pipeline/PipelineRuntimeContext.h"
 #include "../Ports/IPositionRepositoryPort.h"
 #include <QUuid>
@@ -30,11 +31,11 @@ QJsonObject MaxPositionRiskBlock::config() const
 
 void MaxPositionRiskBlock::setConfig(const QJsonObject& config)
 {
-    m_maxPositionSize = config.value(QStringLiteral("maxPositionSize")).toDouble(1000.0);
-    m_maxTotalExposure = config.value(QStringLiteral("maxTotalExposure")).toDouble(10000.0);
-    m_stopLossPercent = config.value(QStringLiteral("stopLossPercent")).toDouble(0.0);
+    m_maxPositionSize = Pipeline::jsonDouble(config.value(QStringLiteral("maxPositionSize")), 1000.0);
+    m_maxTotalExposure = Pipeline::jsonDouble(config.value(QStringLiteral("maxTotalExposure")), 10000.0);
+    m_stopLossPercent = Pipeline::jsonDouble(config.value(QStringLiteral("stopLossPercent")), 0.0);
     m_scope = static_cast<Pipeline::Scope>(
-        config.value(QStringLiteral("scope")).toInt(static_cast<int>(Pipeline::Scope::Strategy)));
+        Pipeline::jsonInt(config.value(QStringLiteral("scope")), static_cast<int>(Pipeline::Scope::Strategy)));
 }
 
 void MaxPositionRiskBlock::applySubscriptionUnion()

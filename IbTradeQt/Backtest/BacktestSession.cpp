@@ -219,6 +219,8 @@ void BacktestSession::buildObjectGraph()
             ctx.historical = m_historicalReadAdapter.get();
         ctx.subscription = m_noOpSubscriptionPort.get();
         ctx.clock = m_clock.get();
+        ctx.historicalDataSourceId = m_config.dataSourceId;
+        ctx.historicalResolution = barResolutionToPipelineString(m_config.resolution);
         double cap = pipelineConfig.value(QStringLiteral("strategyAllocatedCapital")).toDouble(0.0);
         if (cap <= 0.0)
             cap = m_config.initialCapital;

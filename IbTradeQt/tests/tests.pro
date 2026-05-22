@@ -245,6 +245,7 @@ SOURCES += \
 
 HEADERS += \
     ../Pipeline/SemanticPipelineChain.h \
+    ../Pipeline/JsonConfigValue.h \
     ../Adapters/IBHistoricalDataFetcher.h \
     ../Adapters/LiveHistoricalReadAdapter.h \
     ../Pipeline/Contracts.h \

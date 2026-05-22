@@ -3,6 +3,7 @@
 #include "../Pipeline/BlockSubscriptionUtils.h"
 #include "../Pipeline/IHistoricalRead.h"
 #include "../Pipeline/IDataSubscriptionPort.h"
+#include "../Pipeline/JsonConfigValue.h"
 #include "../Pipeline/PipelineRuntimeContext.h"
 #include "UnifiedModelData.h"
 #include <QDateTime>
@@ -38,11 +39,11 @@ QJsonObject MeanReversionAlphaBlock::config() const
 
 void MeanReversionAlphaBlock::setConfig(const QJsonObject& config)
 {
-    m_period = config.value(QStringLiteral("period")).toInt(20);
-    m_stdDevThreshold = config.value(QStringLiteral("stdDevThreshold")).toDouble(2.0);
+    m_period = Pipeline::jsonInt(config.value(QStringLiteral("period")), 20);
+    m_stdDevThreshold = Pipeline::jsonDouble(config.value(QStringLiteral("stdDevThreshold")), 2.0);
     m_resolution = config.value(QStringLiteral("resolution")).toString(QStringLiteral("Day1"));
     m_dataSourceId = config.value(QStringLiteral("dataSourceId")).toString(QStringLiteral("yahoo"));
-    m_lookbackYears = config.value(QStringLiteral("lookbackYears")).toInt(1);
+    m_lookbackYears = Pipeline::jsonInt(config.value(QStringLiteral("lookbackYears")), 1);
 }
 
 void MeanReversionAlphaBlock::initialize() { m_priceHistory.clear(); }
@@ -89,8 +90,14 @@ double MeanReversionAlphaBlock::zScoreFromHistoricalBars(const QString& symbol) 
 
     const QDateTime to = QDateTime::currentDateTimeUtc();
     const QDateTime from = to.addYears(-m_lookbackYears);
+    const QString resolution = runtimeContext()->historicalResolution.isEmpty()
+        ? m_resolution
+        : runtimeContext()->historicalResolution;
+    const QString dataSourceId = runtimeContext()->historicalDataSourceId.isEmpty()
+        ? m_dataSourceId
+        : runtimeContext()->historicalDataSourceId;
     const QVector<Pipeline::HistoricalBarSnapshot> bars =
-        runtimeContext()->historical->getBars(sym, m_resolution, m_dataSourceId, from, to,
+        runtimeContext()->historical->getBars(sym, resolution, dataSourceId, from, to,
                                               runtimeContext()->historicalReadPolicyDefault);
     if (bars.size() < m_period)
         return std::numeric_limits<double>::quiet_NaN();

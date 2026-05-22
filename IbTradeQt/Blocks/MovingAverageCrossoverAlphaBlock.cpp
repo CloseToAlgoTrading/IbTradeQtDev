@@ -1,5 +1,6 @@
 #include "MovingAverageCrossoverAlphaBlock.h"
 
+#include "../Pipeline/JsonConfigValue.h"
 #include <QJsonObject>
 #include <QUuid>
 #include <cmath>
@@ -27,8 +28,8 @@ QJsonObject MovingAverageCrossoverAlphaBlock::config() const
 
 void MovingAverageCrossoverAlphaBlock::setConfig(const QJsonObject& config)
 {
-    m_fastPeriod = config.value(QStringLiteral("fastPeriod")).toInt(10);
-    m_slowPeriod = config.value(QStringLiteral("slowPeriod")).toInt(30);
+    m_fastPeriod = Pipeline::jsonInt(config.value(QStringLiteral("fastPeriod")), 10);
+    m_slowPeriod = Pipeline::jsonInt(config.value(QStringLiteral("slowPeriod")), 30);
 }
 
 void MovingAverageCrossoverAlphaBlock::initialize() { m_closes.clear(); m_prevFastAboveSlow.clear(); }

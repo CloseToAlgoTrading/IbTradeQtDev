@@ -4,6 +4,7 @@
 #include "Blocks/MaxPositionRiskBlock.h"
 #include "Blocks/MomentumAlphaBlock.h"
 #include "Blocks/SimpleRebalanceBlock.h"
+#include "Common/IClock.h"
 #include "Pipeline/IHistoricalRead.h"
 #include "Pipeline/IMarketDataAccessor.h"
 #include "Pipeline/PipelineRuntimeContext.h"
@@ -13,6 +14,7 @@
 #include <QDateTime>
 #include <QJsonObject>
 #include <QSignalSpy>
+#include <QTimeZone>
 #include <optional>
 
 namespace {
@@ -20,15 +22,19 @@ namespace {
 class HistoricalStub : public Pipeline::IHistoricalRead {
 public:
     QMap<QString, QVector<Pipeline::HistoricalBarSnapshot>> barsBySymbol;
+    QString lastResolution;
+    QString lastDataSourceId;
 
     QVector<Pipeline::HistoricalBarSnapshot> getBars(
         const QString& symbol,
-        const QString& /*resolution*/,
-        const QString& /*dataSourceId*/,
+        const QString& resolution,
+        const QString& dataSourceId,
         const QDateTime& /*from*/,
         const QDateTime& /*to*/,
         Pipeline::HistoricalReadPolicy /*policy*/ = Pipeline::HistoricalReadPolicy::PreferCache) override
     {
+        lastResolution = resolution;
+        lastDataSourceId = dataSourceId;
         return barsBySymbol.value(symbol.toUpper());
     }
 };
@@ -82,6 +88,35 @@ void TestQuantMomentumBlocks::momentumSemantic_usesPeriodBarReturnAndTopN()
     QCOMPARE(out->at(0).symbol, QStringLiteral("UP"));
 }
 
+void TestQuantMomentumBlocks::momentumSemantic_usesRuntimeHistoricalSourceWhenProvided()
+{
+    HistoricalStub hist;
+    hist.barsBySymbol[QStringLiteral("UP")] = {snap(100.0), snap(110.0), snap(120.0)};
+
+    Blocks::MomentumAlphaBlock alpha;
+    QJsonObject cfg;
+    cfg[QStringLiteral("period")] = QStringLiteral("2");
+    cfg[QStringLiteral("topN")] = QStringLiteral("1");
+    cfg[QStringLiteral("threshold")] = QStringLiteral("0.001");
+    cfg[QStringLiteral("dataSourceId")] = QStringLiteral("yahoo");
+    alpha.setConfig(cfg);
+
+    Pipeline::PipelineRuntimeContext ctx;
+    ctx.historical = &hist;
+    ctx.historicalDataSourceId = QStringLiteral("ib");
+    ctx.historicalResolution = QStringLiteral("Day1");
+    alpha.setRuntimeContext(&ctx);
+
+    Pipeline::ModelDataList in = Pipeline::SemanticMapping::buildModelDataFromSymbols(
+        {QStringLiteral("UP")});
+    Pipeline::ModelDataList out = alpha.processSemantic(in, QStringLiteral("c1"));
+
+    QVERIFY(out);
+    QCOMPARE(out->size(), 1);
+    QCOMPARE(hist.lastDataSourceId, QStringLiteral("ib"));
+    QCOMPARE(hist.lastResolution, QStringLiteral("Day1"));
+}
+
 void TestQuantMomentumBlocks::simpleRebalance_equalWeight_usesAllocatedCapital()
 {
     MarketDataStub mkt;
@@ -112,6 +147,47 @@ void TestQuantMomentumBlocks::simpleRebalance_equalWeight_usesAllocatedCapital()
     for (const auto& row : *out) {
         QCOMPARE(row.amount, 50.0);
     }
+}
+
+void TestQuantMomentumBlocks::simpleRebalance_acceptsStringBoolAndUsesRuntimeHistoricalSource()
+{
+    HistoricalStub hist;
+    hist.barsBySymbol[QStringLiteral("X")] = {snap(100.0)};
+
+    class FixedClock final : public IClock {
+    public:
+        QDateTime now() const override
+        {
+            return QDateTime(QDate(2026, 5, 22), QTime(12, 0), QTimeZone::UTC);
+        }
+    } clock;
+
+    Pipeline::PipelineRuntimeContext ctx;
+    ctx.historical = &hist;
+    ctx.clock = &clock;
+    ctx.strategyAllocatedCapital = 10'000.0;
+    ctx.historicalDataSourceId = QStringLiteral("ib");
+    ctx.historicalResolution = QStringLiteral("Day1");
+
+    Blocks::SimpleRebalanceBlock reb;
+    QJsonObject cfg;
+    cfg[QStringLiteral("equalWeight")] = QStringLiteral("true");
+    cfg[QStringLiteral("defaultQuantity")] = QStringLiteral("1");
+    cfg[QStringLiteral("priceDataSourceId")] = QStringLiteral("yahoo");
+    reb.setConfig(cfg);
+    reb.setRuntimeContext(&ctx);
+
+    Pipeline::ModelDataList in = createDataList();
+    in->append(UnifiedModelData(QStringLiteral("X"), DIRECTION_UP, 1.0, 0.0, 0.0));
+
+    Pipeline::ModelDataList out =
+        reb.processSemantic(in, QMap<QString, double>{}, QStringLiteral("c1"));
+
+    QVERIFY(out);
+    QCOMPARE(out->size(), 1);
+    QCOMPARE(out->at(0).amount, 100.0);
+    QCOMPARE(hist.lastDataSourceId, QStringLiteral("ib"));
+    QCOMPARE(hist.lastResolution, QStringLiteral("Day1"));
 }
 
 void TestQuantMomentumBlocks::simpleRebalance_rotation_emitsExitForDroppedHoldings()

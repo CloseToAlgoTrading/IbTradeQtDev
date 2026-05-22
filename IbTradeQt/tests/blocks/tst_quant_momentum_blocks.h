@@ -8,7 +8,9 @@ class TestQuantMomentumBlocks : public QObject {
     Q_OBJECT
 private slots:
     void momentumSemantic_usesPeriodBarReturnAndTopN();
+    void momentumSemantic_usesRuntimeHistoricalSourceWhenProvided();
     void simpleRebalance_equalWeight_usesAllocatedCapital();
+    void simpleRebalance_acceptsStringBoolAndUsesRuntimeHistoricalSource();
     void simpleRebalance_rotation_emitsExitForDroppedHoldings();
     void maxPositionRisk_stopLoss_emitsSellOnce();
 };

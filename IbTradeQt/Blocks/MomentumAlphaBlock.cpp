@@ -3,6 +3,8 @@
 #include "../Pipeline/BlockSubscriptionUtils.h"
 #include "../Pipeline/IHistoricalRead.h"
 #include "../Pipeline/IDataSubscriptionPort.h"
+#include "../Pipeline/JsonConfigValue.h"
+#include "../Pipeline/PipelineRuntimeContext.h"
 #include "../Pipeline/SemanticModelDataMapper.h"
 #include <QDateTime>
 #include <QJsonObject>
@@ -40,13 +42,13 @@ QJsonObject MomentumAlphaBlock::config() const
 
 void MomentumAlphaBlock::setConfig(const QJsonObject& config)
 {
-    m_period = config.value(QStringLiteral("period")).toInt(20);
-    m_threshold = config.value(QStringLiteral("threshold")).toDouble(0.02);
-    m_topN = config.value(QStringLiteral("topN")).toInt(3);
-    m_positionSize = config.value(QStringLiteral("positionSize")).toDouble(100.0);
+    m_period = Pipeline::jsonInt(config.value(QStringLiteral("period")), 20);
+    m_threshold = Pipeline::jsonDouble(config.value(QStringLiteral("threshold")), 0.02);
+    m_topN = Pipeline::jsonInt(config.value(QStringLiteral("topN")), 3);
+    m_positionSize = Pipeline::jsonDouble(config.value(QStringLiteral("positionSize")), 100.0);
     m_resolution = config.value(QStringLiteral("resolution")).toString(QStringLiteral("Day1"));
     m_dataSourceId = config.value(QStringLiteral("dataSourceId")).toString(QStringLiteral("yahoo"));
-    m_lookbackYears = config.value(QStringLiteral("lookbackYears")).toInt(1);
+    m_lookbackYears = Pipeline::jsonInt(config.value(QStringLiteral("lookbackYears")), 1);
 }
 
 void MomentumAlphaBlock::initialize() {}
@@ -68,6 +70,12 @@ Pipeline::ModelDataList MomentumAlphaBlock::processSemantic(
     const QDateTime from = to.addYears(-m_lookbackYears);
 
     const int period = qMax(1, m_period);
+    const QString resolution = runtimeContext()->historicalResolution.isEmpty()
+        ? m_resolution
+        : runtimeContext()->historicalResolution;
+    const QString dataSourceId = runtimeContext()->historicalDataSourceId.isEmpty()
+        ? m_dataSourceId
+        : runtimeContext()->historicalDataSourceId;
 
     QMap<QString, double> momentumBySymbol;
     for (const auto& row : *in) {
@@ -75,7 +83,7 @@ Pipeline::ModelDataList MomentumAlphaBlock::processSemantic(
         if (sym.isEmpty())
             continue;
         QVector<Pipeline::HistoricalBarSnapshot> bars =
-            runtimeContext()->historical->getBars(sym, m_resolution, m_dataSourceId, from, to,
+            runtimeContext()->historical->getBars(sym, resolution, dataSourceId, from, to,
                                                   runtimeContext()->historicalReadPolicyDefault);
         if (bars.size() <= period)
             continue;

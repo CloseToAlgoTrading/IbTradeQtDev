@@ -13,6 +13,19 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 
+namespace {
+
+bool isRuntimeHistoricalParam(const QString& blockId, const QString& key)
+{
+    if (blockId == QLatin1String("simple-rebalance")) {
+        return key == QLatin1String("priceDataSourceId")
+            || key == QLatin1String("priceResolution");
+    }
+    return false;
+}
+
+} // namespace
+
 BlockInspectorPanel::BlockInspectorPanel(QWidget* parent)
     : QWidget(parent)
 {
@@ -150,6 +163,9 @@ void BlockInspectorPanel::showBlock(const QJsonObject& pipelineConfig,
     } else {
         for (auto it = cfg.begin(); it != cfg.end(); ++it) {
             QString key = it.key();
+            if (isRuntimeHistoricalParam(blockId, key))
+                continue;
+
             QString value;
 
             if (it.value().isArray()) {

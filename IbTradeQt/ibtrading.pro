@@ -313,6 +313,7 @@ HEADERS += \
     Pipeline/SemanticTypes.h \
     Pipeline/SemanticModelDataMapper.h \
     Pipeline/SemanticPipelineChain.h \
+    Pipeline/JsonConfigValue.h \
     Adapters/IBHistoricalDataFetcher.h \
     Adapters/LiveHistoricalReadAdapter.h \
     Pipeline/PipelineRuntimeContext.h \

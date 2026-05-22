@@ -2,6 +2,7 @@
 #define PIPELINE_PIPELINERUNTIMECONTEXT_H
 
 #include <QMap>
+#include <QString>
 
 #include "IHistoricalRead.h"
 #include "IMarketDataAccessor.h"
@@ -42,6 +43,10 @@ struct PipelineRuntimeContext {
     /// True if historicalReadPolicyDefault was explicitly resolved (not just struct default).
     /// Prevents runner fallback from overriding an intentional PreferCache selection.
     bool historicalReadPolicyResolved = false;
+    /// Backtest-level historical data selection. When set, blocks that read historical bars use
+    /// this instead of their legacy block-local source fields so the run config stays authoritative.
+    QString historicalDataSourceId;
+    QString historicalResolution;
 };
 
 /// Prefer \a ctx->holdings when \a ctx is non-null (runner-filled). Otherwise use \a passed (e.g. tests).

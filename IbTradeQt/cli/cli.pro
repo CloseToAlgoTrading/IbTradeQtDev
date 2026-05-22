@@ -162,6 +162,7 @@ HEADERS += \
     ../Pipeline/StrategyRuntimePolicy.h \
     ../Pipeline/StrategyPipelineRuntimeOptions.h \
     ../Pipeline/SemanticPipelineChain.h \
+    ../Pipeline/JsonConfigValue.h \
     ../Pipeline/SubscriptionRequestStore.h \
     ../Pipeline/NoOpSubscriptionPort.h \
     ../Pipeline/RouterMarketDataAccessor.h \

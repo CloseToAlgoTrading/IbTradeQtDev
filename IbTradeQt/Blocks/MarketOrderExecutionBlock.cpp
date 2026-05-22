@@ -1,5 +1,6 @@
 #include "MarketOrderExecutionBlock.h"
 
+#include "../Pipeline/JsonConfigValue.h"
 #include "../Pipeline/PipelineRuntimeContext.h"
 #include "../Pipeline/SemanticModelDataMapper.h"
 #include <QDateTime>
@@ -33,7 +34,7 @@ QJsonObject MarketOrderExecutionBlock::config() const
 
 void MarketOrderExecutionBlock::setConfig(const QJsonObject& config)
 {
-    m_minQuantity = config.value(QStringLiteral("minQuantity")).toDouble(1.0);
+    m_minQuantity = Pipeline::jsonDouble(config.value(QStringLiteral("minQuantity")), 1.0);
 }
 
 void MarketOrderExecutionBlock::setRuntimeContext(const Pipeline::PipelineRuntimeContext* ctx)
