@@ -153,7 +153,8 @@ void StrategyCatalogPanel::onItemClicked(const QModelIndex& proxyIndex)
                            m_model->blockCategory(index),
                            m_model->blockJsonKey(index),
                            m_model->blockIsArray(index),
-                           m_model->blockArrayIndex(index));
+                           m_model->blockArrayIndex(index),
+                           index.data(Qt::DisplayRole).toString());
         return;
     }
 
@@ -247,7 +248,8 @@ void StrategyCatalogPanel::onContextMenu(const QPoint& pos)
                            m_model->blockCategory(index),
                            m_model->blockJsonKey(index),
                            m_model->blockIsArray(index),
-                           m_model->blockArrayIndex(index));
+                           m_model->blockArrayIndex(index),
+                           index.data(Qt::DisplayRole).toString());
         return;
     }
 

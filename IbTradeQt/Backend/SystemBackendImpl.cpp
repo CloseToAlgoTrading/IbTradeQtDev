@@ -1212,8 +1212,12 @@ bool SystemBackendImpl::publishVersion(const QString& versionId)
     const DbStrategyVersion version = m_repo->fetchStrategyVersion(versionId);
     if (!version.isValid())
         return false;
+    if (version.isPublished)
+        return true;
 
     if (!m_repo->setVersionPublished(versionId, true))
+        return false;
+    if (!m_repo->fetchStrategyVersion(versionId).isPublished)
         return false;
 
     DbStrategy strategy = m_repo->fetchStrategyCatalog(version.strategyId);
@@ -1233,6 +1237,8 @@ bool SystemBackendImpl::unpublishVersion(const QString& versionId)
     const DbStrategyVersion version = m_repo->fetchStrategyVersion(versionId);
     if (!version.isValid())
         return false;
+    if (!version.isPublished)
+        return true;
 
     const QList<DbLiveStrategyBinding> bindings =
         m_repo->listBindingsForDefinition(version.strategyId);
@@ -1242,6 +1248,8 @@ bool SystemBackendImpl::unpublishVersion(const QString& versionId)
     }
 
     if (!m_repo->setVersionPublished(versionId, false))
+        return false;
+    if (m_repo->fetchStrategyVersion(versionId).isPublished)
         return false;
 
     DbStrategy strategy = m_repo->fetchStrategyCatalog(version.strategyId);
@@ -1262,6 +1270,12 @@ bool SystemBackendImpl::bindLiveNodeToVersion(const QString& nodeId,
 
     const DbStrategyVersion version = m_repo->fetchStrategyVersion(versionId);
     if (!version.isValid() || version.strategyId != strategyId || !version.isPublished)
+        return false;
+    const DbStrategy strategy = m_repo->fetchStrategyCatalog(strategyId);
+    if (!strategy.isValid())
+        return false;
+    const auto lifecycle = StrategyLifecycle::manualFromStorage(strategy.lifecycleState);
+    if (strategy.isArchived || lifecycle == StrategyLifecycle::ManualLifecycle::Retired)
         return false;
 
     m_repo->removeBindingForNode(nodeId);
@@ -1344,6 +1358,9 @@ QString SystemBackendImpl::createLiveNodeForExistingCatalog(
 
     DbStrategy strat = m_repo->fetchStrategyCatalog(strategyId);
     if (!strat.isValid()) return {};
+    const auto lifecycle = StrategyLifecycle::manualFromStorage(strat.lifecycleState);
+    if (strat.isArchived || lifecycle == StrategyLifecycle::ManualLifecycle::Retired)
+        return {};
 
     DbStrategyVersion ver = m_repo->fetchStrategyVersion(versionId);
     if (!ver.isValid() || ver.strategyId != strategyId || !ver.isPublished) return {};

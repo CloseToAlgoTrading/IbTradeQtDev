@@ -9,6 +9,7 @@ static constexpr int TextLeftPad    = 3;
 static constexpr int CellPadH      = 3;
 
 static const QColor kSelectionBg    {42, 58, 80};
+static const QColor kSelectionAccent{88, 166, 255};
 static const QColor kHoverBg        {35, 35, 35};
 static const QColor kDefaultText    {208, 208, 208};    // #d0d0d0
 static const QColor kMutedText      {160, 160, 160};    // #a0a0a0
@@ -25,10 +26,13 @@ StrategyTreeDelegate::StrategyTreeDelegate(QObject* parent)
 void StrategyTreeDelegate::paintBackground(QPainter* painter,
                                            const QStyleOptionViewItem& opt) const
 {
-    if (opt.state & QStyle::State_Selected)
+    if (opt.state & QStyle::State_Selected) {
         painter->fillRect(opt.rect, kSelectionBg);
-    else if (opt.state & QStyle::State_MouseOver)
+        painter->fillRect(QRect(opt.rect.left(), opt.rect.top(), 3, opt.rect.height()),
+                          kSelectionAccent);
+    } else if (opt.state & QStyle::State_MouseOver) {
         painter->fillRect(opt.rect, kHoverBg);
+    }
 }
 
 void StrategyTreeDelegate::paintNameWithIcon(QPainter* painter,

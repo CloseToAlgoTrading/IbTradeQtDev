@@ -365,6 +365,7 @@ void StrategyManagementCoordinator::onPublishVersion(const QString& strategyId,
     QJsonObject entry = m_backend->strategyCatalogEntry(strategyId);
     QJsonArray versions = m_backend->listStrategyVersions(strategyId);
     m_panel->showStrategyDetail(entry, versions);
+    m_panel->detailPanel()->selectVersionById(versionId);
 }
 
 void StrategyManagementCoordinator::onUnpublishVersion(const QString& strategyId,
@@ -383,6 +384,7 @@ void StrategyManagementCoordinator::onUnpublishVersion(const QString& strategyId
     QJsonObject entry = m_backend->strategyCatalogEntry(strategyId);
     QJsonArray versions = m_backend->listStrategyVersions(strategyId);
     m_panel->showStrategyDetail(entry, versions);
+    m_panel->detailPanel()->selectVersionById(versionId);
 }
 
 void StrategyManagementCoordinator::onSaveVersion(const QString& strategyId,
@@ -458,6 +460,17 @@ void StrategyManagementCoordinator::onDeployVersion(const QString& catalogStrate
                                                      const QString& /*targetStrategyNodeId*/)
 {
     if (!m_backend || !m_view) return;
+
+    const QJsonObject entry = m_backend->strategyCatalogEntry(catalogStrategyId);
+    const QJsonObject summary = entry.value(QStringLiteral("lifecycleSummary")).toObject();
+    if (summary.value(QStringLiteral("lifecycle")).toString()
+            == QStringLiteral("retired")) {
+        QMessageBox::information(
+            m_view,
+            QStringLiteral("Strategy Retired"),
+            QStringLiteral("Retired strategies are preserved for history and backtesting, but cannot be deployed live."));
+        return;
+    }
 
     CGenericModelApi* root = m_backend->dataRoot();
     if (!root) return;

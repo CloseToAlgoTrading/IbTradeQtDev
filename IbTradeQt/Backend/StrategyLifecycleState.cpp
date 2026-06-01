@@ -9,6 +9,8 @@ ManualLifecycle manualFromStorage(const QString& value)
     const QString normalized = value.trimmed().toLower();
     if (normalized == QStringLiteral("testing"))
         return ManualLifecycle::Testing;
+    if (normalized == QStringLiteral("ready"))
+        return ManualLifecycle::Ready;
     if (normalized == QStringLiteral("retired") || normalized == QStringLiteral("archived"))
         return ManualLifecycle::Retired;
 
@@ -20,6 +22,7 @@ QString manualToStorage(ManualLifecycle lifecycle)
 {
     switch (lifecycle) {
     case ManualLifecycle::Testing: return QStringLiteral("testing");
+    case ManualLifecycle::Ready:   return QStringLiteral("ready");
     case ManualLifecycle::Retired: return QStringLiteral("retired");
     case ManualLifecycle::Draft:
     default:                       return QStringLiteral("draft");
@@ -30,6 +33,7 @@ QString manualLabel(ManualLifecycle lifecycle)
 {
     switch (lifecycle) {
     case ManualLifecycle::Testing: return QStringLiteral("Testing");
+    case ManualLifecycle::Ready:   return QStringLiteral("Ready");
     case ManualLifecycle::Retired: return QStringLiteral("Retired");
     case ManualLifecycle::Draft:
     default:                       return QStringLiteral("Draft");
@@ -41,6 +45,7 @@ bool isAllowedManualStorageValue(const QString& value)
     const QString normalized = value.trimmed().toLower();
     return normalized == QStringLiteral("draft")
         || normalized == QStringLiteral("testing")
+        || normalized == QStringLiteral("ready")
         || normalized == QStringLiteral("retired");
 }
 
@@ -49,11 +54,13 @@ DerivedState deriveState(ManualLifecycle lifecycle,
                          int publishedVersionCount,
                          bool liveDeploymentActive)
 {
+    Q_UNUSED(publishedVersionCount);
+
     if (archived || lifecycle == ManualLifecycle::Retired)
         return DerivedState::Retired;
     if (liveDeploymentActive)
         return DerivedState::Live;
-    if (publishedVersionCount > 0)
+    if (lifecycle == ManualLifecycle::Ready)
         return DerivedState::Ready;
     if (lifecycle == ManualLifecycle::Testing)
         return DerivedState::Testing;

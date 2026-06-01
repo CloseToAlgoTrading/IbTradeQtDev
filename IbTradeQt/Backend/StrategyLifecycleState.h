@@ -9,6 +9,7 @@ namespace StrategyLifecycle {
 enum class ManualLifecycle {
     Draft,
     Testing,
+    Ready,
     Retired
 };
 

@@ -9,16 +9,6 @@
 
 namespace StrategyMgmt {
 
-static QString kindLabel(int k) {
-    switch (k) {
-    case 0:  return QStringLiteral("pipeline");
-    case 5:  return QStringLiteral("pipeline");
-    case 1:  return QStringLiteral("classic");
-    default: return QStringLiteral("unknown");
-    }
-}
-
-
 CatalogTreeModel::CatalogTreeModel(QObject* parent)
     : AbstractPipelineTreeModel(parent)
 {
@@ -50,7 +40,6 @@ void CatalogTreeModel::populate(const QJsonArray& catalogEntries,
         CatalogEntry e;
         e.strategyId     = obj.value(QStringLiteral("strategyId")).toString();
         e.name           = obj.value(QStringLiteral("name")).toString();
-        e.strategyKind   = obj.value(QStringLiteral("strategyKind")).toInt();
         e.lifecycleState = obj.value(QStringLiteral("lifecycleState")).toString();
         e.versionCount   = versionCounts.value(e.strategyId, 0);
         e.derivedState = obj.value(QStringLiteral("derivedState")).toString();
@@ -81,7 +70,6 @@ void CatalogTreeModel::rebuild()
         nd->isStrategy     = true;
         nd->strategyId     = e.strategyId;
         nd->name           = e.name;
-        nd->strategyKind   = e.strategyKind;
         nd->lifecycleState = e.lifecycleState;
         nd->derivedState = e.derivedState;
         nd->derivedStateLabel = e.derivedStateLabel;
@@ -173,8 +161,7 @@ QVariant CatalogTreeModel::data(const QModelIndex& index, int role) const
     // ColumnTypeRole
     if (role == StrategyTreeRoles::ColumnTypeRole) {
         if (col == ColName)   return static_cast<int>(ColumnPaintType::NameWithIcon);
-        if (col == ColKind)   return static_cast<int>(ColumnPaintType::PlainText);
-        if (col == ColStatus) return static_cast<int>(ColumnPaintType::StatusText);
+        if (col == ColStatus) return static_cast<int>(ColumnPaintType::Badge);
         return static_cast<int>(ColumnPaintType::PlainText);
     }
 
@@ -200,10 +187,6 @@ QVariant CatalogTreeModel::data(const QModelIndex& index, int role) const
         }
     }
 
-    if (col == ColKind) {
-        if (role == Qt::DisplayRole) return kindLabel(nd->strategyKind);
-    }
-
     if (col == ColStatus) {
         if (role == Qt::DisplayRole)
             return nd->derivedStateLabel.isEmpty() ? nd->lifecycleState : nd->derivedStateLabel;
@@ -222,7 +205,6 @@ QVariant CatalogTreeModel::headerData(int section, Qt::Orientation orientation, 
     if (orientation != Qt::Horizontal || role != Qt::DisplayRole) return {};
     switch (section) {
     case ColName:   return QStringLiteral("Name");
-    case ColKind:   return QStringLiteral("Kind");
     case ColStatus: return QStringLiteral("State");
     }
     return {};

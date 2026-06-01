@@ -991,7 +991,11 @@ bool ModelTreeRepository::setVersionPublished(const QString& versionId, bool pub
 
         return false;
     }
-    return q.numRowsAffected() > 0;
+    if (q.numRowsAffected() > 0)
+        return true;
+
+    const DbStrategyVersion persisted = fetchStrategyVersion(versionId);
+    return persisted.isValid() && persisted.isPublished == published;
 }
 
 int ModelTreeRepository::nextVersionNumber(const QString& strategyId) const

@@ -14,6 +14,7 @@ class QPushButton;
 class QTableWidget;
 class QPlainTextEdit;
 class QTabWidget;
+class QAction;
 class BlockInspectorPanel;
 class RuntimePolicyEditor;
 class StrategyDetailPresenter;
@@ -41,10 +42,12 @@ public:
     QString currentStrategyId() const { return m_currentStrategyId; }
     bool currentVersionPublished() const;
     void selectVersionRow(int row);
+    bool selectVersionById(const QString& versionId);
 
     void loadVersionAtRow(int row);
     void resetWorkingToSelectedVersion();
     void setWorkingPipelineConfig(const QJsonObject& pipelineConfig);
+    void setSelectedBlockContext(const QString& category, const QString& blockName);
 
 signals:
     void metadataChanged(const QString& strategyId,
@@ -91,12 +94,14 @@ private:
     void updateVersionEditLock();
     void markDirty();
     bool selectedVersionPublished() const;
+    void updateStrategyHeaderHint(const QJsonObject& catalogEntry);
 
     // Metadata
+    QLabel*         m_breadcrumbLabel = nullptr;
+    QLabel*         m_titleLabel     = nullptr;
+    QLabel*         m_headerHintLabel = nullptr;
     QLineEdit*      m_nameEdit      = nullptr;
-    QLabel*         m_kindLabel     = nullptr;
     QComboBox*      m_statusCombo   = nullptr;
-    QLabel*         m_availabilityLabel = nullptr;
     QTextEdit*      m_descEdit      = nullptr;
     QLineEdit*      m_tagsEdit      = nullptr;
     QPushButton*    m_saveMetaBtn   = nullptr;
@@ -123,8 +128,9 @@ private:
     QPushButton*    m_newVersionBtn = nullptr;
     QPushButton*    m_publishBtn    = nullptr;
     QPushButton*    m_unpublishBtn  = nullptr;
-    QPushButton*    m_deleteVersionBtn = nullptr;
-    QPushButton*    m_archiveBtn    = nullptr;
+    QAction*        m_deleteVersionAction = nullptr;
+    QAction*        m_archiveAction = nullptr;
+    QPushButton*    m_moreActionsBtn = nullptr;
     QPushButton*    m_useInLiveBtn  = nullptr;
     QPushButton*    m_openBtBtn     = nullptr;
 

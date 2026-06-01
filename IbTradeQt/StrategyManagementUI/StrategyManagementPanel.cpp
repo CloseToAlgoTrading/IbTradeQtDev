@@ -59,9 +59,16 @@ void StrategyManagementPanel::buildUi()
 
     // Block selection in catalog tree drives detail panel inspector
     connect(m_catalogPanel, &StrategyCatalogPanel::blockSelected,
-            this, [this](const QString& /*strategyId*/,
+            this, [this](const QString& strategyId,
                          const QString& category, const QString& jsonKey,
-                         bool isArray, int arrayIndex) {
+                         bool isArray, int arrayIndex,
+                         const QString& blockName) {
+        if (m_detailPanel->currentStrategyId() != strategyId) {
+            emit strategySelected(strategyId);
+            if (m_detailPanel->currentStrategyId() != strategyId)
+                return;
+        }
+        m_detailPanel->setSelectedBlockContext(category, blockName);
         m_detailPanel->showBlockDetails(category, jsonKey, isArray, arrayIndex);
     });
 

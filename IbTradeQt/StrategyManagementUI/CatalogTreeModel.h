@@ -14,7 +14,6 @@ class CatalogTreeModel : public AbstractPipelineTreeModel
 public:
     enum Column {
         ColName   = 0,
-        ColKind,
         ColStatus,
         ColumnCount
     };
@@ -57,7 +56,6 @@ private:
     struct CatalogEntry {
         QString     strategyId;
         QString     name;
-        int         strategyKind = 0;
         QString     lifecycleState;
         int         versionCount = 0;
         QString     derivedState;
@@ -71,7 +69,6 @@ private:
         bool    isStrategy = false;
         QString strategyId;
         QString name;
-        int     strategyKind = 0;
         QString lifecycleState;
         QString derivedState;
         QString derivedStateLabel;

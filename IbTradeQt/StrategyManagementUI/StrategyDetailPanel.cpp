@@ -21,8 +21,28 @@
 #include <QTabWidget>
 #include <QScrollArea>
 #include <QSignalBlocker>
+#include <QMenu>
 
 namespace StrategyMgmt {
+
+static QString lifecycleDisplayLabel(const QString& value)
+{
+    const QString normalized = value.trimmed().toLower();
+    if (normalized == QStringLiteral("testing"))
+        return QStringLiteral("Testing");
+    if (normalized == QStringLiteral("ready"))
+        return QStringLiteral("Ready");
+    if (normalized == QStringLiteral("retired"))
+        return QStringLiteral("Retired");
+    return QStringLiteral("Draft");
+}
+
+static QString versionAvailabilityLabel(const QJsonObject& version)
+{
+    return version.value(QStringLiteral("isPublished")).toBool()
+        ? QStringLiteral("Published")
+        : QStringLiteral("Unpublished");
+}
 
 StrategyDetailPanel::StrategyDetailPanel(QWidget* parent)
     : QWidget(parent)
@@ -35,6 +55,59 @@ void StrategyDetailPanel::buildUi()
 {
     auto* mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(4, 4, 4, 4);
+    mainLayout->setSpacing(6);
+
+    // --- Strategy header / metadata ---
+    auto* headerGroup = new QGroupBox(QStringLiteral("Strategy"));
+    auto* headerLayout = new QVBoxLayout(headerGroup);
+    headerLayout->setContentsMargins(8, 8, 8, 8);
+    headerLayout->setSpacing(6);
+
+    m_breadcrumbLabel = new QLabel;
+    m_breadcrumbLabel->setObjectName(QStringLiteral("StrategyBreadcrumbLabel"));
+    headerLayout->addWidget(m_breadcrumbLabel);
+
+    auto* titleRow = new QHBoxLayout;
+    m_titleLabel = new QLabel;
+    m_titleLabel->setObjectName(QStringLiteral("StrategyTitleLabel"));
+
+    m_statusCombo = new QComboBox;
+    m_statusCombo->addItem(QStringLiteral("Draft"), QStringLiteral("draft"));
+    m_statusCombo->addItem(QStringLiteral("Testing"), QStringLiteral("testing"));
+    m_statusCombo->addItem(QStringLiteral("Ready"), QStringLiteral("ready"));
+    m_statusCombo->addItem(QStringLiteral("Retired"), QStringLiteral("retired"));
+    m_statusCombo->setToolTip(
+        QStringLiteral("Manual lifecycle for the strategy: draft, testing, ready, or retired."));
+
+    titleRow->addWidget(m_titleLabel, 1);
+    titleRow->addWidget(new QLabel(QStringLiteral("Lifecycle:")));
+    titleRow->addWidget(m_statusCombo);
+    headerLayout->addLayout(titleRow);
+
+    m_headerHintLabel = new QLabel;
+    m_headerHintLabel->setObjectName(QStringLiteral("StrategyHeaderHintLabel"));
+    headerLayout->addWidget(m_headerHintLabel);
+
+    auto* metaForm = new QFormLayout;
+    metaForm->setContentsMargins(0, 0, 0, 0);
+
+    m_nameEdit = new QLineEdit;
+    metaForm->addRow(QStringLiteral("Name:"), m_nameEdit);
+
+    m_descEdit = new QTextEdit;
+    m_descEdit->setMaximumHeight(54);
+    metaForm->addRow(QStringLiteral("Description:"), m_descEdit);
+
+    auto* tagsRow = new QHBoxLayout;
+    m_tagsEdit = new QLineEdit;
+    m_tagsEdit->setPlaceholderText(QStringLiteral("comma-separated tags"));
+    m_saveMetaBtn = new QPushButton(QStringLiteral("Save metadata"));
+    tagsRow->addWidget(m_tagsEdit, 1);
+    tagsRow->addWidget(m_saveMetaBtn);
+    metaForm->addRow(QStringLiteral("Tags:"), tagsRow);
+    headerLayout->addLayout(metaForm);
+
+    mainLayout->addWidget(headerGroup);
 
     // --- Version table ---
     auto* verGroup = new QGroupBox(QStringLiteral("Versions"));
@@ -46,7 +119,7 @@ void StrategyDetailPanel::buildUi()
         QStringLiteral("Version"),
         QStringLiteral("Published"),
         QStringLiteral("Notes"),
-        QStringLiteral("Created At")
+        QStringLiteral("Created")
     });
     m_versionTable->horizontalHeader()->setStretchLastSection(true);
     m_versionTable->setSelectionMode(QAbstractItemView::SingleSelection);
@@ -62,45 +135,8 @@ void StrategyDetailPanel::buildUi()
 
     mainLayout->addWidget(verGroup);
 
-    // --- Tabs: Strategy Metadata, Raw JSON, Runtime Policy, Block Details ---
+    // --- Tabs: Raw JSON, Runtime Policy, Block Details ---
     m_configTabs = new QTabWidget;
-
-    auto* metaTab = new QWidget;
-    auto* metaTabLayout = new QVBoxLayout(metaTab);
-    metaTabLayout->setContentsMargins(8, 8, 8, 8);
-    auto* metaForm = new QFormLayout();
-
-    m_nameEdit = new QLineEdit;
-    metaForm->addRow(QStringLiteral("Name:"), m_nameEdit);
-
-    m_kindLabel = new QLabel;
-    metaForm->addRow(QStringLiteral("Kind:"), m_kindLabel);
-
-    m_statusCombo = new QComboBox;
-    m_statusCombo->addItems({
-        QStringLiteral("draft"),
-        QStringLiteral("testing"),
-        QStringLiteral("retired")
-    });
-    metaForm->addRow(QStringLiteral("Lifecycle:"), m_statusCombo);
-
-    m_availabilityLabel = new QLabel;
-    metaForm->addRow(QStringLiteral("Availability:"), m_availabilityLabel);
-
-    m_descEdit = new QTextEdit;
-    m_descEdit->setMaximumHeight(60);
-    metaForm->addRow(QStringLiteral("Description:"), m_descEdit);
-
-    m_tagsEdit = new QLineEdit;
-    m_tagsEdit->setPlaceholderText(QStringLiteral("comma-separated tags"));
-    metaForm->addRow(QStringLiteral("Tags:"), m_tagsEdit);
-
-    m_saveMetaBtn = new QPushButton(QStringLiteral("Save Metadata"));
-    metaForm->addRow(QString(), m_saveMetaBtn);
-
-    metaTabLayout->addLayout(metaForm);
-    metaTabLayout->addStretch();
-    m_configTabs->addTab(metaTab, QStringLiteral("Strategy Metadata"));
 
     auto* jsonTab = new QWidget;
     auto* jsonLayout = new QVBoxLayout(jsonTab);
@@ -160,18 +196,29 @@ void StrategyDetailPanel::buildUi()
     auto* actionBar = new QHBoxLayout;
 
     m_newVersionBtn = new QPushButton(QStringLiteral("Save as New Version"));
-    m_publishBtn    = new QPushButton(QStringLiteral("Publish"));
-    m_unpublishBtn  = new QPushButton(QStringLiteral("Unpublish"));
-    m_deleteVersionBtn = new QPushButton(QStringLiteral("Delete Selected Version..."));
-    m_archiveBtn    = new QPushButton(QStringLiteral("Retire Strategy..."));
+    m_publishBtn    = new QPushButton(QStringLiteral("Publish version"));
+    m_unpublishBtn  = new QPushButton(QStringLiteral("Unpublish version"));
+    m_moreActionsBtn = new QPushButton(QStringLiteral("More"));
     m_useInLiveBtn  = new QPushButton(QStringLiteral("Use in Live"));
     m_openBtBtn     = new QPushButton(QStringLiteral("Open in Backtest"));
+    m_publishBtn->setToolTip(
+        QStringLiteral("Published versions are locked and can be used live. Unpublished versions remain editable and can still be backtested."));
+    m_unpublishBtn->setToolTip(
+        QStringLiteral("Unpublish keeps the version for editing/backtesting, but removes it from live deployment choices."));
+
+    auto* moreMenu = new QMenu(m_moreActionsBtn);
+    m_deleteVersionAction =
+        moreMenu->addAction(QStringLiteral("Delete selected version..."),
+                            this, &StrategyDetailPanel::onDeleteVersion);
+    m_archiveAction =
+        moreMenu->addAction(QStringLiteral("Retire strategy..."),
+                            this, &StrategyDetailPanel::onArchive);
+    m_moreActionsBtn->setMenu(moreMenu);
 
     actionBar->addWidget(m_newVersionBtn);
     actionBar->addWidget(m_publishBtn);
     actionBar->addWidget(m_unpublishBtn);
-    actionBar->addWidget(m_deleteVersionBtn);
-    actionBar->addWidget(m_archiveBtn);
+    actionBar->addWidget(m_moreActionsBtn);
     actionBar->addStretch();
     actionBar->addWidget(m_useInLiveBtn);
     actionBar->addWidget(m_openBtBtn);
@@ -197,10 +244,6 @@ void StrategyDetailPanel::buildUi()
         if (!vId.isEmpty())
             emit unpublishRequested(m_currentStrategyId, vId);
     });
-    connect(m_deleteVersionBtn, &QPushButton::clicked,
-            this, &StrategyDetailPanel::onDeleteVersion);
-    connect(m_archiveBtn, &QPushButton::clicked,
-            this, &StrategyDetailPanel::onArchive);
     connect(m_useInLiveBtn, &QPushButton::clicked,
             this, &StrategyDetailPanel::onUseInLive);
     connect(m_openBtBtn, &QPushButton::clicked,
@@ -222,38 +265,16 @@ void StrategyDetailPanel::showStrategy(const QJsonObject& catalogEntry,
 
     setEnabled(true);
 
-    m_nameEdit->setText(catalogEntry.value("name").toString());
-    int kind = catalogEntry.value("strategyKind").toInt();
-    QString kindStr;
-    switch (kind) {
-    case 5:  kindStr = QStringLiteral("Pipeline"); break;
-    case 1:  kindStr = QStringLiteral("Basic Test"); break;
-    case 2:  kindStr = QStringLiteral("MA"); break;
-    case 3:  kindStr = QStringLiteral("Momentum"); break;
-    default: kindStr = QStringLiteral("Strategy"); break;
-    }
-    m_kindLabel->setText(kindStr);
+    const QString strategyName = catalogEntry.value("name").toString();
+    m_titleLabel->setText(strategyName);
+    m_breadcrumbLabel->setText(strategyName);
+    m_nameEdit->setText(strategyName);
     m_descEdit->setPlainText(catalogEntry.value("description").toString());
     m_tagsEdit->setText(catalogEntry.value("tags").toString());
-
-    const QJsonObject lifecycleSummary =
-        catalogEntry.value(QStringLiteral("lifecycleSummary")).toObject();
-    const QString availability = lifecycleSummary
-        .value(QStringLiteral("stateLabel"))
-        .toString(QStringLiteral("Draft"));
-    const int publishedCount =
-        lifecycleSummary.value(QStringLiteral("publishedVersionCount")).toInt();
-    const bool liveActive =
-        lifecycleSummary.value(QStringLiteral("liveDeploymentActive")).toBool();
-    m_availabilityLabel->setText(
-        QStringLiteral("%1, %2 published version%3%4")
-            .arg(availability)
-            .arg(publishedCount)
-            .arg(publishedCount == 1 ? QString() : QStringLiteral("s"))
-            .arg(liveActive ? QStringLiteral(", deployed live") : QString()));
+    updateStrategyHeaderHint(catalogEntry);
 
     QString state = catalogEntry.value("lifecycleState").toString();
-    int idx = m_statusCombo->findText(state);
+    int idx = m_statusCombo->findData(state);
     {
         QSignalBlocker blocker(m_statusCombo);
         m_statusCombo->setCurrentIndex(idx >= 0 ? idx : 0);
@@ -264,8 +285,11 @@ void StrategyDetailPanel::showStrategy(const QJsonObject& catalogEntry,
         QJsonObject v = versions[i].toObject();
         m_versionTable->setItem(i, 0, new QTableWidgetItem(
             QStringLiteral("v%1").arg(v.value("versionNumber").toInt())));
-        m_versionTable->setItem(i, 1, new QTableWidgetItem(
-            v.value("isPublished").toBool() ? QStringLiteral("Yes") : QStringLiteral("No")));
+        auto* publishedItem = new QTableWidgetItem(versionAvailabilityLabel(v));
+        publishedItem->setForeground(v.value("isPublished").toBool()
+                                         ? QColor(QStringLiteral("#7bd88f"))
+                                         : QColor(QStringLiteral("#a0a0a0")));
+        m_versionTable->setItem(i, 1, publishedItem);
         m_versionTable->setItem(i, 2, new QTableWidgetItem(
             v.value("notes").toString()));
         m_versionTable->setItem(i, 3, new QTableWidgetItem(
@@ -295,9 +319,10 @@ void StrategyDetailPanel::clear()
 {
     m_currentStrategyId.clear();
     m_currentVersions = QJsonArray();
+    m_breadcrumbLabel->clear();
+    m_titleLabel->clear();
+    m_headerHintLabel->clear();
     m_nameEdit->clear();
-    m_kindLabel->clear();
-    m_availabilityLabel->clear();
     m_descEdit->clear();
     m_tagsEdit->clear();
     {
@@ -313,6 +338,20 @@ void StrategyDetailPanel::clear()
     updateNewVersionButtonText();
     updateVersionActionState();
     setEnabled(false);
+}
+
+void StrategyDetailPanel::setSelectedBlockContext(const QString& category,
+                                                  const QString& blockName)
+{
+    if (!m_breadcrumbLabel || m_titleLabel->text().isEmpty())
+        return;
+    if (category.isEmpty() || blockName.isEmpty()) {
+        m_breadcrumbLabel->setText(m_titleLabel->text());
+        return;
+    }
+    m_breadcrumbLabel->setText(
+        QStringLiteral("%1 / %2 / %3")
+            .arg(m_titleLabel->text(), category, blockName));
 }
 
 void StrategyDetailPanel::showBlockDetails(const QString& category,
@@ -452,7 +491,7 @@ void StrategyDetailPanel::onSaveMetadata()
                          m_nameEdit->text().trimmed(),
                          m_descEdit->toPlainText(),
                          m_tagsEdit->text(),
-                         m_statusCombo->currentText());
+                         m_statusCombo->currentData().toString());
 }
 
 void StrategyDetailPanel::onNewVersion()
@@ -508,6 +547,20 @@ QString StrategyDetailPanel::selectedVersionId() const
     return m_currentVersions[row].toObject().value("versionId").toString();
 }
 
+bool StrategyDetailPanel::selectVersionById(const QString& versionId)
+{
+    if (versionId.isEmpty())
+        return false;
+    for (int row = 0; row < m_currentVersions.size(); ++row) {
+        if (m_currentVersions[row].toObject().value(QStringLiteral("versionId")).toString()
+            == versionId) {
+            selectVersionRow(row);
+            return true;
+        }
+    }
+    return false;
+}
+
 bool StrategyDetailPanel::currentVersionPublished() const
 {
     return selectedVersionPublished();
@@ -520,11 +573,40 @@ void StrategyDetailPanel::updateVersionActionState()
     const bool hasDiffBase = hasSelectedVersion && m_versionTable->currentRow() > 0;
     m_publishBtn->setEnabled(hasSelectedVersion && !selectedPublished);
     m_unpublishBtn->setEnabled(hasSelectedVersion && selectedPublished);
-    m_deleteVersionBtn->setEnabled(hasSelectedVersion);
+    if (m_deleteVersionAction)
+        m_deleteVersionAction->setEnabled(hasSelectedVersion);
+    if (m_archiveAction)
+        m_archiveAction->setEnabled(!m_currentStrategyId.isEmpty());
+    if (m_moreActionsBtn)
+        m_moreActionsBtn->setEnabled(hasSelectedVersion || !m_currentStrategyId.isEmpty());
     m_useInLiveBtn->setEnabled(hasSelectedVersion && selectedPublished);
     m_openBtBtn->setEnabled(hasSelectedVersion);
     m_diffToggle->setEnabled(hasDiffBase);
     updateVersionEditLock();
+}
+
+void StrategyDetailPanel::updateStrategyHeaderHint(const QJsonObject& catalogEntry)
+{
+    const QJsonObject lifecycleSummary =
+        catalogEntry.value(QStringLiteral("lifecycleSummary")).toObject();
+    const int publishedCount =
+        lifecycleSummary.value(QStringLiteral("publishedVersionCount")).toInt();
+    const bool liveActive =
+        lifecycleSummary.value(QStringLiteral("liveDeploymentActive")).toBool();
+    const QString lifecycle =
+        lifecycleDisplayLabel(catalogEntry.value(QStringLiteral("lifecycleState")).toString());
+
+    const QString publishedText =
+        QStringLiteral("%1 published version%2")
+            .arg(publishedCount)
+            .arg(publishedCount == 1 ? QString() : QStringLiteral("s"));
+    const QString liveText = liveActive
+        ? QStringLiteral("Live deployment active")
+        : QStringLiteral("not live");
+
+    m_headerHintLabel->setText(
+        QStringLiteral("Lifecycle: %1 - %2 - %3")
+            .arg(lifecycle, publishedText, liveText));
 }
 
 bool StrategyDetailPanel::selectedVersionPublished() const

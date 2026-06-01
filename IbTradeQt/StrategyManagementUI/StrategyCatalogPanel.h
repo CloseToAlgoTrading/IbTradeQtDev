@@ -33,7 +33,8 @@ signals:
     void strategySelected(const QString& strategyId);
     void blockSelected(const QString& strategyId,
                        const QString& category, const QString& jsonKey,
-                       bool isArray, int arrayIndex);
+                       bool isArray, int arrayIndex,
+                       const QString& blockName);
     void newStrategyRequested();
     void addBlockRequested(const QString& strategyId,
                            const QString& category,

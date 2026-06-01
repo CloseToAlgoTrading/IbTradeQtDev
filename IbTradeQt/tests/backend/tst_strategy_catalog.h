@@ -402,7 +402,9 @@ private slots:
 
         QVERIFY(m_backend->publishVersion(v0Id));
         QCOMPARE(m_backend->strategyVersionInfo(v0Id)["isPublished"].toBool(), true);
-        QCOMPARE(m_backend->strategyLifecycleSummary(stratId)["state"].toString(), "ready");
+        QCOMPARE(m_backend->strategyLifecycleSummary(stratId)["state"].toString(), "draft");
+        QVERIFY(m_backend->publishVersion(v0Id));
+        QCOMPARE(m_backend->strategyVersionInfo(v0Id)["isPublished"].toBool(), true);
     }
 
     void testStrategyLifecycleDerivedStates() {
@@ -420,6 +422,13 @@ private slots:
         QCOMPARE(summary["lifecycle"].toString(), "testing");
         QCOMPARE(summary["state"].toString(), "testing");
 
+        QVERIFY(m_backend->setStrategyLifecycle(stratId, StrategyLifecycle::ManualLifecycle::Ready));
+        summary = m_backend->strategyLifecycleSummary(stratId);
+        QCOMPARE(summary["lifecycle"].toString(), "ready");
+        QCOMPARE(summary["state"].toString(), "ready");
+
+        QVERIFY(m_backend->setStrategyLifecycle(stratId, StrategyLifecycle::ManualLifecycle::Testing));
+
         QJsonObject cfg;
         cfg["alpha"] = "state";
         const QString v0Id = m_backend->createStrategyVersion(stratId, cfg, "v0");
@@ -431,7 +440,7 @@ private slots:
 
         summary = m_backend->strategyLifecycleSummary(stratId);
         QCOMPARE(summary["lifecycle"].toString(), "testing");
-        QCOMPARE(summary["state"].toString(), "ready");
+        QCOMPARE(summary["state"].toString(), "testing");
         QCOMPARE(summary["publishedVersionCount"].toInt(), 2);
     }
 
@@ -477,6 +486,8 @@ private slots:
         QVERIFY(m_backend->publishVersion(v0Id));
         QVERIFY(m_backend->unpublishVersion(v0Id));
         QCOMPARE(m_backend->strategyVersionInfo(v0Id)["isPublished"].toBool(), false);
+        QVERIFY(m_backend->unpublishVersion(v0Id));
+        QCOMPARE(m_backend->strategyVersionInfo(v0Id)["isPublished"].toBool(), false);
         QCOMPARE(m_backend->strategyLifecycleSummary(stratId)["state"].toString(), "draft");
     }
 
@@ -515,6 +526,28 @@ private slots:
         QVERIFY(!nodeId.isEmpty());
 
         QVERIFY(!m_backend->bindLiveNodeToVersion(nodeId, stratId, v0Id));
+    }
+
+    void testBindLiveNodeRejectsRetiredStrategy() {
+        setupBackend();
+        const QString stratId = m_backend->createStrategyCatalogEntry(
+            "RetiredBind", static_cast<int>(ModelType::STRATEGY_PIPELINE));
+        QJsonObject cfg;
+        cfg["alpha"] = "retired";
+        const QString v0Id = m_backend->createStrategyVersion(stratId, cfg, "v0");
+        QVERIFY(!v0Id.isEmpty());
+        QVERIFY(m_backend->publishVersion(v0Id));
+        QVERIFY(m_backend->setStrategyLifecycle(stratId, StrategyLifecycle::ManualLifecycle::Retired));
+
+        const QString acctId = m_backend->createAccount("A");
+        const QString portId = m_backend->createPortfolio(acctId, "P");
+        const QString nodeId = m_backend->createStrategy(portId, ModelType::STRATEGY_PIPELINE);
+        QVERIFY(!nodeId.isEmpty());
+
+        QVERIFY(!m_backend->bindLiveNodeToVersion(nodeId, stratId, v0Id));
+        QVERIFY(m_backend->createLiveNodeForExistingCatalog(
+                    portId, ModelType::STRATEGY_PIPELINE, stratId, v0Id).isEmpty());
+        QCOMPARE(m_backend->strategyVersionInfo(v0Id)["isPublished"].toBool(), true);
     }
 
     void testListStrategyVersions() {
@@ -985,6 +1018,11 @@ private slots:
         counts["s-ready"] = 2;
         model.populate(entries, counts, {});
 
+        QCOMPARE(model.columnCount(), 2);
+        QCOMPARE(model.headerData(StrategyMgmt::CatalogTreeModel::ColName,
+                                  Qt::Horizontal,
+                                  Qt::DisplayRole).toString(),
+                 "Name");
         const QModelIndex stateIndex = model.index(0, StrategyMgmt::CatalogTreeModel::ColStatus);
         QCOMPARE(stateIndex.data(Qt::DisplayRole).toString(), "Ready");
         QCOMPARE(stateIndex.data(StrategyMgmt::CatalogTreeModel::StatusRole).toString(), "Ready");
@@ -1313,9 +1351,8 @@ private slots:
         };
 
         QPushButton* saveButton = findButton(QStringLiteral("Save as First Version"));
-        QPushButton* publishButton = findButton(QStringLiteral("Publish"));
-        QPushButton* deleteVersionButton =
-            findButton(QStringLiteral("Delete Selected Version..."));
+        QPushButton* publishButton = findButton(QStringLiteral("Publish version"));
+        QPushButton* moreButton = findButton(QStringLiteral("More"));
         QPushButton* useInLiveButton = findButton(QStringLiteral("Use in Live"));
         QPushButton* backtestButton = findButton(QStringLiteral("Open in Backtest"));
 
@@ -1323,8 +1360,8 @@ private slots:
         QVERIFY(saveButton->isEnabled());
         QVERIFY(publishButton);
         QVERIFY(!publishButton->isEnabled());
-        QVERIFY(deleteVersionButton);
-        QVERIFY(!deleteVersionButton->isEnabled());
+        QVERIFY(moreButton);
+        QVERIFY(moreButton->isEnabled());
         QVERIFY(useInLiveButton);
         QVERIFY(!useInLiveButton->isEnabled());
         QVERIFY(backtestButton);

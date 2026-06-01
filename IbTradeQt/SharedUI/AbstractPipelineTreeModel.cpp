@@ -193,14 +193,14 @@ QVariant AbstractPipelineTreeModel::virtualNodeData(TreeNode* node,
 
     if (node->isVirtualCat) {
         if (role == Qt::DisplayRole)
-            return node->virtualCategory;
+            return node->virtualCategory.toUpper();
         if (role == Qt::FontRole) {
             QFont f;
             f.setBold(true);
             return f;
         }
         if (role == Qt::ForegroundRole)
-            return QColor(160, 180, 210);       // muted blue for category
+            return QColor(150, 150, 150);
         if (role == StrategyTreeRoles::ColumnTypeRole)
             return static_cast<int>(ColumnPaintType::NameWithIcon);
         return {};
@@ -216,7 +216,7 @@ QVariant AbstractPipelineTreeModel::virtualNodeData(TreeNode* node,
         return ih.loadIconFromResourceTheme("Parameter");
     }
     if (role == Qt::ForegroundRole)
-        return QColor(136, 170, 210);           // block leaf color
+        return QColor(172, 186, 204);
     if (role == StrategyTreeRoles::ColumnTypeRole)
         return static_cast<int>(ColumnPaintType::NameWithIcon);
 
