@@ -102,6 +102,13 @@ void CPipelineStrategyAdapter::setGlobalBrokerConnected(bool connected)
     s_globalBrokerConnected = connected;
 }
 
+bool CPipelineStrategyAdapter::isGlobalBrokerConnected() { return s_globalBrokerConnected; }
+bool CPipelineStrategyAdapter::hasGlobalExecutionPort() { return s_globalExecutionPort != nullptr; }
+bool CPipelineStrategyAdapter::hasGlobalPositionRepo()
+{
+    return s_globalPositionRepo != nullptr || s_globalPersistentPositionRepo != nullptr;
+}
+
 IBComm::MarketDataRouter* CPipelineStrategyAdapter::globalRouter() { return s_globalRouter; }
 Supervision::Supervisor* CPipelineStrategyAdapter::globalSupervisor() { return s_globalSupervisor; }
 

@@ -9,7 +9,7 @@
 namespace StrategyMgmt {
 
 // Flat-list model exposing strategy catalog entries for a QTreeView.
-// Columns: Name | Kind | Status | Versions | Last Updated
+// Columns: Name | Kind | State | Versions | Last Updated
 class StrategyCatalogModel : public QAbstractItemModel
 {
     Q_OBJECT
@@ -49,7 +49,7 @@ private:
         QString strategyId;
         QString name;
         int     strategyKind = 0;
-        QString lifecycleState;
+        QString stateLabel;
         int     versionCount = 0;
         QString updatedAt;
         QJsonObject raw;

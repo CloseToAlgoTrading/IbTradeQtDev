@@ -62,6 +62,7 @@
 #include "blocks/tst_quant_momentum_blocks.h"
 #include "ui/tst_runtime_policy_editor.h"
 #include "ui/tst_backtest_workspace_coordinator.h"
+#include "ui/tst_trading_readiness.h"
 
 // When IBTRADING_TEST_CLASS is set (e.g. TestMomentumThreeStockValidation), only that suite runs.
 // Use with a function filter so other QObject classes do not report "function not found":
@@ -223,6 +224,7 @@ int main(int argc, char *argv[])
     // UI — RuntimePolicyEditor widget tests
     IBTRADING_RUN_TEST(TestRuntimePolicyEditor, tc);
     IBTRADING_RUN_TEST(TestBacktestWorkspaceCoordinator, tc);
+    IBTRADING_RUN_TEST(TestTradingReadiness, tc);
 
     return status;
 }

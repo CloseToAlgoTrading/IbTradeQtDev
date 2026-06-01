@@ -3,6 +3,7 @@
 #include "Backtest/BacktestWorkspaceSession.h"
 #include "Pipeline/UniverseResolver.h"
 #include "RuntimePolicyEditor.h"
+#include "TradingReadiness.h"
 #include "Backtest/AssetUniverseInput.h"
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -19,6 +20,7 @@
 #include <QGroupBox>
 #include <QScrollArea>
 #include <QDate>
+#include <QFrame>
 
 namespace BacktestUI {
 
@@ -79,10 +81,10 @@ void BacktestRunConfigPanel::buildForm() {
     m_runButton = new QPushButton(QStringLiteral("▶  Run Backtest"));
     m_runButton->setMinimumHeight(32);
 
-    m_prepareButton = new QPushButton(QStringLiteral("Prepare run…"));
+    m_prepareButton = new QPushButton(QStringLiteral("Check data…"));
     m_prepareButton->setMinimumHeight(32);
     m_prepareButton->setToolTip(
-        QStringLiteral("Validate Yahoo symbols and show cache coverage before running."));
+        QStringLiteral("Validate symbols and show cache coverage before running."));
 
     m_stopButton = new QPushButton(QStringLiteral("Stop"));
     m_stopButton->setMinimumHeight(32);
@@ -96,27 +98,37 @@ void BacktestRunConfigPanel::buildForm() {
     m_statusLabel = new QLabel(QStringLiteral("Ready"));
     m_statusLabel->setObjectName(QStringLiteral("BacktestStatusLabel"));
 
+    m_readinessLabel = new QLabel;
+    m_readinessLabel->setObjectName(QStringLiteral("BacktestReadinessLabel"));
+    m_readinessLabel->setWordWrap(true);
+    m_readinessLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
+
     // Universe resolution info
     m_universeLabel = new QLabel;
     m_universeLabel->setObjectName(QStringLiteral("BacktestUniverseHint"));
     m_universeLabel->setWordWrap(true);
 
     // --- Layout ---
-    auto* form = new QFormLayout();
-    form->addRow(QStringLiteral("Symbols:"),      m_symbolsEdit);
-    form->addRow(QString(), m_universeLabel);
-    form->addRow(QStringLiteral("Start Date:"),   m_startDateEdit);
-    form->addRow(QStringLiteral("End Date:"),      m_endDateEdit);
-    form->addRow(QStringLiteral("Capital:"),       m_capitalSpin);
-    form->addRow(QStringLiteral("Benchmark:"),     m_benchmarkEdit);
-    form->addRow(QStringLiteral("Resolution:"),    m_resolutionCombo);
-    form->addRow(QStringLiteral("Fill Model:"),    m_fillModelCombo);
-    form->addRow(QStringLiteral("Fill Timing:"),   m_fillTimingCombo);
-    form->addRow(QStringLiteral("Slippage:"),      m_slippageSpin);
-    form->addRow(QStringLiteral("Data Source:"),   m_dataSourceCombo);
+    auto* dataForm = new QFormLayout();
+    dataForm->addRow(QStringLiteral("Symbols:"),      m_symbolsEdit);
+    dataForm->addRow(QString(), m_universeLabel);
+    dataForm->addRow(QStringLiteral("Data Source:"),   m_dataSourceCombo);
+    dataForm->addRow(QStringLiteral("Resolution:"),    m_resolutionCombo);
+    dataForm->addRow(QStringLiteral("Start Date:"),   m_startDateEdit);
+    dataForm->addRow(QStringLiteral("End Date:"),      m_endDateEdit);
+    dataForm->addRow(QStringLiteral("Benchmark:"),     m_benchmarkEdit);
 
-    auto* group = new QGroupBox(QStringLiteral("Run Configuration"));
-    group->setLayout(form);
+    auto* dataGroup = new QGroupBox(QStringLiteral("Universe & Data"));
+    dataGroup->setLayout(dataForm);
+
+    auto* simForm = new QFormLayout();
+    simForm->addRow(QStringLiteral("Capital:"),       m_capitalSpin);
+    simForm->addRow(QStringLiteral("Fill Model:"),    m_fillModelCombo);
+    simForm->addRow(QStringLiteral("Fill Timing:"),   m_fillTimingCombo);
+    simForm->addRow(QStringLiteral("Slippage:"),      m_slippageSpin);
+
+    auto* simGroup = new QGroupBox(QStringLiteral("Simulation"));
+    simGroup->setLayout(simForm);
 
     // Runtime policy editor
     m_policyEditor = new RuntimePolicyEditor(this);
@@ -132,7 +144,9 @@ void BacktestRunConfigPanel::buildForm() {
     auto* scrollContent = new QWidget;
     auto* scrollLayout = new QVBoxLayout(scrollContent);
     scrollLayout->setContentsMargins(0, 0, 0, 0);
-    scrollLayout->addWidget(group);
+    scrollLayout->addWidget(m_readinessLabel);
+    scrollLayout->addWidget(dataGroup);
+    scrollLayout->addWidget(simGroup);
     scrollLayout->addWidget(policyGroup);
     scrollLayout->addStretch();
 
@@ -160,11 +174,18 @@ void BacktestRunConfigPanel::buildForm() {
     });
 
     wireUserEditSignals();
+    refreshReadiness();
 }
 
 void BacktestRunConfigPanel::wireUserEditSignals()
 {
     auto emitIfUser = [this]() {
+        if (!m_programmaticUpdate) {
+            m_coverageKnown = false;
+            m_coverageMissing = false;
+            m_coverageMessage.clear();
+        }
+        refreshReadiness();
         if (!m_programmaticUpdate)
             emit userEdited();
     };
@@ -286,9 +307,15 @@ void BacktestRunConfigPanel::applyProfile(const Backtest::BacktestProfile& profi
 
 void BacktestRunConfigPanel::applyPipelineJsonToForm(const QString& pipelineConfigJson)
 {
+    m_coverageKnown = false;
+    m_coverageMissing = false;
+    m_coverageMessage.clear();
+
     m_pipelineConfigJson = pipelineConfigJson;
-    if (pipelineConfigJson.isEmpty())
+    if (pipelineConfigJson.isEmpty()) {
+        refreshReadiness();
         return;
+    }
 
     QJsonObject cfg = QJsonDocument::fromJson(pipelineConfigJson.toUtf8()).object();
 
@@ -307,6 +334,7 @@ void BacktestRunConfigPanel::applyPipelineJsonToForm(const QString& pipelineConf
     m_universeLabel->setText(resolved.reason);
 
     m_policyEditor->loadFromJson(cfg);
+    refreshReadiness();
 }
 
 void BacktestRunConfigPanel::setWorkingPipelineFromJson(const QJsonObject& cfg)
@@ -424,6 +452,46 @@ void BacktestRunConfigPanel::setPrepareEnabled(bool enabled) {
 
 void BacktestRunConfigPanel::onRunClicked() {
     emit runRequested(currentConfig());
+}
+
+void BacktestRunConfigPanel::setBrokerConnected(bool connected)
+{
+    m_brokerConnected = connected;
+    refreshReadiness();
+}
+
+void BacktestRunConfigPanel::setDataCheckSummary(bool checked, bool missing, const QString& message)
+{
+    m_coverageKnown = checked;
+    m_coverageMissing = missing;
+    m_coverageMessage = message;
+    refreshReadiness();
+}
+
+void BacktestRunConfigPanel::refreshReadiness()
+{
+    if (!m_readinessLabel)
+        return;
+    const Backtest::BacktestRunConfig cfg = currentConfig();
+    TradingUX::ReadinessState state = TradingUX::computeBacktestReadiness(
+        cfg.symbols, cfg.dataSourceId, m_brokerConnected, m_coverageKnown, m_coverageMissing);
+
+    QStringList lines;
+    lines << TradingUX::universeText(state);
+    lines << TradingUX::dataText(state);
+    if (!m_coverageMessage.isEmpty())
+        lines << QStringLiteral("Coverage: %1").arg(m_coverageMessage);
+    else if (m_coverageKnown)
+        lines << (m_coverageMissing ? QStringLiteral("Coverage: gaps found")
+                                    : QStringLiteral("Coverage: ready"));
+    else
+        lines << QStringLiteral("Coverage: not checked");
+    if (cfg.dataSourceId == QLatin1String("ib") && !m_brokerConnected)
+        lines << QStringLiteral("IB/TWS: connect before fetching missing broker data");
+    if (!state.blockingMessages.isEmpty())
+        lines << QStringLiteral("Blocked: %1").arg(state.blockingMessages.join(QStringLiteral("; ")));
+
+    m_readinessLabel->setText(lines.join(QStringLiteral("  |  ")));
 }
 
 } // namespace BacktestUI

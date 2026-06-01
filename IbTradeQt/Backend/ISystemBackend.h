@@ -6,6 +6,7 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include "ModelType.h"
+#include "StrategyLifecycleState.h"
 
 class CBasicRoot;
 
@@ -72,6 +73,11 @@ public:
                                                    const QString& description,
                                                    const QString& tags,
                                                    const QString& lifecycleState) = 0;
+    // Updates only the strategy lifecycle. Retiring is blocked while live deployments are enabled.
+    virtual bool        setStrategyLifecycle(const QString& strategyId,
+                                             StrategyLifecycle::ManualLifecycle lifecycle) = 0;
+    // Returns lifecycle + derived display state fields for Strategy Management UI.
+    virtual QJsonObject strategyLifecycleSummary(const QString& strategyId) const = 0;
     // Returns a QJsonObject representing the catalog entry, or empty if not found.
     virtual QJsonObject strategyCatalogEntry(const QString& strategyId) const = 0;
     // Lists all catalog entries; set includeArchived to true to include archived ones.
@@ -97,6 +103,8 @@ public:
     virtual bool        deleteStrategyVersion(const QString& versionId) = 0;
     // Marks a version as published (eligible for deployment/selection).
     virtual bool        publishVersion(const QString& versionId) = 0;
+    // Marks a version as unpublished unless a live binding still references it.
+    virtual bool        unpublishVersion(const QString& versionId) = 0;
 
     // Binds a live tree node to a specific strategy version.
     virtual bool        bindLiveNodeToVersion(const QString& nodeId,

@@ -5,6 +5,7 @@
 #include "WorkspaceHeader.h"
 #include "BlockInspectorPanel.h"
 #include "RuntimePolicyEditor.h"
+#include "TradingReadiness.h"
 #include "cgenericmodelApi.h"
 #include "cbasemodel.h"
 #include "cpipelinestrategyadapter.h"
@@ -26,6 +27,7 @@
 #include <QJsonArray>
 #include <QLabel>
 #include <QLineEdit>
+#include <QMessageBox>
 #include <QScrollArea>
 #include <QSignalBlocker>
 #include <QStackedWidget>
@@ -168,6 +170,38 @@ void StrategyWorkspace::buildOverviewTab()
     layout->addWidget(m_ovEvalMode);
     layout->addWidget(m_ovRebalMode);
     layout->addWidget(m_ovWarnings);
+
+    layout->addSpacing(Layout::SectionSpacing);
+    layout->addWidget(new QLabel("<b>Trading Readiness</b>", m_overviewWidget));
+
+    auto* modeRow = new QHBoxLayout();
+    modeRow->addWidget(new QLabel(QStringLiteral("Execution mode:"), m_overviewWidget));
+    m_executionModeCombo = new QComboBox(m_overviewWidget);
+    m_executionModeCombo->addItem(QStringLiteral("Dry Run"), QStringLiteral("dry_run"));
+    m_executionModeCombo->addItem(QStringLiteral("Live Orders"), QStringLiteral("live"));
+    modeRow->addWidget(m_executionModeCombo, 1);
+    layout->addLayout(modeRow);
+
+    m_readyBroker = new QLabel(m_overviewWidget);
+    m_readyData = new QLabel(m_overviewWidget);
+    m_readyExecution = new QLabel(m_overviewWidget);
+    m_readyStrategy = new QLabel(m_overviewWidget);
+    m_readyUniverse = new QLabel(m_overviewWidget);
+    m_readySummary = new QLabel(m_overviewWidget);
+    m_readySummary->setWordWrap(true);
+    m_readySummary->setObjectName(QStringLiteral("strategyOverviewWarning"));
+    for (QLabel* lbl : {m_readyBroker, m_readyData, m_readyExecution, m_readyStrategy, m_readyUniverse})
+        lbl->setObjectName(QStringLiteral("strategyOverviewMuted"));
+    layout->addWidget(m_readyBroker);
+    layout->addWidget(m_readyData);
+    layout->addWidget(m_readyExecution);
+    layout->addWidget(m_readyStrategy);
+    layout->addWidget(m_readyUniverse);
+    layout->addWidget(m_readySummary);
+
+    connect(m_executionModeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &StrategyWorkspace::onExecutionModeChanged);
+
     layout->addStretch();
 
     addTab("Overview", m_overviewWidget);
@@ -465,6 +499,12 @@ void StrategyWorkspace::onContextCleared()
     m_ovEvalMode->setText("Evaluation: --");
     m_ovRebalMode->setText("Rebalance: --");
     m_ovWarnings->clear();
+    if (m_readyBroker) m_readyBroker->setText("Broker: --");
+    if (m_readyData) m_readyData->setText("Data: --");
+    if (m_readyExecution) m_readyExecution->setText("Execution: --");
+    if (m_readyStrategy) m_readyStrategy->setText("Strategy: --");
+    if (m_readyUniverse) m_readyUniverse->setText("Universe: --");
+    if (m_readySummary) m_readySummary->clear();
     m_logsText->clear();
 
     while (m_propertiesForm->rowCount() > 0)
@@ -566,6 +606,96 @@ void StrategyWorkspace::refreshOverview()
             + (p.rebalanceMode != Pipeline::StrategyRuntimePolicy::RebalanceMode::Immediate
                 ? QStringLiteral(" (%1)").arg(p.rebalanceIntervalN) : QString())));
     }
+    syncExecutionModeControls();
+    refreshTradingReadiness();
+}
+
+void StrategyWorkspace::syncExecutionModeControls()
+{
+    if (!m_executionModeCombo)
+        return;
+    auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(m_boundModel);
+    if (!adapter)
+        return;
+    const QString mode = adapter->executionMode() == CPipelineStrategyAdapter::ExecutionMode::Live
+        ? QStringLiteral("live")
+        : QStringLiteral("dry_run");
+    const int idx = m_executionModeCombo->findData(mode);
+    if (idx >= 0 && idx != m_executionModeCombo->currentIndex()) {
+        QSignalBlocker b(m_executionModeCombo);
+        m_updatingExecutionMode = true;
+        m_executionModeCombo->setCurrentIndex(idx);
+        m_updatingExecutionMode = false;
+    }
+}
+
+void StrategyWorkspace::refreshTradingReadiness()
+{
+    auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(m_boundModel);
+    if (!adapter)
+        return;
+
+    const bool brokerConnected = CPipelineStrategyAdapter::isGlobalBrokerConnected();
+    const bool liveOrders = adapter->executionMode() == CPipelineStrategyAdapter::ExecutionMode::Live;
+    const bool strategyRunning =
+        adapter->genericInfo().value(MandatoryInfo::Strategy::Status).toString() == QLatin1String("Running");
+    const bool portsReady =
+        CPipelineStrategyAdapter::hasGlobalExecutionPort() && CPipelineStrategyAdapter::hasGlobalPositionRepo();
+
+    const TradingUX::ReadinessState state = TradingUX::computeLiveReadiness(
+        adapter->pipelineConfig(), liveOrders, strategyRunning, brokerConnected, false, portsReady);
+
+    if (m_readyBroker) m_readyBroker->setText(TradingUX::brokerText(state));
+    if (m_readyData) m_readyData->setText(TradingUX::dataText(state));
+    if (m_readyExecution) m_readyExecution->setText(TradingUX::executionText(state));
+    if (m_readyStrategy) m_readyStrategy->setText(TradingUX::strategyText(state));
+    if (m_readyUniverse) m_readyUniverse->setText(TradingUX::universeText(state));
+    if (m_readySummary) m_readySummary->setText(state.summaryText());
+
+    if (m_executionModeCombo) {
+        const QString tip = brokerConnected
+            ? QStringLiteral("Dry Run simulates orders. Live Orders sends approved orders to IB/TWS.")
+            : QStringLiteral("Connect IB/TWS before selecting Live Orders.");
+        m_executionModeCombo->setToolTip(tip);
+    }
+}
+
+void StrategyWorkspace::onExecutionModeChanged(int index)
+{
+    if (m_updatingExecutionMode)
+        return;
+    auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(m_boundModel);
+    if (!adapter || !m_executionModeCombo)
+        return;
+
+    const QString requested = m_executionModeCombo->itemData(index).toString();
+    const bool wantsLive = requested == QLatin1String("live");
+    if (wantsLive && !CPipelineStrategyAdapter::isGlobalBrokerConnected()) {
+        QMessageBox::warning(this, QStringLiteral("Live orders"),
+                             QStringLiteral("Connect IB/TWS before enabling live orders."));
+        syncExecutionModeControls();
+        refreshTradingReadiness();
+        return;
+    }
+
+    if (wantsLive) {
+        const auto choice = QMessageBox::question(
+            this, QStringLiteral("Enable live orders"),
+            QStringLiteral("Live Orders will send approved orders to IB/TWS. Continue?"),
+            QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+        if (choice != QMessageBox::Yes) {
+            syncExecutionModeControls();
+            refreshTradingReadiness();
+            return;
+        }
+    }
+
+    QVariantMap params = adapter->getParameters();
+    params[QStringLiteral("execution_mode")] = wantsLive ? QStringLiteral("live")
+                                                         : QStringLiteral("dry_run");
+    adapter->setParameters(params);
+    syncExecutionModeControls();
+    refreshTradingReadiness();
 }
 
 void StrategyWorkspace::refreshProperties()

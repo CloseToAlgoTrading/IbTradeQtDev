@@ -45,6 +45,9 @@ private:
     void refreshInfo();
     void refreshAssets();
     void refreshPolicy();
+    void refreshTradingReadiness();
+    void syncExecutionModeControls();
+    void onExecutionModeChanged(int index);
 
     void rebuildAssetsTable();
     void syncAssetsProviderComboFromModel();
@@ -57,6 +60,14 @@ private:
     QLabel*      m_ovWarnings       = nullptr;
     QLabel*      m_ovEvalMode       = nullptr;
     QLabel*      m_ovRebalMode      = nullptr;
+    QLabel*      m_readyBroker      = nullptr;
+    QLabel*      m_readyData        = nullptr;
+    QLabel*      m_readyExecution   = nullptr;
+    QLabel*      m_readyStrategy    = nullptr;
+    QLabel*      m_readyUniverse    = nullptr;
+    QLabel*      m_readySummary     = nullptr;
+    QComboBox*   m_executionModeCombo = nullptr;
+    bool         m_updatingExecutionMode = false;
 
     // Properties
     QWidget*     m_propertiesWidget = nullptr;

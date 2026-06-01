@@ -63,6 +63,9 @@ public:
     static void setGlobalPositionRepo(Ports::IPositionRepositoryPort* repo);
     static void setGlobalPersistentPositionRepo(Ports::IPositionRepositoryPort* repo);
     static void setGlobalBrokerConnected(bool connected);
+    static bool isGlobalBrokerConnected();
+    static bool hasGlobalExecutionPort();
+    static bool hasGlobalPositionRepo();
 
     static IBComm::MarketDataRouter* globalRouter();
     static Supervision::Supervisor* globalSupervisor();

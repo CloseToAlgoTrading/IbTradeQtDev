@@ -41,7 +41,11 @@ signals:
 private slots:
     void onStrategySelected(const QString& strategyId);
     void onCreateStrategy(const QString& name, const QJsonObject& initialConfig);
-    void onRenameStrategy(const QString& strategyId, const QString& newName);
+    void onMetadataChanged(const QString& strategyId,
+                           const QString& name,
+                           const QString& description,
+                           const QString& tags,
+                           const QString& lifecycleState);
     void onPublishVersion(const QString& strategyId, const QString& versionId);
     void onUnpublishVersion(const QString& strategyId, const QString& versionId);
     void onSaveVersion(const QString& strategyId, const QJsonObject& config,
@@ -51,6 +55,7 @@ private slots:
                          const QString& targetStrategyNodeId);
     void onBacktestVersion(const QString& strategyId, const QString& versionId);
 
+    void retireStrategy(const QString& strategyId);
     void confirmAndDeleteStrategy(const QString& strategyId);
     void onStrategyVersionRowChangeRequested(int newRow, int previousRow);
 

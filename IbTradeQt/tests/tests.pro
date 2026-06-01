@@ -143,6 +143,7 @@ SOURCES += \
     ../Backend/ModelTreeRepositoryPostgres.cpp \
     ../Backend/PersistenceFactory.cpp \
     ../Backend/ModelTreeMapper.cpp \
+    ../Backend/StrategyLifecycleState.cpp \
     ../Backend/SystemBackendImpl.cpp \
     ../Backtest/SimulatedLedger.cpp \
     ../Backtest/SimulatedExecutionAdapter.cpp \
@@ -180,6 +181,7 @@ SOURCES += \
     ../Backtest/BacktestPreFlightCoordinator.cpp \
     ../Backtest/BacktestController.cpp \
     ../BacktestUI/BacktestRunConfigPanel.cpp \
+    ../MainSystem/WorkspaceWidgets/TradingReadiness.cpp \
     ../SharedUI/StrategyTreeDelegate.cpp \
     ../MainSystem/ciconhandler.cpp \
     ../MainSystem/UiLayoutDefaultsCatalog.cpp \
@@ -302,6 +304,7 @@ HEADERS += \
     ../Logging/StructuredLogger.h \
     ../Metrics/MetricsCollector.h \
     ../Strategies/Generic/ModelType.h \
+    ../Backend/StrategyLifecycleState.h \
     phase1/tst_contracts.h \
     phase1/tst_merge_policies.h \
     phase1/tst_market_data_router.h \
@@ -367,6 +370,7 @@ HEADERS += \
     ../Backtest/BacktestController.h \
     ../BacktestUI/BacktestWorkspaceDock.h \
     ../BacktestUI/BacktestRunConfigPanel.h \
+    ../MainSystem/WorkspaceWidgets/TradingReadiness.h \
     ../BacktestUI/BacktestStrategySelector.h \
     ../Backtest/BacktestPreFlightCoordinator.h \
     ../Backtest/MarketSessionUtils.h \
@@ -492,4 +496,5 @@ HEADERS += \
     ../Pipeline/PipelineLog.h \
     ../MainSystem/WorkspaceWidgets/BlockInspectorPanel.h \
     ../MainSystem/WorkspaceWidgets/RuntimePolicyEditor.h \
-    ui/tst_runtime_policy_editor.h
+    ui/tst_runtime_policy_editor.h \
+    ui/tst_trading_readiness.h

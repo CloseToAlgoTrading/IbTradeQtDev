@@ -33,6 +33,8 @@ public:
 
     QString importResolution() const;
     QString importDataSourceIdRaw() const;
+    QString providerDataSourceId() const;
+    void setBrokerConnected(bool connected);
 
     QDateTime coverageSyncFromUtc() const;
     QDateTime coverageSyncToUtc() const;
@@ -64,6 +66,9 @@ private:
     QTextEdit* m_preview = nullptr;
     QComboBox* m_importResolution = nullptr;
     QLineEdit* m_importDataSource = nullptr;
+    QComboBox* m_providerCombo = nullptr;
+    QLabel* m_providerStatusLabel = nullptr;
+    bool m_brokerConnected = false;
 
     QLabel* m_coverageSyncLabel = nullptr;
     QDateTimeEdit* m_syncFrom = nullptr;

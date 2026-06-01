@@ -145,6 +145,16 @@ void BacktestWorkspaceDock::setResultRendering(bool on, const QString& statusWhe
     if (m_configPanel)
         m_configPanel->setRenderingResults(on, statusWhenDone);
 }
+void BacktestWorkspaceDock::setBrokerConnected(bool connected)
+{
+    if (m_configPanel)
+        m_configPanel->setBrokerConnected(connected);
+}
+void BacktestWorkspaceDock::setDataCheckSummary(bool checked, bool missing, const QString& message)
+{
+    if (m_configPanel)
+        m_configPanel->setDataCheckSummary(checked, missing, message);
+}
 
 BacktestStrategySelector::BacktestStrategySelector(QWidget* parent)
     : QWidget(parent)

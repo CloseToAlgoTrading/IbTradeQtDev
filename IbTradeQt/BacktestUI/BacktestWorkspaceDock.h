@@ -64,6 +64,8 @@ public:
     void setSessionDirtyState(bool dirty);
 
     void setResultRendering(bool on, const QString& statusWhenDone = QString());
+    void setBrokerConnected(bool connected);
+    void setDataCheckSummary(bool checked, bool missing, const QString& message);
 
     BacktestRunConfigPanel* runConfigPanel() const { return m_configPanel; }
 

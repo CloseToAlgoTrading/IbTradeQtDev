@@ -60,6 +60,9 @@ private:
         int         strategyKind = 0;
         QString     lifecycleState;
         int         versionCount = 0;
+        QString     derivedState;
+        QString     derivedStateLabel;
+        QString     derivedStateColor;
         QString     updatedAt;
         QJsonObject pipelineConfig;
     };
@@ -70,6 +73,9 @@ private:
         QString name;
         int     strategyKind = 0;
         QString lifecycleState;
+        QString derivedState;
+        QString derivedStateLabel;
+        QString derivedStateColor;
     };
 
     void rebuild();

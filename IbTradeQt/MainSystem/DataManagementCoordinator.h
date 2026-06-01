@@ -24,6 +24,7 @@ public:
     void setView(CIBTradeSystemView* view);
     void setPanel(DataManagementUI::DataManagementPanel* panel);
     void setBrokerDataProvider(CBrokerDataProvider* provider);
+    void setBrokerConnected(bool connected);
 
     void wireSignals();
     void refreshContextAndInventory();
@@ -67,6 +68,7 @@ private:
     DataManagementUI::DataManagementPanel* m_panel = nullptr;
     DataManagement::DataManagementService* m_service = nullptr;
     bool m_busy = false;
+    bool m_brokerConnected = false;
 
     /// Last-issued operation id per request type; completions with a different id are ignored (stale).
     quint64 m_pendingInventoryOpId = 0;

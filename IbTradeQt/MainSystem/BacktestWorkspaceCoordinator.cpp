@@ -310,11 +310,18 @@ bool BacktestWorkspaceCoordinator::isBacktestRunning() const
 
 void BacktestWorkspaceCoordinator::setView(CIBTradeSystemView* view) { m_view = view; }
 void BacktestWorkspaceCoordinator::setBackend(ISystemBackend* backend) { m_backend = backend; }
+void BacktestWorkspaceCoordinator::setBrokerConnected(bool connected)
+{
+    m_brokerConnected = connected;
+    if (m_dock)
+        m_dock->setBrokerConnected(connected);
+}
 void BacktestWorkspaceCoordinator::setDock(BacktestUI::BacktestWorkspaceDock* dock)
 {
     m_dock = dock;
     if (!m_dock)
         return;
+    m_dock->setBrokerConnected(m_brokerConnected);
 
     if (m_activeKey && m_sessions.contains(*m_activeKey)) {
         activateSession(*m_activeKey, true);
@@ -1269,9 +1276,29 @@ void BacktestWorkspaceCoordinator::onPreFlightPrepareFinished(const Backtest::Ba
         m_dock->runConfigPanel()->setPrepareEnabled(true);
     QWidget* parent = m_dock ? m_dock->window() : nullptr;
     if (!r.ok) {
+        if (m_dock)
+            m_dock->setDataCheckSummary(false, true, r.errorMessage);
         QMessageBox::warning(parent, QStringLiteral("Prepare run"), r.errorMessage);
         return;
     }
+    bool missing = false;
+    int checked = 0;
+    for (auto it = r.strategySymbolCoverage.begin(); it != r.strategySymbolCoverage.end(); ++it) {
+        ++checked;
+        if (it->status != Backtest::SymbolCoveragePlanEntry::Status::FullyCached)
+            missing = true;
+    }
+    if (r.hasBenchmarkCoverage) {
+        ++checked;
+        if (r.benchmarkCoverageEntry.status != Backtest::SymbolCoveragePlanEntry::Status::FullyCached)
+            missing = true;
+    }
+    const QString summary = checked > 0
+        ? QStringLiteral("%1 dataset(s) checked%2").arg(checked).arg(missing ? QStringLiteral(", gaps found")
+                                                                             : QStringLiteral(", ready"))
+        : QStringLiteral("No datasets to check");
+    if (m_dock)
+        m_dock->setDataCheckSummary(true, missing, summary);
     bool openDataManagement = false;
     PreparePreflightDialog::run(parent, r, r.needsDataAttention(), &openDataManagement);
     if (openDataManagement && m_view)

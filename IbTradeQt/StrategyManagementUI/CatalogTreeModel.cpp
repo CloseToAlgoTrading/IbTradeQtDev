@@ -12,10 +12,12 @@ namespace StrategyMgmt {
 static QString kindLabel(int k) {
     switch (k) {
     case 0:  return QStringLiteral("pipeline");
+    case 5:  return QStringLiteral("pipeline");
     case 1:  return QStringLiteral("classic");
     default: return QStringLiteral("unknown");
     }
 }
+
 
 CatalogTreeModel::CatalogTreeModel(QObject* parent)
     : AbstractPipelineTreeModel(parent)
@@ -51,6 +53,15 @@ void CatalogTreeModel::populate(const QJsonArray& catalogEntries,
         e.strategyKind   = obj.value(QStringLiteral("strategyKind")).toInt();
         e.lifecycleState = obj.value(QStringLiteral("lifecycleState")).toString();
         e.versionCount   = versionCounts.value(e.strategyId, 0);
+        e.derivedState = obj.value(QStringLiteral("derivedState")).toString();
+        e.derivedStateLabel = obj.value(QStringLiteral("derivedStateLabel")).toString();
+        e.derivedStateColor = obj.value(QStringLiteral("derivedStateColor")).toString();
+        if (e.derivedStateLabel.isEmpty() || e.derivedStateColor.isEmpty()) {
+            const QJsonObject summary = obj.value(QStringLiteral("lifecycleSummary")).toObject();
+            e.derivedState = summary.value(QStringLiteral("state")).toString();
+            e.derivedStateLabel = summary.value(QStringLiteral("stateLabel")).toString();
+            e.derivedStateColor = summary.value(QStringLiteral("stateColor")).toString();
+        }
         e.updatedAt      = obj.value(QStringLiteral("updatedAt")).toString();
         e.pipelineConfig = latestConfigs.value(e.strategyId);
         m_entries.append(e);
@@ -72,6 +83,9 @@ void CatalogTreeModel::rebuild()
         nd->name           = e.name;
         nd->strategyKind   = e.strategyKind;
         nd->lifecycleState = e.lifecycleState;
+        nd->derivedState = e.derivedState;
+        nd->derivedStateLabel = e.derivedStateLabel;
+        nd->derivedStateColor = e.derivedStateColor;
 
         auto* sn = makeOwnedNode(nd, root);
 
@@ -167,7 +181,9 @@ QVariant CatalogTreeModel::data(const QModelIndex& index, int role) const
     // Custom roles
     if (role == StrategyIdRole) return nd->strategyId;
     if (role == IsStrategyRole) return nd->isStrategy;
-    if (role == StatusRole)     return nd->lifecycleState;
+    if (role == StatusRole) {
+        return nd->derivedStateLabel.isEmpty() ? nd->lifecycleState : nd->derivedStateLabel;
+    }
     if (role == BlockIsBlockRole) return false;
 
     // Display data
@@ -189,13 +205,12 @@ QVariant CatalogTreeModel::data(const QModelIndex& index, int role) const
     }
 
     if (col == ColStatus) {
-        if (role == Qt::DisplayRole)    return nd->lifecycleState;
+        if (role == Qt::DisplayRole)
+            return nd->derivedStateLabel.isEmpty() ? nd->lifecycleState : nd->derivedStateLabel;
         if (role == Qt::ForegroundRole) {
-            if (nd->lifecycleState == QStringLiteral("active"))
-                return QColor(76, 175, 80);
-            if (nd->lifecycleState == QStringLiteral("archived"))
-                return QColor(136, 136, 136);
-            return QColor(212, 160, 74);        // draft = amber
+            return QColor(nd->derivedStateColor.isEmpty()
+                              ? QStringLiteral("#aaaaaa")
+                              : nd->derivedStateColor);
         }
     }
 
@@ -208,7 +223,7 @@ QVariant CatalogTreeModel::headerData(int section, Qt::Orientation orientation, 
     switch (section) {
     case ColName:   return QStringLiteral("Name");
     case ColKind:   return QStringLiteral("Kind");
-    case ColStatus: return QStringLiteral("Status");
+    case ColStatus: return QStringLiteral("State");
     }
     return {};
 }

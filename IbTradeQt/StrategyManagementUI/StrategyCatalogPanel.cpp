@@ -36,10 +36,13 @@ void StrategyCatalogPanel::buildUi()
     topBar->setSpacing(4);
 
     m_statusCombo = new QComboBox;
-    m_statusCombo->addItem(QStringLiteral("All"));
-    m_statusCombo->addItem(QStringLiteral("draft"));
-    m_statusCombo->addItem(QStringLiteral("active"));
-    m_statusCombo->addItem(QStringLiteral("archived"));
+    m_statusCombo->addItem(QStringLiteral("Current"), QStringLiteral("current"));
+    m_statusCombo->addItem(QStringLiteral("Draft"), QStringLiteral("draft"));
+    m_statusCombo->addItem(QStringLiteral("Testing"), QStringLiteral("testing"));
+    m_statusCombo->addItem(QStringLiteral("Ready"), QStringLiteral("ready"));
+    m_statusCombo->addItem(QStringLiteral("Live"), QStringLiteral("live"));
+    m_statusCombo->addItem(QStringLiteral("Retired"), QStringLiteral("retired"));
+    m_statusCombo->addItem(QStringLiteral("All"), QStringLiteral("all"));
     topBar->addWidget(m_statusCombo);
 
     m_newButton = new QPushButton(QStringLiteral("New Strategy"));
@@ -83,12 +86,45 @@ void StrategyCatalogPanel::populate(const QJsonArray& catalogEntries,
                                      const QMap<QString, int>& versionCounts,
                                      const QMap<QString, QJsonObject>& latestConfigs)
 {
-    m_model->populate(catalogEntries, versionCounts, latestConfigs);
+    m_catalogEntries = catalogEntries;
+    m_versionCounts = versionCounts;
+    m_latestConfigs = latestConfigs;
+    applyCatalogFilter();
+}
+
+void StrategyCatalogPanel::applyCatalogFilter()
+{
+    QJsonArray filtered;
+    for (const auto& entryValue : m_catalogEntries) {
+        const QJsonObject entry = entryValue.toObject();
+        if (entryMatchesStateFilter(entry))
+            filtered.append(entry);
+    }
+
+    m_model->populate(filtered, m_versionCounts, m_latestConfigs);
     m_treePanel->expandAll();
     QTreeView* tv = m_treePanel->treeView();
     const int n = m_model->columnCount();
     for (int c = 0; c < n - 1; ++c)
         tv->resizeColumnToContents(c);
+}
+
+bool StrategyCatalogPanel::entryMatchesStateFilter(const QJsonObject& entry) const
+{
+    const QString filter = m_currentStateFilter.isEmpty()
+        ? QStringLiteral("current")
+        : m_currentStateFilter;
+    if (filter == QStringLiteral("all"))
+        return true;
+
+    const QJsonObject summary = entry.value(QStringLiteral("lifecycleSummary")).toObject();
+    QString state = entry.value(QStringLiteral("derivedState")).toString();
+    if (state.isEmpty())
+        state = summary.value(QStringLiteral("state")).toString();
+
+    if (filter == QStringLiteral("current"))
+        return state != QStringLiteral("retired");
+    return state == filter;
 }
 
 void StrategyCatalogPanel::selectStrategyById(const QString& strategyId)
@@ -129,12 +165,10 @@ void StrategyCatalogPanel::onItemClicked(const QModelIndex& proxyIndex)
     }
 }
 
-void StrategyCatalogPanel::onStatusFilterChanged(int /*index*/)
+void StrategyCatalogPanel::onStatusFilterChanged(int index)
 {
-    // Re-populate with current data to apply filter
-    // The model itself handles all data; we just need to re-filter.
-    // For now, repopulate — a future improvement could use proxy filtering.
-    m_treePanel->expandAll();
+    m_currentStateFilter = m_statusCombo->itemData(index).toString();
+    applyCatalogFilter();
 }
 
 void StrategyCatalogPanel::onContextMenu(const QPoint& pos)
@@ -197,7 +231,7 @@ void StrategyCatalogPanel::onContextMenu(const QPoint& pos)
     if (isStrategy) {
         if (!menu.isEmpty())
             menu.addSeparator();
-        deleteStrategyAction = menu.addAction(QStringLiteral("Delete Strategy..."));
+        deleteStrategyAction = menu.addAction(QStringLiteral("Permanently Delete Strategy..."));
     }
 
     if (menu.isEmpty()) return;

@@ -72,6 +72,9 @@ public:
                                            const QString& description,
                                            const QString& tags,
                                            const QString& lifecycleState) override;
+    bool        setStrategyLifecycle(const QString& strategyId,
+                                     StrategyLifecycle::ManualLifecycle lifecycle) override;
+    QJsonObject strategyLifecycleSummary(const QString& strategyId) const override;
     QJsonObject strategyCatalogEntry(const QString& strategyId) const override;
     QJsonArray  listStrategyCatalog(bool includeArchived = false) const override;
     bool        archiveStrategyCatalogEntry(const QString& strategyId) override;
@@ -86,6 +89,7 @@ public:
     QJsonArray  listStrategyVersions(const QString& strategyId) const override;
     bool        deleteStrategyVersion(const QString& versionId) override;
     bool        publishVersion(const QString& versionId) override;
+    bool        unpublishVersion(const QString& versionId) override;
 
     bool        bindLiveNodeToVersion(const QString& nodeId,
                                        const QString& strategyId,
@@ -141,6 +145,9 @@ private:
     static QJsonObject definitionToJson(const DbStrategyDefinition& def);
     static QJsonObject strategyToJson(const DbStrategy& s);
     static QJsonObject versionToJson(const DbStrategyVersion& v);
+    int publishedVersionCount(const QString& strategyId) const;
+    StrategyLifecycle::Summary lifecycleSummaryForStrategy(const DbStrategy& s) const;
+    QJsonObject strategyToJsonWithLifecycle(const DbStrategy& s) const;
 
     CBasicRoot* m_root = nullptr;
     IModelTreeRepository* m_repo = nullptr;

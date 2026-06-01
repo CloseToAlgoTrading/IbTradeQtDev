@@ -141,14 +141,20 @@ DataManagementPanel::DataManagementPanel(QWidget* parent)
     for (const QString& r : DataManagement::canonicalBarResolutions())
         m_importResolution->addItem(r);
     m_importDataSource = new QLineEdit(this);
-    m_importDataSource->setPlaceholderText(QStringLiteral("dataSourceId (e.g. csv, ib)"));
+    m_importDataSource->setPlaceholderText(QStringLiteral("CSV dataSourceId (e.g. csv)"));
     auto* importRow = new QHBoxLayout();
     importRow->addWidget(new QLabel(QStringLiteral("Import resolution:"), this));
     importRow->addWidget(m_importResolution);
     importRow->addWidget(new QLabel(QStringLiteral("dataSourceId:"), this));
     importRow->addWidget(m_importDataSource, 1);
 
-    m_coverageSyncLabel = new QLabel(QStringLiteral("Coverage sync (UTC) — Yahoo Day1 or IB:"), this);
+    m_providerCombo = new QComboBox(this);
+    m_providerCombo->addItem(QStringLiteral("Yahoo"), QStringLiteral("yahoo"));
+    m_providerCombo->addItem(QStringLiteral("IB/TWS"), QStringLiteral("ib"));
+    m_providerStatusLabel = new QLabel(QStringLiteral("Provider: Yahoo"), this);
+    m_providerStatusLabel->setObjectName(QStringLiteral("DataManagementProviderStatus"));
+
+    m_coverageSyncLabel = new QLabel(QStringLiteral("Coverage sync (UTC):"), this);
     m_syncFrom = new QDateTimeEdit(this);
     m_syncTo   = new QDateTimeEdit(this);
     for (QDateTimeEdit* dt : {m_syncFrom, m_syncTo}) {
@@ -161,9 +167,8 @@ DataManagementPanel::DataManagementPanel(QWidget* parent)
 
     m_syncCoverageButton = new QPushButton(QStringLiteral("Sync coverage"), this);
     m_coverageSyncHint = new QLabel(
-        QStringLiteral("Select a Yahoo Day1 or IB row in the table above. If the symbol is missing, load data "
-                       "first (e.g. CSV import). Leading/trailing coverage only — no internal hole "
-                       "repair."),
+        QStringLiteral("Select one supported dataset row. Yahoo sync supports Day1; IB/TWS supports broker-backed rows. "
+                       "If the symbol is missing, fetch provider bars first. Leading/trailing coverage only."),
         this);
     m_coverageSyncHint->setWordWrap(true);
     m_coverageSyncHint->setVisible(false);
@@ -187,7 +192,10 @@ DataManagementPanel::DataManagementPanel(QWidget* parent)
     m_yahooBatchHint->setWordWrap(true);
 
     auto* yahooBatchRow = new QHBoxLayout();
-    yahooBatchRow->addWidget(new QLabel(QStringLiteral("External source:"), this));
+    yahooBatchRow->addWidget(new QLabel(QStringLiteral("Provider:"), this));
+    yahooBatchRow->addWidget(m_providerCombo);
+    yahooBatchRow->addWidget(m_providerStatusLabel);
+    yahooBatchRow->addWidget(new QLabel(QStringLiteral("Symbols:"), this));
     yahooBatchRow->addWidget(m_yahooBatchSymbolsEdit, 1);
     yahooBatchRow->addWidget(m_yahooBatchFetchButton);
 
@@ -225,6 +233,11 @@ DataManagementPanel::DataManagementPanel(QWidget* parent)
             &DataManagementPanel::yahooBatchFetchClicked);
     connect(m_yahooBatchSymbolsEdit, &QLineEdit::textChanged, this,
             &DataManagementPanel::updateYahooBatchAvailability);
+    connect(m_providerCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+            [this](int) {
+        updateYahooBatchAvailability();
+        updateCoverageSyncAvailability();
+    });
 
     rebuildStorageLabel();
     updateYahooBatchAvailability();
@@ -290,6 +303,8 @@ void DataManagementPanel::setPreviewText(const QString& text)
 void DataManagementPanel::setBusy(bool busy)
 {
     setEnabled(!busy);
+    updateYahooBatchAvailability();
+    updateCoverageSyncAvailability();
 }
 
 QList<DataManagement::HistoricalBarsDatasetKey> DataManagementPanel::selectedKeys() const
@@ -314,6 +329,18 @@ QString DataManagementPanel::importDataSourceIdRaw() const
     return m_importDataSource->text();
 }
 
+QString DataManagementPanel::providerDataSourceId() const
+{
+    return m_providerCombo ? m_providerCombo->currentData().toString() : QStringLiteral("yahoo");
+}
+
+void DataManagementPanel::setBrokerConnected(bool connected)
+{
+    m_brokerConnected = connected;
+    updateYahooBatchAvailability();
+    updateCoverageSyncAvailability();
+}
+
 QDateTime DataManagementPanel::coverageSyncFromUtc() const
 {
     return m_syncFrom->dateTime().toUTC();
@@ -334,24 +361,41 @@ void DataManagementPanel::updateYahooBatchAvailability()
     if (!m_yahooBatchFetchButton || !m_yahooBatchSymbolsEdit)
         return;
     const bool hasSymbols = !m_yahooBatchSymbolsEdit->text().trimmed().isEmpty();
-    m_yahooBatchFetchButton->setEnabled(hasSymbols && isEnabled());
+    const bool providerNeedsBroker = providerDataSourceId() == QLatin1String("ib");
+    const bool providerReady = !providerNeedsBroker || m_brokerConnected;
+    m_yahooBatchFetchButton->setEnabled(hasSymbols && providerReady && isEnabled());
+    if (m_providerStatusLabel) {
+        if (providerNeedsBroker)
+            m_providerStatusLabel->setText(m_brokerConnected ? QStringLiteral("IB/TWS connected")
+                                                             : QStringLiteral("Connect IB/TWS first"));
+        else
+            m_providerStatusLabel->setText(QStringLiteral("Provider: Yahoo"));
+    }
 }
 
 void DataManagementPanel::updateCoverageSyncAvailability()
 {
     const auto keys = selectedKeys();
+    const bool providerNeedsBroker = keys.size() == 1 && keys.first().dataSourceId == QLatin1String("ib");
     const bool supported = keys.size() == 1
         && ((keys.first().dataSourceId == QLatin1String("yahoo")
              && keys.first().resolution == QLatin1String("Day1"))
             || keys.first().dataSourceId == QLatin1String("ib"));
+    const bool brokerReady = !providerNeedsBroker || m_brokerConnected;
 
     if (!supported)
         m_lastCoverageSyncKey = {};
 
-    m_syncCoverageButton->setEnabled(supported && isEnabled());
+    m_syncCoverageButton->setEnabled(supported && brokerReady && isEnabled());
     m_syncFrom->setEnabled(isEnabled());
     m_syncTo->setEnabled(isEnabled());
-    m_coverageSyncHint->setVisible(!supported);
+    if (m_coverageSyncHint) {
+        m_coverageSyncHint->setText(!brokerReady
+            ? QStringLiteral("Connect IB/TWS first to sync IB/TWS coverage.")
+            : QStringLiteral("Select one supported dataset row. Yahoo sync supports Day1; IB/TWS supports broker-backed rows. "
+                             "If the symbol is missing, fetch provider bars first. Leading/trailing coverage only."));
+    }
+    m_coverageSyncHint->setVisible(!supported || !brokerReady);
 
     if (!supported || m_table->selectionModel()->selectedRows().size() != 1)
         return;

@@ -59,6 +59,15 @@ void DataManagementCoordinator::setBrokerDataProvider(CBrokerDataProvider* provi
 void DataManagementCoordinator::setPanel(DataManagementUI::DataManagementPanel* panel)
 {
     m_panel = panel;
+    if (m_panel)
+        m_panel->setBrokerConnected(m_brokerConnected);
+}
+
+void DataManagementCoordinator::setBrokerConnected(bool connected)
+{
+    m_brokerConnected = connected;
+    if (m_panel)
+        m_panel->setBrokerConnected(connected);
 }
 
 QString DataManagementCoordinator::backtestDbPath() const
@@ -283,6 +292,11 @@ void DataManagementCoordinator::onPanelCoverageSync()
                                  QStringLiteral("Coverage sync requires Yahoo Day1 or IB/TWS."));
         return;
     }
+    if (k.dataSourceId == QLatin1String("ib") && !m_brokerConnected) {
+        QMessageBox::information(m_view, QStringLiteral("Coverage sync"),
+                                 QStringLiteral("Connect IB/TWS before syncing IB-backed data."));
+        return;
+    }
     m_busy = true;
     m_panel->setBusy(true);
     m_pendingCoverageSyncOpId =
@@ -296,15 +310,18 @@ void DataManagementCoordinator::onPanelYahooBatch()
         return;
     const auto parsed = AssetUniverseInput::parseLine(m_panel->yahooBatchSymbolsLine());
     if (parsed.symbolOrder.isEmpty()) {
-        QMessageBox::information(m_view, QStringLiteral("Yahoo import"),
+        QMessageBox::information(m_view, QStringLiteral("Provider import"),
                                  QStringLiteral("Enter at least one symbol (comma-separated)."));
+        return;
+    }
+    const QString source = DataManagement::normalizeDataSourceId(m_panel->providerDataSourceId());
+    if (source == QLatin1String("ib") && !m_brokerConnected) {
+        QMessageBox::information(m_view, QStringLiteral("Provider import"),
+                                 QStringLiteral("Connect IB/TWS before fetching IB provider bars."));
         return;
     }
     m_busy = true;
     m_panel->setBusy(true);
-    const QString source = DataManagement::normalizeDataSourceId(m_panel->importDataSourceIdRaw()).isEmpty()
-        ? QStringLiteral("yahoo")
-        : DataManagement::normalizeDataSourceId(m_panel->importDataSourceIdRaw());
     m_pendingYahooBatchOpId =
         m_service->requestBatchYahooImport(backtestDbPath(), parsed.symbolOrder,
                                            m_panel->coverageSyncFromUtc(), m_panel->coverageSyncToUtc(),
@@ -505,7 +522,7 @@ void DataManagementCoordinator::onCoverageSyncFinished(quint64 operationId,
 
     QMessageBox::information(
         m_view, QStringLiteral("Coverage sync"),
-        QStringLiteral("Bars received (HTTP): %1\nRows upserted: %2\n\nSegments:\n%3%4")
+        QStringLiteral("Bars received: %1\nRows upserted: %2\n\nSegments:\n%3%4")
             .arg(result.barsFetched)
             .arg(result.rowsUpserted)
             .arg(segLines)
@@ -537,7 +554,7 @@ void DataManagementCoordinator::onYahooBatchImportFinished(quint64 operationId,
     m_pendingYahooBatchOpId = 0;
 
     QString body =
-        QStringLiteral("Symbols requested: %1\nSucceeded: %2\nBars received (HTTP): %3\nRows upserted: %4")
+        QStringLiteral("Symbols requested: %1\nSucceeded: %2\nBars received: %3\nRows upserted: %4")
             .arg(r.symbolsRequested)
             .arg(r.symbolsSucceeded)
             .arg(r.totalBarsFetched)
@@ -553,7 +570,7 @@ void DataManagementCoordinator::onYahooBatchImportFinished(quint64 operationId,
         body += QStringLiteral("\n\nFailures:\n") + failures;
     }
 
-    QMessageBox::information(m_view, QStringLiteral("Yahoo import"), body);
+    QMessageBox::information(m_view, QStringLiteral("Provider import"), body);
 
     m_busy = true;
     if (m_panel)
@@ -570,7 +587,7 @@ void DataManagementCoordinator::onYahooBatchImportFailed(quint64 operationId,
     m_busy = false;
     if (m_panel)
         m_panel->setBusy(false);
-    QMessageBox::warning(m_view, QStringLiteral("Yahoo import"), err.message);
+    QMessageBox::warning(m_view, QStringLiteral("Provider import"), err.message);
 }
 
 QString DataManagementCoordinator::formatPreview(const DataManagement::HistoricalBarsPreview& p) const

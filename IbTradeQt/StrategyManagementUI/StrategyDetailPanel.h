@@ -39,6 +39,7 @@ public:
     QJsonObject workingConfig() const { return m_workingConfig; }
     bool isConfigDirty() const { return m_configDirty; }
     QString currentStrategyId() const { return m_currentStrategyId; }
+    bool currentVersionPublished() const;
     void selectVersionRow(int row);
 
     void loadVersionAtRow(int row);
@@ -55,6 +56,7 @@ signals:
     void newVersionRequested(const QString& strategyId,
                              const QJsonObject& pipelineConfig);
     void publishRequested(const QString& strategyId, const QString& versionId);
+    void unpublishRequested(const QString& strategyId, const QString& versionId);
     void deleteVersionRequested(const QString& strategyId, const QString& versionId);
     void archiveRequested(const QString& strategyId);
     void useInLiveRequested(const QString& strategyId, const QString& versionId);
@@ -86,18 +88,22 @@ private:
     QString selectedVersionId() const;
     void updateVersionActionState();
     void updateNewVersionButtonText();
+    void updateVersionEditLock();
     void markDirty();
+    bool selectedVersionPublished() const;
 
     // Metadata
     QLineEdit*      m_nameEdit      = nullptr;
     QLabel*         m_kindLabel     = nullptr;
     QComboBox*      m_statusCombo   = nullptr;
+    QLabel*         m_availabilityLabel = nullptr;
     QTextEdit*      m_descEdit      = nullptr;
     QLineEdit*      m_tagsEdit      = nullptr;
     QPushButton*    m_saveMetaBtn   = nullptr;
 
     // Version table
     QTableWidget*   m_versionTable  = nullptr;
+    QLabel*         m_versionEditStateLabel = nullptr;
 
     // Block inspector (permanent tab for viewing/editing block parameters)
     BlockInspectorPanel*  m_inspector     = nullptr;
@@ -116,6 +122,7 @@ private:
     // Action buttons
     QPushButton*    m_newVersionBtn = nullptr;
     QPushButton*    m_publishBtn    = nullptr;
+    QPushButton*    m_unpublishBtn  = nullptr;
     QPushButton*    m_deleteVersionBtn = nullptr;
     QPushButton*    m_archiveBtn    = nullptr;
     QPushButton*    m_useInLiveBtn  = nullptr;

@@ -30,6 +30,7 @@ public:
     void setView(CIBTradeSystemView* view);
     void setBackend(ISystemBackend* backend);
     void setDock(BacktestUI::BacktestWorkspaceDock* dock);
+    void setBrokerConnected(bool connected);
 
     void setUnsavedChangesPrompt(std::unique_ptr<IUnsavedChangesPrompt> prompt);
     void setBacktestSessionSwitchPrompt(std::unique_ptr<IBacktestSessionSwitchPrompt> prompt);
@@ -121,6 +122,7 @@ private:
     ISystemBackend*                  m_backend  = nullptr;
     BacktestUI::BacktestWorkspaceDock* m_dock   = nullptr;
     Backtest::BacktestController*    m_controller = nullptr;
+    bool m_brokerConnected = false;
 
     std::unique_ptr<IUnsavedChangesPrompt> m_unsavedPrompt;
     std::unique_ptr<IBacktestSessionSwitchPrompt> m_backtestSwitchPrompt;

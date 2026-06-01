@@ -31,9 +31,17 @@ void StrategyCatalogModel::resetData(const QJsonArray& catalogEntries,
         e.strategyId     = obj.value("strategyId").toString();
         e.name           = obj.value("name").toString();
         e.strategyKind   = obj.value("strategyKind").toInt();
-        e.lifecycleState = obj.value("isArchived").toBool()
-                               ? QStringLiteral("archived")
+        e.stateLabel = obj.value(QStringLiteral("derivedStateLabel")).toString();
+        if (e.stateLabel.isEmpty())
+            e.stateLabel = obj.value(QStringLiteral("lifecycleSummary"))
+                               .toObject()
+                               .value(QStringLiteral("stateLabel"))
+                               .toString();
+        if (e.stateLabel.isEmpty()) {
+            e.stateLabel = obj.value("isArchived").toBool()
+                               ? QStringLiteral("Retired")
                                : obj.value("lifecycleState").toString();
+        }
         e.updatedAt      = obj.value("updatedAt").toString();
         e.versionCount   = versionCounts.value(e.strategyId, 0);
         e.raw            = obj;
@@ -87,7 +95,7 @@ QVariant StrategyCatalogModel::data(const QModelIndex& index, int role) const
         switch (index.column()) {
         case ColName:        return e.name;
         case ColKind:        return kindToString(e.strategyKind);
-        case ColStatus:      return e.lifecycleState;
+        case ColStatus:      return e.stateLabel;
         case ColVersions:    return e.versionCount;
         case ColLastUpdated: return e.updatedAt;
         }
@@ -104,7 +112,7 @@ QVariant StrategyCatalogModel::headerData(int section, Qt::Orientation orientati
     switch (section) {
     case ColName:        return QStringLiteral("Name");
     case ColKind:        return QStringLiteral("Kind");
-    case ColStatus:      return QStringLiteral("Status");
+    case ColStatus:      return QStringLiteral("State");
     case ColVersions:    return QStringLiteral("Versions");
     case ColLastUpdated: return QStringLiteral("Last Updated");
     }

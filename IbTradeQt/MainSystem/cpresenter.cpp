@@ -109,11 +109,10 @@ void CPresenter::MapSignals()
 
         QAction* addAccount = menu.addAction("Add New Account");
 
-        QAction* addPortfolio     = nullptr;
-        QAction* addNewStrategy   = nullptr;
-        QAction* useExistingStrat = nullptr;
-        QAction* removeNode       = nullptr;
-        QAction* openBacktest     = nullptr;
+        QAction* addPortfolio = nullptr;
+        QAction* addStrategy  = nullptr;
+        QAction* removeNode   = nullptr;
+        QAction* openBacktest = nullptr;
 
         CGenericModelApi* clickedModel = nullptr;
         ModelType clickedType = ModelType::ROOT;
@@ -127,8 +126,7 @@ void CPresenter::MapSignals()
                 addPortfolio = menu.addAction("Add New Portfolio");
             }
             if (clickedType == ModelType::PORTFOLIO) {
-                addNewStrategy = menu.addAction("Add New Strategy");
-                useExistingStrat = menu.addAction("Use Existing Strategy...");
+                addStrategy = menu.addAction("Add Strategy...");
             }
 
             bool isStrategy = (clickedType == ModelType::STRATEGY ||
@@ -165,12 +163,7 @@ void CPresenter::MapSignals()
             backend->createPortfolio(accountId, "Portfolio");
             rebuildTree();
         }
-        else if (chosen == addNewStrategy && clickedModel && backend) {
-            QString portfolioId = clickedModel->getId().toString(QUuid::WithoutBraces);
-            backend->createStrategy(portfolioId, ModelType::STRATEGY_PIPELINE);
-            rebuildTree();
-        }
-        else if (chosen == useExistingStrat && clickedModel && backend) {
+        else if (chosen == addStrategy && clickedModel && backend) {
             QJsonArray catalog = backend->listStrategyCatalog(false);
             QStringList choices;
             QMap<int, QPair<QString, QString>> indexMap;
@@ -195,7 +188,7 @@ void CPresenter::MapSignals()
             } else {
                 bool ok = false;
                 QString picked = QInputDialog::getItem(pIbtsView,
-                    QStringLiteral("Use Existing Strategy"),
+                    QStringLiteral("Add Strategy"),
                     QStringLiteral("Select a published strategy version:"),
                     choices, 0, false, &ok);
                 if (ok) {
@@ -251,6 +244,7 @@ void CPresenter::MapSignals()
     auto* btDock = new BacktestUI::BacktestWorkspaceDock(this->pIbtsView);
     btDock->hide();
     m_backtestCoord->setDock(btDock);
+    m_backtestCoord->setBrokerConnected(m_brokerConnected);
 
     auto* backtestHost = this->pIbtsView->backtestDockHost();
     auto* btSummaryDock = new QDockWidget(QStringLiteral("Backtest Summary Statistics"),
@@ -295,6 +289,7 @@ void CPresenter::MapSignals()
     m_dataMgmtCoord->setView(pIbtsView);
     m_dataMgmtCoord->setBrokerDataProvider(m_pDataProvider.data());
     m_dataMgmtCoord->setPanel(pIbtsView->dataManagementPanel());
+    m_dataMgmtCoord->setBrokerConnected(m_brokerConnected);
     m_dataMgmtCoord->wireSignals();
 
     connect(m_stratMgmtCoord, &StrategyManagementCoordinator::openInBacktest,
@@ -309,8 +304,11 @@ void CPresenter::MapSignals()
             pPConfigModel->setupModelData();
             if (m_pSystemTreeModel)
                 m_pSystemTreeModel->rebuildFromRoot();
-            if (pIbtsView)
+            if (pIbtsView) {
                 pIbtsView->slotUpdateTreeViewAll();
+                if (auto* treeView = pIbtsView->getPortfolioConfigTreeView())
+                    treeView->expandAll();
+            }
         }
     });
 
@@ -462,8 +460,10 @@ void CPresenter::onClickMyButton()
                                 QString newVerId = m_backend->createStrategyVersion(
                                     catalogStratId, nodeConfig,
                                     QStringLiteral("Auto-saved before broker connect"));
-                                if (!newVerId.isEmpty())
+                                if (!newVerId.isEmpty()) {
+                                    m_backend->publishVersion(newVerId);
                                     m_backend->bindLiveNodeToVersion(nid, catalogStratId, newVerId);
+                                }
                             }
                 }
             }
@@ -484,6 +484,10 @@ void CPresenter::onBrokerConnectionChanged(bool connected)
 {
     m_brokerConnected = connected;
     m_connectionRequested = false;
+    if (m_backtestCoord)
+        m_backtestCoord->setBrokerConnected(connected);
+    if (m_dataMgmtCoord)
+        m_dataMgmtCoord->setBrokerConnected(connected);
 
     if (connected) {
         if (m_backend)
@@ -505,6 +509,10 @@ void CPresenter::onBrokerConnectionAttemptFinished(bool connected)
 
     m_connectionRequested = false;
     m_brokerConnected = false;
+    if (m_backtestCoord)
+        m_backtestCoord->setBrokerConnected(false);
+    if (m_dataMgmtCoord)
+        m_dataMgmtCoord->setBrokerConnected(false);
     workerAlfaTime->StopTimeUpdate();
     if (m_backend)
         m_backend->disconnectBroker();

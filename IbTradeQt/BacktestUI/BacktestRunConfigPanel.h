@@ -73,6 +73,8 @@ public:
     void setRunning(bool running);
     void setPrepareEnabled(bool enabled);
     void setRenderingResults(bool on, const QString& statusWhenDone = QString());
+    void setBrokerConnected(bool connected);
+    void setDataCheckSummary(bool checked, bool missing, const QString& message);
 
 signals:
     void runRequested(const Backtest::BacktestRunConfig& config);
@@ -87,6 +89,7 @@ private:
     void buildForm();
     void wireUserEditSignals();
     void applyPipelineJsonToForm(const QString& pipelineConfigJson);
+    void refreshReadiness();
 
     // Strategy context (set from outside, not editable in the form)
     QString m_strategyId;
@@ -115,10 +118,15 @@ private:
     QProgressBar*   m_progressBar      = nullptr;
     QLabel*         m_statusLabel      = nullptr;
     QLabel*         m_universeLabel    = nullptr;
+    QLabel*         m_readinessLabel   = nullptr;
 
     RuntimePolicyEditor* m_policyEditor = nullptr;
 
     bool m_programmaticUpdate = false;
+    bool m_brokerConnected = false;
+    bool m_coverageKnown = false;
+    bool m_coverageMissing = false;
+    QString m_coverageMessage;
 };
 
 } // namespace BacktestUI

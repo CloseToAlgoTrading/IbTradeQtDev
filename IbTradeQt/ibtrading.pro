@@ -217,6 +217,7 @@ SOURCES += \
     MainSystem/WorkspaceWidgets/WorkspaceBase.cpp \
     MainSystem/WorkspaceWidgets/WorkspaceHeader.cpp \
     MainSystem/WorkspaceWidgets/MetricsStrip.cpp \
+    MainSystem/WorkspaceWidgets/TradingReadiness.cpp \
     MainSystem/WorkspaceWidgets/StrategyWorkspace.cpp \
     MainSystem/WorkspaceWidgets/AccountWorkspace.cpp \
     MainSystem/WorkspaceWidgets/PortfolioWorkspace.cpp \
@@ -268,6 +269,7 @@ SOURCES += \
     Backend/ModelTreeRepositoryPostgres.cpp \
     Backend/PersistenceFactory.cpp \
     Backend/ModelTreeMapper.cpp \
+    Backend/StrategyLifecycleState.cpp \
     Backend/SystemBackendImpl.cpp \
     SharedUI/StrategyTreeDelegate.cpp \
     SharedUI/AbstractPipelineTreeModel.cpp \
@@ -402,6 +404,7 @@ HEADERS += \
     DB/dbhandler.h \
     DB/dbmanager.h \
     DB/dbquery.h \
+    Backend/StrategyLifecycleState.h \
     MainSystem/CPortfolioConfigModel.h \
     MainSystem/PipelineItemDelegate.h \
     MainSystem/PipelineDiagramWidget.h \
@@ -505,6 +508,7 @@ HEADERS += \
     MainSystem/WorkspaceWidgets/WorkspaceBase.h \
     MainSystem/WorkspaceWidgets/WorkspaceHeader.h \
     MainSystem/WorkspaceWidgets/MetricsStrip.h \
+    MainSystem/WorkspaceWidgets/TradingReadiness.h \
     MainSystem/WorkspaceWidgets/StrategyWorkspace.h \
     MainSystem/WorkspaceWidgets/AccountWorkspace.h \
     MainSystem/WorkspaceWidgets/PortfolioWorkspace.h \

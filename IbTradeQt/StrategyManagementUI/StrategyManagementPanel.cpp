@@ -42,6 +42,8 @@ void StrategyManagementPanel::buildUi()
             this, &StrategyManagementPanel::newVersionRequested);
     connect(m_detailPanel, &StrategyDetailPanel::publishRequested,
             this, &StrategyManagementPanel::publishRequested);
+    connect(m_detailPanel, &StrategyDetailPanel::unpublishRequested,
+            this, &StrategyManagementPanel::unpublishRequested);
     connect(m_detailPanel, &StrategyDetailPanel::deleteVersionRequested,
             this, &StrategyManagementPanel::deleteVersionRequested);
     connect(m_detailPanel, &StrategyDetailPanel::archiveRequested,

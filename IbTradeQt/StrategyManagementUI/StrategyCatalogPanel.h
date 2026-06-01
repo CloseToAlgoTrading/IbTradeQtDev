@@ -52,14 +52,18 @@ private slots:
 private:
     void buildUi();
     QModelIndex mapToSource(const QModelIndex& proxyIndex) const;
+    void applyCatalogFilter();
+    bool entryMatchesStateFilter(const QJsonObject& entry) const;
 
     StrategyTreePanel* m_treePanel   = nullptr;
     CatalogTreeModel*  m_model       = nullptr;
     QComboBox*         m_statusCombo = nullptr;
     QPushButton*       m_newButton   = nullptr;
 
-    // Status filter — applied via the search proxy
-    QString m_currentStatusFilter;
+    QJsonArray m_catalogEntries;
+    QMap<QString, int> m_versionCounts;
+    QMap<QString, QJsonObject> m_latestConfigs;
+    QString m_currentStateFilter;
 };
 
 } // namespace StrategyMgmt
