@@ -1,13 +1,36 @@
 #include "CatalogTreeModel.h"
 #include "PipelineConstants.h"
 #include "BlockRegistry.h"
-#include "ciconhandler.h"
 
 #include <QColor>
 #include <QFont>
 #include <QJsonArray>
 
 namespace StrategyMgmt {
+
+static QString lifecycleLabel(const QString& lifecycleState)
+{
+    const QString state = lifecycleState.trimmed().toLower();
+    if (state == QStringLiteral("testing"))
+        return QStringLiteral("Testing");
+    if (state == QStringLiteral("ready"))
+        return QStringLiteral("Ready");
+    if (state == QStringLiteral("retired"))
+        return QStringLiteral("Retired");
+    return QStringLiteral("Draft");
+}
+
+static QString lifecycleColorHex(const QString& lifecycleState)
+{
+    const QString state = lifecycleState.trimmed().toLower();
+    if (state == QStringLiteral("testing"))
+        return QStringLiteral("#d4a04a");
+    if (state == QStringLiteral("ready"))
+        return QStringLiteral("#58a6ff");
+    if (state == QStringLiteral("retired"))
+        return QStringLiteral("#888888");
+    return QStringLiteral("#aaaaaa");
+}
 
 CatalogTreeModel::CatalogTreeModel(QObject* parent)
     : AbstractPipelineTreeModel(parent)
@@ -32,7 +55,9 @@ CatalogTreeModel::TreeNode* CatalogTreeModel::makeOwnedNode(
 
 void CatalogTreeModel::populate(const QJsonArray& catalogEntries,
                                  const QMap<QString, int>& versionCounts,
-                                 const QMap<QString, QJsonObject>& latestConfigs)
+                                 const QMap<QString, QJsonObject>& latestConfigs,
+                                 const QMap<QString, QString>& visibleVersionLabels,
+                                 const QMap<QString, QString>& visibleLifecycleStates)
 {
     m_entries.clear();
     for (const auto& val : catalogEntries) {
@@ -52,6 +77,13 @@ void CatalogTreeModel::populate(const QJsonArray& catalogEntries,
             e.derivedStateColor = summary.value(QStringLiteral("stateColor")).toString();
         }
         e.updatedAt      = obj.value(QStringLiteral("updatedAt")).toString();
+        e.visibleVersionLabel = visibleVersionLabels.value(e.strategyId);
+        const QString visibleLifecycle = visibleLifecycleStates.value(e.strategyId);
+        if (!e.visibleVersionLabel.isEmpty() && !visibleLifecycle.isEmpty()) {
+            e.lifecycleState = visibleLifecycle;
+            e.derivedStateLabel = lifecycleLabel(visibleLifecycle);
+            e.derivedStateColor = lifecycleColorHex(visibleLifecycle);
+        }
         e.pipelineConfig = latestConfigs.value(e.strategyId);
         m_entries.append(e);
     }
@@ -74,6 +106,7 @@ void CatalogTreeModel::rebuild()
         nd->derivedState = e.derivedState;
         nd->derivedStateLabel = e.derivedStateLabel;
         nd->derivedStateColor = e.derivedStateColor;
+        nd->visibleVersionLabel = e.visibleVersionLabel;
 
         auto* sn = makeOwnedNode(nd, root);
 
@@ -176,10 +209,6 @@ QVariant CatalogTreeModel::data(const QModelIndex& index, int role) const
     // Display data
     if (col == ColName) {
         if (role == Qt::DisplayRole) return nd->name;
-        if (role == Qt::DecorationRole) {
-            static CIconHandler ih;
-            return ih.loadIconFromResourceTheme("Strategy");
-        }
         if (role == Qt::FontRole) {
             QFont f;
             f.setBold(true);
@@ -188,8 +217,14 @@ QVariant CatalogTreeModel::data(const QModelIndex& index, int role) const
     }
 
     if (col == ColStatus) {
-        if (role == Qt::DisplayRole)
-            return nd->derivedStateLabel.isEmpty() ? nd->lifecycleState : nd->derivedStateLabel;
+        if (role == Qt::DisplayRole) {
+            const QString state = nd->derivedStateLabel.isEmpty()
+                ? nd->lifecycleState
+                : nd->derivedStateLabel;
+            return nd->visibleVersionLabel.isEmpty()
+                ? state
+                : QStringLiteral("%1 / %2").arg(state, nd->visibleVersionLabel);
+        }
         if (role == Qt::ForegroundRole) {
             return QColor(nd->derivedStateColor.isEmpty()
                               ? QStringLiteral("#aaaaaa")

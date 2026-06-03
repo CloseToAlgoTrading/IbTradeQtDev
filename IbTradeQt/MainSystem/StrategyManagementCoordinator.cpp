@@ -74,6 +74,9 @@ void StrategyManagementCoordinator::wireSignals()
     connect(m_panel, &StrategyMgmt::StrategyManagementPanel::deleteVersionRequested,
             this, &StrategyManagementCoordinator::onDeleteVersion);
 
+    connect(m_panel, &StrategyMgmt::StrategyManagementPanel::versionLifecycleChanged,
+            this, &StrategyManagementCoordinator::onVersionLifecycleChanged);
+
     connect(m_panel, &StrategyMgmt::StrategyManagementPanel::archiveRequested,
             this, &StrategyManagementCoordinator::retireStrategy);
 
@@ -156,6 +159,11 @@ void StrategyManagementCoordinator::wireSignals()
 
     connect(m_panel->detailPanel(), &StrategyMgmt::StrategyDetailPanel::versionRowChangeRequested,
             this, &StrategyManagementCoordinator::onStrategyVersionRowChangeRequested);
+    connect(m_panel->detailPanel(), &StrategyMgmt::StrategyDetailPanel::visibleVersionChanged,
+            this, [this](const QString&, const QString&, const QString&,
+                         const QString&, const QJsonObject& pipelineConfig) {
+        emit diagramContextChanged(pipelineConfig);
+    });
 
     if (m_backend) {
         connect(m_backend, &ISystemBackend::strategyCatalogChanged,
@@ -163,6 +171,17 @@ void StrategyManagementCoordinator::wireSignals()
         connect(m_backend, &ISystemBackend::strategyVersionCreated,
                 this, [this](const QString&, const QString&) { refreshCatalog(); });
     }
+}
+
+void StrategyManagementCoordinator::publishCurrentDiagramContext()
+{
+    auto* detail = m_panel ? m_panel->detailPanel() : nullptr;
+    if (!detail || detail->currentStrategyId().isEmpty())
+        return;
+
+    const QJsonObject cfg = detail->workingConfig();
+    if (!cfg.isEmpty())
+        emit diagramContextChanged(cfg);
 }
 
 void StrategyManagementCoordinator::refreshCatalog()
@@ -360,12 +379,12 @@ void StrategyManagementCoordinator::onPublishVersion(const QString& strategyId,
             QStringLiteral("The selected version could not be published."));
         return;
     }
-    refreshCatalog();
-    m_panel->catalogPanel()->selectStrategyById(strategyId);
     QJsonObject entry = m_backend->strategyCatalogEntry(strategyId);
     QJsonArray versions = m_backend->listStrategyVersions(strategyId);
     m_panel->showStrategyDetail(entry, versions);
     m_panel->detailPanel()->selectVersionById(versionId);
+    refreshCatalog();
+    m_panel->catalogPanel()->selectStrategyById(strategyId);
 }
 
 void StrategyManagementCoordinator::onUnpublishVersion(const QString& strategyId,
@@ -379,12 +398,12 @@ void StrategyManagementCoordinator::onUnpublishVersion(const QString& strategyId
             QStringLiteral("This version is still used by a live deployment. Remove or rebind that deployment before unpublishing."));
         return;
     }
-    refreshCatalog();
-    m_panel->catalogPanel()->selectStrategyById(strategyId);
     QJsonObject entry = m_backend->strategyCatalogEntry(strategyId);
     QJsonArray versions = m_backend->listStrategyVersions(strategyId);
     m_panel->showStrategyDetail(entry, versions);
     m_panel->detailPanel()->selectVersionById(versionId);
+    refreshCatalog();
+    m_panel->catalogPanel()->selectStrategyById(strategyId);
 }
 
 void StrategyManagementCoordinator::onSaveVersion(const QString& strategyId,
@@ -396,6 +415,31 @@ void StrategyManagementCoordinator::onSaveVersion(const QString& strategyId,
     if (!m_unsavedDraftFlow)
         return;
     m_unsavedDraftFlow->saveWorkingAsNewVersion();
+}
+
+void StrategyManagementCoordinator::onVersionLifecycleChanged(const QString& strategyId,
+                                                               const QString& versionId,
+                                                               const QString& lifecycleState)
+{
+    if (!m_backend || !m_panel || strategyId.isEmpty() || versionId.isEmpty())
+        return;
+
+    const auto lifecycle = StrategyLifecycle::manualFromStorage(lifecycleState);
+    if (!m_backend->setVersionLifecycle(versionId, lifecycle)) {
+        QMessageBox::information(
+            m_view,
+            QStringLiteral("Lifecycle Change Failed"),
+            QStringLiteral("The selected version lifecycle could not be changed. If it is retired and used by an enabled live deployment, turn that deployment off first."));
+        onStrategySelected(strategyId);
+        return;
+    }
+
+    QJsonObject entry = m_backend->strategyCatalogEntry(strategyId);
+    QJsonArray versions = m_backend->listStrategyVersions(strategyId);
+    m_panel->showStrategyDetail(entry, versions);
+    m_panel->detailPanel()->selectVersionById(versionId);
+    refreshCatalog();
+    m_panel->catalogPanel()->selectStrategyById(strategyId);
 }
 
 void StrategyManagementCoordinator::onDeleteVersion(const QString& /*strategyId*/,

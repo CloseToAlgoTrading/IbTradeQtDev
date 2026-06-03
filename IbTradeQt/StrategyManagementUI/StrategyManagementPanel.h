@@ -44,6 +44,9 @@ signals:
     void publishRequested(const QString& strategyId, const QString& versionId);
     void unpublishRequested(const QString& strategyId, const QString& versionId);
     void deleteVersionRequested(const QString& strategyId, const QString& versionId);
+    void versionLifecycleChanged(const QString& strategyId,
+                                 const QString& versionId,
+                                 const QString& lifecycleState);
     void archiveRequested(const QString& strategyId);
     void deleteStrategyRequested(const QString& strategyId);
     void useInLiveRequested(const QString& strategyId, const QString& versionId);

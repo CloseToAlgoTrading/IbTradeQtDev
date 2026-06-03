@@ -90,6 +90,8 @@ public:
     bool        deleteStrategyVersion(const QString& versionId) override;
     bool        publishVersion(const QString& versionId) override;
     bool        unpublishVersion(const QString& versionId) override;
+    bool        setVersionLifecycle(const QString& versionId,
+                                    StrategyLifecycle::ManualLifecycle lifecycle) override;
 
     bool        bindLiveNodeToVersion(const QString& nodeId,
                                        const QString& strategyId,

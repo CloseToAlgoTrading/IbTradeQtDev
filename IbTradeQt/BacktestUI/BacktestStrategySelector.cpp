@@ -73,6 +73,9 @@ void BacktestStrategySelector::buildUi()
         bool isSel = src.isValid()
                      && src.data(BacktestTreeModel::IsStrategyRole).toBool();
         m_selectButton->setEnabled(isSel);
+        const QJsonObject cfg = pipelineConfigForIndex(src);
+        if (!cfg.isEmpty())
+            emit pipelineContextSelected(cfg);
     });
     connect(m_selectButton, &QPushButton::clicked,
             this, &BacktestStrategySelector::onSelectClicked);
@@ -88,11 +91,37 @@ QTreeView* BacktestStrategySelector::strategyTreeView() const
     return m_treePanel ? m_treePanel->treeView() : nullptr;
 }
 
+QJsonObject BacktestStrategySelector::currentPipelineConfig() const
+{
+    if (!m_treePanel || !m_treePanel->treeView())
+        return {};
+    return pipelineConfigForIndex(mapToSource(m_treePanel->treeView()->currentIndex()));
+}
+
 QModelIndex BacktestStrategySelector::mapToSource(const QModelIndex& proxyIndex) const
 {
     auto* proxy = qobject_cast<QSortFilterProxyModel*>(
         m_treePanel->treeView()->model());
     return proxy ? proxy->mapToSource(proxyIndex) : proxyIndex;
+}
+
+QJsonObject BacktestStrategySelector::pipelineConfigForIndex(const QModelIndex& sourceIndex) const
+{
+    if (!sourceIndex.isValid() || !m_model)
+        return {};
+
+    QModelIndex strategyIndex = sourceIndex;
+    if (m_model->isVirtualBlock(strategyIndex))
+        strategyIndex = strategyIndex.parent();
+    if (strategyIndex.isValid() && m_model->isVirtualCategory(strategyIndex))
+        strategyIndex = strategyIndex.parent();
+
+    if (!strategyIndex.isValid()
+        || !strategyIndex.data(BacktestTreeModel::IsStrategyRole).toBool()) {
+        return {};
+    }
+
+    return strategyIndex.data(BacktestTreeModel::PipelineJsonRole).toJsonObject();
 }
 
 void BacktestStrategySelector::populate(const QList<StrategyListItem>& items)

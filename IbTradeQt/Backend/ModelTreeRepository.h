@@ -53,6 +53,7 @@ public:
     DbStrategyVersion fetchLatestVersion(const QString& strategyId) const override;
     bool deleteStrategyVersion(const QString& versionId) override;
     bool setVersionPublished(const QString& versionId, bool published) override;
+    bool setVersionLifecycle(const QString& versionId, const QString& lifecycleState) override;
     int nextVersionNumber(const QString& strategyId) const override;
 
     bool createLiveBinding(const DbLiveStrategyBinding& binding) override;

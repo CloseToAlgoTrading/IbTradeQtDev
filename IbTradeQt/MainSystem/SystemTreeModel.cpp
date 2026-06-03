@@ -4,10 +4,12 @@
 #include "cpipelinestrategyadapter.h"
 #include "ModelStateUtils.h"
 #include "mandatoryFieldKeys.h"
+#include "PipelineConstants.h"
 #include "ciconhandler.h"
 #include <QColor>
 #include <QFont>
 #include <QJsonArray>
+#include <QJsonDocument>
 
 static bool isStrategyType(ModelType t)
 {
@@ -21,6 +23,23 @@ static bool isStrategyType(ModelType t)
     default:
         return false;
     }
+}
+
+static bool hasPipelineBlocks(const QJsonObject& config)
+{
+    const auto hasArrayBlock = [&config](QLatin1StringView key) {
+        return !config.value(key).toArray().isEmpty();
+    };
+    const auto hasObjectBlock = [&config](QLatin1StringView key) {
+        const QJsonObject obj = config.value(key).toObject();
+        return !obj.isEmpty();
+    };
+
+    return hasArrayBlock(Pipeline::Key::Selection)
+        || hasArrayBlock(Pipeline::Key::Alphas)
+        || hasArrayBlock(Pipeline::Key::Risks)
+        || hasObjectBlock(Pipeline::Key::Rebalance)
+        || hasObjectBlock(Pipeline::Key::Execution);
 }
 
 // ---- construction / destruction ----
@@ -134,8 +153,20 @@ void SystemTreeModel::buildSubtree(TreeNode* parentNode, CGenericModelApi* model
 
     if (mt == ModelType::STRATEGY_PIPELINE) {
         auto* adapter = dynamic_cast<CPipelineStrategyAdapter*>(model);
-        if (adapter)
-            addPipelineCategories(node, adapter->pipelineConfig());
+        if (adapter) {
+            QJsonObject pipelineConfig = adapter->pipelineConfig();
+            if (!hasPipelineBlocks(pipelineConfig) && m_backend) {
+                const QString nodeId = model->getId().toString(QUuid::WithoutBraces);
+                const QJsonObject binding = m_backend->bindingForNode(nodeId);
+                const QString configJson =
+                    binding.value(QStringLiteral("configJson")).toString();
+                const QJsonObject boundConfig =
+                    QJsonDocument::fromJson(configJson.toUtf8()).object();
+                if (hasPipelineBlocks(boundConfig))
+                    pipelineConfig = boundConfig;
+            }
+            addPipelineCategories(node, pipelineConfig);
+        }
     }
 }
 

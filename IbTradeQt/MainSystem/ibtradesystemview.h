@@ -87,7 +87,6 @@ private:
     void polishDockAreaTabBars();
 
     Ui::IBTradeSystemClass ui;
-    QLabel * m_pTimeLabel;
     QLabel * m_pConnectLabel;
     CIconHandler m_ih;
 

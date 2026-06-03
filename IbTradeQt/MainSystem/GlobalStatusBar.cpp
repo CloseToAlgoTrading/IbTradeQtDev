@@ -1,7 +1,6 @@
 #include "GlobalStatusBar.h"
 #include <QHBoxLayout>
 #include <QLabel>
-#include <QPushButton>
 #include <QFrame>
 #include <QString>
 #include <QStyle>
@@ -28,15 +27,6 @@ GlobalStatusBar::GlobalStatusBar(QWidget *parent)
         lbl->setObjectName("statusIndicator");
     }
 
-    m_startAllBtn   = new QPushButton("Start All", this);
-    m_stopAllBtn    = new QPushButton("Stop All", this);
-    m_reconnectBtn  = new QPushButton("Reconnect", this);
-
-    for (auto* btn : {m_startAllBtn, m_stopAllBtn, m_reconnectBtn}) {
-        btn->setFixedHeight(22);
-        btn->setObjectName("globalActionBtn");
-    }
-
     layout->addWidget(m_brokerLabel);
     layout->addWidget(createSeparator());
     layout->addWidget(m_dataLabel);
@@ -49,13 +39,6 @@ GlobalStatusBar::GlobalStatusBar(QWidget *parent)
     layout->addWidget(createSeparator());
     layout->addWidget(m_timeLabel);
     layout->addStretch();
-    layout->addWidget(m_startAllBtn);
-    layout->addWidget(m_stopAllBtn);
-    layout->addWidget(m_reconnectBtn);
-
-    connect(m_startAllBtn,  &QPushButton::clicked, this, &GlobalStatusBar::startAllClicked);
-    connect(m_stopAllBtn,   &QPushButton::clicked, this, &GlobalStatusBar::stopAllClicked);
-    connect(m_reconnectBtn, &QPushButton::clicked, this, &GlobalStatusBar::reconnectClicked);
 }
 
 QWidget* GlobalStatusBar::createSeparator()

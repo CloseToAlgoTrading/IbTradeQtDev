@@ -1032,6 +1032,43 @@ private slots:
                  "State");
     }
 
+    void testCatalogTreeModelShowsVisibleVersionConfig() {
+        StrategyMgmt::CatalogTreeModel model;
+
+        QJsonArray entries;
+        QJsonObject entry;
+        entry["strategyId"] = "s-preview";
+        entry["name"] = "Preview Strategy";
+        entry["strategyKind"] = static_cast<int>(ModelType::STRATEGY_PIPELINE);
+        entry["lifecycleState"] = "testing";
+        entry["derivedStateLabel"] = "Testing";
+        entry["derivedStateColor"] = "#d7ba7d";
+        entries.append(entry);
+
+        QJsonObject visibleConfig;
+        visibleConfig["alphas"] = QJsonArray{
+            QJsonObject{{"blockId", "visible-alpha"}}
+        };
+
+        QMap<QString, int> counts;
+        counts["s-preview"] = 2;
+        QMap<QString, QJsonObject> configs;
+        configs["s-preview"] = visibleConfig;
+        QMap<QString, QString> visibleLabels;
+        visibleLabels["s-preview"] = "v1";
+
+        model.populate(entries, counts, configs, visibleLabels);
+
+        const QModelIndex stateIndex = model.index(0, StrategyMgmt::CatalogTreeModel::ColStatus);
+        QCOMPARE(stateIndex.data(Qt::DisplayRole).toString(), "Testing / v1");
+
+        const QModelIndex strategyIndex = model.index(0, StrategyMgmt::CatalogTreeModel::ColName);
+        const QModelIndex alphaCategory = model.index(1, 0, strategyIndex);
+        QCOMPARE(alphaCategory.data(Qt::DisplayRole).toString(), "ALPHA");
+        const QModelIndex alphaBlock = model.index(0, 0, alphaCategory);
+        QCOMPARE(alphaBlock.data(Qt::DisplayRole).toString(), "visible-alpha");
+    }
+
     void testLiveBindingVersionPinning() {
         setupBackend();
 

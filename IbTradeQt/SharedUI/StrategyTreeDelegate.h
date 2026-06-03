@@ -8,7 +8,7 @@
 // the model to decide how to paint each cell.
 
 enum class ColumnPaintType {
-    NameWithIcon,   // icon + text, left-aligned
+    NameWithIcon,   // legacy name column; icons are intentionally not painted
     Checkbox,       // standard Qt checkbox
     StatusText,     // colored text, left-aligned (status indicators)
     NumericValue,   // right-aligned with P/L coloring
@@ -42,7 +42,8 @@ private:
                     const QModelIndex& index) const;
     void paintPlainText(QPainter* painter, const QStyleOptionViewItem& opt,
                         const QModelIndex& index) const;
-    void paintBackground(QPainter* painter, const QStyleOptionViewItem& opt) const;
+    void paintBackground(QPainter* painter, const QStyleOptionViewItem& opt,
+                         const QModelIndex& index) const;
 };
 
 #endif // STRATEGYTREEDELEGATE_H

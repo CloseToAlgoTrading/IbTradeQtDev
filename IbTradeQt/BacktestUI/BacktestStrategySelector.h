@@ -22,6 +22,7 @@ public:
     void populate(const QList<StrategyListItem>& items);
     void populateCatalog(const QList<CatalogVersionItem>& catalogItems);
     void highlightStrategy(const QString& strategyId);
+    QJsonObject currentPipelineConfig() const;
 
 signals:
     void strategySelected(const QString& strategyId,
@@ -36,6 +37,8 @@ signals:
                        bool isArray, int arrayIndex,
                        const QJsonObject& pipelineConfig);
 
+    void pipelineContextSelected(const QJsonObject& pipelineConfig);
+
     void refreshRequested();
 
 private slots:
@@ -45,6 +48,7 @@ private slots:
 private:
     void buildUi();
     QModelIndex mapToSource(const QModelIndex& proxyIndex) const;
+    QJsonObject pipelineConfigForIndex(const QModelIndex& sourceIndex) const;
 
     StrategyTreePanel* m_treePanel     = nullptr;
     BacktestTreeModel* m_model         = nullptr;

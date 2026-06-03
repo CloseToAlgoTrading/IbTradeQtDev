@@ -277,6 +277,8 @@ void CPresenter::MapSignals()
     }, Qt::QueuedConnection);
 
     m_backtestCoord->wireSignals();
+    connect(m_backtestCoord, &BacktestWorkspaceCoordinator::diagramContextChanged,
+            m_pDiagramWidget, &PipelineDiagramWidget::updateFromConfig);
 
     // ── Strategy Management (delegated to StrategyManagementCoordinator) ─
     m_stratMgmtCoord = new StrategyManagementCoordinator(this);
@@ -284,6 +286,8 @@ void CPresenter::MapSignals()
     m_stratMgmtCoord->setBackend(m_backend);
     m_stratMgmtCoord->setPanel(pIbtsView->strategyManagementPanel());
     m_stratMgmtCoord->wireSignals();
+    connect(m_stratMgmtCoord, &StrategyManagementCoordinator::diagramContextChanged,
+            m_pDiagramWidget, &PipelineDiagramWidget::updateFromConfig);
 
     m_dataMgmtCoord = new DataManagementCoordinator(this);
     m_dataMgmtCoord->setView(pIbtsView);
@@ -345,6 +349,7 @@ void CPresenter::MapSignals()
                 m_stratMgmtCoord->refreshCatalog();
             else if (index == 3 && m_dataMgmtCoord)
                 m_dataMgmtCoord->refreshContextAndInventory();
+            refreshDiagramForCurrentTab();
         });
     }
 
@@ -395,10 +400,27 @@ void CPresenter::MapSignals()
         QObject::connect(pGuiModel->alertService(), &AlertService::countChanged,
                          pIbtsView->globalStatusBar(), &GlobalStatusBar::setAlertCount);
     }
+}
 
-    if (pIbtsView->globalStatusBar()) {
-        QObject::connect(pIbtsView->globalStatusBar(), &GlobalStatusBar::reconnectClicked,
-                         this, &CPresenter::onClickMyButton);
+void CPresenter::refreshDiagramForCurrentTab()
+{
+    if (!pIbtsView || !m_pDiagramWidget)
+        return;
+
+    auto* tabs = pIbtsView->mainTabWidget();
+    const int index = tabs ? tabs->currentIndex() : 0;
+
+    if (index == 0) {
+        auto* tree = pIbtsView->getPortfolioConfigTreeView();
+        if (tree && tree->currentIndex().isValid()) {
+            onTreeSelectionChanged(tree->currentIndex(), QModelIndex());
+        } else {
+            m_pDiagramWidget->clear();
+        }
+    } else if (index == 1 && m_backtestCoord) {
+        m_backtestCoord->publishCurrentDiagramContext();
+    } else if (index == 2 && m_stratMgmtCoord) {
+        m_stratMgmtCoord->publishCurrentDiagramContext();
     }
 }
 

@@ -37,11 +37,9 @@
 
 CIBTradeSystemView::CIBTradeSystemView(QWidget *parent)
 	: QMainWindow(parent)
-    , m_pTimeLabel(new QLabel(this))
     , m_pConnectLabel(new QLabel(this))
     , m_ih()
 {
-    m_pTimeLabel->setObjectName(QStringLiteral("statusBarTimeLabel"));
     m_pConnectLabel->setObjectName(QStringLiteral("statusBarConnectionIndicator"));
 
 	ui.setupUi(this);
@@ -76,7 +74,6 @@ CIBTradeSystemView::CIBTradeSystemView(QWidget *parent)
 
     this->setWindowTitle(QString("IB Trade v. ") + QString(APP_VERSION));
 
-	ui.statusBar->addWidget(m_pTimeLabel);
     ui.statusBar->addPermanentWidget(m_pConnectLabel);
     ui.statusBar->setSizeGripEnabled(true);
 
@@ -105,7 +102,7 @@ CIBTradeSystemView::~CIBTradeSystemView()
 
 void CIBTradeSystemView::setupConsoleLayout()
 {
-    m_globalStatusBar  = new GlobalStatusBar(this);
+    m_globalStatusBar  = new GlobalStatusBar(ui.statusBar);
     m_contextWorkspace = new ContextWorkspace(this);
     m_eventLogPanel    = new EventLogPanel(this);
 
@@ -164,8 +161,8 @@ void CIBTradeSystemView::setupConsoleLayout()
     ui.splitter_2->hide();
 
     auto* centralLayout = ui.verticalLayout_2;
-    centralLayout->addWidget(m_globalStatusBar);
     centralLayout->addWidget(m_mainTabWidget, 1);
+    ui.statusBar->addWidget(m_globalStatusBar, 1);
 
     // Events dock on the bottom; Settings uses a right slide-over panel (see setupSettingsSlideOverlay).
     removeDockWidget(ui.dockWidget_Settings);
@@ -415,7 +412,6 @@ void CIBTradeSystemView::slotOnTimeReceived(long time)
 {
     QDateTime dateTime = QDateTime::fromSecsSinceEpoch((time_t)(time));
     QString dateTimeString = dateTime.toString("dd-MM-yyyy hh:mm:ss");
-    m_pTimeLabel->setText(dateTimeString);
 
     if (m_globalStatusBar)
         m_globalStatusBar->setTime(dateTimeString);

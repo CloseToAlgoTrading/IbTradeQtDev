@@ -3,9 +3,6 @@
 #include <QApplication>
 
 static constexpr int RowHeight      = 22;
-static constexpr int IconSize       = 14;
-static constexpr int IconLeftPad    = 3;
-static constexpr int TextLeftPad    = 3;
 static constexpr int CellPadH      = 3;
 
 static const QColor kSelectionBg    {42, 58, 80};
@@ -24,12 +21,15 @@ StrategyTreeDelegate::StrategyTreeDelegate(QObject* parent)
 }
 
 void StrategyTreeDelegate::paintBackground(QPainter* painter,
-                                           const QStyleOptionViewItem& opt) const
+                                           const QStyleOptionViewItem& opt,
+                                           const QModelIndex& index) const
 {
     if (opt.state & QStyle::State_Selected) {
         painter->fillRect(opt.rect, kSelectionBg);
-        painter->fillRect(QRect(opt.rect.left(), opt.rect.top(), 3, opt.rect.height()),
-                          kSelectionAccent);
+        if (index.column() == 0) {
+            painter->fillRect(QRect(opt.rect.left(), opt.rect.top(), 3, opt.rect.height()),
+                              kSelectionAccent);
+        }
     } else if (opt.state & QStyle::State_MouseOver) {
         painter->fillRect(opt.rect, kHoverBg);
     }
@@ -39,16 +39,7 @@ void StrategyTreeDelegate::paintNameWithIcon(QPainter* painter,
                                              const QStyleOptionViewItem& opt,
                                              const QModelIndex& index) const
 {
-    QIcon icon = index.data(Qt::DecorationRole).value<QIcon>();
     QString text = index.data(Qt::DisplayRole).toString();
-
-    int x = opt.rect.left() + IconLeftPad;
-    if (!icon.isNull()) {
-        QRect iconRect(x, opt.rect.top() + (opt.rect.height() - IconSize) / 2,
-                       IconSize, IconSize);
-        icon.paint(painter, iconRect, Qt::AlignCenter);
-        x = iconRect.right() + TextLeftPad;
-    }
 
     QColor fg = index.data(Qt::ForegroundRole).value<QColor>();
     painter->setPen(fg.isValid() ? fg : kDefaultText);
@@ -58,8 +49,7 @@ void StrategyTreeDelegate::paintNameWithIcon(QPainter* painter,
         painter->setFont(font);
 
     QRect textRect = opt.rect;
-    textRect.setLeft(x);
-    textRect.adjust(0, 0, -CellPadH, 0);
+    textRect.adjust(CellPadH, 0, -CellPadH, 0);
     painter->drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, text);
 }
 
@@ -99,8 +89,9 @@ void StrategyTreeDelegate::paintBadge(QPainter* painter,
     QString text = index.data(Qt::DisplayRole).toString();
     if (text.isEmpty()) return;
 
-    QColor fg = index.data(Qt::ForegroundRole).value<QColor>();
-    painter->setPen(fg.isValid() ? fg : kBadgeColor);
+    QColor accent = index.data(Qt::ForegroundRole).value<QColor>();
+    if (!accent.isValid())
+        accent = kBadgeColor;
 
     QFont f = painter->font();
     // Fonts from QSS often use pixel size only; pointSizeF() is then -1, and
@@ -111,10 +102,22 @@ void StrategyTreeDelegate::paintBadge(QPainter* painter,
     } else if (f.pixelSize() > 0) {
         f.setPixelSize(qMax(1, qRound(f.pixelSize() * 0.9)));
     }
-    f.setBold(true);
     painter->setFont(f);
 
-    painter->drawText(opt.rect.adjusted(CellPadH, 0, -CellPadH, 0),
+    const QFontMetrics fm(f);
+    const int textWidth = fm.horizontalAdvance(text);
+    const int textBoxWidth = qMin(opt.rect.width() - CellPadH * 2, textWidth + 2);
+    if (textBoxWidth <= 0)
+        return;
+
+    QRect textRect(opt.rect.left() + CellPadH,
+                   opt.rect.top(),
+                   textBoxWidth,
+                   opt.rect.height());
+
+    QColor textColor = accent.lighter(116);
+    painter->setPen(textColor);
+    painter->drawText(textRect,
                       Qt::AlignLeft | Qt::AlignVCenter, text);
 }
 
@@ -145,7 +148,7 @@ void StrategyTreeDelegate::paint(QPainter* painter,
 
     painter->setFont(opt.font);
 
-    paintBackground(painter, opt);
+    paintBackground(painter, opt, index);
 
     QVariant typeVar = index.data(StrategyTreeRoles::ColumnTypeRole);
     auto colType = typeVar.isValid()

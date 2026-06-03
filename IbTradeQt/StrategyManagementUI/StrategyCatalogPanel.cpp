@@ -101,12 +101,42 @@ void StrategyCatalogPanel::applyCatalogFilter()
             filtered.append(entry);
     }
 
-    m_model->populate(filtered, m_versionCounts, m_latestConfigs);
+    QMap<QString, QJsonObject> effectiveConfigs = m_latestConfigs;
+    for (auto it = m_previewConfigs.cbegin(); it != m_previewConfigs.cend(); ++it)
+        effectiveConfigs[it.key()] = it.value();
+
+    m_model->populate(filtered,
+                      m_versionCounts,
+                      effectiveConfigs,
+                      m_previewVersionLabels,
+                      m_previewLifecycleStates);
     m_treePanel->expandAll();
     QTreeView* tv = m_treePanel->treeView();
     const int n = m_model->columnCount();
     for (int c = 0; c < n - 1; ++c)
         tv->resizeColumnToContents(c);
+}
+
+void StrategyCatalogPanel::setVisibleVersionPreview(const QString& strategyId,
+                                                     const QString& versionLabel,
+                                                     const QString& lifecycleState,
+                                                     const QJsonObject& config)
+{
+    if (strategyId.isEmpty())
+        return;
+
+    if (config.isEmpty()) {
+        m_previewConfigs.remove(strategyId);
+        m_previewVersionLabels.remove(strategyId);
+        m_previewLifecycleStates.remove(strategyId);
+    } else {
+        m_previewConfigs[strategyId] = config;
+        m_previewVersionLabels[strategyId] = versionLabel;
+        m_previewLifecycleStates[strategyId] = lifecycleState;
+    }
+
+    applyCatalogFilter();
+    selectStrategyById(strategyId);
 }
 
 bool StrategyCatalogPanel::entryMatchesStateFilter(const QJsonObject& entry) const

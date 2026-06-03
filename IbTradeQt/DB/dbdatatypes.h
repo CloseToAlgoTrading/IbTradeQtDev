@@ -266,6 +266,7 @@ struct DbStrategyVersion {
     int     versionNumber   = 1;
     QString configJson      = QStringLiteral("{}");
     QString notes           = QStringLiteral("");
+    QString lifecycleState  = QStringLiteral("draft");
     bool    isPublished     = false;
     QString createdFromVersionId;
     QString createdAt;

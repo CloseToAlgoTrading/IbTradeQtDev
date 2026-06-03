@@ -34,7 +34,9 @@ public:
 
     void populate(const QJsonArray& catalogEntries,
                   const QMap<QString, int>& versionCounts,
-                  const QMap<QString, QJsonObject>& latestConfigs);
+                  const QMap<QString, QJsonObject>& latestConfigs,
+                  const QMap<QString, QString>& visibleVersionLabels = {},
+                  const QMap<QString, QString>& visibleLifecycleStates = {});
 
     int columnCount(const QModelIndex& parent = {}) const override;
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
@@ -62,6 +64,7 @@ private:
         QString     derivedStateLabel;
         QString     derivedStateColor;
         QString     updatedAt;
+        QString     visibleVersionLabel;
         QJsonObject pipelineConfig;
     };
 
@@ -73,6 +76,7 @@ private:
         QString derivedState;
         QString derivedStateLabel;
         QString derivedStateColor;
+        QString visibleVersionLabel;
     };
 
     void rebuild();

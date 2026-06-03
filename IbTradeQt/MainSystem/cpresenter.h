@@ -90,6 +90,8 @@ private slots:
     void onTreeSelectionChanged(const QModelIndex& current, const QModelIndex& previous);
 
 private:
+    void refreshDiagramForCurrentTab();
+
     PipelineDiagramWidget*              m_pDiagramWidget     = nullptr;
     QDockWidget*                        m_pDiagramDock       = nullptr;
 	QScopedPointer<AboutDlgPresener> pAboutDlgPresenter;

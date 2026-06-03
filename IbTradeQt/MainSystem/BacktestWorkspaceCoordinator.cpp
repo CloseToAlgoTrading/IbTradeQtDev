@@ -421,6 +421,7 @@ void BacktestWorkspaceCoordinator::wireSignals()
         connect(selector, &BacktestUI::BacktestStrategySelector::strategySelected,
                 this, [this](const QString& id, const QString& name,
                               const QString& path, const QJsonObject& cfg) {
+            emit diagramContextChanged(cfg);
             openStrategy(id, name, path, cfg);
         });
 
@@ -441,9 +442,27 @@ void BacktestWorkspaceCoordinator::wireSignals()
             m_dock->showBlockDetails(cat, key, isArr, idx, s.workingPipeline);
         });
 
+        connect(selector, &BacktestUI::BacktestStrategySelector::pipelineContextSelected,
+                this, &BacktestWorkspaceCoordinator::diagramContextChanged);
+
         connect(selector, &BacktestUI::BacktestStrategySelector::refreshRequested,
                 this, &BacktestWorkspaceCoordinator::refreshStrategies);
     }
+}
+
+void BacktestWorkspaceCoordinator::publishCurrentDiagramContext()
+{
+    if (m_activeKey && m_sessions.contains(*m_activeKey)) {
+        emit diagramContextChanged(m_sessions[*m_activeKey].workingPipeline);
+        return;
+    }
+
+    auto* selector = m_view ? m_view->backtestStrategySelector() : nullptr;
+    if (!selector)
+        return;
+    const QJsonObject cfg = selector->currentPipelineConfig();
+    if (!cfg.isEmpty())
+        emit diagramContextChanged(cfg);
 }
 
 void BacktestWorkspaceCoordinator::syncActiveSessionFromPanel()
@@ -474,6 +493,7 @@ void BacktestWorkspaceCoordinator::onUserPipelineEdited(const QJsonObject& pipel
     s.workingPipeline = pipeline;
     syncActiveSessionFromPanel();
     recomputeSessionDirty(s);
+    emit diagramContextChanged(s.workingPipeline);
     m_dock->setSessionDirtyState(s.dirty);
     if (s.lastRunId.isEmpty())
         return;
@@ -519,6 +539,7 @@ void BacktestWorkspaceCoordinator::onResetToBaselineRequested()
     s.workingRunFields = s.baselineRunFields;
     recomputeSessionDirty(s);
     m_dock->applyWorkspaceSession(s, false);
+    emit diagramContextChanged(s.workingPipeline);
 }
 
 void BacktestWorkspaceCoordinator::onSaveAsNewVersionRequested()
@@ -757,6 +778,7 @@ void BacktestWorkspaceCoordinator::activateSession(const SessionKey& key, bool c
     Session& s = m_sessions[key];
     recomputeSessionDirty(s);
     m_dock->applyWorkspaceSession(s, clearResultPanels);
+    emit diagramContextChanged(s.workingPipeline);
 
     if (key.kind == SessionKind::LiveNode) {
         if (m_view) {

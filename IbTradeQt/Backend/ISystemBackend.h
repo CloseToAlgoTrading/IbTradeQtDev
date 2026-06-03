@@ -105,6 +105,9 @@ public:
     virtual bool        publishVersion(const QString& versionId) = 0;
     // Marks a version as unpublished unless a live binding still references it.
     virtual bool        unpublishVersion(const QString& versionId) = 0;
+    // Updates the manual lifecycle attached to a specific version.
+    virtual bool        setVersionLifecycle(const QString& versionId,
+                                            StrategyLifecycle::ManualLifecycle lifecycle) = 0;
 
     // Binds a live tree node to a specific strategy version.
     virtual bool        bindLiveNodeToVersion(const QString& nodeId,

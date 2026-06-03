@@ -115,6 +115,7 @@ bool ModelTreeRepositoryPostgres::initialize()
         "  version_number          INTEGER NOT NULL DEFAULT 1,"
         "  config_json             TEXT NOT NULL DEFAULT '{}',"
         "  notes                   TEXT NOT NULL DEFAULT '',"
+        "  lifecycle_state         TEXT NOT NULL DEFAULT 'draft',"
         "  is_published            INTEGER NOT NULL DEFAULT 0,"
         "  created_from_version_id TEXT,"
         "  created_at              TEXT NOT NULL,"
@@ -182,6 +183,22 @@ bool ModelTreeRepositoryPostgres::initialize()
 
     // Ensure version_id column exists on live_strategy_bindings (idempotent).
     q.exec("ALTER TABLE live_strategy_bindings ADD COLUMN IF NOT EXISTS version_id TEXT DEFAULT ''");
+    q.exec("ALTER TABLE strategy_versions ADD COLUMN IF NOT EXISTS lifecycle_state TEXT NOT NULL DEFAULT 'draft'");
+    q.exec(
+        "UPDATE strategy_versions "
+        "SET created_at = COALESCE(NULLIF((SELECT created_at "
+        "                                  FROM strategies "
+        "                                  WHERE strategies.strategy_id = strategy_versions.strategy_id), ''), "
+        "                          CURRENT_TIMESTAMP::text) "
+        "WHERE created_at IS NULL OR created_at = ''");
+    if (metadata(QStringLiteral("version_lifecycle_initialized")) != QStringLiteral("1")) {
+        q.exec(
+            "UPDATE strategy_versions "
+            "SET lifecycle_state = COALESCE(strategies.lifecycle_state, 'draft') "
+            "FROM strategies "
+            "WHERE strategies.strategy_id = strategy_versions.strategy_id");
+        setMetadata(QStringLiteral("version_lifecycle_initialized"), QStringLiteral("1"));
+    }
 
     // --- Schema version management ---
     QString ver = metadata("schema_version");
@@ -897,6 +914,7 @@ DbStrategyVersion ModelTreeRepositoryPostgres::versionFromQuery(const QSqlQuery&
     v.versionNumber        = q.value("version_number").toInt();
     v.configJson           = q.value("config_json").toString();
     v.notes                = q.value("notes").toString();
+    v.lifecycleState       = q.value("lifecycle_state").toString();
     v.isPublished          = q.value("is_published").toInt() != 0;
     v.createdFromVersionId = q.value("created_from_version_id").toString();
     v.createdAt            = q.value("created_at").toString();
@@ -909,13 +927,15 @@ bool ModelTreeRepositoryPostgres::createStrategyVersion(const DbStrategyVersion&
     q.prepare(
         "INSERT INTO strategy_versions "
         "(version_id, strategy_id, version_number, config_json, notes, "
-        " is_published, created_from_version_id, created_at) "
-        "VALUES (:vid, :sid, :vnum, :cfg, :notes, :pub, :from_vid, :created)");
+        " lifecycle_state, is_published, created_from_version_id, created_at) "
+        "VALUES (:vid, :sid, :vnum, :cfg, :notes, :state, :pub, :from_vid, :created)");
     q.bindValue(":vid",      version.versionId);
     q.bindValue(":sid",      version.strategyId);
     q.bindValue(":vnum",     version.versionNumber);
     q.bindValue(":cfg",      version.configJson);
     q.bindValue(":notes",    version.notes);
+    q.bindValue(":state",    version.lifecycleState.isEmpty()
+                                 ? QStringLiteral("draft") : version.lifecycleState);
     q.bindValue(":pub",      version.isPublished ? 1 : 0);
     q.bindValue(":from_vid", version.createdFromVersionId.isEmpty()
                                  ? QVariant() : version.createdFromVersionId);
@@ -1002,6 +1022,28 @@ bool ModelTreeRepositoryPostgres::setVersionPublished(const QString& versionId, 
 
     const DbStrategyVersion persisted = fetchStrategyVersion(versionId);
     return persisted.isValid() && persisted.isPublished == published;
+}
+
+bool ModelTreeRepositoryPostgres::setVersionLifecycle(const QString& versionId,
+                                                      const QString& lifecycleState)
+{
+    QSqlQuery q(db());
+    q.prepare(
+        "UPDATE strategy_versions "
+        "SET lifecycle_state = :state "
+        "WHERE version_id = :vid");
+    q.bindValue(":state", lifecycleState);
+    q.bindValue(":vid", versionId);
+
+    if (!q.exec()) {
+        qCWarning(lcModelTreePg) << "ModelTreeRepositoryPostgres::setVersionLifecycle failed:" << q.lastError().text();
+        return false;
+    }
+    if (q.numRowsAffected() > 0)
+        return true;
+
+    const DbStrategyVersion persisted = fetchStrategyVersion(versionId);
+    return persisted.isValid() && persisted.lifecycleState == lifecycleState;
 }
 
 int ModelTreeRepositoryPostgres::nextVersionNumber(const QString& strategyId) const
@@ -1091,14 +1133,16 @@ bool ModelTreeRepositoryPostgres::migrateV2toV3()
         insV.prepare(
             "INSERT INTO strategy_versions "
             "(version_id, strategy_id, version_number, config_json, notes, "
-            " is_published, created_from_version_id, created_at) "
-            "VALUES (:vid, :sid, :vnum, :cfg, :notes, 1, NULL, :created) "
+            " lifecycle_state, is_published, created_from_version_id, created_at) "
+            "VALUES (:vid, :sid, :vnum, :cfg, :notes, :state, 1, NULL, :created) "
             "ON CONFLICT (version_id) DO NOTHING");
         insV.bindValue(":vid",     versionId);
         insV.bindValue(":sid",     def.strategyDefId);
         insV.bindValue(":vnum",    def.version);
         insV.bindValue(":cfg",     def.configJson);
         insV.bindValue(":notes",   QStringLiteral("Migrated from v2 strategy_definitions"));
+        insV.bindValue(":state",   def.lifecycleState.isEmpty()
+                                      ? QStringLiteral("draft") : def.lifecycleState);
         insV.bindValue(":created", def.createdAt);
         if (!insV.exec()) {
             qCWarning(lcModelTreePg) << "migrateV2toV3: insert into strategy_versions failed:" << insV.lastError().text();

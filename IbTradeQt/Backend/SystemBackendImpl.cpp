@@ -151,6 +151,7 @@ void SystemBackendImpl::createCatalogEntryAndBinding(const QString& nodeUuid,
     ver.versionNumber = 0;
     ver.configJson    = QString::fromUtf8(
         QJsonDocument(canonicalConfig).toJson(QJsonDocument::Compact));
+    ver.lifecycleState = strat.lifecycleState;
     ver.isPublished   = true;
     ver.createdAt     = now;
 
@@ -913,6 +914,9 @@ QJsonObject SystemBackendImpl::versionToJson(const DbStrategyVersion& v)
     obj["versionNumber"] = v.versionNumber;
     obj["configJson"]    = v.configJson;
     obj["notes"]         = v.notes;
+    obj["lifecycleState"] = v.lifecycleState.isEmpty()
+        ? QStringLiteral("draft")
+        : v.lifecycleState;
     obj["isPublished"]   = v.isPublished;
     obj["createdAt"]     = v.createdAt;
     if (!v.createdFromVersionId.isEmpty())
@@ -938,8 +942,15 @@ StrategyLifecycle::Summary SystemBackendImpl::lifecycleSummaryForStrategy(const 
     if (!s.isValid())
         return {};
 
+    QString lifecycleState = s.lifecycleState;
+    const DbStrategyVersion latestVersion = m_repo
+        ? m_repo->fetchLatestVersion(s.strategyId)
+        : DbStrategyVersion();
+    if (latestVersion.isValid() && !latestVersion.lifecycleState.isEmpty())
+        lifecycleState = latestVersion.lifecycleState;
+
     return StrategyLifecycle::summarize(
-        s.lifecycleState,
+        lifecycleState,
         s.isArchived,
         publishedVersionCount(s.strategyId),
         isCatalogStrategyActiveInLive(s.strategyId));
@@ -1145,6 +1156,14 @@ QString SystemBackendImpl::createStrategyVersion(const QString& strategyId,
     ver.configJson           = QString::fromUtf8(
         QJsonDocument(config).toJson(QJsonDocument::Compact));
     ver.notes                = notes.isNull() ? QStringLiteral("") : notes;
+    if (!fromVersionId.isEmpty()) {
+        const DbStrategyVersion previous = m_repo->fetchStrategyVersion(fromVersionId);
+        ver.lifecycleState = previous.isValid() && !previous.lifecycleState.isEmpty()
+            ? previous.lifecycleState
+            : strat.lifecycleState;
+    } else {
+        ver.lifecycleState = strat.lifecycleState;
+    }
     ver.isPublished          = false;
     ver.createdFromVersionId = fromVersionId.isNull() ? QStringLiteral("") : fromVersionId;
     ver.createdAt            = now;
@@ -1250,6 +1269,43 @@ bool SystemBackendImpl::unpublishVersion(const QString& versionId)
     if (!m_repo->setVersionPublished(versionId, false))
         return false;
     if (m_repo->fetchStrategyVersion(versionId).isPublished)
+        return false;
+
+    DbStrategy strategy = m_repo->fetchStrategyCatalog(version.strategyId);
+    if (strategy.isValid()) {
+        strategy.updatedAt = nowUtcIso();
+        m_repo->updateStrategyCatalog(strategy);
+    }
+    emit strategyCatalogChanged(version.strategyId);
+    return true;
+}
+
+bool SystemBackendImpl::setVersionLifecycle(const QString& versionId,
+                                            StrategyLifecycle::ManualLifecycle lifecycle)
+{
+    if (!m_repo || versionId.isEmpty())
+        return false;
+
+    const DbStrategyVersion version = m_repo->fetchStrategyVersion(versionId);
+    if (!version.isValid())
+        return false;
+
+    if (lifecycle == StrategyLifecycle::ManualLifecycle::Retired) {
+        const QList<DbLiveStrategyBinding> bindings =
+            m_repo->listBindingsForDefinition(version.strategyId);
+        for (const DbLiveStrategyBinding& binding : bindings) {
+            if (binding.versionId == versionId) {
+                CGenericModelApi* node = findNodeByUuid(binding.modelNodeId);
+                if (node && node->getActiveStatus())
+                    return false;
+            }
+        }
+    }
+
+    const QString storage = StrategyLifecycle::manualToStorage(lifecycle);
+    if (!m_repo->setVersionLifecycle(versionId, storage))
+        return false;
+    if (m_repo->fetchStrategyVersion(versionId).lifecycleState != storage)
         return false;
 
     DbStrategy strategy = m_repo->fetchStrategyCatalog(version.strategyId);

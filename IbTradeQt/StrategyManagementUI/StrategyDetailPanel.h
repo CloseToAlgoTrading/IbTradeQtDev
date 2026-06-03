@@ -13,7 +13,8 @@ class QCheckBox;
 class QPushButton;
 class QTableWidget;
 class QPlainTextEdit;
-class QTabWidget;
+class QStackedWidget;
+class QWidget;
 class QAction;
 class BlockInspectorPanel;
 class RuntimePolicyEditor;
@@ -61,6 +62,9 @@ signals:
     void publishRequested(const QString& strategyId, const QString& versionId);
     void unpublishRequested(const QString& strategyId, const QString& versionId);
     void deleteVersionRequested(const QString& strategyId, const QString& versionId);
+    void versionLifecycleChanged(const QString& strategyId,
+                                 const QString& versionId,
+                                 const QString& lifecycleState);
     void archiveRequested(const QString& strategyId);
     void useInLiveRequested(const QString& strategyId, const QString& versionId);
     void openInBacktestRequested(const QString& strategyId, const QString& versionId);
@@ -74,6 +78,11 @@ signals:
                               int blockIndex);
 
     void versionRowChangeRequested(int newRow, int previousRow);
+    void visibleVersionChanged(const QString& strategyId,
+                               const QString& versionId,
+                               const QString& versionLabel,
+                               const QString& lifecycleState,
+                               const QJsonObject& pipelineConfig);
 
 private slots:
     void onVersionCurrentCellChanged(int currentRow, int currentColumn,
@@ -92,36 +101,39 @@ private:
     void updateVersionActionState();
     void updateNewVersionButtonText();
     void updateVersionEditLock();
+    void showVersionInspector();
     void markDirty();
     bool selectedVersionPublished() const;
-    void updateStrategyHeaderHint(const QJsonObject& catalogEntry);
+    QString selectedVersionLabel() const;
+    QString versionIdForRow(int row) const;
+    QString versionLabelForRow(int row) const;
 
     // Metadata
-    QLabel*         m_breadcrumbLabel = nullptr;
-    QLabel*         m_titleLabel     = nullptr;
-    QLabel*         m_headerHintLabel = nullptr;
     QLineEdit*      m_nameEdit      = nullptr;
-    QComboBox*      m_statusCombo   = nullptr;
+    QLabel*         m_lifecycleBadge = nullptr;
     QTextEdit*      m_descEdit      = nullptr;
     QLineEdit*      m_tagsEdit      = nullptr;
     QPushButton*    m_saveMetaBtn   = nullptr;
 
     // Version table
     QTableWidget*   m_versionTable  = nullptr;
-    QLabel*         m_versionEditStateLabel = nullptr;
 
-    // Block inspector (permanent tab for viewing/editing block parameters)
+    // Scope inspector
+    QLabel*         m_inspectorTitleLabel = nullptr;
+    QStackedWidget* m_inspectorStack = nullptr;
+    QWidget*        m_versionInspectorPage = nullptr;
+    QWidget*        m_blockInspectorPage = nullptr;
+
+    // Block inspector
     BlockInspectorPanel*  m_inspector     = nullptr;
-    int                   m_inspectorTabIdx = -1;
 
-    // Runtime policy editor (permanent tab)
+    // Runtime policy editor
     RuntimePolicyEditor*  m_policyEditor  = nullptr;
 
-    // Config tabs
-    QTabWidget*     m_configTabs    = nullptr;
-
-    // Raw JSON viewer (version-level)
+    // Advanced JSON viewer (version-level)
+    QCheckBox*      m_showAdvancedJsonCheck = nullptr;
     QCheckBox*      m_diffToggle    = nullptr;
+    QWidget*        m_jsonPanel     = nullptr;
     QPlainTextEdit* m_configViewer  = nullptr;
 
     // Action buttons
@@ -135,6 +147,8 @@ private:
     QPushButton*    m_openBtBtn     = nullptr;
 
     QString         m_currentStrategyId;
+    QString         m_currentStrategyLifecycle = QStringLiteral("draft");
+    QString         m_blockInspectorTitle;
     QJsonArray      m_currentVersions;
     QJsonObject     m_workingConfig;
     bool            m_configDirty = false;

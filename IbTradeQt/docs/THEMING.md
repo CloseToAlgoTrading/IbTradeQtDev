@@ -49,14 +49,14 @@ To change chrome icon tint, update **`kToolbarIcon`** in `ThemePalette.h` and th
 
 **Alternative long-term:** SVG sources + a tinting `QIconEngine`, or separate light/dark PNG folders switched by theme.
 
-### Status strips (GlobalStatusBar + `QStatusBar`)
+### Status Strip (`GlobalStatusBar` inside `QStatusBar`)
 
-There are two footer areas: the **`GlobalStatusBar`** widget (broker, data, engine, …) and Qt’s native **`QStatusBar`** (clock + connection indicator). **All colours for labels and footer buttons are in `operations-console.qss`** under “Status strips” and “Native QStatusBar” — do not set ad-hoc `setStyleSheet` on those widgets in C++.
+There is one footer area: the **`GlobalStatusBar`** widget (broker, data, engine, …) is hosted inside Qt’s native **`QStatusBar`** alongside the connection indicator. **All colours for labels are in `operations-console.qss`** under “Status strip” and “Native QStatusBar” — do not set ad-hoc `setStyleSheet` on those widgets in C++.
 
 - **Text:** default label colour matches **`UiTheme::kTextSecondary`** (`#b8b8b8`); neutral state uses **`kTextMuted`** (`#888888`). Semantic states (`ok` / `warning` / `error`) use the same greens/oranges/reds as in QSS.
 - **Connection pixmap** on `QStatusBar` uses **`loadIconForChrome()`**. **`Connected`** keeps PNG colours (skipped tint); **`NotConnected`** is tinted with **`kToolbarIcon`** so it is visible on `#141414`.
 
-Labels use `objectName` **`statusBarTimeLabel`** / **`statusBarConnectionIndicator`** where needed so QSS can target them without affecting other `QLabel`s.
+Labels use `objectName` **`statusBarConnectionIndicator`** where needed so QSS can target them without affecting other `QLabel`s.
 
 ## Dependencies
 

@@ -46,6 +46,7 @@ public:
                             const QString& catalogVersionId);
 
     void refreshStrategies();
+    void publishCurrentDiagramContext();
 
     BacktestUI::BacktestWorkspaceDock* dock() const { return m_dock; }
 
@@ -72,6 +73,7 @@ public:
 
 signals:
     void catalogRefreshNeeded();
+    void diagramContextChanged(const QJsonObject& pipelineConfig);
 
 private slots:
     void onLoadRun(const QString& runId);

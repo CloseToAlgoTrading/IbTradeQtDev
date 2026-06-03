@@ -4,7 +4,6 @@
 #include <QWidget>
 
 class QLabel;
-class QPushButton;
 
 class GlobalStatusBar : public QWidget
 {
@@ -19,11 +18,6 @@ public:
     void setAlertCount(int count);
     void setTime(const QString& time);
 
-signals:
-    void startAllClicked();
-    void stopAllClicked();
-    void reconnectClicked();
-
 private:
     QWidget* createSeparator();
 
@@ -33,10 +27,6 @@ private:
     QLabel* m_strategiesLabel;
     QLabel* m_alertLabel;
     QLabel* m_timeLabel;
-
-    QPushButton* m_startAllBtn;
-    QPushButton* m_stopAllBtn;
-    QPushButton* m_reconnectBtn;
 };
 
 #endif // GLOBALSTATUSBAR_H

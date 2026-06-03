@@ -46,6 +46,8 @@ void StrategyManagementPanel::buildUi()
             this, &StrategyManagementPanel::unpublishRequested);
     connect(m_detailPanel, &StrategyDetailPanel::deleteVersionRequested,
             this, &StrategyManagementPanel::deleteVersionRequested);
+    connect(m_detailPanel, &StrategyDetailPanel::versionLifecycleChanged,
+            this, &StrategyManagementPanel::versionLifecycleChanged);
     connect(m_detailPanel, &StrategyDetailPanel::archiveRequested,
             this, &StrategyManagementPanel::archiveRequested);
     connect(m_detailPanel, &StrategyDetailPanel::useInLiveRequested,
@@ -56,6 +58,18 @@ void StrategyManagementPanel::buildUi()
             this, &StrategyManagementPanel::addBlockRequested);
     connect(m_detailPanel, &StrategyDetailPanel::removeBlockRequested,
             this, &StrategyManagementPanel::removeBlockRequested);
+    connect(m_detailPanel, &StrategyDetailPanel::visibleVersionChanged,
+            m_catalogPanel,
+            [this](const QString& strategyId,
+                   const QString&,
+                   const QString& versionLabel,
+                   const QString& lifecycleState,
+                   const QJsonObject& pipelineConfig) {
+        m_catalogPanel->setVisibleVersionPreview(strategyId,
+                                                 versionLabel,
+                                                 lifecycleState,
+                                                 pipelineConfig);
+    });
 
     // Block selection in catalog tree drives detail panel inspector
     connect(m_catalogPanel, &StrategyCatalogPanel::blockSelected,

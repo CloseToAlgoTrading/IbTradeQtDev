@@ -29,6 +29,7 @@ public:
 
     void wireSignals();
     void refreshCatalog();
+    void publishCurrentDiagramContext();
 
     StrategyMgmt::StrategyManagementPanel* panel() const { return m_panel; }
 
@@ -37,6 +38,7 @@ public:
 signals:
     void openInBacktest(const QString& strategyId, const QString& versionId);
     void refreshLiveTree();
+    void diagramContextChanged(const QJsonObject& pipelineConfig);
 
 private slots:
     void onStrategySelected(const QString& strategyId);
@@ -51,6 +53,9 @@ private slots:
     void onSaveVersion(const QString& strategyId, const QJsonObject& config,
                        const QString& notes);
     void onDeleteVersion(const QString& strategyId, const QString& versionId);
+    void onVersionLifecycleChanged(const QString& strategyId,
+                                   const QString& versionId,
+                                   const QString& lifecycleState);
     void onDeployVersion(const QString& strategyId, const QString& versionId,
                          const QString& targetStrategyNodeId);
     void onBacktestVersion(const QString& strategyId, const QString& versionId);

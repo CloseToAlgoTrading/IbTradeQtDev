@@ -28,6 +28,10 @@ public:
                   const QMap<QString, QJsonObject>& latestConfigs);
 
     void selectStrategyById(const QString& strategyId);
+    void setVisibleVersionPreview(const QString& strategyId,
+                                  const QString& versionLabel,
+                                  const QString& lifecycleState,
+                                  const QJsonObject& config);
 
 signals:
     void strategySelected(const QString& strategyId);
@@ -64,6 +68,9 @@ private:
     QJsonArray m_catalogEntries;
     QMap<QString, int> m_versionCounts;
     QMap<QString, QJsonObject> m_latestConfigs;
+    QMap<QString, QJsonObject> m_previewConfigs;
+    QMap<QString, QString> m_previewVersionLabels;
+    QMap<QString, QString> m_previewLifecycleStates;
     QString m_currentStateFilter;
 };
 

@@ -50,6 +50,7 @@ public:
     virtual DbStrategyVersion fetchLatestVersion(const QString& strategyId) const = 0;
     virtual bool deleteStrategyVersion(const QString& versionId) = 0;
     virtual bool setVersionPublished(const QString& versionId, bool published) = 0;
+    virtual bool setVersionLifecycle(const QString& versionId, const QString& lifecycleState) = 0;
     virtual int nextVersionNumber(const QString& strategyId) const = 0;
 
     virtual bool createLiveBinding(const DbLiveStrategyBinding& binding) = 0;

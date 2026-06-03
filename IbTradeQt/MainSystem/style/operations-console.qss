@@ -86,12 +86,12 @@ QLabel[mute="true"] {
     font-size: 11px;
 }
 
-/* ── Status strips (GlobalStatusBar widget + native QStatusBar) ──────────────
- *  All label/button copy colours are defined here only (no setStyleSheet on these widgets).
+/* ── Status strip (GlobalStatusBar hosted in native QStatusBar) ──────────────
+ *  All label colours are defined here only (no setStyleSheet on these widgets).
  *  Hex aligns with ThemePalette: kTextSecondary #b8b8b8, kTextMuted #888888, kTextPrimary #e8e8e8 */
 #GlobalStatusBar {
-    background-color: #141414;
-    border-bottom: 1px solid #2a2a2a;
+    background-color: transparent;
+    border: none;
 }
 
 #GlobalStatusBar QFrame#globalStatusSeparator {
@@ -119,27 +119,6 @@ QLabel[mute="true"] {
 }
 #GlobalStatusBar QLabel#statusIndicator[statusState="neutral"] {
     color: #888888;
-}
-
-#GlobalStatusBar QPushButton#globalActionBtn {
-    background-color: #252525;
-    color: #b8b8b8;
-    border: 1px solid #383838;
-    border-radius: 2px;
-    padding: 2px 10px;
-    font-size: 11px;
-    font-weight: 500;
-    min-height: 18px;
-    max-height: 22px;
-}
-#GlobalStatusBar QPushButton#globalActionBtn:hover {
-    background-color: #333333;
-    border-color: #507dbc;
-    color: #e8e8e8;
-}
-#GlobalStatusBar QPushButton#globalActionBtn:pressed {
-    background-color: #507dbc;
-    color: #ffffff;
 }
 
 /* ── Push buttons (application-wide) — compact ── */
@@ -778,7 +757,7 @@ QToolButton:pressed {
     background-color: #333333;
 }
 
-/* ── Native QStatusBar (clock + connection glyph under GlobalStatusBar) ──── */
+/* ── Native QStatusBar (global status strip + connection glyph) ──────────── */
 QStatusBar {
     background-color: #141414;
     color: #b8b8b8;
@@ -792,12 +771,6 @@ QStatusBar QLabel {
     color: #b8b8b8;
     font-size: 11px;
     background-color: transparent;
-}
-QStatusBar QLabel#statusBarTimeLabel {
-    color: #b8b8b8;
-    font-size: 11px;
-    font-weight: 500;
-    padding: 0 8px;
 }
 /* Pixmap: loadIconForChrome (NotConnected → kToolbarIcon); QSS cannot tint QIcon */
 QStatusBar QLabel#statusBarConnectionIndicator {
