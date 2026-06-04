@@ -139,6 +139,8 @@ BacktestCandlestickWidget::BacktestCandlestickWidget(QWidget* parent)
     auto* topRow = new QHBoxLayout();
     topRow->addWidget(new QLabel(QStringLiteral("Symbol:")));
     m_symbolCombo = new QComboBox();
+    m_symbolCombo->setToolTip(
+        QStringLiteral("Selects which symbol from the current backtest result is displayed in the candlestick chart."));
     topRow->addWidget(m_symbolCombo);
     topRow->addStretch();
 

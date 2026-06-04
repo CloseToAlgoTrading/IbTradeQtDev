@@ -179,6 +179,8 @@ void StrategyWorkspace::buildOverviewTab()
     m_executionModeCombo = new QComboBox(m_overviewWidget);
     m_executionModeCombo->addItem(QStringLiteral("Dry Run"), QStringLiteral("dry_run"));
     m_executionModeCombo->addItem(QStringLiteral("Live Orders"), QStringLiteral("live"));
+    m_executionModeCombo->setToolTip(
+        QStringLiteral("Selects whether the strategy simulates orders only or sends approved live orders through the connected broker."));
     modeRow->addWidget(m_executionModeCombo, 1);
     layout->addLayout(modeRow);
 
@@ -276,7 +278,7 @@ void StrategyWorkspace::buildAssetsTab()
         m_assetsProviderCombo->addItem(QStringLiteral("Yahoo (backtest charts)"), QStringLiteral("yahoo"));
         m_assetsProviderCombo->addItem(QStringLiteral("Interactive Brokers (live)"), QStringLiteral("ib"));
         m_assetsProviderCombo->setToolTip(
-            QStringLiteral("Which InstrumentMetadata provider row to use for Effective type / Source when the database has rows."));
+            QStringLiteral("Instrument metadata provider used to resolve effective asset type and source in the asset table. Use Yahoo for backtest chart metadata and IB/TWS for live broker metadata."));
         h->addWidget(m_assetsProviderCombo, 1);
         layout->addLayout(h);
         connect(m_assetsProviderCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int idx) {
@@ -709,6 +711,9 @@ void StrategyWorkspace::refreshProperties()
     for (auto it = params.cbegin(); it != params.cend(); ++it) {
         auto* edit = new QLineEdit(it.value().toString(), m_propertiesWidget);
         QString key = it.key();
+        edit->setToolTip(
+            QStringLiteral("Edits the '%1' strategy parameter. The value is saved back to the selected model when editing finishes.")
+                .arg(key));
         connect(edit, &QLineEdit::editingFinished, this, [this, edit, key]() {
             if (!m_boundModel) return;
             QVariantMap params = m_boundModel->getParameters();
@@ -788,6 +793,9 @@ void StrategyWorkspace::rebuildAssetsTable()
 
         auto* combo = new QComboBox(m_assetsTable);
         combo->addItems(classificationOverrideComboItems());
+        combo->setToolTip(
+            QStringLiteral("Classification override for %1. Auto uses provider metadata or inference; a selected asset kind is stored as a hard override for this strategy.")
+                .arg(sym));
         {
             QSignalBlocker cb(combo);
             combo->setCurrentIndex(
@@ -821,6 +829,9 @@ void StrategyWorkspace::rebuildAssetsTable()
 
         const QString sess = entry.value(AssetFields::Position::SessionPolicy).toString();
         auto* sessItem     = new QTableWidgetItem(sess);
+        sessItem->setToolTip(
+            QStringLiteral("Session policy override for %1. Leave blank to use the default session behavior, or enter a supported policy value for this asset.")
+                .arg(sym));
         sessItem->setData(Qt::UserRole, sym);
         sessItem->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled | Qt::ItemIsEditable);
         m_assetsTable->setItem(row, 4, sessItem);

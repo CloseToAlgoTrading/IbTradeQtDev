@@ -87,12 +87,18 @@ DataManagementPanel::DataManagementPanel(QWidget* parent)
 
     m_symbolFilter = new QLineEdit(this);
     m_symbolFilter->setPlaceholderText(QStringLiteral("Filter symbol…"));
+    m_symbolFilter->setToolTip(
+        QStringLiteral("Filters the dataset table to symbols containing this text. Matching is case-insensitive and does not change stored data."));
     m_resolutionFilter = new QComboBox(this);
     m_resolutionFilter->addItem(QStringLiteral("(all)"));
     for (const QString& r : DataManagement::canonicalBarResolutions())
         m_resolutionFilter->addItem(r);
+    m_resolutionFilter->setToolTip(
+        QStringLiteral("Filters the dataset table by historical bar resolution, or shows all resolutions when set to (all)."));
     m_sourceFilter = new QLineEdit(this);
     m_sourceFilter->setPlaceholderText(QStringLiteral("Filter source…"));
+    m_sourceFilter->setToolTip(
+        QStringLiteral("Filters the dataset table to data source identifiers containing this text, such as yahoo, ib, csv, or jsonl."));
 
     auto* filterRow = new QHBoxLayout();
     filterRow->addWidget(new QLabel(QStringLiteral("Symbol:"), this));
@@ -140,8 +146,12 @@ DataManagementPanel::DataManagementPanel(QWidget* parent)
     m_importResolution = new QComboBox(this);
     for (const QString& r : DataManagement::canonicalBarResolutions())
         m_importResolution->addItem(r);
+    m_importResolution->setToolTip(
+        QStringLiteral("Resolution assigned to bars imported from CSV or fetched from a provider. It should match the cadence of the input data."));
     m_importDataSource = new QLineEdit(this);
     m_importDataSource->setPlaceholderText(QStringLiteral("CSV dataSourceId (e.g. csv)"));
+    m_importDataSource->setToolTip(
+        QStringLiteral("Data source identifier stored with imported or fetched bars. Use a stable value such as csv, yahoo, ib, or a custom source name."));
     auto* importRow = new QHBoxLayout();
     importRow->addWidget(new QLabel(QStringLiteral("Import resolution:"), this));
     importRow->addWidget(m_importResolution);
@@ -151,6 +161,8 @@ DataManagementPanel::DataManagementPanel(QWidget* parent)
     m_providerCombo = new QComboBox(this);
     m_providerCombo->addItem(QStringLiteral("Yahoo"), QStringLiteral("yahoo"));
     m_providerCombo->addItem(QStringLiteral("IB/TWS"), QStringLiteral("ib"));
+    m_providerCombo->setToolTip(
+        QStringLiteral("Provider used for batch historical bar fetches and coverage synchronization. Yahoo is chart/backtest oriented; IB/TWS uses broker-backed data."));
     m_providerStatusLabel = new QLabel(QStringLiteral("Provider: Yahoo"), this);
     m_providerStatusLabel->setObjectName(QStringLiteral("DataManagementProviderStatus"));
 
@@ -162,6 +174,10 @@ DataManagementPanel::DataManagementPanel(QWidget* parent)
         dt->setDisplayFormat(QStringLiteral("yyyy-MM-dd HH:mm"));
         dt->setTimeZone(QTimeZone::utc());
     }
+    m_syncFrom->setToolTip(
+        QStringLiteral("UTC start timestamp for provider fetches and coverage synchronization."));
+    m_syncTo->setToolTip(
+        QStringLiteral("UTC end timestamp for provider fetches and coverage synchronization."));
     m_syncFrom->setDateTime(QDateTime(QDate(2024, 1, 1), QTime(0, 0, 0), QTimeZone::utc()));
     m_syncTo->setDateTime(QDateTime::currentDateTimeUtc());
 

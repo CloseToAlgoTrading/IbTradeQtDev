@@ -24,6 +24,8 @@ void StrategyTreePanel::buildUi()
     m_searchEdit = new QLineEdit(this);
     m_searchEdit->setPlaceholderText(QStringLiteral("Search..."));
     m_searchEdit->setClearButtonEnabled(true);
+    m_searchEdit->setToolTip(
+        QStringLiteral("Filters the tree by the first column using case-insensitive matching. Matching branches expand automatically while searching."));
     m_searchEdit->setVisible(false);
     m_layout->addWidget(m_searchEdit);
 

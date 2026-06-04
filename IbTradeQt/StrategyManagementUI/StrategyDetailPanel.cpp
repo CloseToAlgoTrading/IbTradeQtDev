@@ -177,6 +177,8 @@ static QComboBox* createLifecycleCombo(const QString& lifecycleState)
     combo->setCurrentIndex(idx >= 0 ? idx : 0);
     combo->setObjectName(QStringLiteral("VersionLifecycleCombo"));
     combo->setCursor(Qt::PointingHandCursor);
+    combo->setToolTip(
+        QStringLiteral("Version lifecycle state. Draft is editable work, Testing is under validation, Ready is approved for promotion, and Retired is no longer active."));
     combo->setContentsMargins(0, 0, 0, 0);
     combo->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     combo->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
@@ -208,6 +210,8 @@ void StrategyDetailPanel::buildUi()
     auto* titleRow = new QHBoxLayout;
     m_nameEdit = new QLineEdit;
     m_nameEdit->setObjectName(QStringLiteral("StrategyTitleEdit"));
+    m_nameEdit->setToolTip(
+        QStringLiteral("Editable strategy display name shown in the catalog, workspace header, and saved metadata."));
     m_lifecycleBadge = new QLabel;
     m_lifecycleBadge->setObjectName(QStringLiteral("StrategyLifecycleBadge"));
     m_lifecycleBadge->setAlignment(Qt::AlignCenter);
@@ -221,11 +225,15 @@ void StrategyDetailPanel::buildUi()
 
     m_descEdit = new QTextEdit;
     m_descEdit->setMaximumHeight(54);
+    m_descEdit->setToolTip(
+        QStringLiteral("Editable strategy description stored with the catalog entry. Use it to summarize intent, universe, signal logic, and operating notes."));
     metaForm->addRow(QStringLiteral("Description:"), m_descEdit);
 
     auto* tagsRow = new QHBoxLayout;
     m_tagsEdit = new QLineEdit;
     m_tagsEdit->setPlaceholderText(QStringLiteral("comma-separated tags"));
+    m_tagsEdit->setToolTip(
+        QStringLiteral("Comma-separated tags stored with the strategy for catalog grouping, search, and operational context."));
     m_saveMetaBtn = new QPushButton(QStringLiteral("Save metadata"));
     tagsRow->addWidget(m_tagsEdit, 1);
     tagsRow->addWidget(m_saveMetaBtn);
@@ -291,6 +299,8 @@ void StrategyDetailPanel::buildUi()
     versionInspectorLayout->addWidget(policyScroll, 1);
 
     m_showAdvancedJsonCheck = new QCheckBox(QStringLiteral("Show advanced configuration"));
+    m_showAdvancedJsonCheck->setToolTip(
+        QStringLiteral("Shows the raw pipeline JSON for the selected version. The JSON panel is read-only here; edit structured fields through the policy and block inspectors."));
     versionInspectorLayout->addWidget(m_showAdvancedJsonCheck);
 
     m_jsonPanel = new QWidget;
@@ -299,6 +309,8 @@ void StrategyDetailPanel::buildUi()
     jsonLayout->setSpacing(4);
 
     m_diffToggle = new QCheckBox(QStringLiteral("Compare with previous version"));
+    m_diffToggle->setToolTip(
+        QStringLiteral("Switches the advanced JSON panel between the selected version and a line-by-line comparison against the previous version."));
     jsonLayout->addWidget(m_diffToggle);
 
     m_configViewer = new QPlainTextEdit;

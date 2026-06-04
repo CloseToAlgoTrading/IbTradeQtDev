@@ -60,6 +60,9 @@ public:
         pushButtonStart->setText(QCoreApplication::translate("DBStoreForm", "Start", nullptr));
         pushButtonAdd->setText(QCoreApplication::translate("DBStoreForm", "Add", nullptr));
         pushButtonRemove->setText(QCoreApplication::translate("DBStoreForm", "Remove", nullptr));
+#if QT_CONFIG(tooltip)
+        lineEditSymbol->setToolTip(QCoreApplication::translate("DBStoreForm", "Symbol to add to the data-store ticker list. Enter a broker or data-provider ticker such as SPY, AMD, or EURUSD.", nullptr));
+#endif // QT_CONFIG(tooltip)
     } // retranslateUi
 
 };

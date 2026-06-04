@@ -71,6 +71,9 @@
     <property name="text">
      <string>SPY</string>
     </property>
+    <property name="toolTip">
+     <string>Underlying ticker used by the auto-delta alignment strategy, for example SPY. This symbol drives market data, option context, and hedge calculations.</string>
+    </property>
    </widget>
    <widget class="QLabel" name="label_delta">
     <property name="geometry">
@@ -96,6 +99,9 @@
     </property>
     <property name="maximum">
      <number>100</number>
+    </property>
+    <property name="toolTip">
+     <string>Target delta threshold for the alignment logic. The strategy compares current option and basis deltas against this value.</string>
     </property>
    </widget>
    <widget class="QLabel" name="label_2">
@@ -188,6 +194,9 @@
     <property name="displayFormat">
      <string>dd.MM.yyyy</string>
     </property>
+    <property name="toolTip">
+     <string>Option expiration date used when selecting or evaluating the hedge instrument.</string>
+    </property>
    </widget>
    <widget class="QDoubleSpinBox" name="spinBox_TargetPrice">
     <property name="geometry">
@@ -203,6 +212,9 @@
     </property>
     <property name="maximum">
      <double>9999.989999999999782</double>
+    </property>
+    <property name="toolTip">
+     <string>Target option or hedge price used by the alignment workflow when preparing orders and comparing market levels.</string>
     </property>
    </widget>
    <widget class="QLabel" name="label_5">
@@ -313,6 +325,9 @@
     <property name="text">
      <string>Call</string>
     </property>
+    <property name="toolTip">
+     <string>Selects the option type for the hedge instrument. Checked represents Call; unchecked represents the alternate option side used by the strategy.</string>
+    </property>
    </widget>
    <widget class="QCheckBox" name="checkBox_isBuy">
     <property name="geometry">
@@ -325,6 +340,9 @@
     </property>
     <property name="text">
      <string>Buy</string>
+    </property>
+    <property name="toolTip">
+     <string>Selects whether the prepared hedge order is a buy order. Unchecked represents the opposite side.</string>
     </property>
    </widget>
   </widget>

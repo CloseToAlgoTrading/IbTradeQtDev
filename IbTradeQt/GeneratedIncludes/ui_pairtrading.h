@@ -253,13 +253,31 @@ public:
         PairTrading->setWindowTitle(QCoreApplication::translate("PairTrading", "PairTrading", nullptr));
         groupBox_2->setTitle(QCoreApplication::translate("PairTrading", "Add Pair", nullptr));
         pushButtonRemoveSelected->setText(QCoreApplication::translate("PairTrading", "Remove Selected", nullptr));
+#if QT_CONFIG(tooltip)
+        lineEdit->setToolTip(QCoreApplication::translate("PairTrading", "First symbol in the pair-trading relationship. Enter a valid ticker used by the market data and order layers.", nullptr));
+#endif // QT_CONFIG(tooltip)
+#if QT_CONFIG(tooltip)
+        lineEdit_2->setToolTip(QCoreApplication::translate("PairTrading", "Second symbol in the pair-trading relationship. Enter the companion ticker that will be compared with the first symbol.", nullptr));
+#endif // QT_CONFIG(tooltip)
         pushButtonAddPair->setText(QCoreApplication::translate("PairTrading", "Add", nullptr));
         groupBox->setTitle(QCoreApplication::translate("PairTrading", "GroupBox", nullptr));
         tabWidget_2->setTabText(tabWidget_2->indexOf(tab_2), QCoreApplication::translate("PairTrading", "Tab 1", nullptr));
         pushButtonBuyMkt->setText(QCoreApplication::translate("PairTrading", "Buy", nullptr));
         lineEditOrderSymbol->setText(QCoreApplication::translate("PairTrading", "SPY", nullptr));
+#if QT_CONFIG(tooltip)
+        lineEditOrderSymbol->setToolTip(QCoreApplication::translate("PairTrading", "Order ticket symbol. Enter the ticker that the manual buy or sell command should target.", nullptr));
+#endif // QT_CONFIG(tooltip)
+#if QT_CONFIG(tooltip)
+        spinBoxQuantity->setToolTip(QCoreApplication::translate("PairTrading", "Manual order quantity in shares or contracts for the selected order symbol.", nullptr));
+#endif // QT_CONFIG(tooltip)
         radioButtonBuy->setText(QCoreApplication::translate("PairTrading", "Buy", nullptr));
+#if QT_CONFIG(tooltip)
+        radioButtonBuy->setToolTip(QCoreApplication::translate("PairTrading", "Selects buy side for manual pair-trading order entry.", nullptr));
+#endif // QT_CONFIG(tooltip)
         radioButtonSell->setText(QCoreApplication::translate("PairTrading", "Sell", nullptr));
+#if QT_CONFIG(tooltip)
+        radioButtonSell->setToolTip(QCoreApplication::translate("PairTrading", "Selects sell side for manual pair-trading order entry.", nullptr));
+#endif // QT_CONFIG(tooltip)
         pushButtonSellMkt->setText(QCoreApplication::translate("PairTrading", "Sell", nullptr));
         tabWidget_2->setTabText(tabWidget_2->indexOf(tab_3), QCoreApplication::translate("PairTrading", "Tab 2", nullptr));
         groupBoxPrice->setTitle(QCoreApplication::translate("PairTrading", "Price", nullptr));

@@ -83,9 +83,13 @@ FilterableTableWidget::FilterableTableWidget(QWidget* parent)
     m_filterEdit->setObjectName(QStringLiteral("filterableTableFilterEdit"));
     m_filterEdit->setClearButtonEnabled(true);
     m_filterEdit->setPlaceholderText(QStringLiteral("Filter by ticker or text…"));
+    m_filterEdit->setToolTip(
+        QStringLiteral("Filters table rows by ticker or status text. Matching is case-insensitive and only affects the visible rows."));
 
     m_statusCombo = new QComboBox(this);
     m_statusCombo->setObjectName(QStringLiteral("filterableTableStatusCombo"));
+    m_statusCombo->setToolTip(
+        QStringLiteral("Filters rows by status category, such as fully cached, needs download, partial gap, or provider validation status."));
 
     m_table = new QTableView(this);
     m_table->setObjectName(QStringLiteral("filterableTableView"));

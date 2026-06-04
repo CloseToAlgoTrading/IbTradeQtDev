@@ -59,6 +59,23 @@ QVariant CTreeViewCustomModel::data(const QModelIndex &index, int role) const
     TreeItem * item = getItem(index);
     const auto itemData = item->data(index.column());
 
+    if (role == Qt::ToolTipRole) {
+        if (EVT_READ_ONLY == (itemData.vType & EVT_READ_ONLY))
+            return QVariant();
+
+        const QString fieldName = index.column() == 0
+            ? itemData.value.toString()
+            : item->data(0).value.toString();
+        if (EVT_CECK_BOX == (itemData.vType & EVT_CECK_BOX)) {
+            return QStringLiteral("Toggles the '%1' setting for this tree item. Changes are applied to the underlying model when committed.")
+                .arg(fieldName);
+        }
+        if (0u != (itemData.vType & EVT_TEXT)) {
+            return QStringLiteral("Edits the '%1' value for this tree item. Changes are applied to the underlying model when editing is committed.")
+                .arg(fieldName);
+        }
+    }
+
     if (role != Qt::DisplayRole && role != Qt::EditRole && role != Qt::CheckStateRole && !Qt::DecorationRole)
         return QVariant();
 

@@ -39,10 +39,14 @@ void BacktestRunConfigPanel::buildForm() {
     m_startDateEdit = new QDateEdit(QDate::currentDate().addYears(-5));
     m_startDateEdit->setCalendarPopup(true);
     m_startDateEdit->setDisplayFormat(QStringLiteral("yyyy-MM-dd"));
+    m_startDateEdit->setToolTip(
+        QStringLiteral("First UTC trading date included in the backtest data window. Bars before this date are ignored."));
 
     m_endDateEdit = new QDateEdit(QDate::currentDate());
     m_endDateEdit->setCalendarPopup(true);
     m_endDateEdit->setDisplayFormat(QStringLiteral("yyyy-MM-dd"));
+    m_endDateEdit->setToolTip(
+        QStringLiteral("Last UTC trading date included in the backtest data window. The run includes bars through the end of this day."));
 
     m_capitalSpin = new QDoubleSpinBox();
     m_capitalSpin->setRange(1000.0, 100'000'000.0);
@@ -50,15 +54,23 @@ void BacktestRunConfigPanel::buildForm() {
     m_capitalSpin->setSingleStep(10'000.0);
     m_capitalSpin->setPrefix(QStringLiteral("$ "));
     m_capitalSpin->setDecimals(0);
+    m_capitalSpin->setToolTip(
+        QStringLiteral("Initial simulated cash balance used by the backtest ledger for sizing, fills, and return calculations."));
 
     m_benchmarkEdit = new QLineEdit(QStringLiteral("SPY"));
     m_benchmarkEdit->setPlaceholderText(QStringLiteral("Optional, e.g. SPY"));
+    m_benchmarkEdit->setToolTip(
+        QStringLiteral("Optional benchmark ticker used for report comparison, relative performance, and chart overlays. Leave blank to run without a benchmark."));
 
     m_resolutionCombo = new QComboBox();
     m_resolutionCombo->addItems({"Day1", "Hour1", "Min30", "Min15", "Min5", "Min1"});
+    m_resolutionCombo->setToolTip(
+        QStringLiteral("Historical bar interval used for the run. Choose a resolution that exists in the selected data source cache."));
 
     m_fillModelCombo = new QComboBox();
     m_fillModelCombo->addItems({"BidAsk", "MidPrice", "Instant", "SlippageBps"});
+    m_fillModelCombo->setToolTip(
+        QStringLiteral("Execution price model for simulated orders: bid/ask spread, midpoint, immediate bar price, or an explicit basis-point slippage model."));
 
     m_fillTimingCombo = new QComboBox();
     m_fillTimingCombo->addItems({
@@ -66,6 +78,8 @@ void BacktestRunConfigPanel::buildForm() {
         "SignalOnClose_FillAtClose",
         "SignalOnTick_FillAtBidAsk"
     });
+    m_fillTimingCombo->setToolTip(
+        QStringLiteral("Controls when a generated signal is converted into a simulated fill, such as next bar open, same bar close, or tick-time bid/ask."));
 
     m_slippageSpin = new QDoubleSpinBox();
     m_slippageSpin->setRange(0.0, 100.0);
@@ -73,9 +87,13 @@ void BacktestRunConfigPanel::buildForm() {
     m_slippageSpin->setSingleStep(0.5);
     m_slippageSpin->setSuffix(QStringLiteral(" bps"));
     m_slippageSpin->setDecimals(1);
+    m_slippageSpin->setToolTip(
+        QStringLiteral("Additional simulated execution cost in basis points. Used by slippage-aware fill models to move fills away from the reference price."));
 
     m_dataSourceCombo = new QComboBox();
     m_dataSourceCombo->addItems({"yahoo", "ib", "csv", "jsonl"});
+    m_dataSourceCombo->setToolTip(
+        QStringLiteral("Historical data provider or imported dataset namespace used to load bars for this run."));
 
     // --- Run button & progress ---
     m_runButton = new QPushButton(QStringLiteral("▶  Run Backtest"));

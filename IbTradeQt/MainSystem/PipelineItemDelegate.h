@@ -22,6 +22,9 @@ public:
 
         auto* combo = new QComboBox(parent);
         combo->addItems(choices);
+        combo->setToolTip(
+            QStringLiteral("Selects the value for pipeline parameter '%1'. Choices are constrained to valid registered options for this parameter.")
+                .arg(key));
         return combo;
     }
 

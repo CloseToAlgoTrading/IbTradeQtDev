@@ -71,6 +71,9 @@
      <height>21</height>
     </rect>
    </property>
+   <property name="toolTip">
+    <string>Symbol to add to the data-store ticker list. Enter a broker or data-provider ticker such as SPY, AMD, or EURUSD.</string>
+   </property>
   </widget>
  </widget>
  <resources/>

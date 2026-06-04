@@ -31,12 +31,16 @@ void RuntimePolicyEditor::buildUi()
     m_evalModeCombo->addItem(QStringLiteral("Every N Bars"));
     m_evalModeCombo->addItem(QStringLiteral("Every N Minutes"));
     m_evalModeCombo->addItem(QStringLiteral("Every N Days"));
+    m_evalModeCombo->setToolTip(
+        QStringLiteral("Controls how often alpha and selection logic are evaluated: each tick, each completed bar, or a fixed bar/minute/day interval."));
     evalForm->addRow(QStringLiteral("Mode:"), m_evalModeCombo);
 
     m_evalIntervalLabel = new QLabel(QStringLiteral("Interval N:"));
     m_evalIntervalSpin  = new QSpinBox;
     m_evalIntervalSpin->setRange(1, 10000);
     m_evalIntervalSpin->setValue(1);
+    m_evalIntervalSpin->setToolTip(
+        QStringLiteral("Interval count used when the evaluation mode is Every N Bars, Every N Minutes, or Every N Days."));
     evalForm->addRow(m_evalIntervalLabel, m_evalIntervalSpin);
 
     root->addWidget(evalGroup);
@@ -50,12 +54,16 @@ void RuntimePolicyEditor::buildUi()
     m_rebalModeCombo->addItem(QStringLiteral("Every N Bars"));
     m_rebalModeCombo->addItem(QStringLiteral("Every N Minutes"));
     m_rebalModeCombo->addItem(QStringLiteral("Every N Days"));
+    m_rebalModeCombo->setToolTip(
+        QStringLiteral("Controls how often approved target positions are turned into rebalance actions."));
     rebalForm->addRow(QStringLiteral("Mode:"), m_rebalModeCombo);
 
     m_rebalIntervalLabel = new QLabel(QStringLiteral("Interval N:"));
     m_rebalIntervalSpin  = new QSpinBox;
     m_rebalIntervalSpin->setRange(1, 10000);
     m_rebalIntervalSpin->setValue(1);
+    m_rebalIntervalSpin->setToolTip(
+        QStringLiteral("Interval count used when the rebalance mode is Every N Bars, Every N Minutes, or Every N Days."));
     rebalForm->addRow(m_rebalIntervalLabel, m_rebalIntervalSpin);
 
     root->addWidget(rebalGroup);
@@ -65,6 +73,8 @@ void RuntimePolicyEditor::buildUi()
     auto* sigForm  = new QFormLayout(sigGroup);
 
     m_accumulateCheck = new QCheckBox(QStringLiteral("Accumulate alpha signals between rebalance windows"));
+    m_accumulateCheck->setToolTip(
+        QStringLiteral("When enabled, alpha signals are retained between rebalance windows so the next rebalance can act on accumulated signals."));
     sigForm->addRow(m_accumulateCheck);
 
     m_expiryLabel   = new QLabel(QStringLiteral("Signal Expiry (bars):"));
@@ -72,6 +82,8 @@ void RuntimePolicyEditor::buildUi()
     m_expiryBarsSpin->setRange(0, 10000);
     m_expiryBarsSpin->setValue(0);
     m_expiryBarsSpin->setSpecialValueText(QStringLiteral("Never"));
+    m_expiryBarsSpin->setToolTip(
+        QStringLiteral("Maximum number of bars an accumulated alpha signal remains valid. Use Never to keep signals until replaced or consumed."));
     sigForm->addRow(m_expiryLabel, m_expiryBarsSpin);
 
     root->addWidget(sigGroup);
@@ -82,6 +94,10 @@ void RuntimePolicyEditor::buildUi()
 
     m_riskAlwaysCheck    = new QCheckBox(QStringLiteral("Risk always active (tick-by-tick monitoring)"));
     m_cancelPendingCheck = new QCheckBox(QStringLiteral("Cancel pending orders on emergency risk"));
+    m_riskAlwaysCheck->setToolTip(
+        QStringLiteral("Runs risk checks continuously instead of only during scheduled rebalance windows."));
+    m_cancelPendingCheck->setToolTip(
+        QStringLiteral("Allows emergency risk checks to cancel pending orders when the strategy breaches configured risk conditions."));
     riskForm->addRow(m_riskAlwaysCheck);
     riskForm->addRow(m_cancelPendingCheck);
 
@@ -92,6 +108,8 @@ void RuntimePolicyEditor::buildUi()
     auto* execForm  = new QFormLayout(execGroup);
 
     m_execImmediateCheck = new QCheckBox(QStringLiteral("Execute immediately after risk approval"));
+    m_execImmediateCheck->setToolTip(
+        QStringLiteral("Sends approved orders to the execution layer immediately after risk approval instead of waiting for the next execution cycle."));
     execForm->addRow(m_execImmediateCheck);
 
     root->addWidget(execGroup);

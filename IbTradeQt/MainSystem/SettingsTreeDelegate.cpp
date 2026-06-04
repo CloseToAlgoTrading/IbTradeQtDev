@@ -28,10 +28,18 @@ QWidget* SettingsTreeDelegate::createEditor(QWidget* parent, const QStyleOptionV
         auto* combo = new QComboBox(parent);
         combo->addItem(QStringLiteral("SQLite"), QStringLiteral("sqlite"));
         combo->addItem(QStringLiteral("PostgreSQL"), QStringLiteral("postgresql"));
+        combo->setToolTip(
+            QStringLiteral("Selects the model-store backend used for strategy and portfolio persistence. SQLite uses a local database file; PostgreSQL uses the configured server connection."));
         return combo;
     }
 
     QWidget* w = QStyledItemDelegate::createEditor(parent, option, index);
+    if (auto* le = qobject_cast<QLineEdit*>(w)) {
+        const QString settingName = index.sibling(index.row(), 0).data(Qt::DisplayRole).toString();
+        le->setToolTip(
+            QStringLiteral("Edits the '%1' setting value. Changes are written back to the settings model when editing is committed.")
+                .arg(settingName));
+    }
     if (id == S_DATA_ID_PG_PASSWORD) {
         if (auto* le = qobject_cast<QLineEdit*>(w))
             le->setEchoMode(QLineEdit::Password);

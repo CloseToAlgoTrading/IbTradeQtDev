@@ -43,6 +43,8 @@ void StrategyCatalogPanel::buildUi()
     m_statusCombo->addItem(QStringLiteral("Live"), QStringLiteral("live"));
     m_statusCombo->addItem(QStringLiteral("Retired"), QStringLiteral("retired"));
     m_statusCombo->addItem(QStringLiteral("All"), QStringLiteral("all"));
+    m_statusCombo->setToolTip(
+        QStringLiteral("Filters the strategy catalog by derived lifecycle state. Current hides retired strategies; All shows every catalog entry."));
     topBar->addWidget(m_statusCombo);
 
     m_newButton = new QPushButton(QStringLiteral("New Strategy"));
@@ -53,6 +55,8 @@ void StrategyCatalogPanel::buildUi()
     m_treePanel->setSearchVisible(true);
     m_treePanel->searchEdit()->setPlaceholderText(
         QStringLiteral("Search strategies..."));
+    m_treePanel->searchEdit()->setToolTip(
+        QStringLiteral("Filters the catalog tree by strategy name and visible row text. Matching is case-insensitive and expands matches while typing."));
     m_treePanel->setToolbarWidget(toolbar);
 
     m_model = new CatalogTreeModel(this);

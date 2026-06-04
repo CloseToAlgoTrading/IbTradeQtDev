@@ -84,10 +84,18 @@
               </property>
               <layout class="QHBoxLayout" name="horizontalLayout_2">
                <item>
-                <widget class="QLineEdit" name="lineEdit"/>
+                <widget class="QLineEdit" name="lineEdit">
+                 <property name="toolTip">
+                  <string>First symbol in the pair-trading relationship. Enter a valid ticker used by the market data and order layers.</string>
+                 </property>
+                </widget>
                </item>
                <item>
-                <widget class="QLineEdit" name="lineEdit_2"/>
+                <widget class="QLineEdit" name="lineEdit_2">
+                 <property name="toolTip">
+                  <string>Second symbol in the pair-trading relationship. Enter the companion ticker that will be compared with the first symbol.</string>
+                 </property>
+                </widget>
                </item>
                <item>
                 <widget class="QPushButton" name="pushButtonAddPair">
@@ -192,6 +200,9 @@
                <property name="text">
                 <string>SPY</string>
                </property>
+               <property name="toolTip">
+                <string>Order ticket symbol. Enter the ticker that the manual buy or sell command should target.</string>
+               </property>
               </widget>
               <widget class="QSpinBox" name="spinBoxQuantity">
                <property name="geometry">
@@ -211,6 +222,9 @@
                <property name="value">
                 <number>100</number>
                </property>
+               <property name="toolTip">
+                <string>Manual order quantity in shares or contracts for the selected order symbol.</string>
+               </property>
               </widget>
               <widget class="QRadioButton" name="radioButtonBuy">
                <property name="geometry">
@@ -223,6 +237,9 @@
                </property>
                <property name="text">
                 <string>Buy</string>
+               </property>
+               <property name="toolTip">
+                <string>Selects buy side for manual pair-trading order entry.</string>
                </property>
                <attribute name="buttonGroup">
                 <string notr="true">buttonGroup</string>
@@ -239,6 +256,9 @@
                </property>
                <property name="text">
                 <string>Sell</string>
+               </property>
+               <property name="toolTip">
+                <string>Selects sell side for manual pair-trading order entry.</string>
                </property>
                <attribute name="buttonGroup">
                 <string notr="true">buttonGroup</string>

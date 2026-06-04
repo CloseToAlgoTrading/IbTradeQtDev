@@ -151,6 +151,9 @@ void AccountWorkspace::refreshProperties()
     for (auto it = params.cbegin(); it != params.cend(); ++it) {
         auto* edit = new QLineEdit(it.value().toString(), m_propertiesWidget);
         QString key = it.key();
+        edit->setToolTip(
+            QStringLiteral("Edits the '%1' account parameter. The value is saved back to the selected model when editing finishes.")
+                .arg(key));
         connect(edit, &QLineEdit::editingFinished, this, [this, edit, key]() {
             if (!m_boundModel) return;
             QVariantMap params = m_boundModel->getParameters();

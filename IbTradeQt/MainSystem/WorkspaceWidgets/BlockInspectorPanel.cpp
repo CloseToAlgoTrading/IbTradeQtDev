@@ -55,6 +55,8 @@ void BlockInspectorPanel::buildUi()
     diffLayout->setSpacing(2);
 
     m_diffToggle = new QCheckBox(QStringLiteral("Diff vs Baseline"), m_diffContainer);
+    m_diffToggle->setToolTip(
+        QStringLiteral("Toggles the JSON viewer between the current pipeline configuration and a line-by-line comparison against the baseline configuration."));
     diffLayout->addWidget(m_diffToggle);
 
     m_jsonViewer = new QPlainTextEdit(m_diffContainer);
@@ -180,6 +182,9 @@ void BlockInspectorPanel::showBlock(const QJsonObject& pipelineConfig,
 
             auto* edit = new QLineEdit(value, m_paramWidget);
             edit->setReadOnly(m_readOnly);
+            edit->setToolTip(
+                QStringLiteral("Edits the '%1' parameter for the selected %2 block. Values may be plain text, numbers, JSON objects, or JSON arrays; changes update the working pipeline configuration.")
+                    .arg(key, displayName));
 
             if (!m_readOnly) {
                 connect(edit, &QLineEdit::editingFinished, this,

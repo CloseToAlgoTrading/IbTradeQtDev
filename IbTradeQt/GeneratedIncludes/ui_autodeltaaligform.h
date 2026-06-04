@@ -164,16 +164,34 @@ public:
         AutoDeltaAligForm->setWindowTitle(QCoreApplication::translate("AutoDeltaAligForm", "AutoDeltaHedge", nullptr));
         label->setText(QCoreApplication::translate("AutoDeltaAligForm", "Ticker:", nullptr));
         lineEdit_Ticket->setText(QCoreApplication::translate("AutoDeltaAligForm", "SPY", nullptr));
+#if QT_CONFIG(tooltip)
+        lineEdit_Ticket->setToolTip(QCoreApplication::translate("AutoDeltaAligForm", "Underlying ticker used by the auto-delta alignment strategy, for example SPY. This symbol drives market data, option context, and hedge calculations.", nullptr));
+#endif // QT_CONFIG(tooltip)
         label_delta->setText(QCoreApplication::translate("AutoDeltaAligForm", "Delta:", nullptr));
+#if QT_CONFIG(tooltip)
+        spinBox_Delta->setToolTip(QCoreApplication::translate("AutoDeltaAligForm", "Target delta threshold for the alignment logic. The strategy compares current option and basis deltas against this value.", nullptr));
+#endif // QT_CONFIG(tooltip)
         label_2->setText(QCoreApplication::translate("AutoDeltaAligForm", "P/L:", nullptr));
         label_3->setText(QCoreApplication::translate("AutoDeltaAligForm", "Order:", nullptr));
         label_4->setText(QCoreApplication::translate("AutoDeltaAligForm", "Com:", nullptr));
         dateEditExpire->setDisplayFormat(QCoreApplication::translate("AutoDeltaAligForm", "dd.MM.yyyy", nullptr));
+#if QT_CONFIG(tooltip)
+        dateEditExpire->setToolTip(QCoreApplication::translate("AutoDeltaAligForm", "Option expiration date used when selecting or evaluating the hedge instrument.", nullptr));
+#endif // QT_CONFIG(tooltip)
+#if QT_CONFIG(tooltip)
+        spinBox_TargetPrice->setToolTip(QCoreApplication::translate("AutoDeltaAligForm", "Target option or hedge price used by the alignment workflow when preparing orders and comparing market levels.", nullptr));
+#endif // QT_CONFIG(tooltip)
         label_5->setText(QCoreApplication::translate("AutoDeltaAligForm", "Opt. delta:", nullptr));
         label_6->setText(QCoreApplication::translate("AutoDeltaAligForm", "Basis delta:", nullptr));
         label_7->setText(QCoreApplication::translate("AutoDeltaAligForm", "Delta sum:", nullptr));
         checkBox_OptionType->setText(QCoreApplication::translate("AutoDeltaAligForm", "Call", nullptr));
+#if QT_CONFIG(tooltip)
+        checkBox_OptionType->setToolTip(QCoreApplication::translate("AutoDeltaAligForm", "Selects the option type for the hedge instrument. Checked represents Call; unchecked represents the alternate option side used by the strategy.", nullptr));
+#endif // QT_CONFIG(tooltip)
         checkBox_isBuy->setText(QCoreApplication::translate("AutoDeltaAligForm", "Buy", nullptr));
+#if QT_CONFIG(tooltip)
+        checkBox_isBuy->setToolTip(QCoreApplication::translate("AutoDeltaAligForm", "Selects whether the prepared hedge order is a buy order. Unchecked represents the opposite side.", nullptr));
+#endif // QT_CONFIG(tooltip)
         buttonStartStop->setText(QCoreApplication::translate("AutoDeltaAligForm", "Start", nullptr));
         pushButton_Sell->setText(QCoreApplication::translate("AutoDeltaAligForm", "Sell", nullptr));
         pushButton_Buy->setText(QCoreApplication::translate("AutoDeltaAligForm", "Buy", nullptr));
